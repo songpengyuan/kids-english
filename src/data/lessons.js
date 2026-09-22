@@ -62,6 +62,30 @@ export const lessons = [
       { id: "horse", en: "horse", zh: "马", emoji: "🐴", image: "/lessons/l3/words/horse.png" },
       { id: "seed", en: "seed", zh: "种子", emoji: "🌱", image: "/lessons/l3/words/seed.png" }
     ]
+  },
+  {
+    id: "l4",
+    title: "A Sailor Went to Sea",
+    titleZh: "水手出海去",
+    emoji: "🌊",
+    color: "#1cb0f6",
+    date: "2026-09-18",
+    song: { audio: "/lessons/l4/song.mp3", video: "/lessons/l4/song.mp4" },
+    words: [
+      { id: "seahorse", en: "seahorse", zh: "海马", emoji: "🐴", image: "/lessons/l4/words/seahorse.png" },
+      { id: "jellyfish", en: "jellyfish", zh: "水母", emoji: "🪼", image: "/lessons/l4/words/jellyfish.png" },
+      { id: "turtle", en: "turtle", zh: "海龟", emoji: "🐢", image: "/lessons/l4/words/turtle.png" },
+      { id: "octopus", en: "octopus", zh: "章鱼", emoji: "🐙", image: "/lessons/l4/words/octopus.png" },
+      { id: "shark", en: "shark", zh: "鲨鱼", emoji: "🦈", image: "/lessons/l4/words/shark.png" },
+      { id: "whale", en: "whale", zh: "鲸鱼", emoji: "🐳", image: "/lessons/l4/words/whale.png" },
+      { id: "sailor", en: "sailor", zh: "水手", emoji: "⛵", image: "/lessons/l4/words/sailor.png" },
+      { id: "sea", en: "sea", zh: "大海", emoji: "🌊", image: "/lessons/l4/words/sea.png" },
+      { id: "blue", en: "blue", zh: "蓝色", emoji: "🔵", image: "/lessons/l4/words/blue.png" }
+    ],
+    phrases: [
+      { en: "What do you see?", zh: "你看见什么啦？" },
+      { en: "I see a ...", zh: "我看见了一只……" }
+    ]
   }
 ];
 

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import { bigCelebrate } from "../utils/effects";
+import { speak } from "../utils/speech";
 import progress from "../store/progress";
 
 const props = defineProps({ lesson: { type: Object, required: true } });
@@ -69,6 +70,19 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
       <span v-for="w in lesson.words" :key="w.id" class="chip anim-pop">{{ w.emoji }} {{ w.en }}</span>
     </div>
 
+    <div v-if="lesson.phrases && lesson.phrases.length" class="phrases">
+      <h3 class="ph-title">👨‍👩‍👧 亲子口语 · 点一读</h3>
+      <button
+        v-for="p in lesson.phrases"
+        :key="p.en"
+        class="phrase anim-pop"
+        @click="speak(p.en)"
+      >
+        <span class="pen">🔊 {{ p.en }}</span>
+        <span class="pzh">{{ p.zh }}</span>
+      </button>
+    </div>
+
     <p v-if="!videoMissing" class="under-tip">看完视频记得点下方按钮领取小星星哦</p>
     <button v-if="videoMissing && audioMissing" class="k-btn blue finish" @click="onEnded">看完啦，领星星 ⭐</button>
   </div>
@@ -101,4 +115,18 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
 }
 .under-tip { margin: 0; color: #8a7f6f; font-weight: 700; }
 .finish { margin-top: auto; width: 100%; max-width: 420px; }
+.phrases {
+  width: 100%; max-width: 560px;
+  background: #fff7e6; border: 3px dashed #ffc800; border-radius: var(--radius);
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+}
+.ph-title { margin: 0; font-size: 17px; color: #a07800; }
+.phrase {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  background: #fff; border-radius: 14px; padding: 10px 14px;
+  box-shadow: 0 3px 0 #e8d9a8; font-weight: 800; text-align: left;
+}
+.phrase:active { transform: translateY(2px); box-shadow: none; }
+.pen { font-size: 18px; color: var(--ink); }
+.pzh { font-size: 13px; color: #a09a8f; }
 </style>
