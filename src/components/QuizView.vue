@@ -103,20 +103,23 @@ const scoreStars = computed(() => {
 </template>
 
 <style scoped>
-.quiz { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.quiz { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; min-height: 0; }
+.quiz .progress { flex: none; width: 100%; }
 .big-speaker {
-  width: 120px; height: 120px; border-radius: 50%;
-  font-size: 56px; background: var(--blue); color: #fff;
-  box-shadow: 0 6px 0 #1899d6; margin: 6px 0;
+  width: clamp(80px, 14vh, 120px); height: clamp(80px, 14vh, 120px);
+  border-radius: 50%;
+  font-size: clamp(36px, 6vh, 56px); background: var(--blue); color: #fff;
+  box-shadow: 0 6px 0 #1899d6; margin: 2px 0; flex: none;
 }
 .big-speaker:active { transform: translateY(4px); box-shadow: 0 2px 0 #1899d6; }
-.tip { margin: 0; font-weight: 700; color: #8a7f6f; }
+.tip { margin: 0; font-weight: 700; color: #8a7f6f; flex: none; }
 .options {
   width: 100%;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  flex: 1;
+  min-height: 0;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
 }
 .opt {
-  aspect-ratio: 1;
   border-radius: var(--radius);
   background: #fff;
   box-shadow: var(--shadow-hard);
@@ -124,9 +127,10 @@ const scoreStars = computed(() => {
   cursor: pointer; overflow: hidden;
   border: 5px solid transparent;
   transition: border-color 0.2s, transform 0.12s;
+  min-height: 0;
 }
 .opt img { width: 80%; height: 80%; object-fit: contain; pointer-events: none; }
-.opt .ph { font-size: 66px; }
+.opt .ph { font-size: clamp(40px, 9vh, 66px); }
 .opt.right { border-color: var(--green); background: #eafbe0; }
 .opt.wrong { border-color: var(--red); animation: shake-x 0.45s ease; }
 .opt.dim { opacity: 0.45; }

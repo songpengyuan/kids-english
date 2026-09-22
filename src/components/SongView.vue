@@ -89,44 +89,44 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
 </template>
 
 <style scoped>
-.song { display: flex; flex-direction: column; align-items: center; gap: 16px; flex: 1; }
-.video-zone { width: 100%; }
-.video { width: 100%; border-radius: var(--radius); box-shadow: var(--shadow-hard); background: #000; }
+.song { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1; min-height: 0; }
+.video-zone { width: 100%; flex: 1; min-height: 0; display: flex; }
+.video { width: 100%; max-height: 100%; border-radius: var(--radius); box-shadow: var(--shadow-hard); background: #000; object-fit: contain; }
 .video-ph {
-  width: 100%; aspect-ratio: 16/9; border-radius: var(--radius);
+  width: 100%; flex: 1; min-height: 0; border-radius: var(--radius);
   background: linear-gradient(160deg, #bde8ff, #e6f7ff);
   box-shadow: var(--shadow-hard);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 8px; cursor: pointer; position: relative;
   font-weight: 800; color: #4a7ba6; text-align: center; padding: 12px;
 }
-.note { font-size: 60px; }
+.note { font-size: clamp(40px, 8vh, 60px); }
 .play-btn {
-  width: 76px; height: 76px; border-radius: 50%;
-  background: var(--green); color: #fff; font-size: 30px;
+  width: clamp(56px, 10vh, 76px); height: clamp(56px, 10vh, 76px); border-radius: 50%;
+  background: var(--green); color: #fff; font-size: clamp(22px, 4vh, 30px);
   box-shadow: 0 5px 0 var(--green-dark);
 }
 .play-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--green-dark); }
-.miss { font-size: 15px; color: #8aa8c2; font-weight: 700; line-height: 1.6; }
-.words-strip { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.miss { font-size: 14px; color: #8aa8c2; font-weight: 700; line-height: 1.6; }
+.words-strip { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; flex: none; max-height: 18vh; overflow: hidden; }
 .chip {
-  background: #fff; border-radius: 14px; padding: 8px 14px;
-  font-weight: 800; box-shadow: var(--shadow-hard); font-size: 17px;
+  background: #fff; border-radius: 14px; padding: 6px 12px;
+  font-weight: 800; box-shadow: var(--shadow-hard); font-size: 15px;
 }
-.under-tip { margin: 0; color: #8a7f6f; font-weight: 700; }
-.finish { margin-top: auto; width: 100%; max-width: 420px; }
+.under-tip { margin: 0; color: #8a7f6f; font-weight: 700; flex: none; }
+.finish { flex: none; width: 100%; max-width: 420px; }
 .phrases {
-  width: 100%; max-width: 560px;
+  width: 100%; max-width: 560px; flex: none;
   background: #fff7e6; border: 3px dashed #ffc800; border-radius: var(--radius);
-  padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+  padding: 10px 14px; display: flex; flex-direction: column; gap: 8px;
 }
-.ph-title { margin: 0; font-size: 17px; color: #a07800; }
+.ph-title { margin: 0; font-size: 15px; color: #a07800; }
 .phrase {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-  background: #fff; border-radius: 14px; padding: 10px 14px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0;
+  background: #fff; border-radius: 14px; padding: 8px 12px;
   box-shadow: 0 3px 0 #e8d9a8; font-weight: 800; text-align: left;
 }
 .phrase:active { transform: translateY(2px); box-shadow: none; }
-.pen { font-size: 18px; color: var(--ink); }
-.pzh { font-size: 13px; color: #a09a8f; }
+.pen { font-size: 16px; color: var(--ink); }
+.pzh { font-size: 12px; color: #a09a8f; }
 </style>

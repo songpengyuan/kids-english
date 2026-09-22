@@ -1,60 +1,67 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, reactive, nextTick } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, reactive, nextTick, watch } from "vue";
 import { speak } from "../utils/speech";
 import { sfxMatch, sfxWrong, celebrate } from "../utils/effects";
 
 const props = defineProps({ words: { type: Array, required: true } });
 const emit = defineEmits(["done"]);
 
+/* ===== 分组：每组最多 4 对；布局 = 图片 | 单词 | 图片 ===== */
+const GROUP_SIZE = 4;
+const groups = computed(() => {
+  const out = [];
+  const list = shuffle(props.words);
+  for (let i = 0; i < list.length; i += GROUP_SIZE) out.push(list.slice(i, i + GROUP_SIZE));
+  return out;
+});
+const groupIdx = ref(0);
+const curGroup = computed(() => groups.value[groupIdx.value] || []);
+const groupCount = computed(() => groups.value.length);
+
 function shuffle(a) { return [...a].sort(() => Math.random() - 0.5); }
 
-const lefts = ref(shuffle(props.words));   // 图片列
-const rights = ref(shuffle(props.words));  // 单词列
+const leftImgs = ref([]);   // 左列图片（组内前半）
+const rightImgs = ref([]);  // 右列图片（组内后半）
+const midWords = ref([]);   // 中间单词列
 
 const board = ref(null);
 const leftEls = ref([]);
 const rightEls = ref([]);
-// 每列元素中心坐标缓存（board 内部坐标系）
-const leftPos = reactive({});
-const rightPos = reactive({});
+const wordEls = ref([]);
+const imgPos = reactive({});   // 所有图片格中心（board 坐标）
+const wordPos = reactive({});  // 单词格中心
 const ready = ref(false);
 
 function measure() {
   if (!board.value) return;
   const b = board.value.getBoundingClientRect();
-  leftEls.value.forEach((el, i) => {
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    leftPos[lefts.value[i].id] = {
-      x: r.left + r.width / 2 - b.left,
-      y: r.top + r.height / 2 - b.top
-    };
-  });
-  rightEls.value.forEach((el, i) => {
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    rightPos[rights.value[i].id] = {
-      x: r.left + r.width / 2 - b.left,
-      y: r.top + r.height / 2 - b.top
-    };
-  });
+  const put = (els, list, map) =>
+    els.forEach((el, i) => {
+      if (!el || !list[i]) return;
+      const r = el.getBoundingClientRect();
+      map[list[i].id] = { x: r.left + r.width / 2 - b.left, y: r.top + r.height / 2 - b.top };
+    });
+  put(leftEls.value, leftImgs.value, imgPos);
+  put(rightEls.value, rightImgs.value, imgPos);
+  put(wordEls.value, midWords.value, wordPos);
   ready.value = true;
 }
 
-const matched = reactive(new Set()); // 已配对 id
+const matched = reactive(new Set()); // 当前组已配对 id
 const dragging = ref(false);
 const startWord = ref(null);
 const line = reactive({ x1: 0, y1: 0, x2: 0, y2: 0 });
-const leftWrong = ref(null);
-const rightWrong = ref(null);
-const wrongCount = ref(0);
-const justMatched = ref(null); // 用于配对闪光动画
+const imgWrong = ref(null);
+const wordWrong = ref(null);
+const wrongCount = ref(0); // 跨组累计，用于评分
+const justMatched = ref(null);
+const transitioning = ref(false);
 
-let pendingRight = null;
+let pendingWord = null;
 
-const totalPairs = computed(() => props.words.length);
+const totalPairs = computed(() => curGroup.value.length);
 const doneCount = computed(() => matched.size);
-const allDone = computed(() => totalPairs.value > 0 && doneCount.value >= totalPairs.value);
+const groupDone = computed(() => totalPairs.value > 0 && doneCount.value >= totalPairs.value);
 const stars = computed(() =>
   wrongCount.value === 0 ? 3 : wrongCount.value <= 2 ? 2 : 1
 );
@@ -65,11 +72,16 @@ function localPoint(e) {
   return { x: p.clientX - rect.left, y: p.clientY - rect.top };
 }
 
-function onLeftDown(word, e) {
-  if (matched.has(word.id) || dragging.value) return;
+function onImgDown(word, e) {
+  if (matched.has(word.id) || dragging.value || transitioning.value) return;
+  // 再点一次已选中的图片 = 取消选择
+  if (startWord.value && startWord.value.id === word.id && !dragging.value) {
+    startWord.value = null;
+    return;
+  }
   dragging.value = true;
   startWord.value = word;
-  const c = leftPos[word.id] || localPoint(e);
+  const c = imgPos[word.id] || localPoint(e);
   line.x1 = c.x; line.y1 = c.y;
   const p = localPoint(e);
   line.x2 = p.x; line.y2 = p.y;
@@ -84,23 +96,23 @@ function onMove(e) {
   const cx = e.touches ? e.touches[0].clientX : e.clientX;
   const cy = e.touches ? e.touches[0].clientY : e.clientY;
   const el = document.elementFromPoint(cx, cy);
-  const hit = el && el.closest ? el.closest("[data-right]") : null;
-  pendingRight = hit ? hit.getAttribute("data-right") : null;
+  const hit = el && el.closest ? el.closest("[data-word]") : null;
+  pendingWord = hit ? hit.getAttribute("data-word") : null;
 }
 
 function onUp() {
   if (!dragging.value) return;
-  const target = pendingRight
-    ? rights.value.find((w) => w.id === pendingRight)
+  const target = pendingWord
+    ? midWords.value.find((w) => w.id === pendingWord)
     : null;
   dragging.value = false;
+  // 未命中单词时保留选中状态（点选模式：先点图，再点词）
   if (target) tryMatch(target);
-  else startWord.value = null;
 }
 
-/** 点击模式：已按住/选中图片时，直接点词也能配对 */
-function tapRight(word) {
-  if (matched.has(word.id)) return;
+/** 点击模式：选中图片后直接点中间单词也能配对 */
+function tapWord(word) {
+  if (matched.has(word.id) || transitioning.value) return;
   if (startWord.value) {
     tryMatch(word);
   } else {
@@ -108,37 +120,66 @@ function tapRight(word) {
   }
 }
 
-function tryMatch(rightWord) {
-  const leftWord = startWord.value;
+function tryMatch(midWord) {
+  const imgWord = startWord.value;
   startWord.value = null;
-  pendingRight = null;
-  if (!leftWord) return;
-  if (leftWord.id === rightWord.id) {
-    matched.add(leftWord.id);
-    justMatched.value = leftWord.id;
+  pendingWord = null;
+  if (!imgWord) return;
+  if (imgWord.id === midWord.id) {
+    matched.add(imgWord.id);
+    justMatched.value = imgWord.id;
     sfxMatch();
-    speak(rightWord.en);
+    speak(midWord.en);
     celebrate();
     setTimeout(() => (justMatched.value = null), 600);
-    if (allDone.value) setTimeout(() => emit("done", stars.value), 1100);
   } else {
     wrongCount.value++;
     sfxWrong();
-    leftWrong.value = leftWord.id;
-    rightWrong.value = rightWord.id;
-    setTimeout(() => speak(leftWord.en, { rate: 0.75 }), 420);
-    setTimeout(() => { leftWrong.value = null; rightWrong.value = null; }, 750);
+    imgWrong.value = imgWord.id;
+    wordWrong.value = midWord.id;
+    setTimeout(() => speak(imgWord.en, { rate: 0.75 }), 420);
+    setTimeout(() => { imgWrong.value = null; wordWrong.value = null; }, 750);
   }
 }
 
+/* ===== 组间切换 ===== */
+watch(groupDone, async (done) => {
+  if (!done) return;
+  transitioning.value = true;
+  await new Promise((r) => setTimeout(r, 1100));
+  if (groupIdx.value + 1 >= groupCount.value) {
+    emit("done", stars.value);
+    return;
+  }
+  groupIdx.value++;
+});
+
+function setupGroup(g) {
+  matched.clear();
+  ready.value = false;
+  const imgs = shuffle(g);
+  const half = Math.ceil(imgs.length / 2);
+  leftImgs.value = imgs.slice(0, half);
+  rightImgs.value = imgs.slice(half);
+  midWords.value = shuffle(g);
+  transitioning.value = false;
+}
+
+watch(curGroup, async (g) => {
+  setupGroup(g);
+  await nextTick();
+  measure();
+});
+
 function matchedLine(id) {
-  const a = leftPos[id];
-  const b = rightPos[id];
+  const a = imgPos[id];
+  const b = wordPos[id];
   if (!a || !b) return null;
   return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
 }
 
 onMounted(async () => {
+  setupGroup(curGroup.value);
   await nextTick();
   measure();
   window.addEventListener("pointermove", onMove);
@@ -155,23 +196,21 @@ onBeforeUnmount(() => {
 <template>
   <div class="match">
     <div class="head">
-      <p class="tip">🔗 从图片拖一条线到会读的单词</p>
-      <span class="counter">{{ doneCount }} / {{ totalPairs }}</span>
+      <p class="tip">🔗 把两边的图片和中间的单词连起来</p>
+      <span class="counter" v-if="groupCount > 1">第 {{ groupIdx + 1 }} / {{ groupCount }} 组 · {{ doneCount }}/{{ totalPairs }}</span>
+      <span class="counter" v-else>{{ doneCount }} / {{ totalPairs }}</span>
     </div>
 
     <div class="board" ref="board">
       <svg class="lines" v-if="ready">
-        <!-- 已完成连线（生长动画） -->
-        <template v-for="w in lefts" :key="'c' + w.id">
-          <g v-if="matched.has(w.id) && matchedLine(w.id)">
-            <line
-              v-bind="matchedLine(w.id)"
-              class="done-line"
-              :class="{ flash: justMatched === w.id }"
-            />
-          </g>
+        <template v-for="w in curGroup" :key="'c' + w.id">
+          <line
+            v-if="matched.has(w.id) && matchedLine(w.id)"
+            v-bind="matchedLine(w.id)"
+            class="done-line"
+            :class="{ flash: justMatched === w.id }"
+          />
         </template>
-        <!-- 拖拽中的线 -->
         <line
           v-if="dragging"
           :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2"
@@ -179,18 +218,19 @@ onBeforeUnmount(() => {
         />
       </svg>
 
-      <div class="col left">
+      <div class="col imgs">
         <div
-          v-for="(w, i) in lefts"
+          v-for="(w, i) in leftImgs"
           :key="w.id"
           :ref="(el) => (leftEls[i] = el)"
-          class="cell pic"
+          class="cell pic anim-pop"
+          :style="{ animationDelay: i * 0.06 + 's' }"
           :class="{
             gone: matched.has(w.id),
-            wrong: leftWrong === w.id,
+            wrong: imgWrong === w.id,
             active: dragging && startWord && startWord.id === w.id
           }"
-          @pointerdown="onLeftDown(w, $event)"
+          @pointerdown="onImgDown(w, $event)"
         >
           <img
             :src="w.image" :alt="w.en"
@@ -200,34 +240,62 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="col right">
+      <div class="col words">
         <div
-          v-for="(w, i) in rights"
+          v-for="(w, i) in midWords"
           :key="w.id"
-          :ref="(el) => (rightEls[i] = el)"
-          class="cell word"
-          :data-right="w.id"
-          :class="{ gone: matched.has(w.id), wrong: rightWrong === w.id }"
-          @click="tapRight(w)"
+          :ref="(el) => (wordEls[i] = el)"
+          class="cell word anim-pop"
+          :style="{ animationDelay: i * 0.06 + 's' }"
+          :data-word="w.id"
+          :class="{ gone: matched.has(w.id), wrong: wordWrong === w.id }"
+          @click="tapWord(w)"
         >
           {{ w.en }}
         </div>
+      </div>
+
+      <div class="col imgs">
+        <div
+          v-for="(w, i) in rightImgs"
+          :key="w.id"
+          :ref="(el) => (rightEls[i] = el)"
+          class="cell pic anim-pop"
+          :style="{ animationDelay: (i + 2) * 0.06 + 's' }"
+          :class="{
+            gone: matched.has(w.id),
+            wrong: imgWrong === w.id,
+            active: dragging && startWord && startWord.id === w.id
+          }"
+          @pointerdown="onImgDown(w, $event)"
+        >
+          <img
+            :src="w.image" :alt="w.en"
+            @error="$event.target.style.display = 'none'; $event.target.nextElementSibling.style.display = 'flex'"
+          />
+          <span class="ph" style="display: none">{{ w.emoji }}</span>
+        </div>
+      </div>
+
+      <!-- 组间过场横幅 -->
+      <div v-if="transitioning" class="banner anim-pop">
+        <span>{{ groupIdx + 1 >= groupCount ? '全部连完啦 🎉' : '这组连完啦！下一组 →' }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.match { display: flex; flex-direction: column; gap: 10px; flex: 1; }
-.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.match { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
+.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none; }
 .tip { margin: 0; font-weight: 700; color: #8a7f6f; }
 .counter {
   background: #fff; border-radius: 12px; padding: 6px 14px;
-  font-weight: 800; box-shadow: var(--shadow-hard);
+  font-weight: 800; box-shadow: var(--shadow-hard); white-space: nowrap;
 }
 .board {
-  position: relative; width: 100%; flex: 1;
-  display: flex; justify-content: space-between; gap: 46px;
+  position: relative; width: 100%; flex: 1; min-height: 0;
+  display: flex; justify-content: space-between; gap: 18px;
 }
 .lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 .done-line {
@@ -241,19 +309,40 @@ onBeforeUnmount(() => {
   stroke: var(--yellow); stroke-width: 6; stroke-linecap: round;
   stroke-dasharray: 1 14;
 }
-.col { display: flex; flex-direction: column; gap: 14px; flex: 1; z-index: 2; }
+/* 两侧图片列窄一些，中间单词列 */
+.col {
+  display: grid; gap: 12px; z-index: 2;
+  grid-auto-rows: 1fr;
+  min-height: 0;
+  align-content: stretch;
+}
+.col.imgs { flex: 1; }
+.col.words { flex: 1.15; }
 .cell {
   background: #fff; border-radius: 16px; box-shadow: var(--shadow-hard);
   display: flex; align-items: center; justify-content: center;
   border: 4px solid transparent; touch-action: none;
   transition: opacity 0.25s, transform 0.2s, border-color 0.2s;
+  min-height: 0; overflow: hidden;
 }
-.cell.pic { aspect-ratio: 1.5; cursor: grab; overflow: hidden; }
+.cell.pic { cursor: grab; }
 .cell.pic:active { cursor: grabbing; }
-.cell.pic img { width: 76%; height: 76%; object-fit: contain; pointer-events: none; }
-.cell.pic .ph { font-size: 44px; align-items: center; }
-.cell.word { min-height: 64px; font-size: 25px; font-weight: 800; cursor: pointer; }
+/* 图片缩小：占格子 62% */
+.cell.pic img { width: 62%; height: 62%; object-fit: contain; pointer-events: none; }
+.cell.pic .ph { font-size: clamp(22px, 4.5vh, 38px); align-items: center; }
+.cell.word { font-size: clamp(15px, 2.6vh, 23px); font-weight: 800; cursor: pointer; }
 .cell.active { border-color: var(--yellow); transform: scale(1.04); }
 .cell.wrong { border-color: var(--red); animation: shake-x 0.45s ease; }
 .cell.gone { opacity: 0.3; pointer-events: none; transform: scale(0.93); }
+.banner {
+  position: absolute; inset: 0; z-index: 9;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(253, 246, 227, 0.85);
+  border-radius: var(--radius);
+}
+.banner span {
+  font-size: clamp(22px, 4.5vh, 34px); font-weight: 800; color: var(--green-dark);
+  background: #fff; padding: 14px 28px; border-radius: 20px;
+  box-shadow: var(--shadow-hard);
+}
 </style>

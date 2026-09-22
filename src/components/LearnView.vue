@@ -37,20 +37,26 @@ function next() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   flex: 1;
+  min-height: 0;
 }
-.hint { margin: 0; font-size: 17px; color: #8a7f6f; font-weight: 700; }
+.hint { margin: 0; font-size: 15px; color: #8a7f6f; font-weight: 700; flex: none; }
 .grid {
   width: 100%;
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 12px;
 }
 .next {
-  margin-top: auto;
+  margin-top: 0;
+  flex: none;
   width: 100%;
   max-width: 420px;
-  font-size: 24px;
+  font-size: 22px;
+  padding: 12px 32px;
 }
 </style>

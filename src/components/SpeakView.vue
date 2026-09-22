@@ -256,24 +256,26 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.speak { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-.speak-head { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+.speak { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1; min-height: 0; }
+.speak-head { width: 100%; display: flex; justify-content: space-between; align-items: center; flex: none; }
 .prog { font-weight: 800; color: #9a8f80; }
 .mode-tag { background: #fff; border-radius: 14px; padding: 4px 12px; font-weight: 800; font-size: 14px; box-shadow: 0 2px 0 rgba(0,0,0,.08); }
-.word-zone { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.word-zone { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: none; }
 .pic {
-  width: 170px; height: 170px; background: #fff; border-radius: var(--radius);
+  width: clamp(110px, 24vh, 170px); height: clamp(110px, 24vh, 170px);
+  background: #fff; border-radius: var(--radius);
   box-shadow: var(--shadow-hard); display: flex; align-items: center; justify-content: center;
-  font-size: 110px; cursor: pointer; transition: transform 0.15s;
+  font-size: clamp(60px, 12vh, 110px); cursor: pointer; transition: transform 0.15s;
+  overflow: hidden;
 }
 .pic:active { transform: scale(0.94); }
 .pic img { width: 80%; height: 80%; object-fit: contain; }
-.word { font-size: 34px; }
-.tip { margin: 0; color: #9a8f80; font-weight: 700; font-size: 14px; text-align: center; max-width: 340px; }
-.mic-zone { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.word { font-size: clamp(24px, 4.5vh, 34px); }
+.tip { margin: 0; color: #9a8f80; font-weight: 700; font-size: 13px; text-align: center; max-width: 360px; }
+.mic-zone { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none; }
 .mic {
-  width: 110px; height: 110px; border-radius: 50%;
-  font-size: 46px; border: none; cursor: pointer;
+  width: clamp(80px, 15vh, 110px); height: clamp(80px, 15vh, 110px); border-radius: 50%;
+  font-size: clamp(32px, 6vh, 46px); border: none; cursor: pointer;
   background: radial-gradient(circle at 35% 30%, #ffd54d, #ff9f43);
   box-shadow: 0 8px 0 #d97b1e, 0 12px 22px rgba(0,0,0,.18);
   transition: transform 0.1s, box-shadow 0.1s;
@@ -293,8 +295,8 @@ onBeforeUnmount(() => {
 .mic-label { margin: 0; font-weight: 800; color: #9a8f80; }
 .replay { height: 36px; }
 .replay.big { height: 44px; }
-.feedback { width: 100%; max-width: 460px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.verdict { margin: 0; font-size: 20px; font-weight: 800; text-align: center; }
+.feedback { width: 100%; max-width: 460px; flex: none; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: 10px 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.verdict { margin: 0; font-size: 18px; font-weight: 800; text-align: center; }
 .verdict.perfect { color: var(--green-dark); }
 .verdict.good { color: #1a8ec4; }
 .verdict.retry { color: #d97b1e; }

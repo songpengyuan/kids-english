@@ -48,16 +48,19 @@ function pop() {
   background: #fff;
   border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
-  padding: 14px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
 }
 .pic {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  flex: 1;
+  min-height: 0;
   border-radius: 16px;
   overflow: hidden;
   background: linear-gradient(160deg, #fff7de, #ffe9c4);
@@ -73,10 +76,10 @@ function pop() {
   pointer-events: none;
 }
 .placeholder {
-  font-size: 64px;
+  font-size: clamp(36px, 7vh, 64px);
 }
-.word-card.lg .placeholder { font-size: 110px; }
-.word-card.sm .placeholder { font-size: 44px; }
+.word-card.lg .placeholder { font-size: clamp(56px, 12vh, 110px); }
+.word-card.sm .placeholder { font-size: clamp(28px, 5vh, 44px); }
 .speaker {
   position: absolute;
   right: 8px;
