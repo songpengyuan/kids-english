@@ -6,12 +6,23 @@ import { sfxMatch, sfxWrong, celebrate } from "../utils/effects";
 const props = defineProps({ words: { type: Array, required: true } });
 const emit = defineEmits(["done"]);
 
-/* ===== 分组：每组最多 4 对；布局 = 图片 | 单词 | 图片 ===== */
-const GROUP_SIZE = 4;
+/* ===== 分组：每组 3~6 对，尽量均分；布局 = 图片 | 单词 | 图片 ===== */
+const MIN_GROUP = 3;
+const MAX_GROUP = 6;
 const groups = computed(() => {
-  const out = [];
   const list = shuffle(props.words);
-  for (let i = 0; i < list.length; i += GROUP_SIZE) out.push(list.slice(i, i + GROUP_SIZE));
+  const n = list.length;
+  if (n <= MAX_GROUP) return [list]; // 一组装得下（哪怕不足 3 也只剩这一组）
+  // 组数取满足"每组≤6"的最少组数，再均分；均分后若 <3 则减一组重均
+  let k = Math.ceil(n / MAX_GROUP);
+  while (k > 1 && Math.floor(n / k) < MIN_GROUP) k--;
+  const out = [];
+  let i = 0;
+  for (let g = 0; g < k; g++) {
+    const size = Math.ceil((n - i) / (k - g)); // 前几组多 1 个，保持 3~6
+    out.push(list.slice(i, i + size));
+    i += size;
+  }
   return out;
 });
 const groupIdx = ref(0);
