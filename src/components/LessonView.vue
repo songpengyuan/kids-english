@@ -4,6 +4,7 @@ import LearnView from "./LearnView.vue";
 import QuizView from "./QuizView.vue";
 import MatchView from "./MatchView.vue";
 import SongView from "./SongView.vue";
+import SpeakView from "./SpeakView.vue";
 import { bigCelebrate } from "../utils/effects";
 import progress from "../store/progress";
 import { speakZh } from "../utils/speech";
@@ -18,6 +19,7 @@ const activities = computed(() => [
   { key: "learn", name: "学单词", icon: "📖", color: "#ff9f43", game: "learn", desc: "看图听发音" },
   { key: "quiz", name: "听音选图", icon: "🎧", color: "#1cb0f6", game: "quiz", desc: "听声音找图片" },
   { key: "match", name: "连一连", icon: "🔗", color: "#ce82ff", game: "match", desc: "图片连线单词" },
+  { key: "speak", name: "跟我读", icon: "🗣️", color: "#ff9f43", game: "speak", desc: "按住麦克风读单词" },
   { key: "song", name: "唱童谣", icon: "🎵", color: "#58cc02", game: "song", desc: "听歌看视频" }
 ]);
 
@@ -48,7 +50,7 @@ function afterSong() {
 
 const lessonProgress = computed(() => {
   const done = progress.progress[props.lesson.id]?.completed?.length || 0;
-  return Math.round((done / 3) * 100);
+  return Math.min(100, Math.round((done / 4) * 100));
 });
 
 function toMenu() {
@@ -89,8 +91,8 @@ function toMenu() {
 
     <!-- 各玩法 -->
     <component
-      v-else-if="stage === 'learn' || stage === 'quiz' || stage === 'match'"
-      :is="stage === 'learn' ? LearnView : stage === 'quiz' ? QuizView : MatchView"
+      v-else-if="stage === 'learn' || stage === 'quiz' || stage === 'match' || stage === 'speak'"
+      :is="stage === 'learn' ? LearnView : stage === 'quiz' ? QuizView : stage === 'match' ? MatchView : SpeakView"
       :words="lesson.words"
       @done="afterGame"
     />

@@ -17,14 +17,17 @@ const state = {
   get totalStars() {
     return Object.values(this.progress).reduce(
       (sum, l) =>
-        sum + (l.learn || 0) + (l.quiz || 0) + (l.match || 0) + (l.song || 0),
+        sum +
+        (l.learn || 0) + (l.quiz || 0) + (l.match || 0) + (l.speak || 0) + (l.song || 0),
       0
     );
   },
   lessonStars(id) {
     const l = this.progress[id];
     if (!l) return 0;
-    return (l.learn || 0) + (l.quiz || 0) + (l.match || 0) + (l.song || 0);
+    return (
+      (l.learn || 0) + (l.quiz || 0) + (l.match || 0) + (l.speak || 0) + (l.song || 0)
+    );
   },
   setGameStars(id, game, stars) {
     const prev = this.progress[id] || {};
