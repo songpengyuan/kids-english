@@ -72,6 +72,14 @@ function scheduleMeasure() {
   });
 }
 
+/** 已配对连线的坐标：图片格中心 → 单词格中心（board 坐标系） */
+function matchedLine(wordId) {
+  const a = imgPos[wordId];
+  const b = wordPos[wordId];
+  if (!a || !b) return null;
+  return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+}
+
 const matched = reactive(new Set()); // 当前组已配对 id
 const dragging = ref(false);
 const startWord = ref(null);
