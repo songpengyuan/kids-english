@@ -64,8 +64,9 @@ function finish() {
         @click="tap(p, i)"
       >
         <span class="role">{{ i % 2 === 0 ? "🙋 家长说" : "🧒 宝宝答" }}</span>
-        <span class="pen">🔊 {{ p.en }}</span>
+        <!-- 中文对话在上，英文单词/句子放在对话下面 -->
         <span class="pzh">{{ p.zh }}</span>
+        <span class="pen">🔊 {{ p.en }}</span>
         <span v-if="listened.has(i)" class="heard-mark">✓ 听过啦</span>
       </button>
     </div>
@@ -131,15 +132,17 @@ function finish() {
   font-weight: 800;
   color: var(--ink-faint);
 }
-.pen {
+/* 中文对话：卡片主文本 */
+.pzh {
   font-weight: 800;
-  font-size: clamp(18px, min(3.6vh, 3vw), 30px);
+  font-size: clamp(16px, min(3.2vh, 2.6vw), 26px);
   color: var(--ink);
 }
-.pzh {
-  font-size: var(--fs-small);
-  color: var(--ink-faint);
-  font-weight: 700;
+/* 英文单词/句子：放在对话下面，用主题色突出 */
+.pen {
+  font-weight: 800;
+  font-size: clamp(15px, min(2.9vh, 2.3vw), 24px);
+  color: var(--blue-dark, #1899d6);
 }
 .heard-mark {
   position: absolute;
