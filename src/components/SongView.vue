@@ -313,16 +313,27 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
   margin-top: 2px;
 }
 
-/* 歌词：占满剩余高度，内部滚动 */
+/* 歌词：固定高度窗口，始终可滚（KTV 式跟随 + 手动滑动均可） */
 .lyrics {
   position: relative; /* 让行 offsetTop 相对本容器，自动滚动按此计算 */
+  flex: 0 1 auto; /* 覆盖 view-body 的 flex:1：不撑满剩余高度 */
+  max-height: min(44vh, 420px); /* 限高 → 内容必然溢出，滚动区才有存在的意义 */
+  min-height: 96px;
+  margin-block: auto; /* 剩余空间里垂直居中，上下留白对称 */
   background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
   padding: var(--gap-m) var(--gap-l);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; /* 滑到头不带动整页回弹 */
   text-align: center;
+}
+.lyrics::-webkit-scrollbar {
+  display: none; /* 儿童界面不显示滚动条，滚动提示交给可见的溢出行 */
+}
+.lyrics {
+  scrollbar-width: none;
 }
 .line {
   margin: 0;
