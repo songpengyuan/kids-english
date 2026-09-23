@@ -1,7 +1,15 @@
 import confetti from "canvas-confetti";
+import {
+  hapticCelebrate,
+  hapticMatch,
+  hapticSuccess,
+  hapticTap,
+  hapticWrong
+} from "./haptics";
 
 /** 答对：撒花 + 上行音 */
 export function celebrate() {
+  hapticCelebrate();
   confetti({
     particleCount: 80,
     spread: 75,
@@ -13,6 +21,7 @@ export function celebrate() {
 
 /** 过关：更盛大的双侧礼花 */
 export function bigCelebrate() {
+  hapticCelebrate();
   const end = Date.now() + 900;
   (function frame() {
     confetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0 }, color: "#ffc800" });
@@ -49,23 +58,27 @@ function tone(freq, start, dur, type = "sine", gain = 0.15) {
 
 /** 正确音效：叮咚上行 */
 export function sfxCorrect() {
+  hapticSuccess();
   tone(659, 0, 0.12, "triangle");
   tone(880, 0.1, 0.18, "triangle");
 }
 
 /** 错误音效：温柔下行（不刺耳，避免打击幼儿） */
 export function sfxWrong() {
+  hapticWrong();
   tone(392, 0, 0.16, "sine", 0.1);
   tone(311, 0.14, 0.22, "sine", 0.1);
 }
 
 /** 点击/翻牌音效 */
 export function sfxTap() {
+  hapticTap();
   tone(523, 0, 0.07, "square", 0.06);
 }
 
 /** 连线成功音效 */
 export function sfxMatch() {
+  hapticMatch();
   tone(784, 0, 0.1, "triangle");
   tone(1046, 0.08, 0.16, "triangle");
 }

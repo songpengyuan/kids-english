@@ -6,13 +6,15 @@ import MatchView from "./MatchView.vue";
 import SongView from "./SongView.vue";
 import SpeakView from "./SpeakView.vue";
 import { bigCelebrate } from "../utils/effects";
+import { lessons } from "../data/lessons";
 import progress from "../store/progress";
-import { speakZh } from "../utils/speech";
+import { speak, speakZh } from "../utils/speech";
+import { hapticTap } from "../utils/haptics";
 import { useViewport } from "../composables/useViewport";
 import { pickColumns } from "../utils/layout";
 
 const props = defineProps({ lesson: { type: Object, required: true } });
-const emit = defineEmits(["back"]);
+const emit = defineEmits(["back", "next-lesson"]);
 
 const { isNarrow } = useViewport();
 
@@ -23,7 +25,12 @@ const lastStars = ref(0);
 const STAGES = ["learn", "quiz", "match", "speak", "song"];
 onMounted(() => {
   const s = new URLSearchParams(location.search).get("stage");
-  if (STAGES.includes(s)) stage.value = s;
+  if (STAGES.includes(s)) {
+    stage.value = s;
+  } else {
+    // 进入课程时报出主题歌名（英文），给孩子一个"这一课唱什么"的预期
+    setTimeout(() => speak(props.lesson.title), 400);
+  }
 });
 
 const activities = computed(() => [
@@ -92,6 +99,7 @@ const actsStyle = computed(() => ({
 }));
 
 function open(a) {
+  hapticTap();
   stage.value = a.game === "song" ? "song" : a.key;
 }
 
@@ -117,15 +125,31 @@ const lessonProgress = computed(() => {
   return Math.min(100, Math.round((done / 4) * 100));
 });
 
+/** 左上角 ←：玩法中先回本课菜单，菜单里再点才回课程列表（两步退出，防止误触跳走） */
+function back() {
+  if (stage.value !== "menu") {
+    stage.value = "menu";
+    return;
+  }
+  emit("back");
+}
+
 function toMenu() {
   stage.value = "menu";
 }
+
+/** 下一课（当前课是最后一课则为 null，结算页隐藏该按钮） */
+const nextLesson = computed(() => {
+  const i = lessons.findIndex((l) => l.id === props.lesson.id);
+  return i >= 0 ? lessons[i + 1] || null : null;
+});
+
 </script>
 
 <template>
   <div class="lesson view">
     <div class="topbar">
-      <button class="back" @click="emit('back')">←</button>
+      <button class="back" @click="back" :title="stage === 'menu' ? '返回课程列表' : '返回本课菜单'">←</button>
       <div class="title">{{ lesson.emoji }} {{ lesson.titleZh }}</div>
       <div class="star-badge">⭐ {{ progress.lessonStars(lesson.id) }}</div>
     </div>
@@ -176,8 +200,10 @@ function toMenu() {
       </div>
       <h2>真棒！获得 {{ lastStars }} 颗星</h2>
       <div class="btn-row">
-        <button class="k-btn gray" @click="toMenu">返回</button>
-        <button class="k-btn" @click="emit('back')">下一课</button>
+        <button class="k-btn" @click="toMenu">再选一个玩法</button>
+        <button v-if="nextLesson" class="k-btn gray" @click="emit('next-lesson', nextLesson.id)">
+          下一课：{{ nextLesson.emoji }}{{ nextLesson.titleZh }}
+        </button>
       </div>
     </div>
   </div>

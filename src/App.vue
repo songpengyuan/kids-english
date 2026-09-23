@@ -27,7 +27,13 @@ onMounted(() => {
 
 <template>
   <KeepAlive include="HomePage">
-    <LessonView v-if="lesson" :key="lesson.id" :lesson="lesson" @back="back" />
+    <LessonView
+      v-if="lesson"
+      :key="lesson.id"
+      :lesson="lesson"
+      @back="back"
+      @next-lesson="open"
+    />
     <HomePage v-else key="HomePage" @open="open" />
   </KeepAlive>
 </template>
