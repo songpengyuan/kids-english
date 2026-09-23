@@ -183,7 +183,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="word-zone">
-      <div class="pic anim-pop" @click="hearExample">
+      <div class="pic anim-pop" data-haptic @click="hearExample">
         <img v-if="!imgFailed" :src="cur.image" @error="imgFailed = true" />
         <span v-else class="fallback-emoji">{{ cur.emoji }}</span>
       </div>

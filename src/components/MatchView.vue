@@ -297,6 +297,7 @@ onBeforeUnmount(() => {
           :key="w.id"
           :ref="(el) => (leftEls[i] = el)"
           class="cell pic anim-pop"
+          data-haptic
           :style="{ animationDelay: i * 0.06 + 's' }"
           :class="{
             gone: matched.has(w.id),
@@ -323,6 +324,7 @@ onBeforeUnmount(() => {
           :key="w.id"
           :ref="(el) => (wordEls[i] = el)"
           class="cell word anim-pop"
+          data-haptic
           :style="{ animationDelay: i * 0.06 + 's' }"
           :data-word="w.id"
           :class="{ gone: matched.has(w.id), wrong: wordWrong === w.id }"
@@ -338,6 +340,7 @@ onBeforeUnmount(() => {
           :key="w.id"
           :ref="(el) => (rightEls[i] = el)"
           class="cell pic anim-pop"
+          data-haptic
           :style="{ animationDelay: (i + 2) * 0.06 + 's' }"
           :class="{
             gone: matched.has(w.id),

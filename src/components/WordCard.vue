@@ -53,13 +53,13 @@ function onWord() {
     :class="[size, { animate__animated: popping, animate__tada: popping, animate__faster: popping }]"
     @animationend.self="popping = false"
   >
-    <div class="pic" @click="onImage" :title="'点击听发音：' + word.en">
+    <div class="pic" data-haptic @click="onImage" :title="'点击听发音：' + word.en">
       <img v-if="!imgFailed" :src="word.image" :alt="word.en" @error="imgFailed = true" />
       <!-- 图片缺失时的 emoji 占位 -->
       <span v-else class="placeholder">{{ word.emoji }}</span>
       <span class="speaker">🔊</span>
     </div>
-    <div class="word" @click="onWord">{{ word.en }}</div>
+    <div class="word" data-haptic @click="onWord">{{ word.en }}</div>
   </div>
 </template>
 

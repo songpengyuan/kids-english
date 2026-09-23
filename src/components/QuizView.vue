@@ -81,6 +81,7 @@ const scoreStars = computed(() => {
         v-for="opt in q.options"
         :key="opt.id"
         class="opt anim-pop"
+        data-haptic
         :class="{
           right: locked && opt.id === q.target.id,
           wrong: locked && picked === opt.id && opt.id !== q.target.id,

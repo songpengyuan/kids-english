@@ -62,7 +62,7 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
         class="video"
         @error="onVideoError"
       ></video>
-      <div v-else class="video-ph" @click="play">
+      <div v-else class="video-ph" data-haptic @click="play">
         <span class="note anim-float" :class="noteAnim">🎵</span>
         <p v-if="!audioMissing">{{ playing ? "正在播放，跟着唱吧～" : "点我播放童谣音乐" }}</p>
         <p v-else class="miss">

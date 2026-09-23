@@ -76,7 +76,12 @@ async function watchActions(slug, headSha) {
 
 /** 推送后把本地分支指针对齐远端，消除 API 推送导致的 SHA 分叉（不动工作区文件） */
 function converge(slug, branch) {
-  execFileSync("git", ["fetch", "origin"], { cwd: REPO, stdio: "ignore" });
+  try {
+    execFileSync("git", ["fetch", "origin"], { cwd: REPO, stdio: "ignore" });
+  } catch {
+    say("fetch 失败（代理拦截），跳过本地对齐（网络恢复后 git 会自动收敛）");
+    return;
+  }
   const localTree = git(["rev-parse", "HEAD^{tree}"]);
   const remoteTree = git(["rev-parse", `origin/${branch}^{tree}`]);
   const localSha = git(["rev-parse", "HEAD"]);
@@ -114,17 +119,25 @@ async function main() {
   const headSha = git(["rev-parse", "HEAD"]);
 
   /* ---------- 判断本地/远端关系 ---------- */
-  execFileSync("git", ["fetch", "origin"], { cwd: REPO, stdio: "ignore" });
-  let relation = "local-ahead";
+  let fetched = true;
   try {
-    git(["merge-base", "--is-ancestor", headSha, `origin/${branch}`]);
-    relation = "remote-has";
-    say("远端已包含本地提交，无需推送");
+    execFileSync("git", ["fetch", "origin"], { cwd: REPO, stdio: "ignore" });
   } catch {
+    fetched = false; // 代理拦截时跳过远端判断，直接尝试推送（API 兜底不依赖本地 fetch）
+    say("git fetch 失败（代理拦截），跳过远端状态判断，直接尝试推送");
+  }
+  let relation = "local-ahead";
+  if (fetched) {
     try {
-      git(["merge-base", "--is-ancestor", `origin/${branch}`, headSha]);
+      git(["merge-base", "--is-ancestor", headSha, `origin/${branch}`]);
+      relation = "remote-has";
+      say("远端已包含本地提交，无需推送");
     } catch {
-      relation = "diverged";
+      try {
+        git(["merge-base", "--is-ancestor", `origin/${branch}`, headSha]);
+      } catch {
+        relation = "diverged";
+      }
     }
   }
 
@@ -189,7 +202,10 @@ async function main() {
 
   /* ---------- 跟踪构建 ---------- */
   if (process.argv.includes("--watch")) {
-    const ok = await watchActions(slug, git(["rev-parse", "origin/" + branch]));
+    // 用 API 查远端分支 SHA（API 兜底推送后远端 SHA 与本地不同，fetch 也可能不可用）
+    const headers = { Authorization: `token ${ghToken()}`, Accept: "application/vnd.github+json" };
+    const br = await (await fetch(`https://api.github.com/repos/${slug}/branches/${branch}`, { headers })).json();
+    const ok = await watchActions(slug, br.commit.sha);
     process.exitCode = ok ? 0 : 1;
   }
 }

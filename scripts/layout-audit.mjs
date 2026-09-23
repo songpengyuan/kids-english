@@ -34,6 +34,8 @@ const CHROME = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Conte
 const PORT = Number(process.env.AUDIT_PORT || 9333);
 const BASE = process.env.AUDIT_BASE || "http://127.0.0.1:8801/kids-english/";
 const OUT = process.env.AUDIT_OUT || "/tmp/shots";
+/** 可选：覆盖 UA（例如模拟 iPhone Safari 17.4+ 走 Safari 触感分支） */
+const UA = process.env.AUDIT_UA || "";
 
 const VIEWPORTS = [
   { name: "iphone_se_portrait", w: 375, h: 667, mobile: true },
@@ -181,6 +183,8 @@ try {
       deviceScaleFactor: 1,
       mobile: vp.mobile
     });
+    // 可选：模拟 iOS Safari UA，用于验证 Safari 专属分支（如触感开关叠加层）不影响布局
+    if (UA) await cdp.send("Emulation.setUserAgentOverride", { userAgent: UA });
 
     for (const pg of PAGES) {
       await cdp.send("Page.navigate", { url: BASE + pg.q });
