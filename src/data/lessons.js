@@ -53,6 +53,30 @@ const rawLessons = [
       { en: "What do you see?", zh: "你看见什么啦？" },
       { en: "I see a ...", zh: "我看见了一只……" }
     ]
+  },
+  {
+    id: "l5",
+    title: "I Am the Music Man",
+    titleZh: "我是一个音乐人",
+    emoji: "🎺",
+    color: "#ff9f43",
+    date: "2026-09-16",
+    song: { audio: "/lessons/l5/song.mp3", video: "/lessons/l5/song.mp4" },
+    words: [
+      { id: "violin", en: "violin", zh: "小提琴", emoji: "🎻", image: "/lessons/l5/words/violin.png" },
+      { id: "piano", en: "piano", zh: "钢琴", emoji: "🎹", image: "/lessons/l5/words/piano.png" },
+      { id: "musicman", en: "Music Man", zh: "音乐人", emoji: "🎹", image: "/lessons/l5/words/musicman.png" },
+      { id: "trombone", en: "trombone", zh: "长号", emoji: "🎺", image: "/lessons/l5/words/trombone.png" },
+      { id: "mantis", en: "mantis", zh: "螳螂", emoji: "🦗", image: "/lessons/l5/words/mantis.png" },
+      { id: "squirrel", en: "squirrel", zh: "松鼠", emoji: "🐿️", image: "/lessons/l5/words/squirrel.png" },
+      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l5/words/frog.png" }
+    ],
+    phrases: [
+      { en: "What can you play?", zh: "你会演奏什么呀？" },
+      { en: "I can play the piano.", zh: "我会弹钢琴。" },
+      { en: "I can play the violin.", zh: "我会拉小提琴。" },
+      { en: "I can play the trombone.", zh: "我会吹长号。" }
+    ]
   }
 ];
 
