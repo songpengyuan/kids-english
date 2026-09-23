@@ -1,6 +1,9 @@
 /**
  * 学习进度（localStorage 持久化）
  * stars: { [lessonId]: { learn: 0-3, quiz: 0-3, match: 0-3, song: 0|1 } }
+ *
+ * 注意：KEY 里的 kids-english 是**历史存储键名**，不要跟着应用显示名一起改。
+ * 改了会读不到已有数据，孩子攒的星星就全没了。
  */
 const KEY = "kids-english-progress-v1";
 

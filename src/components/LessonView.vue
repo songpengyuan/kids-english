@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import LearnView from "./LearnView.vue";
 import QuizView from "./QuizView.vue";
 import MatchView from "./MatchView.vue";
@@ -8,12 +8,23 @@ import SpeakView from "./SpeakView.vue";
 import { bigCelebrate } from "../utils/effects";
 import progress from "../store/progress";
 import { speakZh } from "../utils/speech";
+import { useViewport } from "../composables/useViewport";
+import { pickColumns } from "../utils/layout";
 
 const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["back"]);
 
+const { isNarrow } = useViewport();
+
 const stage = ref("menu"); // menu | learn | quiz | match | song | result
 const lastStars = ref(0);
+
+/** 调试深链：?lesson=l4&stage=learn，直接进入某个玩法页 */
+const STAGES = ["learn", "quiz", "match", "speak", "song"];
+onMounted(() => {
+  const s = new URLSearchParams(location.search).get("stage");
+  if (STAGES.includes(s)) stage.value = s;
+});
 
 const activities = computed(() => [
   { key: "learn", name: "学单词", icon: "📖", color: "#ff9f43", game: "learn", desc: "看图听发音" },
@@ -23,12 +34,65 @@ const activities = computed(() => [
   { key: "song", name: "唱童谣", icon: "🎵", color: "#58cc02", game: "song", desc: "听歌看视频" }
 ]);
 
+/* ---------- 玩法卡片排布 ---------- */
+/**
+ * 5 张卡片要一屏放下。列数不能写死（高了会变单列长条，矮了会挤成一条），
+ * 由 pickColumns 按"卡片长宽比最接近目标"挑选，兼顾可读性与观感。
+ */
+const GAP = 12;
+const MIN_W = 130; // 卡片最小可读宽
+const MIN_H = 96; // 卡片最小可读高
+
+const actsEl = ref(null);
+const area = reactive({ w: 0, h: 0 });
+let ro = null;
+let raf = null;
+
+function measure() {
+  const el = actsEl.value;
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  area.w = r.width;
+  area.h = r.height;
+}
+function scheduleMeasure() {
+  if (raf) cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(() => {
+    raf = null;
+    measure();
+  });
+}
+onMounted(() => {
+  measure();
+  ro = new ResizeObserver(scheduleMeasure);
+  if (actsEl.value) ro.observe(actsEl.value);
+});
+onBeforeUnmount(() => {
+  if (ro) ro.disconnect();
+  if (raf) cancelAnimationFrame(raf);
+});
+
+const layout = computed(() => {
+  if (!area.w || !area.h) return { cols: isNarrow.value ? 2 : 3, rows: 2 };
+  return pickColumns({
+    width: area.w,
+    height: area.h,
+    count: activities.value.length,
+    minCardW: MIN_W,
+    minCardH: MIN_H,
+    gap: GAP,
+    maxCols: isNarrow.value ? 2 : 5,
+    targetAspect: 1.25
+  });
+});
+
+const actsStyle = computed(() => ({
+  "--cols": layout.value.cols,
+  "--grid-gap": `${GAP}px`
+}));
+
 function open(a) {
-  if (a.game === "song") {
-    stage.value = "song";
-    return;
-  }
-  stage.value = a.key;
+  stage.value = a.game === "song" ? "song" : a.key;
 }
 
 function showStars(n) {
@@ -59,7 +123,7 @@ function toMenu() {
 </script>
 
 <template>
-  <div class="lesson">
+  <div class="lesson view">
     <div class="topbar">
       <button class="back" @click="emit('back')">←</button>
       <div class="title">{{ lesson.emoji }} {{ lesson.titleZh }}</div>
@@ -67,13 +131,13 @@ function toMenu() {
     </div>
 
     <!-- 课时菜单 -->
-    <div v-if="stage === 'menu'" class="menu">
+    <div v-if="stage === 'menu'" class="menu view-body">
       <div class="lesson-cover anim-pop" :style="{ background: lesson.color }">
         <span class="cover-emoji">{{ lesson.emoji }}</span>
         <p>{{ lesson.title }}</p>
       </div>
       <div class="bar"><div class="bar-fill" :style="{ width: lessonProgress + '%' }"></div></div>
-      <div class="acts">
+      <div class="acts" ref="actsEl" :style="actsStyle">
         <button
           v-for="(a, i) in activities"
           :key="a.key"
@@ -99,12 +163,19 @@ function toMenu() {
     <SongView v-else-if="stage === 'song'" :lesson="lesson" @song-done="afterSong" @back="toMenu" />
 
     <!-- 结算 -->
-    <div v-else-if="stage === 'result'" class="result">
+    <div v-else-if="stage === 'result'" class="result view-body view-center">
       <div class="stars">
-        <span v-for="n in 3" :key="n" class="star anim-pop" :class="{ dim: n > lastStars }" :style="{ animationDelay: n * 0.2 + 's' }">⭐</span>
+        <span
+          v-for="n in 3"
+          :key="n"
+          class="star anim-pop"
+          :class="{ dim: n > lastStars }"
+          :style="{ animationDelay: n * 0.2 + 's' }"
+          >⭐</span
+        >
       </div>
       <h2>真棒！获得 {{ lastStars }} 颗星</h2>
-      <div class="row">
+      <div class="btn-row">
         <button class="k-btn gray" @click="toMenu">返回</button>
         <button class="k-btn" @click="emit('back')">下一课</button>
       </div>
@@ -113,42 +184,143 @@ function toMenu() {
 </template>
 
 <style scoped>
-.lesson { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-.menu { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1; min-height: 0; }
-.lesson-cover {
-  width: 100%; border-radius: var(--radius); box-shadow: var(--shadow-hard);
-  padding: 8px; flex: none;
-  display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px;
+.menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-s);
 }
-.cover-emoji { font-size: clamp(34px, 6vh, 52px); }
-.lesson-cover p { margin: 0; color: #fff; font-weight: 800; font-size: clamp(16px, 2.8vh, 22px); text-shadow: 0 2px 0 rgba(0,0,0,0.12); }
-.bar { width: 100%; height: 14px; background: #e8e0cf; border-radius: 7px; overflow: hidden; flex: none; }
-.bar-fill { height: 100%; background: var(--green); transition: width 0.5s; }
+
+.lesson-cover {
+  width: 100%;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: var(--gap-xs) var(--gap-s);
+  flex: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-s);
+}
+.cover-emoji {
+  font-size: var(--fs-emoji-l);
+  line-height: 1;
+}
+.lesson-cover p {
+  margin: 0;
+  color: #fff;
+  font-weight: 800;
+  font-size: clamp(15px, min(2.8vh, 2.2vw), 22px);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.bar {
+  width: 100%;
+  height: clamp(6px, 1.2vh, 14px);
+  background: var(--line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  flex: none;
+}
+.bar-fill {
+  height: 100%;
+  background: var(--green);
+  transition: width 0.5s;
+}
+
+/* 剩余空间全部给卡片网格，列数由 JS 按可用尺寸算出 */
 .acts {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
-  width: 100%; flex: 1; min-height: 0;
-  grid-auto-rows: 1fr;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+  gap: var(--grid-gap, 12px);
+  width: 100%;
+  flex: 1;
+  min-height: 0;
 }
 .act {
-  position: relative; border-radius: var(--radius); padding: 8px 6px;
-  box-shadow: 0 6px 0 rgba(0,0,0,0.15); color: #fff;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  position: relative;
+  border-radius: var(--radius);
+  padding: var(--gap-xs) 4px;
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.15);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   transition: transform 0.08s;
-  min-height: 0; overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
-.act:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
-.act .ico { font-size: clamp(28px, 6vh, 44px); }
-.act .nm { font-size: clamp(16px, 2.6vh, 22px); font-weight: 800; }
-.act .ds { font-size: clamp(11px, 1.6vh, 14px); opacity: 0.92; font-weight: 700; }
+.act:active {
+  transform: translateY(calc(var(--press) - 1px));
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+}
+.act .ico {
+  font-size: var(--fs-emoji-l);
+  line-height: 1;
+}
+.act .nm {
+  font-size: clamp(14px, min(2.5vh, 2vw), 22px);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.act .ds {
+  font-size: clamp(10px, min(1.6vh, 1.3vw), 14px);
+  opacity: 0.92;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 .mini-stars {
-  position: absolute; top: 8px; right: 10px;
-  background: rgba(255,255,255,0.9); color: #b8860b;
-  border-radius: 10px; padding: 2px 8px; font-size: 14px; font-weight: 800;
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--gold);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  font-size: clamp(10px, 1.7vh, 14px);
+  font-weight: 800;
 }
-.result { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
-.stars { display: flex; gap: 10px; }
-.star { font-size: clamp(44px, 10vh, 72px); }
-.star.dim { filter: grayscale(1); opacity: 0.4; }
-.result h2 { margin: 0; color: var(--ink); }
-.row { display: flex; gap: 14px; }
+
+/* 卡片太矮时，副标题会成为负担，藏掉换取主标题和图标的空间 */
+@media (max-height: 620px) {
+  .act .ds {
+    display: none;
+  }
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-m);
+}
+.stars {
+  display: flex;
+  gap: var(--gap-s);
+}
+.star {
+  font-size: var(--fs-emoji-xl);
+  line-height: 1;
+}
+.star.dim {
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+.result h2 {
+  margin: 0;
+  font-size: var(--fs-title);
+  text-align: center;
+}
 </style>

@@ -2,46 +2,51 @@
 import { ref, computed, onMounted, onBeforeUnmount, reactive, nextTick, watch } from "vue";
 import { speak } from "../utils/speech";
 import { sfxMatch, sfxWrong, celebrate } from "../utils/effects";
+import { useViewport } from "../composables/useViewport";
+import { splitBalanced } from "../utils/layout";
 
 const props = defineProps({ words: { type: Array, required: true } });
 const emit = defineEmits(["done"]);
 
-/* ===== 分组：每组 3~6 对，尽量均分；布局 = 图片 | 单词 | 图片 ===== */
-const MIN_GROUP = 3;
-const MAX_GROUP = 6;
+const { sizeTier, isNarrow } = useViewport();
+
+function shuffle(a) {
+  return [...a].sort(() => Math.random() - 0.5);
+}
+
+/**
+ * 分组：屏幕越小每组越少，避免中间单词列被挤到看不清。
+ * 小屏用 2~4 对，大屏维持 3~6 对。
+ */
+const groupRange = computed(() =>
+  isNarrow.value || sizeTier.value === "tiny"
+    ? { min: 2, max: 4 }
+    : { min: 3, max: 6 }
+);
+
 const groups = computed(() => {
-  const list = shuffle(props.words);
-  const n = list.length;
-  if (n <= MAX_GROUP) return [list]; // 一组装得下（哪怕不足 3 也只剩这一组）
-  // 组数取满足"每组≤6"的最少组数，再均分；均分后若 <3 则减一组重均
-  let k = Math.ceil(n / MAX_GROUP);
-  while (k > 1 && Math.floor(n / k) < MIN_GROUP) k--;
-  const out = [];
-  let i = 0;
-  for (let g = 0; g < k; g++) {
-    const size = Math.ceil((n - i) / (k - g)); // 前几组多 1 个，保持 3~6
-    out.push(list.slice(i, i + size));
-    i += size;
-  }
-  return out;
+  const { min, max } = groupRange.value;
+  return splitBalanced(shuffle(props.words), min, max);
 });
+
 const groupIdx = ref(0);
 const curGroup = computed(() => groups.value[groupIdx.value] || []);
 const groupCount = computed(() => groups.value.length);
 
-function shuffle(a) { return [...a].sort(() => Math.random() - 0.5); }
-
-const leftImgs = ref([]);   // 左列图片（组内前半）
-const rightImgs = ref([]);  // 右列图片（组内后半）
-const midWords = ref([]);   // 中间单词列
+const leftImgs = ref([]); // 左列图片（组内前半）
+const rightImgs = ref([]); // 右列图片（组内后半）
+const midWords = ref([]); // 中间单词列
 
 const board = ref(null);
 const leftEls = ref([]);
 const rightEls = ref([]);
 const wordEls = ref([]);
-const imgPos = reactive({});   // 所有图片格中心（board 坐标）
-const wordPos = reactive({});  // 单词格中心
+const imgPos = reactive({}); // 所有图片格中心（board 坐标）
+const wordPos = reactive({}); // 单词格中心
 const ready = ref(false);
+
+let ro = null;
+let raf = null;
 
 function measure() {
   if (!board.value) return;
@@ -56,6 +61,15 @@ function measure() {
   put(rightEls.value, rightImgs.value, imgPos);
   put(wordEls.value, midWords.value, wordPos);
   ready.value = true;
+}
+
+/** 尺寸变化频繁（旋转/分屏），用 rAF 合并，避免每帧都重算所有格子的位置 */
+function scheduleMeasure() {
+  if (raf) cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(() => {
+    raf = null;
+    measure();
+  });
 }
 
 const matched = reactive(new Set()); // 当前组已配对 id
@@ -73,9 +87,7 @@ let pendingWord = null;
 const totalPairs = computed(() => curGroup.value.length);
 const doneCount = computed(() => matched.size);
 const groupDone = computed(() => totalPairs.value > 0 && doneCount.value >= totalPairs.value);
-const stars = computed(() =>
-  wrongCount.value === 0 ? 3 : wrongCount.value <= 2 ? 2 : 1
-);
+const stars = computed(() => (wrongCount.value === 0 ? 3 : wrongCount.value <= 2 ? 2 : 1));
 
 function localPoint(e) {
   const rect = board.value.getBoundingClientRect();
@@ -93,9 +105,11 @@ function onImgDown(word, e) {
   dragging.value = true;
   startWord.value = word;
   const c = imgPos[word.id] || localPoint(e);
-  line.x1 = c.x; line.y1 = c.y;
+  line.x1 = c.x;
+  line.y1 = c.y;
   const p = localPoint(e);
-  line.x2 = p.x; line.y2 = p.y;
+  line.x2 = p.x;
+  line.y2 = p.y;
   speak(word.en);
   e.preventDefault();
 }
@@ -103,7 +117,8 @@ function onImgDown(word, e) {
 function onMove(e) {
   if (!dragging.value) return;
   const p = localPoint(e);
-  line.x2 = p.x; line.y2 = p.y;
+  line.x2 = p.x;
+  line.y2 = p.y;
   const cx = e.touches ? e.touches[0].clientX : e.clientX;
   const cy = e.touches ? e.touches[0].clientY : e.clientY;
   const el = document.elementFromPoint(cx, cy);
@@ -113,9 +128,7 @@ function onMove(e) {
 
 function onUp() {
   if (!dragging.value) return;
-  const target = pendingWord
-    ? midWords.value.find((w) => w.id === pendingWord)
-    : null;
+  const target = pendingWord ? midWords.value.find((w) => w.id === pendingWord) : null;
   dragging.value = false;
   // 未命中单词时保留选中状态（点选模式：先点图，再点词）
   if (target) tryMatch(target);
@@ -149,7 +162,10 @@ function tryMatch(midWord) {
     imgWrong.value = imgWord.id;
     wordWrong.value = midWord.id;
     setTimeout(() => speak(imgWord.en, { rate: 0.75 }), 420);
-    setTimeout(() => { imgWrong.value = null; wordWrong.value = null; }, 750);
+    setTimeout(() => {
+      imgWrong.value = null;
+      wordWrong.value = null;
+    }, 750);
   }
 }
 
@@ -182,12 +198,10 @@ watch(curGroup, async (g) => {
   measure();
 });
 
-function matchedLine(id) {
-  const a = imgPos[id];
-  const b = wordPos[id];
-  if (!a || !b) return null;
-  return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
-}
+/** 换课时或屏幕分档变化导致重新分组时，回到第一组 */
+watch(groups, () => {
+  groupIdx.value = 0;
+});
 
 onMounted(async () => {
   setupGroup(curGroup.value);
@@ -195,24 +209,32 @@ onMounted(async () => {
   measure();
   window.addEventListener("pointermove", onMove);
   window.addEventListener("pointerup", onUp);
-  window.addEventListener("resize", measure);
+  window.addEventListener("resize", scheduleMeasure);
+  if (board.value) {
+    ro = new ResizeObserver(scheduleMeasure);
+    ro.observe(board.value);
+  }
 });
 onBeforeUnmount(() => {
   window.removeEventListener("pointermove", onMove);
   window.removeEventListener("pointerup", onUp);
-  window.removeEventListener("resize", measure);
+  window.removeEventListener("resize", scheduleMeasure);
+  if (ro) ro.disconnect();
+  if (raf) cancelAnimationFrame(raf);
 });
 </script>
 
 <template>
-  <div class="match">
+  <div class="match view">
     <div class="head">
       <p class="tip">🔗 把两边的图片和中间的单词连起来</p>
-      <span class="counter" v-if="groupCount > 1">第 {{ groupIdx + 1 }} / {{ groupCount }} 组 · {{ doneCount }}/{{ totalPairs }}</span>
+      <span class="counter" v-if="groupCount > 1">
+        第 {{ groupIdx + 1 }} / {{ groupCount }} 组 · {{ doneCount }}/{{ totalPairs }}
+      </span>
       <span class="counter" v-else>{{ doneCount }} / {{ totalPairs }}</span>
     </div>
 
-    <div class="board" ref="board">
+    <div class="board view-body" ref="board">
       <svg class="lines" v-if="ready">
         <template v-for="w in curGroup" :key="'c' + w.id">
           <line
@@ -224,7 +246,10 @@ onBeforeUnmount(() => {
         </template>
         <line
           v-if="dragging"
-          :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2"
+          :x1="line.x1"
+          :y1="line.y1"
+          :x2="line.x2"
+          :y2="line.y2"
           class="drag-line"
         />
       </svg>
@@ -244,8 +269,12 @@ onBeforeUnmount(() => {
           @pointerdown="onImgDown(w, $event)"
         >
           <img
-            :src="w.image" :alt="w.en"
-            @error="$event.target.style.display = 'none'; $event.target.nextElementSibling.style.display = 'flex'"
+            :src="w.image"
+            :alt="w.en"
+            @error="
+              $event.target.style.display = 'none';
+              $event.target.nextElementSibling.style.display = 'flex';
+            "
           />
           <span class="ph" style="display: none">{{ w.emoji }}</span>
         </div>
@@ -281,8 +310,12 @@ onBeforeUnmount(() => {
           @pointerdown="onImgDown(w, $event)"
         >
           <img
-            :src="w.image" :alt="w.en"
-            @error="$event.target.style.display = 'none'; $event.target.nextElementSibling.style.display = 'flex'"
+            :src="w.image"
+            :alt="w.en"
+            @error="
+              $event.target.style.display = 'none';
+              $event.target.nextElementSibling.style.display = 'flex';
+            "
           />
           <span class="ph" style="display: none">{{ w.emoji }}</span>
         </div>
@@ -290,70 +323,185 @@ onBeforeUnmount(() => {
 
       <!-- 组间过场横幅 -->
       <div v-if="transitioning" class="banner anim-pop">
-        <span>{{ groupIdx + 1 >= groupCount ? '全部连完啦 🎉' : '这组连完啦！下一组 →' }}</span>
+        <span>{{ groupIdx + 1 >= groupCount ? "全部连完啦 🎉" : "这组连完啦！下一组 →" }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.match { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
-.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none; }
-.tip { margin: 0; font-weight: 700; color: #8a7f6f; }
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-s);
+  flex: none;
+}
+.tip {
+  margin: 0;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+  min-width: 0;
+}
 .counter {
-  background: #fff; border-radius: 12px; padding: 6px 14px;
-  font-weight: 800; box-shadow: var(--shadow-hard); white-space: nowrap;
+  background: #fff;
+  border-radius: var(--radius-s);
+  padding: clamp(4px, 1vh, 6px) clamp(8px, 1.4vw, 14px);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  box-shadow: var(--shadow-hard);
+  white-space: nowrap;
+  flex: none;
 }
+
 .board {
-  position: relative; width: 100%; flex: 1; min-height: 0;
-  display: flex; justify-content: space-between; gap: 18px;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--gap-m);
 }
-.lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+.lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: var(--z-lines);
+}
 .done-line {
-  stroke: var(--green); stroke-width: 6; stroke-linecap: round;
-  stroke-dasharray: 400; stroke-dashoffset: 400;
+  stroke: var(--green);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
   animation: draw-line 0.45s ease forwards;
 }
-.done-line.flash { filter: drop-shadow(0 0 8px #ffd97a); }
-@keyframes draw-line { to { stroke-dashoffset: 0; } }
+.done-line.flash {
+  filter: drop-shadow(0 0 8px #ffd97a);
+}
+@keyframes draw-line {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
 .drag-line {
-  stroke: var(--yellow); stroke-width: 6; stroke-linecap: round;
+  stroke: var(--yellow);
+  stroke-width: 6;
+  stroke-linecap: round;
   stroke-dasharray: 1 14;
 }
-/* 两侧图片列窄一些，中间单词列 */
+
+/* 两侧图片列窄一些，中间单词列最宽（单词最长，最容易挤） */
 .col {
-  display: grid; gap: 12px; z-index: 2;
-  grid-auto-rows: 1fr;
+  display: grid;
+  gap: var(--gap-s);
+  z-index: 2;
+  grid-auto-rows: minmax(0, 1fr);
   min-height: 0;
+  min-width: 0;
   align-content: stretch;
 }
-.col.imgs { flex: 1; }
-.col.words { flex: 1.15; }
-.cell {
-  background: #fff; border-radius: 16px; box-shadow: var(--shadow-hard);
-  display: flex; align-items: center; justify-content: center;
-  border: 4px solid transparent; touch-action: none;
-  transition: opacity 0.25s, transform 0.2s, border-color 0.2s;
-  min-height: 0; overflow: hidden;
+.col.imgs {
+  flex: 1;
 }
-.cell.pic { cursor: grab; }
-.cell.pic:active { cursor: grabbing; }
+.col.words {
+  flex: 1.2;
+}
+
+.cell {
+  background: var(--card-bg);
+  border-radius: var(--radius-s);
+  box-shadow: var(--shadow-hard);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid transparent;
+  touch-action: none;
+  transition: opacity 0.25s, transform 0.2s, border-color 0.2s;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.cell.pic {
+  cursor: grab;
+}
+.cell.pic:active {
+  cursor: grabbing;
+}
 /* 图片缩小：占格子 62% */
-.cell.pic img { width: 62%; height: 62%; object-fit: contain; pointer-events: none; }
-.cell.pic .ph { font-size: clamp(22px, 4.5vh, 38px); align-items: center; }
-.cell.word { font-size: clamp(15px, 2.6vh, 23px); font-weight: 800; cursor: pointer; }
-.cell.active { border-color: var(--yellow); transform: scale(1.04); }
-.cell.wrong { border-color: var(--red); animation: shake-x 0.45s ease; }
-.cell.gone { opacity: 0.3; pointer-events: none; transform: scale(0.93); }
+.cell.pic img {
+  width: 62%;
+  height: 62%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.cell.pic .ph {
+  font-size: var(--fs-emoji-l);
+  align-items: center;
+}
+.cell.word {
+  font-size: clamp(13px, min(2.6vh, 2.1vw), 23px);
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0 4px;
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.1;
+}
+.cell.active {
+  border-color: var(--yellow);
+  transform: scale(1.04);
+}
+.cell.wrong {
+  border-color: var(--red);
+  animation: shake-x 0.45s ease;
+}
+.cell.gone {
+  opacity: 0.3;
+  pointer-events: none;
+  transform: scale(0.93);
+}
+
 .banner {
-  position: absolute; inset: 0; z-index: 9;
-  display: flex; align-items: center; justify-content: center;
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-banner);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: rgba(253, 246, 227, 0.85);
   border-radius: var(--radius);
 }
 .banner span {
-  font-size: clamp(22px, 4.5vh, 34px); font-weight: 800; color: var(--green-dark);
-  background: #fff; padding: 14px 28px; border-radius: 20px;
+  font-size: clamp(18px, min(4vh, 3.2vw), 34px);
+  font-weight: 800;
+  color: var(--green-dark);
+  background: #fff;
+  padding: clamp(10px, 1.8vh, 14px) clamp(18px, 3vw, 28px);
+  border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
+  text-align: center;
+}
+
+/* 手机窄屏：中间单词列再加宽，图片列收窄，优先保证单词可读 */
+@media (max-width: 600px) {
+  .col.imgs {
+    flex: 0.85;
+  }
+  .col.words {
+    flex: 1.3;
+  }
+  .cell.pic img {
+    width: 74%;
+    height: 74%;
+  }
+}
+
+/* 手机横屏：格子很扁，隐藏提示语把高度让给棋盘 */
+@media (max-height: 480px) {
+  .tip {
+    display: none;
+  }
 }
 </style>

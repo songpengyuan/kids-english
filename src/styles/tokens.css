@@ -1,0 +1,88 @@
+/**
+ * ===== 设计 Token =====
+ *
+ * 本应用是「一屏装下、不滚动」的形态（类似多邻国），所以尺寸不能只用 vh 或只用 vw，
+ * 必须同时受两者约束，否则：
+ *   - 只用 vh：iPad 横屏（宽而矮）宽度方向会显得空洞、元素偏小
+ *   - 只用 vw：手机横屏（矮）元素会被撑爆、直接溢出
+ * 因此统一用 `min(Avh, Bvw)` 取较小值，再用 clamp() 兜住上下限。
+ *
+ * 新增样式请优先使用这里的变量，不要在组件里硬编码像素值。
+ */
+
+:root {
+  /* ---------- 颜色 ---------- */
+  --bg: #fdf6e3;
+  --card-bg: #ffffff;
+  --ink: #4a3f35;
+  --ink-soft: #8a7f6f;
+  --ink-faint: #a89b86;
+  --green: #58cc02;
+  --green-dark: #46a302;
+  --blue: #1cb0f6;
+  --blue-dark: #1899d6;
+  --yellow: #ffc800;
+  --red: #ff5b5b;
+  --purple: #ce82ff;
+  --orange: #ff9f43;
+  --orange-dark: #d97b1e;
+  --gold: #b8860b;
+  --line: #e8e0cf;
+
+  /* ---------- 间距（流体） ---------- */
+  --gap-xs: clamp(4px, min(0.7vh, 0.6vw), 8px);
+  --gap-s: clamp(6px, min(1.1vh, 1vw), 12px);
+  --gap-m: clamp(8px, min(1.6vh, 1.4vw), 18px);
+  --gap-l: clamp(10px, min(2.2vh, 2vw), 26px);
+
+  /* 应用外壳内边距：与 iOS 安全区叠加，横屏时左右留白更宽 */
+  --pad-x: clamp(10px, 2.2vw, 30px);
+  --pad-y: clamp(6px, 1.2vh, 18px);
+
+  /* ---------- 圆角 / 阴影 ---------- */
+  --radius: clamp(14px, 2.2vh, 24px);
+  --radius-s: clamp(10px, 1.5vh, 16px);
+  --radius-pill: 999px;
+  --shadow-hard: 0 6px 0 rgba(0, 0, 0, 0.12);
+  --shadow-soft: 0 2px 0 rgba(0, 0, 0, 0.08);
+  /* 立体按钮的下压深度 */
+  --press: clamp(3px, 0.7vh, 5px);
+
+  /* ---------- 字号（流体，同时受宽高约束） ---------- */
+  --fs-hero: clamp(24px, min(5vh, 4vw), 40px);
+  --fs-title: clamp(17px, min(3.1vh, 2.5vw), 27px);
+  --fs-body: clamp(14px, min(2.2vh, 1.8vw), 19px);
+  --fs-small: clamp(11px, min(1.7vh, 1.4vw), 15px);
+  --fs-btn: clamp(16px, min(2.6vh, 2.1vw), 23px);
+  /* 大号 emoji / 表情图标 */
+  --fs-emoji-xl: clamp(38px, min(9vh, 7vw), 74px);
+  --fs-emoji-l: clamp(28px, min(6vh, 5vw), 48px);
+
+  /* ---------- 触控目标 ---------- */
+  /* 儿童手指定位精度低，可点区域不小于 52px（低于 44px 的 HIG 下限也不合适） */
+  --tap-min: 52px;
+
+  /* ---------- 层级 ---------- */
+  --z-lines: 5;
+  --z-banner: 9;
+
+  font-family:
+    "Comic Sans MS", "Chalkboard SE", "Baloo 2", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+/* ===== 断点约定（供参考，CSS 无法定义变量化断点，改动时请同步各处） =====
+ *
+ * 宽窄（决定列数）
+ *   narrow : width < 600px     手机
+ *   wide   : width >= 600px    平板 / 横屏手机
+ *
+ * 高矮（决定行数与"砍掉多少装饰"），对"一屏装下"的形态更关键
+ *   tiny    : height < 480px   手机横屏，必须压缩
+ *   compact : height < 640px   手机竖屏
+ *   regular : height < 900px   平板横屏 / 大屏手机竖屏
+ *   roomy   : height >= 900px  平板竖屏，空间充裕
+ *
+ * 这些分档在 JS 侧由 src/composables/useViewport.js 提供同名判断，
+ * 组件内需要「按档位改变结构」时用它，纯样式微调用 @media。
+ */

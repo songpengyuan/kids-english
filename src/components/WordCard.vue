@@ -45,15 +45,17 @@ function pop() {
 
 <style scoped>
 .word-card {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
-  padding: 8px;
+  padding: var(--gap-xs);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: var(--gap-xs);
+  /* 高度由父级网格行高决定，这里必须可收缩，否则会顶破容器 */
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 .pic {
@@ -61,7 +63,7 @@ function pop() {
   width: 100%;
   flex: 1;
   min-height: 0;
-  border-radius: 16px;
+  border-radius: var(--radius-s);
   overflow: hidden;
   background: linear-gradient(160deg, #fff7de, #ffe9c4);
   display: flex;
@@ -76,30 +78,53 @@ function pop() {
   pointer-events: none;
 }
 .placeholder {
-  font-size: clamp(36px, 7vh, 64px);
+  font-size: var(--fs-emoji-l);
+  line-height: 1;
 }
-.word-card.lg .placeholder { font-size: clamp(56px, 12vh, 110px); }
-.word-card.sm .placeholder { font-size: clamp(28px, 5vh, 44px); }
+.word-card.lg .placeholder {
+  font-size: var(--fs-emoji-xl);
+}
+.word-card.sm .placeholder {
+  font-size: clamp(20px, min(4.4vh, 3.6vw), 34px);
+}
 .speaker {
   position: absolute;
-  right: 8px;
-  bottom: 6px;
-  font-size: 20px;
+  right: 6px;
+  bottom: 4px;
+  font-size: clamp(12px, 2vh, 20px);
   opacity: 0.85;
   animation: float-y 2.4s ease-in-out infinite;
 }
 .word {
-  font-size: 26px;
+  font-size: clamp(15px, min(2.9vh, 2.3vw), 27px);
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   color: var(--ink);
   cursor: pointer;
-  padding: 2px 12px;
-  border-radius: 10px;
-  min-height: 40px;
-  line-height: 40px;
+  padding: 0 var(--gap-s);
+  border-radius: var(--radius-s);
+  flex: none;
+  min-height: clamp(24px, 4.6vh, 44px);
+  line-height: clamp(24px, 4.6vh, 44px);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.word:active { background: #fff3c4; }
-.word-card.sm .word { font-size: 20px; }
-.word-card.lg .word { font-size: 34px; }
+.word:active {
+  background: #fff3c4;
+}
+.word-card.sm .word {
+  font-size: clamp(13px, min(2.2vh, 1.8vw), 20px);
+}
+.word-card.lg .word {
+  font-size: clamp(19px, min(3.8vh, 3vw), 34px);
+}
+
+/* 极窄或极矮时把"点读"图标藏掉，避免遮挡图片 */
+@media (max-height: 420px), (max-width: 340px) {
+  .speaker {
+    display: none;
+  }
+}
 </style>

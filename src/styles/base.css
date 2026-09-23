@@ -1,0 +1,305 @@
+/**
+ * ===== 基础层 =====
+ * reset、应用外壳、跨页面共享的 UI（按钮 / 顶栏 / 进度条 / 动画）。
+ * 只在多处以完全相同形式出现的样式才放这里；只在单个页面用的留在组件的 scoped style。
+ */
+
+/* ---------- reset ---------- */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: var(--fs-body);
+  /* 防止孩子双击缩放 / 长按选中 */
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  /* App 体验：整页不滚动、无回弹 */
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* ---------- 应用外壳 ---------- */
+#app {
+  width: 100%;
+  /* 平板横屏时不要铺满超宽屏，控制阅读行长；竖屏则吃满 */
+  max-width: 1180px;
+  margin: 0 auto;
+  height: 100vh;
+  height: 100dvh; /* 动态视口，地址栏收放不跳版 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding:
+    calc(var(--pad-y) + env(safe-area-inset-top))
+    calc(var(--pad-x) + env(safe-area-inset-right))
+    calc(var(--pad-y) + env(safe-area-inset-bottom))
+    calc(var(--pad-x) + env(safe-area-inset-left));
+}
+
+/* 手机横屏：高度极紧张，压缩外壳内边距并把安全区只留给左右 */
+@media (max-height: 480px) {
+  #app {
+    padding:
+      4px calc(var(--pad-x) + env(safe-area-inset-right))
+      4px calc(var(--pad-x) + env(safe-area-inset-left));
+  }
+}
+
+/* 平板竖屏：空间充裕，稍微放宽左右留白 */
+@media (min-width: 700px) and (orientation: portrait) {
+  #app {
+    --pad-x: clamp(20px, 4vw, 56px);
+  }
+}
+
+/**
+ * 页面根容器统一样式。
+ * 所有玩法页/首页都应是 `.view`，从而天然获得「填满剩余高度且可收缩」的行为，
+ * 不必各自重复写 flex:1 / min-height:0。
+ */
+.view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: var(--gap-s);
+}
+
+/* 居中排布的页面（结算、空状态等） */
+.view-center {
+  align-items: center;
+  justify-content: center;
+}
+
+/* 内容区：占满剩余高度，内部自行分页/分栏，永不溢出 */
+.view-body {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+/* ---------- 顶栏 ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-s);
+  flex: none;
+}
+.topbar .back {
+  background: #fff;
+  border-radius: var(--radius-s);
+  box-shadow: var(--shadow-hard);
+  font-size: var(--fs-title);
+  width: var(--tap-min);
+  height: var(--tap-min);
+  line-height: 1;
+  flex: none;
+}
+.topbar .title {
+  font-size: var(--fs-title);
+  font-weight: 800;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 手机横屏：顶栏压瘦，把高度让给内容 */
+@media (max-height: 480px) {
+  .topbar .back {
+    width: 40px;
+    height: 40px;
+    font-size: 19px;
+  }
+  .topbar .title {
+    font-size: 17px;
+  }
+}
+
+.star-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border-radius: var(--radius-s);
+  padding: clamp(6px, 1.2vh, 10px) clamp(10px, 1.6vw, 16px);
+  box-shadow: var(--shadow-hard);
+  font-weight: 800;
+  color: var(--gold);
+  font-size: var(--fs-body);
+  white-space: nowrap;
+  flex: none;
+}
+
+/* ---------- 通用按钮 ---------- */
+.k-btn {
+  background: var(--green);
+  color: #fff;
+  font-size: var(--fs-btn);
+  font-weight: 700;
+  padding: clamp(10px, 1.8vh, 14px) clamp(20px, 3vw, 32px);
+  border-radius: var(--radius-s);
+  box-shadow: 0 var(--press) 0 var(--green-dark);
+  transition: transform 0.08s, box-shadow 0.08s;
+  min-height: var(--tap-min);
+}
+.k-btn:active {
+  transform: translateY(calc(var(--press) - 1px));
+  box-shadow: 0 1px 0 var(--green-dark);
+}
+.k-btn.blue {
+  background: var(--blue);
+  box-shadow: 0 var(--press) 0 var(--blue-dark);
+}
+.k-btn.blue:active {
+  box-shadow: 0 1px 0 var(--blue-dark);
+}
+.k-btn.orange {
+  background: var(--orange);
+  box-shadow: 0 var(--press) 0 var(--orange-dark);
+}
+.k-btn.orange:active {
+  box-shadow: 0 1px 0 var(--orange-dark);
+}
+.k-btn.gray {
+  background: #e5e5e5;
+  color: var(--ink);
+  box-shadow: 0 var(--press) 0 #c9c9c9;
+}
+.k-btn.gray:active {
+  box-shadow: 0 1px 0 #c9c9c9;
+}
+/* 未达成条件时的禁用态：明显变灰且不再有下压反馈，避免孩子误以为没点中 */
+.k-btn:disabled {
+  background: #dfd9cc;
+  color: #a29a8b;
+  box-shadow: 0 var(--press) 0 #c6bfb1;
+  cursor: default;
+}
+.k-btn:disabled:active {
+  transform: none;
+  box-shadow: 0 var(--press) 0 #c6bfb1;
+}
+
+/* 按钮行：小屏自动换行，避免挤压 */
+.btn-row {
+  display: flex;
+  gap: var(--gap-s);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ---------- 进度条 ---------- */
+.progress {
+  height: clamp(8px, 1.6vh, 22px);
+  background: var(--line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  flex: none;
+  width: 100%;
+}
+.progress .fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd97a, var(--yellow));
+  border-radius: var(--radius-pill);
+  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+.progress .fill::after {
+  content: "";
+  position: absolute;
+  inset: 4px 8px auto 8px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 3px;
+}
+
+/* 手机横屏：进度条再压瘦一点 */
+@media (max-height: 480px) {
+  .progress {
+    height: 7px;
+  }
+  .progress .fill::after {
+    display: none;
+  }
+}
+
+/* ---------- 动画 ---------- */
+@keyframes pop-in {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes bounce-tada {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.18) rotate(-3deg); }
+  60% { transform: scale(1.1) rotate(3deg); }
+}
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(9px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(4px); }
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-6deg); }
+  75% { transform: rotate(6deg); }
+}
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes star-spin {
+  0% { transform: scale(0) rotate(0deg); }
+  60% { transform: scale(1.4) rotate(200deg); }
+  100% { transform: scale(1) rotate(180deg); }
+}
+
+.anim-pop { animation: pop-in 0.35s ease-out both; }
+.anim-bounce { animation: bounce-tada 0.5s ease; }
+.anim-shake { animation: shake-x 0.45s ease; }
+.anim-wiggle { animation: wiggle 0.6s ease infinite; }
+.anim-float { animation: float-y 2.4s ease-in-out infinite; }
+.anim-fade-up { animation: fade-up 0.4s ease-out both; }
+
+/* 尊重系统的"减少动态效果"，同时保证内容仍然可见（动画终态是可读的） */
+@media (prefers-reduced-motion: reduce) {
+  .anim-float,
+  .anim-wiggle {
+    animation: none;
+  }
+  .anim-pop,
+  .anim-fade-up {
+    animation-duration: 0.01s;
+  }
+}

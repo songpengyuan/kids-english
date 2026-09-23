@@ -1,6 +1,8 @@
-# 宝宝英语乐园 · 儿童英语单词学习 Web
+# 丞丞英语乐园 · 儿童英语单词学习 Web
 
 面向 5 岁孩子的线下培训班作业补充应用。每节课对应一首童谣，孩子围绕童谣里的单词进行「看图学词 → 听音选图 → 图词连线 → 跟我读 → 唱童谣」的趣味练习，点图片/点单词都会朗读发音，答对有彩带和星星奖励。参考多邻国的即时反馈与激励节奏设计。
+
+> **开发者请看 [DEVELOPMENT.md](./DEVELOPMENT.md)** —— 架构说明、响应式与分页规范、调试深链、布局走查脚本、排错清单都在那里。本文档只讲日常使用。
 
 ## 技术栈
 
@@ -23,18 +25,22 @@ pnpm build    # 产出 dist/，可静态托管或双击预览
 ```
 kids-english/
 ├── src/
+│   ├── styles/                # 设计 token + 基础样式（响应式规范的落点）
+│   ├── composables/           # useViewport 视口分档 / usePager 分页
 │   ├── data/lessons.js        # ★ 课时数据（每节课：童谣 + 单词表）
 │   ├── components/
-│   │   ├── HomePage.vue       # 首页课时卡片
+│   │   ├── HomePage.vue       # 首页课时卡片（分页）
 │   │   ├── LessonView.vue     # 单课流程与活动菜单
-│   │   ├── LearnView.vue      # 看图学词
+│   │   ├── LearnView.vue      # 看图学词（按屏幕大小自动分页）
 │   │   ├── QuizView.vue       # 听音选图
-│   │   ├── MatchView.vue      # 图词连线
+│   │   ├── MatchView.vue      # 图词连线（分组随屏幕大小变化）
 │   │   ├── SpeakView.vue      # 跟我读（发音打分/录音回放）
 │   │   ├── SongView.vue       # 童谣音频/视频
-│   │   └── WordCard.vue       # 可复用的发音词卡
-│   ├── utils/{speech,effects,speechScore}.js
+│   │   ├── WordCard.vue       # 可复用的发音词卡
+│   │   └── Pager.vue          # 通用翻页控件
+│   ├── utils/                 # layout.js 布局算法 / speech / effects / speechScore
 │   └── store/progress.js      # 星星/进度持久化
+├── scripts/layout-audit.mjs   # 多视口布局走查脚本
 └── public/lessons/            # ★ 课时资源目录（见下）
 ```
 

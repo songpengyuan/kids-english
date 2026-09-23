@@ -176,10 +176,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="speak">
+  <div class="speak view">
     <div class="speak-head">
       <span class="prog">{{ progressText }}</span>
-      <span class="mode-tag">{{ mode === 'asr' ? '🎤 自动打分' : '🎙️ 录音回放' }}</span>
+      <span class="mode-tag">{{ mode === "asr" ? "🎤 自动打分" : "🎙️ 录音回放" }}</span>
     </div>
 
     <div class="word-zone">
@@ -187,9 +187,15 @@ onBeforeUnmount(() => {
         <img v-if="!imgFailed" :src="cur.image" @error="imgFailed = true" />
         <span v-else class="fallback-emoji">{{ cur.emoji }}</span>
       </div>
-      <button class="word" @click="hearExample">{{ cur.en }}</button>
-      <p class="tip" v-if="mode === 'asr'">点图听一遍，再按住大麦克风跟读给小耳朵听</p>
-      <p class="tip" v-else>{{ recordHint || '按住大麦克风录音，说完点方形按钮结束，和爸爸妈妈一起听回放' }}</p>
+      <div class="word-text">
+        <button class="word" @click="hearExample">{{ cur.en }}</button>
+        <p class="tip" v-if="mode === 'asr'">点图听一遍，再按住大麦克风跟读给小耳朵听</p>
+        <p class="tip" v-else>
+          {{
+            recordHint || "按住大麦克风录音，说完点方形按钮结束，和爸爸妈妈一起听回放"
+          }}
+        </p>
+      </div>
     </div>
 
     <!-- 麦克风按钮：ASR=按住即说；录音=点开始/点结束 -->
@@ -208,11 +214,17 @@ onBeforeUnmount(() => {
         :class="{ live: status === 'listening' }"
         @click="status === 'listening' ? stopRecord() : startRecord()"
       >
-        {{ status === 'listening' ? '⏹️' : '🎤' }}
+        {{ status === "listening" ? "⏹️" : "🎤" }}
       </button>
       <div v-if="status === 'listening'" class="waves"><i></i><i></i><i></i></div>
       <p class="mic-label">
-        {{ status === 'listening' ? (mode === 'asr' ? '正在听…说给麦克风听' : '录音中…点方形结束') : '按住说话' }}
+        {{
+          status === "listening"
+            ? mode === "asr"
+              ? "正在听…说给麦克风听"
+              : "录音中…点方形结束"
+            : "按住说话"
+        }}
       </p>
       <audio v-if="recUrl && mode === 'record'" :src="recUrl" controls class="replay"></audio>
     </div>
@@ -222,7 +234,7 @@ onBeforeUnmount(() => {
       <template v-if="mode === 'record' && grade === ''">
         <audio :src="recUrl" controls class="replay big"></audio>
         <p class="judge-q">听一听回放，读得准不准？</p>
-        <div class="row">
+        <div class="btn-row">
           <button class="k-btn green" @click="parentJudge(true)">👍 读得棒</button>
           <button class="k-btn orange" @click="parentJudge(false)">🔁 再试一次</button>
         </div>
@@ -232,7 +244,7 @@ onBeforeUnmount(() => {
           <span v-if="grade === 'perfect'">🌟 太棒了！</span>
           <span v-else>🔁 再试一次吧，先听一遍示范</span>
         </p>
-        <div class="row">
+        <div class="btn-row">
           <button class="k-btn gray" @click="hearExample">🔈 再听示范</button>
           <button v-if="grade === 'retry'" class="k-btn orange" @click="retry">🎤 我再试试</button>
           <button v-else class="k-btn" @click="next">继续 →</button>
@@ -245,7 +257,7 @@ onBeforeUnmount(() => {
           <span v-else>🔁 再试一次吧，先听一遍示范</span>
         </p>
         <p v-if="heard" class="heard">小耳朵听到的是："{{ heard }}"</p>
-        <div class="row">
+        <div class="btn-row">
           <button class="k-btn gray" @click="hearExample">🔈 再听示范</button>
           <button v-if="grade === 'retry'" class="k-btn orange" @click="retry">🎤 我再试试</button>
           <button v-else class="k-btn" @click="next">继续 →</button>
@@ -256,53 +268,259 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.speak { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1; min-height: 0; }
-.speak-head { width: 100%; display: flex; justify-content: space-between; align-items: center; flex: none; }
-.prog { font-weight: 800; color: #9a8f80; }
-.mode-tag { background: #fff; border-radius: 14px; padding: 4px 12px; font-weight: 800; font-size: 14px; box-shadow: 0 2px 0 rgba(0,0,0,.08); }
-.word-zone { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: none; }
+.speak {
+  align-items: center;
+}
+.speak-head {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: none;
+  gap: var(--gap-s);
+}
+.prog {
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+.mode-tag {
+  background: #fff;
+  border-radius: var(--radius-pill);
+  padding: 3px clamp(8px, 1.2vw, 12px);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  box-shadow: var(--shadow-soft);
+  white-space: nowrap;
+}
+
+.word-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
+  flex: none;
+  min-height: 0;
+}
 .pic {
-  width: clamp(110px, 24vh, 170px); height: clamp(110px, 24vh, 170px);
-  background: #fff; border-radius: var(--radius);
-  box-shadow: var(--shadow-hard); display: flex; align-items: center; justify-content: center;
-  font-size: clamp(60px, 12vh, 110px); cursor: pointer; transition: transform 0.15s;
+  /* 同时受高和宽约束：iPad 横屏不至于过大，手机竖屏也不会占满整屏 */
+  width: clamp(72px, min(23vh, 17vw), 170px);
+  height: clamp(72px, min(23vh, 17vw), 170px);
+  flex: none;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-emoji-xl);
+  cursor: pointer;
+  transition: transform 0.15s;
   overflow: hidden;
 }
-.pic:active { transform: scale(0.94); }
-.pic img { width: 80%; height: 80%; object-fit: contain; }
-.word { font-size: clamp(24px, 4.5vh, 34px); }
-.tip { margin: 0; color: #9a8f80; font-weight: 700; font-size: 13px; text-align: center; max-width: 360px; }
-.mic-zone { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none; }
+.pic:active {
+  transform: scale(0.94);
+}
+.pic img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+.fallback-emoji {
+  line-height: 1;
+}
+.word-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+}
+.word {
+  font-size: clamp(20px, min(4.4vh, 3.6vw), 34px);
+  background: none;
+  font-weight: 800;
+  color: var(--ink);
+  padding: 0 var(--gap-s);
+  border-radius: var(--radius-s);
+}
+.word:active {
+  background: #fff3c4;
+}
+.tip {
+  margin: 0;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: var(--fs-small);
+  text-align: center;
+  max-width: 460px;
+}
+
+.mic-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
+  flex: none;
+}
 .mic {
-  width: clamp(80px, 15vh, 110px); height: clamp(80px, 15vh, 110px); border-radius: 50%;
-  font-size: clamp(32px, 6vh, 46px); border: none; cursor: pointer;
-  background: radial-gradient(circle at 35% 30%, #ffd54d, #ff9f43);
-  box-shadow: 0 8px 0 #d97b1e, 0 12px 22px rgba(0,0,0,.18);
+  width: clamp(64px, min(15vh, 11vw), 110px);
+  height: clamp(64px, min(15vh, 11vw), 110px);
+  flex: none;
+  border-radius: 50%;
+  font-size: clamp(26px, min(6vh, 4.6vw), 46px);
+  border: none;
+  cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, #ffd54d, var(--orange));
+  box-shadow: 0 8px 0 var(--orange-dark), 0 12px 22px rgba(0, 0, 0, 0.18);
   transition: transform 0.1s, box-shadow 0.1s;
   touch-action: none;
 }
-.mic:active, .mic.live { transform: translateY(6px); box-shadow: 0 2px 0 #d97b1e; }
-.mic.live { animation: pulse 1s infinite; }
-@keyframes pulse {
-  0%, 100% { outline: 6px solid rgba(255,159,67,.35); }
-  50% { outline: 14px solid rgba(255,159,67,.15); }
+.mic:active,
+.mic.live {
+  transform: translateY(6px);
+  box-shadow: 0 2px 0 var(--orange-dark);
 }
-.waves { display: flex; gap: 5px; height: 22px; align-items: flex-end; }
-.waves i { width: 6px; background: var(--orange); border-radius: 3px; animation: bounce 0.7s infinite ease-in-out; }
-.waves i:nth-child(2) { animation-delay: 0.15s; }
-.waves i:nth-child(3) { animation-delay: 0.3s; }
-@keyframes bounce { 0%,100% { height: 8px; } 50% { height: 22px; } }
-.mic-label { margin: 0; font-weight: 800; color: #9a8f80; }
-.replay { height: 36px; }
-.replay.big { height: 44px; }
-.feedback { width: 100%; max-width: 460px; flex: none; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: 10px 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.verdict { margin: 0; font-size: 18px; font-weight: 800; text-align: center; }
-.verdict.perfect { color: var(--green-dark); }
-.verdict.good { color: #1a8ec4; }
-.verdict.retry { color: #d97b1e; }
-.heard { margin: 0; color: #9a8f80; font-weight: 700; font-size: 14px; }
-.judge-q { margin: 0; font-weight: 800; font-size: 18px; }
-.row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.k-btn.orange { background: var(--orange); box-shadow: 0 5px 0 #d97b1e; }
-.k-btn.green { background: var(--green); box-shadow: 0 5px 0 var(--green-dark); }
+.mic.live {
+  animation: pulse 1s infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    outline: 6px solid rgba(255, 159, 67, 0.35);
+  }
+  50% {
+    outline: 14px solid rgba(255, 159, 67, 0.15);
+  }
+}
+.waves {
+  display: flex;
+  gap: 5px;
+  height: 22px;
+  align-items: flex-end;
+}
+.waves i {
+  width: 6px;
+  background: var(--orange);
+  border-radius: 3px;
+  animation: bounce 0.7s infinite ease-in-out;
+}
+.waves i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.waves i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes bounce {
+  0%,
+  100% {
+    height: 8px;
+  }
+  50% {
+    height: 22px;
+  }
+}
+.mic-label {
+  margin: 0;
+  font-weight: 800;
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+}
+.replay {
+  height: 36px;
+}
+.replay.big {
+  height: 44px;
+}
+
+.feedback {
+  width: 100%;
+  max-width: 500px;
+  flex: none;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: clamp(8px, 1.4vh, 14px) clamp(10px, 1.6vw, 16px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
+}
+.verdict {
+  margin: 0;
+  font-size: clamp(15px, min(2.6vh, 2.1vw), 20px);
+  font-weight: 800;
+  text-align: center;
+}
+.verdict.perfect {
+  color: var(--green-dark);
+}
+.verdict.good {
+  color: #1a8ec4;
+}
+.verdict.retry {
+  color: var(--orange-dark);
+}
+.heard {
+  margin: 0;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: var(--fs-small);
+  text-align: center;
+}
+.judge-q {
+  margin: 0;
+  font-weight: 800;
+  font-size: clamp(15px, min(2.6vh, 2.1vw), 19px);
+  text-align: center;
+}
+
+/**
+ * 手机横屏：把"图片 + 单词"改成左右并排，麦克风也缩到最小，
+ * 这样一屏能同时看到示范图、单词、麦克风和反馈按钮。
+ */
+@media (max-height: 480px) {
+  .word-zone {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: var(--gap-m);
+    width: 100%;
+  }
+  .word-text {
+    align-items: flex-start;
+    text-align: left;
+  }
+  .tip {
+    text-align: left;
+    max-width: 320px;
+  }
+  .pic {
+    width: 76px;
+    height: 76px;
+  }
+  .mic {
+    width: 58px;
+    height: 58px;
+    font-size: 24px;
+  }
+  .waves {
+    height: 16px;
+  }
+  .mic-label {
+    display: none;
+  }
+  .feedback {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--gap-s);
+    padding: 8px 12px;
+  }
+  .verdict,
+  .judge-q,
+  .heard {
+    flex: 1 1 100%;
+  }
+}
 </style>
