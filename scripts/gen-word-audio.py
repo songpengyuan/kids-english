@@ -13,9 +13,10 @@
     pip install edge-tts
 
 约定：
-    - 单词数据来自 src/data/lessons.js（正则解析，改数据结构后需同步此脚本）
-    - 输出到 public/lessons/<课时id>/audio/<单词id>.mp3
-    - speech.js 会自动按单词 en 名播音频，文件缺失时回退浏览器 TTS
+    - 单词与口语句数据来自 src/data/lessons.js（正则解析，改数据结构后需同步此脚本）
+    - 单词输出到 public/lessons/<课时id>/audio/<单词id>.mp3
+    - 口语句（亲子对话）输出到 public/lessons/<课时id>/audio/ph-<序号>.mp3
+    - 文件缺失时 App 会回退浏览器 TTS
 """
 
 import argparse
@@ -33,16 +34,20 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LESSONS_JS = os.path.join(ROOT, "src", "data", "lessons.js")
 
 
-def extract_words():
-    """从 lessons.js 提取 [(lesson_id, word_id, en)]。"""
+def extract_items():
+    """从 lessons.js 提取 [(lesson_id, 文件名, 文本)]：单词 + 亲子口语句。"""
     src = open(LESSONS_JS, encoding="utf-8").read()
     blocks = re.split(r"\n  \{\n    id:", src)[1:]
-    words = []
+    items = []
     for b in blocks:
         lid = re.match(r'\s*"(l\d)"', b).group(1)
         for wid, en in re.findall(r'id:\s*"([^"]+)",\s*en:\s*"([^"]+)"', b):
-            words.append((lid, wid, en))
-    return words
+            items.append((lid, wid, en))
+        m = re.search(r"phrases:\s*\[(.*?)\n\s*\]", b, re.S)
+        if m:
+            for i, en in enumerate(re.findall(r'en:\s*"([^"]+)"', m.group(1)), 1):
+                items.append((lid, f"ph-{i}", en))
+    return items
 
 
 async def gen(text, out, voice):
@@ -56,7 +61,7 @@ async def main():
     args = ap.parse_args()
 
     todo, skip = [], 0
-    for lid, wid, en in extract_words():
+    for lid, wid, en in extract_items():
         out = os.path.join(ROOT, "public", "lessons", lid, "audio", f"{wid}.mp3")
         if os.path.exists(out) and not args.force:
             skip += 1

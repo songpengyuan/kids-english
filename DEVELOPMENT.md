@@ -1,7 +1,8 @@
 # 丞丞英语乐园 · 开发文档
 
 面向 5 岁孩子的儿童英语单词学习 Web 应用。每节课对应一首童谣，围绕童谣里的单词做
-「看图学词 → 听音选图 → 图词连线 → 跟我读 → 唱童谣」的练习闭环。
+「看图学词 → 听音选图 → 图词连线 → 跟我读 → 唱童谣 → 亲子对话」的练习闭环
+（亲子对话仅配置了 `phrases` 的课时显示）。
 
 > 日常使用说明（怎么加课、传素材）看 [README.md](./README.md)；
 > 本文档面向**开发与维护**，解释代码怎么组织、为什么这么设计。
@@ -59,7 +60,8 @@ kids-english/
 │   │   ├── QuizView.vue        # 听音选图（单题推进）
 │   │   ├── MatchView.vue       # 图词连线（分组 + SVG 连线）
 │   │   ├── SpeakView.vue       # 跟我读（ASR 打分 / 录音回放双模式）
-│   │   ├── SongView.vue        # 童谣音频/视频 + 亲子口语
+│   │   ├── SongView.vue        # 童谣音频/视频
+│   │   ├── TalkView.vue        # 亲子对话（点句听发音，家长/宝宝轮流说）
 │   │   ├── WordCard.vue        # 可复用发音词卡
 │   │   └── Pager.vue           # ★ 通用翻页控件（大箭头 + 圆点）
 │   └── assets/
@@ -82,7 +84,7 @@ kids-english/
 
 ```
 App.vue          currentId: null | 'l1'..'lN'      ←→  HomePage / LessonView
-LessonView.vue   stage: menu | learn | quiz | match | speak | song | result
+LessonView.vue   stage: menu | learn | quiz | match | speak | song | talk | result
 ```
 
 - 状态都在内存里，**没有引入 vue-router**。理由：这是给 5 岁孩子用的单机应用，

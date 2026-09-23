@@ -113,6 +113,11 @@ export const lessons = rawLessons.map((lesson) => ({
     audio: asset(lesson.song.audio),
     video: asset(lesson.song.video)
   },
+  // 亲子对话口语句（TalkView 用），发音文件为 ph-<序号>.mp3，缺失时回退 TTS
+  phrases: (lesson.phrases || []).map((p, i) => ({
+    ...p,
+    audio: asset(`/lessons/${lesson.id}/audio/ph-${i + 1}.mp3`)
+  })),
   words: lesson.words.map((word) => ({
     ...word,
     image: asset(word.image),

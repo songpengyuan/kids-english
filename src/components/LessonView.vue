@@ -5,6 +5,7 @@ import QuizView from "./QuizView.vue";
 import MatchView from "./MatchView.vue";
 import SongView from "./SongView.vue";
 import SpeakView from "./SpeakView.vue";
+import TalkView from "./TalkView.vue";
 import { bigCelebrate } from "../utils/effects";
 import { lessons } from "../data/lessons";
 import progress from "../store/progress";
@@ -18,11 +19,11 @@ const emit = defineEmits(["back", "next-lesson"]);
 
 const { isNarrow } = useViewport();
 
-const stage = ref("menu"); // menu | learn | quiz | match | song | result
+const stage = ref("menu"); // menu | learn | quiz | match | song | talk | result
 const lastStars = ref(0);
 
 /** 调试深链：?lesson=l4&stage=learn，直接进入某个玩法页 */
-const STAGES = ["learn", "quiz", "match", "speak", "song"];
+const STAGES = ["learn", "quiz", "match", "speak", "song", "talk"];
 onMounted(() => {
   const s = new URLSearchParams(location.search).get("stage");
   if (STAGES.includes(s)) {
@@ -33,13 +34,27 @@ onMounted(() => {
   }
 });
 
-const activities = computed(() => [
-  { key: "learn", name: "学单词", icon: "📖", color: "#ff9f43", game: "learn", desc: "看图听发音" },
-  { key: "quiz", name: "听音选图", icon: "🎧", color: "#1cb0f6", game: "quiz", desc: "听声音找图片" },
-  { key: "match", name: "连一连", icon: "🔗", color: "#ce82ff", game: "match", desc: "图片连线单词" },
-  { key: "speak", name: "跟我读", icon: "🗣️", color: "#ff9f43", game: "speak", desc: "按住麦克风读单词" },
-  { key: "song", name: "唱童谣", icon: "🎵", color: "#58cc02", game: "song", desc: "听歌看视频" }
-]);
+const activities = computed(() => {
+  const acts = [
+    { key: "learn", name: "学单词", icon: "📖", color: "#ff9f43", game: "learn", desc: "看图听发音" },
+    { key: "quiz", name: "听音选图", icon: "🎧", color: "#1cb0f6", game: "quiz", desc: "听声音找图片" },
+    { key: "match", name: "连一连", icon: "🔗", color: "#ce82ff", game: "match", desc: "图片连线单词" },
+    { key: "speak", name: "跟我读", icon: "🗣️", color: "#ff9f43", game: "speak", desc: "按住麦克风读单词" },
+    { key: "song", name: "唱童谣", icon: "🎵", color: "#58cc02", game: "song", desc: "听歌看视频" }
+  ];
+  // 亲子对话是独立玩法，只有配置了 phrases 的课时才显示
+  if (props.lesson.phrases?.length) {
+    acts.splice(4, 0, {
+      key: "talk",
+      name: "亲子对话",
+      icon: "💬",
+      color: "#ff6b9d",
+      game: "talk",
+      desc: "和爸爸妈妈练口语"
+    });
+  }
+  return acts;
+});
 
 /* ---------- 玩法卡片排布 ---------- */
 /**
@@ -103,8 +118,9 @@ function open(a) {
   stage.value = a.game === "song" ? "song" : a.key;
 }
 
-function showStars(n) {
-  return progress.progress[props.lesson.id]?.[stage.value] || 0 || n;
+/** 菜单卡片右上角的星星徽章：该玩法已获得的星数 */
+function showStars(key) {
+  return progress.progress[props.lesson.id]?.[key] || 0;
 }
 
 function afterGame(stars) {
@@ -122,7 +138,7 @@ function afterSong() {
 
 const lessonProgress = computed(() => {
   const done = progress.progress[props.lesson.id]?.completed?.length || 0;
-  return Math.min(100, Math.round((done / 4) * 100));
+  return Math.min(100, Math.round((done / activities.value.length) * 100));
 });
 
 /** 左上角 ←：玩法中先回本课菜单，菜单里再点才回课程列表（两步退出，防止误触跳走） */
@@ -172,7 +188,7 @@ const nextLesson = computed(() => {
           <span class="ico">{{ a.icon }}</span>
           <span class="nm">{{ a.name }}</span>
           <span class="ds">{{ a.desc }}</span>
-          <span v-if="showStars(0)" class="mini-stars">⭐{{ showStars(0) }}</span>
+          <span v-if="showStars(a.key)" class="mini-stars">⭐{{ showStars(a.key) }}</span>
         </button>
       </div>
     </div>
@@ -185,6 +201,7 @@ const nextLesson = computed(() => {
       @done="afterGame"
     />
     <SongView v-else-if="stage === 'song'" :lesson="lesson" @song-done="afterSong" @back="toMenu" />
+    <TalkView v-else-if="stage === 'talk'" :lesson="lesson" @done="afterGame" />
 
     <!-- 结算 -->
     <div v-else-if="stage === 'result'" class="result view-body view-center">

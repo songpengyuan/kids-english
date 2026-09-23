@@ -1,6 +1,6 @@
 /**
  * 学习进度（localStorage 持久化）
- * stars: { [lessonId]: { learn: 0-3, quiz: 0-3, match: 0-3, song: 0|1 } }
+ * stars: { [lessonId]: { learn: 0-3, quiz: 0-3, match: 0-3, speak: 0-3, song: 0|1, talk: 0|1 } }
  *
  * 注意：KEY 里的 kids-english 是**历史存储键名**，不要跟着应用显示名一起改。
  * 改了会读不到已有数据，孩子攒的星星就全没了。
@@ -21,7 +21,8 @@ const state = {
     return Object.values(this.progress).reduce(
       (sum, l) =>
         sum +
-        (l.learn || 0) + (l.quiz || 0) + (l.match || 0) + (l.speak || 0) + (l.song || 0),
+        (l.learn || 0) + (l.quiz || 0) + (l.match || 0) + (l.speak || 0) +
+        (l.song || 0) + (l.talk || 0),
       0
     );
   },
@@ -29,7 +30,8 @@ const state = {
     const l = this.progress[id];
     if (!l) return 0;
     return (
-      (l.learn || 0) + (l.quiz || 0) + (l.match || 0) + (l.speak || 0) + (l.song || 0)
+      (l.learn || 0) + (l.quiz || 0) + (l.match || 0) + (l.speak || 0) +
+      (l.song || 0) + (l.talk || 0)
     );
   },
   setGameStars(id, game, stars) {
