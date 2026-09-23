@@ -104,8 +104,7 @@ function enter(l) {
           @click="enter(l)"
         >
           <span class="big-emoji anim-float">{{ l.emoji }}</span>
-          <span class="lt">{{ l.titleZh }}</span>
-          <span class="ls">{{ l.title }}</span>
+          <span class="lt">{{ l.title }}</span>
           <span class="done" v-if="progress.isCompleted(l.id)">全部通关 ✓</span>
           <span class="cnt">{{ l.words.length }} 个单词</span>
         </button>
@@ -180,18 +179,12 @@ function enter(l) {
   font-size: clamp(16px, min(3vh, 2.4vw), 24px);
   font-weight: 800;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
-  white-space: nowrap;
+  /* 英文标题较长，允许最多换两行，避免省略号截断 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-.ls {
-  font-size: clamp(10px, min(1.7vh, 1.4vw), 15px);
-  font-weight: 700;
-  opacity: 0.92;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.2;
   max-width: 100%;
 }
 .cnt {
@@ -230,16 +223,16 @@ function enter(l) {
   .foot {
     display: none;
   }
-  .ls,
   .cnt {
     display: none;
   }
 }
 
-/* 卡片很矮时英文原名和单词数会挤成一团，只留中文主标题 */
+/* 卡片很矮时收紧行高，避免长英文标题换行溢出 */
 @media (max-height: 620px) and (max-width: 600px) {
-  .ls {
-    display: none;
+  .lt {
+    -webkit-line-clamp: 1;
+    font-size: 15px;
   }
 }
 </style>

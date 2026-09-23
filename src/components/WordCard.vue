@@ -10,7 +10,27 @@ const props = defineProps({
 });
 
 const imgFailed = ref(false);
-const bouncing = ref(false);
+const popping = ref(false);
+const rootEl = ref(null);
+
+/**
+ * 点击反馈动画：animate.css 的 tada（摇摆放大），
+ * 全程卡片保持可见（无 opacity / scale(0) 帧），只是"晃一下"。
+ *
+ * 关键：必须先摘掉 LearnView 传入的入场动画类 anim-pop（pop-in）。
+ * CSS 的 animation-name 一旦变化就会重新触发动画——若点击动画结束后
+ * 类被移回，pop-in 会带着 fill-mode:both + 延迟重新跑一遍，
+ * 延迟期内卡片停在 scale(0)，看起来就是"卡片消失一下"。
+ */
+function pop() {
+  const el = rootEl.value;
+  if (el) {
+    el.classList.remove("anim-pop");
+    el.style.removeProperty("animation-delay");
+  }
+  popping.value = false;
+  requestAnimationFrame(() => (popping.value = true));
+}
 
 /** 点图片：读单词；点单词：也读单词（慢速+中文提示） */
 function onImage() {
@@ -24,15 +44,15 @@ function onWord() {
   if (props.speakZhHint) speak(props.word.zh, { lang: "zh-CN", rate: 1 });
   pop();
 }
-function pop() {
-  bouncing.value = false;
-  requestAnimationFrame(() => (bouncing.value = true));
-  setTimeout(() => (bouncing.value = false), 520);
-}
 </script>
 
 <template>
-  <div class="word-card" :class="[size, { 'anim-bounce': bouncing }]">
+  <div
+    ref="rootEl"
+    class="word-card"
+    :class="[size, { animate__animated: popping, animate__tada: popping, animate__faster: popping }]"
+    @animationend.self="popping = false"
+  >
     <div class="pic" @click="onImage" :title="'点击听发音：' + word.en">
       <img v-if="!imgFailed" :src="word.image" :alt="word.en" @error="imgFailed = true" />
       <!-- 图片缺失时的 emoji 占位 -->

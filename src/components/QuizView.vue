@@ -88,13 +88,17 @@ const scoreStars = computed(() => {
         }"
         @click="choose(opt)"
       >
-        <img
-          v-if="!imgFail[opt.id]"
-          :src="opt.image"
-          :alt="opt.en"
-          @error="imgFail[opt.id] = true"
-        />
-        <span v-else class="ph">{{ opt.emoji }}</span>
+        <div class="pic">
+          <img
+            v-if="!imgFail[opt.id]"
+            :src="opt.image"
+            :alt="opt.en"
+            @error="imgFail[opt.id] = true"
+          />
+          <span v-else class="ph">{{ opt.emoji }}</span>
+        </div>
+        <!-- 图片下方常驻英文单词，边听边认字 -->
+        <div class="w">{{ opt.en }}</div>
       </div>
     </div>
 
@@ -143,8 +147,8 @@ const scoreStars = computed(() => {
   background: var(--card-bg);
   box-shadow: var(--shadow-hard);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   cursor: pointer;
   overflow: hidden;
   border: 5px solid transparent;
@@ -152,15 +156,39 @@ const scoreStars = computed(() => {
   min-height: 0;
   min-width: 0;
 }
-.opt img {
+.pic {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pic img {
   width: 78%;
   height: 78%;
   object-fit: contain;
   pointer-events: none;
 }
-.opt .ph {
+.pic .ph {
   font-size: var(--fs-emoji-xl);
   line-height: 1;
+}
+/* 选项下方的英文单词标签 */
+.w {
+  flex: none;
+  width: 100%;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  font-size: clamp(13px, min(2.6vh, 2vw), 22px);
+  color: var(--ink);
+  background: #fff7de;
+  padding: clamp(2px, 0.8vh, 6px) 4px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .opt.right {
   border-color: var(--green);
@@ -211,6 +239,11 @@ const scoreStars = computed(() => {
   /* 横屏时反馈语与提示挤占高度，收敛成一行 */
   .tip {
     display: none;
+  }
+  /* 横屏时单词标签更紧凑，把高度留给图片 */
+  .w {
+    font-size: 12px;
+    padding: 1px 2px;
   }
 }
 </style>

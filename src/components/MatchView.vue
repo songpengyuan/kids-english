@@ -50,12 +50,18 @@ let raf = null;
 
 function measure() {
   if (!board.value) return;
-  const b = board.value.getBoundingClientRect();
   const put = (els, list, map) =>
     els.forEach((el, i) => {
       if (!el || !list[i]) return;
-      const r = el.getBoundingClientRect();
-      map[list[i].id] = { x: r.left + r.width / 2 - b.left, y: r.top + r.height / 2 - b.top };
+      // 用 offset* 测量（不受 transform 影响）：格子的入场动画 pop-in 带
+      // fill-mode:both + 延迟，动画未播完时 getBoundingClientRect 会量到
+      // scale(0) 的错误宽高，导致连线端点裁剪失效
+      map[list[i].id] = {
+        x: el.offsetLeft + el.offsetWidth / 2,
+        y: el.offsetTop + el.offsetHeight / 2,
+        w: el.offsetWidth,
+        h: el.offsetHeight
+      };
     });
   put(leftEls.value, leftImgs.value, imgPos);
   put(rightEls.value, rightImgs.value, imgPos);
@@ -72,12 +78,24 @@ function scheduleMeasure() {
   });
 }
 
-/** 已配对连线的坐标：图片格中心 → 单词格中心（board 坐标系） */
+/** 从 p 中心指向 q 方向，求 p 卡片边框上的出射点 */
+function edgePoint(p, q) {
+  const dx = q.x - p.x;
+  const dy = q.y - p.y;
+  let t = 1;
+  if (dx) t = Math.min(t, p.w / 2 / Math.abs(dx));
+  if (dy) t = Math.min(t, p.h / 2 / Math.abs(dy));
+  return { x: p.x + dx * t, y: p.y + dy * t };
+}
+
+/** 已配对连线的坐标：图片卡边缘 → 单词卡边缘（board 坐标系） */
 function matchedLine(wordId) {
   const a = imgPos[wordId];
   const b = wordPos[wordId];
   if (!a || !b) return null;
-  return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+  const p = edgePoint(a, b);
+  const q = edgePoint(b, a);
+  return { x1: p.x, y1: p.y, x2: q.x, y2: q.y };
 }
 
 const matched = reactive(new Set()); // 当前组已配对 id
@@ -89,6 +107,7 @@ const wordWrong = ref(null);
 const wrongCount = ref(0); // 跨组累计，用于评分
 const justMatched = ref(null);
 const transitioning = ref(false);
+let dragFrom = null; // 拖拽起点卡片的位置信息（用于把拖拽线起点裁剪到卡片边缘）
 
 let pendingWord = null;
 
@@ -108,10 +127,12 @@ function onImgDown(word, e) {
   // 再点一次已选中的图片 = 取消选择
   if (startWord.value && startWord.value.id === word.id && !dragging.value) {
     startWord.value = null;
+    dragFrom = null;
     return;
   }
   dragging.value = true;
   startWord.value = word;
+  dragFrom = imgPos[word.id] || null;
   const c = imgPos[word.id] || localPoint(e);
   line.x1 = c.x;
   line.y1 = c.y;
@@ -127,6 +148,12 @@ function onMove(e) {
   const p = localPoint(e);
   line.x2 = p.x;
   line.y2 = p.y;
+  // 拖拽线起点实时裁剪到起点卡片边缘，避免黄线压在图片上
+  if (dragFrom) {
+    const s = edgePoint(dragFrom, p);
+    line.x1 = s.x;
+    line.y1 = s.y;
+  }
   const cx = e.touches ? e.touches[0].clientX : e.clientX;
   const cy = e.touches ? e.touches[0].clientY : e.clientY;
   const el = document.elementFromPoint(cx, cy);
@@ -138,6 +165,7 @@ function onUp() {
   if (!dragging.value) return;
   const target = pendingWord ? midWords.value.find((w) => w.id === pendingWord) : null;
   dragging.value = false;
+  dragFrom = null;
   // 未命中单词时保留选中状态（点选模式：先点图，再点词）
   if (target) tryMatch(target);
 }
@@ -248,6 +276,7 @@ onBeforeUnmount(() => {
           <line
             v-if="matched.has(w.id) && matchedLine(w.id)"
             v-bind="matchedLine(w.id)"
+            pathLength="100"
             class="done-line"
             :class="{ flash: justMatched === w.id }"
           />
@@ -381,8 +410,9 @@ onBeforeUnmount(() => {
   stroke: var(--green);
   stroke-width: 6;
   stroke-linecap: round;
-  stroke-dasharray: 400;
-  stroke-dashoffset: 400;
+  /* pathLength=100 把任意长度的线归一化，避免长线出现 dasharray 断口 */
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
   animation: draw-line 0.45s ease forwards;
 }
 .done-line.flash {

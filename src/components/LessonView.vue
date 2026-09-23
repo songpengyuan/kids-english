@@ -166,7 +166,7 @@ const nextLesson = computed(() => {
   <div class="lesson view">
     <div class="topbar">
       <button class="back" @click="back" :title="stage === 'menu' ? '返回课程列表' : '返回本课菜单'">←</button>
-      <div class="title">{{ lesson.emoji }} {{ lesson.titleZh }}</div>
+      <div class="title">{{ lesson.emoji }} {{ lesson.title }}</div>
       <div class="star-badge">⭐ {{ progress.lessonStars(lesson.id) }}</div>
     </div>
 
@@ -219,7 +219,7 @@ const nextLesson = computed(() => {
       <div class="btn-row">
         <button class="k-btn" @click="toMenu">再选一个玩法</button>
         <button v-if="nextLesson" class="k-btn gray" @click="emit('next-lesson', nextLesson.id)">
-          下一课：{{ nextLesson.emoji }}{{ nextLesson.titleZh }}
+          下一课：{{ nextLesson.emoji }}{{ nextLesson.title }}
         </button>
       </div>
     </div>
