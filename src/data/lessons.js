@@ -9,9 +9,26 @@
  *
  * 图片/音频找不到时，App 会自动降级为 emoji 占位图 / 浏览器语音朗读，
  * 所以现在全部用假数据也能完整试玩。
+ *
+ * 路径写法：下面一律写站点根路径形式（如 "/lessons/l4/song.mp3"），
+ * 由文件末尾的 asset() 自动补上部署基路径，本地与 GitHub Pages 子路径部署通用。
  */
 
-export const lessons = [
+/**
+ * public/ 目录下的文件不会经过 Vite 的路径重写，若部署在子路径
+ * （GitHub Pages 的 /<repo>/），写死的 "/lessons/..." 会被浏览器解析到
+ * 站点根目录，导致音频/视频/图片全部 404。这里统一补 BASE_URL 前缀：
+ * 本地 dev/build 时 BASE_URL 为 "/"，子路径部署时为 "/<repo>/"。
+ */
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function asset(path) {
+  if (!path) return path;
+  if (/^(https?:)?\/\//.test(path)) return path; // 外链原样返回
+  return BASE + (path.startsWith("/") ? path : `/${path}`);
+}
+
+const rawLessons = [
   {
     id: "l1",
     title: "Twinkle Twinkle Little Star",
@@ -88,6 +105,15 @@ export const lessons = [
     ]
   }
 ];
+
+export const lessons = rawLessons.map((lesson) => ({
+  ...lesson,
+  song: {
+    audio: asset(lesson.song.audio),
+    video: asset(lesson.song.video)
+  },
+  words: lesson.words.map((word) => ({ ...word, image: asset(word.image) }))
+}));
 
 export function getLesson(id) {
   return lessons.find((l) => l.id === id) || null;
