@@ -29,6 +29,12 @@
   --gold: #b8860b;
   --line: #e8e0cf;
 
+  /* ---------- 色调 / 覆盖层（卡片内的高亮与悬浮底色，暗色下需反转） ---------- */
+  --tint-yellow: #fff3c4; /* 单词按压高亮 */
+  --tint-green: #f2fff2;  /* 已听过 / 完成态底色 */
+  --tint-cream: #fff7de;  /* 听音选图答案条底色 */
+  --overlay: rgba(255, 255, 255, 0.92); /* 悬浮徽章底色 */
+
   /* ---------- 间距（流体） ---------- */
   --gap-xs: clamp(4px, min(0.7vh, 0.6vw), 8px);
   --gap-s: clamp(6px, min(1.1vh, 1vw), 12px);
@@ -63,12 +69,37 @@
   --tap-min: 52px;
 
   /* ---------- 层级 ---------- */
-  --z-lines: 5;
+  /* 连线画在最上层（中心到中心穿过卡片），远高于卡片/动画产生的层叠上下文 */
+  --z-lines: 30;
   --z-banner: 9;
 
   font-family:
     "Comic Sans MS", "Chalkboard SE", "Baloo 2", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+/* ===== 暗黑模式 =====
+ * 由 src/utils/theme.js 在 <html> 上切换 data-theme="dark"，
+ * 只覆盖「中性色 + 色调 + 阴影」；品牌色（green/blue/orange...）保持不变，
+ * 保证按钮、进度条等在两种主题下观感一致。
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #171c2b;
+  --card-bg: #242b40;
+  --ink: #f0e9dc;
+  --ink-soft: #b0a99c;
+  --ink-faint: #7f7a70;
+  --line: #39415a;
+
+  --tint-yellow: #3e3a1f;
+  --tint-green: #1e3324;
+  --tint-cream: #3b3620;
+  --overlay: rgba(23, 28, 43, 0.92);
+
+  --shadow-hard: 0 6px 0 rgba(0, 0, 0, 0.42);
+  --shadow-soft: 0 2px 0 rgba(0, 0, 0, 0.3);
 }
 
 /* ===== 断点约定（供参考，CSS 无法定义变量化断点，改动时请同步各处） =====

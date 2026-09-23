@@ -284,7 +284,7 @@ onBeforeUnmount(() => {
   color: var(--ink-soft);
 }
 .mode-tag {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: var(--radius-pill);
   padding: 3px clamp(8px, 1.2vw, 12px);
   font-weight: 800;
@@ -345,7 +345,7 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-s);
 }
 .word:active {
-  background: #fff3c4;
+  background: var(--tint-yellow);
 }
 .tip {
   margin: 0;

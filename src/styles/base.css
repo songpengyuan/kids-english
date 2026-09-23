@@ -108,7 +108,7 @@ img {
   flex: none;
 }
 .topbar .back {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: var(--radius-s);
   box-shadow: var(--shadow-hard);
   font-size: var(--fs-title);
@@ -144,7 +144,7 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #fff;
+  background: var(--card-bg);
   border-radius: var(--radius-s);
   padding: clamp(6px, 1.2vh, 10px) clamp(10px, 1.6vw, 16px);
   box-shadow: var(--shadow-hard);

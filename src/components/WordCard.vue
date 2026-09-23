@@ -132,7 +132,7 @@ function onWord() {
   text-overflow: ellipsis;
 }
 .word:active {
-  background: #fff3c4;
+  background: var(--tint-yellow);
 }
 .word-card.sm .word {
   font-size: clamp(13px, min(2.2vh, 1.8vw), 20px);

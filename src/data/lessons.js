@@ -37,7 +37,27 @@ const rawLessons = [
     emoji: "🌊",
     color: "#1cb0f6",
     date: "2026-09-18",
-    song: { audio: "/lessons/l4/song.mp3", video: "/lessons/l4/song.mp4" },
+    song: {
+      audio: "/lessons/l4/song.mp3",
+      video: "/lessons/l4/song.mp4",
+      /* 完整歌词（空字符串 = 段落分隔） */
+      lyrics: [
+        "A sailor went to sea, sea, sea",
+        "To see what he could see, see, see",
+        "But all that he could see, see, see",
+        "Was the bottom of the deep blue sea, sea, sea",
+        "",
+        "A sailor went to sea, sea, sea",
+        "To see what he could see, see, see",
+        "But all that he could see, see, see",
+        "Was the bottom of the deep blue sea, sea, sea",
+        "",
+        "A sailor went to sea, sea, sea",
+        "To see what he could see, see, see",
+        "But all that he could see, see, see",
+        "Was the bottom of the deep blue sea, sea, sea"
+      ]
+    },
     words: [
       { id: "seahorse", en: "seahorse", zh: "海马", emoji: "🐴", image: "/lessons/l4/words/seahorse.png" },
       { id: "jellyfish", en: "jellyfish", zh: "水母", emoji: "🪼", image: "/lessons/l4/words/jellyfish.png" },
@@ -61,7 +81,35 @@ const rawLessons = [
     emoji: "🎺",
     color: "#ff9f43",
     date: "2026-09-16",
-    song: { audio: "/lessons/l5/song.mp3", video: "/lessons/l5/song.mp4" },
+    song: {
+      audio: "/lessons/l5/song.mp3",
+      video: "/lessons/l5/song.mp4",
+      lyrics: [
+        "I am the Music Man,",
+        "I come from down your way,",
+        "And I can play!",
+        "What can you play?",
+        "I play the piano!",
+        "Pia, pia, piano, piano, piano,",
+        "Pia, pia, piano, pia, piano!",
+        "",
+        "I am the Music Man,",
+        "I come from down your way,",
+        "And I can play!",
+        "What can you play?",
+        "I play the violin!",
+        "Vio, vio, violin, violin, violin,",
+        "Vio, vio, violin, vio, violin!",
+        "",
+        "I am the Music Man,",
+        "I come from down your way,",
+        "And I can play!",
+        "What can you play?",
+        "I play the trombone!",
+        "Trom, trom, trombone, trombone, trombone,",
+        "Trom, trom, trombone, trom, trombone!"
+      ]
+    },
     words: [
       { id: "violin", en: "violin", zh: "小提琴", emoji: "🎻", image: "/lessons/l5/words/violin.png" },
       { id: "piano", en: "piano", zh: "钢琴", emoji: "🎹", image: "/lessons/l5/words/piano.png" },
@@ -84,7 +132,8 @@ export const lessons = rawLessons.map((lesson) => ({
   ...lesson,
   song: {
     audio: asset(lesson.song.audio),
-    video: asset(lesson.song.video)
+    video: asset(lesson.song.video),
+    lyrics: lesson.song.lyrics || []
   },
   // 亲子对话口语句（TalkView 用），发音文件为 ph-<序号>.mp3，缺失时回退 TTS
   phrases: (lesson.phrases || []).map((p, i) => ({

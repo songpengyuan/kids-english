@@ -184,7 +184,7 @@ const scoreStars = computed(() => {
   letter-spacing: 0.5px;
   font-size: clamp(13px, min(2.6vh, 2vw), 22px);
   color: var(--ink);
-  background: #fff7de;
+  background: var(--tint-cream);
   padding: clamp(2px, 0.8vh, 6px) 4px;
   line-height: 1.15;
   white-space: nowrap;

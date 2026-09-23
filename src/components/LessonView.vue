@@ -6,6 +6,7 @@ import MatchView from "./MatchView.vue";
 import SongView from "./SongView.vue";
 import SpeakView from "./SpeakView.vue";
 import TalkView from "./TalkView.vue";
+import ThemeToggle from "./ThemeToggle.vue";
 import { bigCelebrate } from "../utils/effects";
 import { lessons } from "../data/lessons";
 import progress from "../store/progress";
@@ -168,6 +169,7 @@ const nextLesson = computed(() => {
       <button class="back" @click="back" :title="stage === 'menu' ? '返回课程列表' : '返回本课菜单'">←</button>
       <div class="title">{{ lesson.emoji }} {{ lesson.title }}</div>
       <div class="star-badge">⭐ {{ progress.lessonStars(lesson.id) }}</div>
+      <ThemeToggle />
     </div>
 
     <!-- 课时菜单 -->
@@ -327,7 +329,7 @@ const nextLesson = computed(() => {
   position: absolute;
   top: 6px;
   right: 8px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--overlay);
   color: var(--gold);
   border-radius: var(--radius-pill);
   padding: 2px 8px;

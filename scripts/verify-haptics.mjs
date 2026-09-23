@@ -26,6 +26,7 @@ const chrome = spawn(
   [
     "--headless=new",
     "--no-sandbox",
+    "--no-sandbox",
     "--disable-gpu",
     "--disable-dev-shm-usage",
     "--hide-scrollbars",

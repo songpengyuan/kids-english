@@ -6,6 +6,10 @@ import './styles/base.css'
 import 'animate.css'
 import App from './App.vue'
 import { initHaptics, hapticsInfo } from './utils/haptics'
+import { initTheme } from './utils/theme'
+
+// 先应用主题再挂载，避免暗色用户刷新时闪白
+initTheme()
 
 createApp(App).mount('#app')
 

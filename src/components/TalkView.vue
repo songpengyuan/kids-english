@@ -112,7 +112,7 @@ function finish() {
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  background: #fff;
+  background: var(--card-bg);
   border-radius: var(--radius);
   padding: var(--gap-s) var(--gap-m);
   box-shadow: var(--shadow-hard);
@@ -125,7 +125,7 @@ function finish() {
   border-color: var(--green);
 }
 .phrase.heard {
-  background: #f2fff2;
+  background: var(--tint-green);
 }
 .role {
   font-size: var(--fs-small);

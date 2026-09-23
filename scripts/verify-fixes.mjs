@@ -33,6 +33,7 @@ async function rpc(ws, id, method, params = {}) {
 
 const chrome = spawn(CHROME, [
   "--headless=new",
+    "--no-sandbox",
   `--remote-debugging-port=${PORT}`,
   "--no-first-run",
   "--no-default-browser-check",
@@ -162,27 +163,29 @@ try {
       x1: +l.getAttribute('x1'), y1: +l.getAttribute('y1'),
       x2: +l.getAttribute('x2'), y2: +l.getAttribute('y2')
     }));
-    // 校验端点不在卡片内部：卡片 rect（board 坐标）
+    // 校验端点在卡片中心：卡片中心（board 坐标）
     const cellRects = [...document.querySelectorAll('.cell')].map(c => {
       const r = c.getBoundingClientRect();
-      return { l: r.left - rb.left, t: r.top - rb.top, r: r.right - rb.left, b: r.bottom - rb.top };
+      return { cx: r.left - rb.left + r.width / 2, cy: r.top - rb.top + r.height / 2 };
     });
-    const EPS = 2.5;
-    const inside = (x, y) => cellRects.some(rc => x > rc.l + EPS && x < rc.r - EPS && y > rc.t + EPS && y < rc.b - EPS);
+    const EPS = 3;
+    const atCenter = (x, y) => cellRects.some(rc => Math.abs(x - rc.cx) < EPS && Math.abs(y - rc.cy) < EPS);
     const bads = [];
     for (const l of lines) {
       for (const [label, x, y] of [["x1,y1", l.x1, l.y1], ["x2,y2", l.x2, l.y2]]) {
-        if (inside(x, y)) {
-          const hit = cellRects.findIndex(rc => x > rc.l + EPS && x < rc.r - EPS && y > rc.t + EPS && y < rc.b - EPS);
-          bads.push(label + "=(" + x.toFixed(1) + "," + y.toFixed(1) + ") in cell#" + hit);
+        if (!atCenter(x, y)) {
+          bads.push(label + "=(" + x.toFixed(1) + "," + y.toFixed(1) + ")");
         }
       }
     }
-    return { ok, lines, badEndpoints: bads.length, badDetail: bads.join("; "), dashOffset: document.querySelector('.done-line') ? getComputedStyle(document.querySelector('.done-line')).strokeDashoffset : null };
+    // 连线 SVG 应在所有卡片之上
+    const zLines = getComputedStyle(document.querySelector('.lines')).zIndex;
+    return { ok, lines, badEndpoints: bads.length, badDetail: bads.join("; "), zLines, dashOffset: document.querySelector('.done-line') ? getComputedStyle(document.querySelector('.done-line')).strokeDashoffset : null };
   })()`);
   check("连线能成功连上", matchRes.ok);
   check("done-line 带 pathLength=100(长线无断口)", matchRes.lines?.every(l => l.pathLength === "100"), JSON.stringify(matchRes.lines?.[0]));
-  check("线条端点不在卡片内部(不被遮挡)", matchRes.badEndpoints === 0, matchRes.badDetail);
+  check("线条端点为卡片中心(中心到中心)", matchRes.badEndpoints === 0, matchRes.badDetail);
+  check("连线 SVG 在最上层(z-index>=30)", Number(matchRes.zLines) >= 30, "z=" + matchRes.zLines);
   check("线型为实线(dashoffset 已画满)", matchRes.dashOffset === "0px", String(matchRes.dashOffset));
 
   // 截图存档

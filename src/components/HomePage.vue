@@ -7,6 +7,7 @@ import { useViewport } from "../composables/useViewport";
 import { usePager } from "../composables/usePager";
 import { pickColumns } from "../utils/layout";
 import Pager from "./Pager.vue";
+import ThemeToggle from "./ThemeToggle.vue";
 
 const emit = defineEmits(["open"]);
 
@@ -88,6 +89,9 @@ function enter(l) {
 
 <template>
   <div class="home view">
+    <div class="theme-slot">
+      <ThemeToggle />
+    </div>
     <header class="hero anim-fade-up">
       <h1>🌈 丞丞英语乐园</h1>
       <p class="sub">点一课，学童谣里的单词吧！</p>
@@ -118,6 +122,16 @@ function enter(l) {
 </template>
 
 <style scoped>
+/* 主题切换按钮固定在右上角，不挤占标题排版 */
+.theme-slot {
+  position: absolute;
+  top: calc(var(--pad-y) + env(safe-area-inset-top) + 2px);
+  right: calc(var(--pad-x) + env(safe-area-inset-right) + 4px);
+  z-index: var(--z-banner);
+}
+.home {
+  position: relative;
+}
 .hero {
   text-align: center;
   flex: none;
@@ -197,7 +211,7 @@ function enter(l) {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--overlay);
   color: var(--green-dark);
   font-size: clamp(10px, min(1.6vh, 1.3vw), 12px);
   font-weight: 800;

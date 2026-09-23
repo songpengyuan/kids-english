@@ -78,24 +78,12 @@ function scheduleMeasure() {
   });
 }
 
-/** 从 p 中心指向 q 方向，求 p 卡片边框上的出射点 */
-function edgePoint(p, q) {
-  const dx = q.x - p.x;
-  const dy = q.y - p.y;
-  let t = 1;
-  if (dx) t = Math.min(t, p.w / 2 / Math.abs(dx));
-  if (dy) t = Math.min(t, p.h / 2 / Math.abs(dy));
-  return { x: p.x + dx * t, y: p.y + dy * t };
-}
-
-/** 已配对连线的坐标：图片卡边缘 → 单词卡边缘（board 坐标系） */
+/** 已配对连线的坐标：图片卡中心 → 单词卡中心（board 坐标系；线在最上层，不会遮挡卡片） */
 function matchedLine(wordId) {
   const a = imgPos[wordId];
   const b = wordPos[wordId];
   if (!a || !b) return null;
-  const p = edgePoint(a, b);
-  const q = edgePoint(b, a);
-  return { x1: p.x, y1: p.y, x2: q.x, y2: q.y };
+  return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
 }
 
 const matched = reactive(new Set()); // 当前组已配对 id
@@ -107,7 +95,6 @@ const wordWrong = ref(null);
 const wrongCount = ref(0); // 跨组累计，用于评分
 const justMatched = ref(null);
 const transitioning = ref(false);
-let dragFrom = null; // 拖拽起点卡片的位置信息（用于把拖拽线起点裁剪到卡片边缘）
 
 let pendingWord = null;
 
@@ -127,12 +114,10 @@ function onImgDown(word, e) {
   // 再点一次已选中的图片 = 取消选择
   if (startWord.value && startWord.value.id === word.id && !dragging.value) {
     startWord.value = null;
-    dragFrom = null;
     return;
   }
   dragging.value = true;
   startWord.value = word;
-  dragFrom = imgPos[word.id] || null;
   const c = imgPos[word.id] || localPoint(e);
   line.x1 = c.x;
   line.y1 = c.y;
@@ -148,12 +133,6 @@ function onMove(e) {
   const p = localPoint(e);
   line.x2 = p.x;
   line.y2 = p.y;
-  // 拖拽线起点实时裁剪到起点卡片边缘，避免黄线压在图片上
-  if (dragFrom) {
-    const s = edgePoint(dragFrom, p);
-    line.x1 = s.x;
-    line.y1 = s.y;
-  }
   const cx = e.touches ? e.touches[0].clientX : e.clientX;
   const cy = e.touches ? e.touches[0].clientY : e.clientY;
   const el = document.elementFromPoint(cx, cy);
@@ -165,7 +144,6 @@ function onUp() {
   if (!dragging.value) return;
   const target = pendingWord ? midWords.value.find((w) => w.id === pendingWord) : null;
   dragging.value = false;
-  dragFrom = null;
   // 未命中单词时保留选中状态（点选模式：先点图，再点词）
   if (target) tryMatch(target);
 }
@@ -385,7 +363,7 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 .counter {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: var(--radius-s);
   padding: clamp(4px, 1vh, 6px) clamp(8px, 1.4vw, 14px);
   font-weight: 800;
@@ -518,7 +496,7 @@ onBeforeUnmount(() => {
   font-size: clamp(18px, min(4vh, 3.2vw), 34px);
   font-weight: 800;
   color: var(--green-dark);
-  background: #fff;
+  background: var(--card-bg);
   padding: clamp(10px, 1.8vh, 14px) clamp(18px, 3vw, 28px);
   border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
