@@ -5,6 +5,7 @@
  *   public/lessons/<课时id>/song.mp3     童谣音频
  *   public/lessons/<课时id>/song.mp4     童谣视频（可选，没有则显示"暂未提供视频"占位）
  *   public/lessons/<课时id>/words/<图片>  单词图片（建议 512x512 透明底 PNG / SVG）
+ *   public/lessons/<课时id>/audio/<单词id>.mp3  单词发音（可选，没有则浏览器 TTS 朗读）
  *   public/avatars/<课时id>.svg           课时封面（占位，可替换）
  *
  * 图片/音频找不到时，App 会自动降级为 emoji 占位图 / 浏览器语音朗读，
@@ -112,7 +113,13 @@ export const lessons = rawLessons.map((lesson) => ({
     audio: asset(lesson.song.audio),
     video: asset(lesson.song.video)
   },
-  words: lesson.words.map((word) => ({ ...word, image: asset(word.image) }))
+  words: lesson.words.map((word) => ({
+    ...word,
+    image: asset(word.image),
+    // 预生成的神经网络童声发音（public/lessons/<id>/audio/<wordId>.mp3），
+    // 文件不存在时 speech.js 会自动回退到浏览器 TTS
+    audio: asset(`/lessons/${lesson.id}/audio/${word.id}.mp3`)
+  }))
 }));
 
 export function getLesson(id) {
