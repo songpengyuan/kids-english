@@ -16,7 +16,7 @@
 | 构建 | Vite 8 |
 | 包管理 | pnpm |
 | 后端 | 无，纯前端静态站点 |
-| 语音 | Web Speech API（TTS 朗读 + SpeechRecognition 发音识别） |
+| 语音 | 预生成神经网络发音（edge-tts，童声 AnaNeural）+ Web Speech API 回退；发音评分见 §6 |
 | 动效 | canvas-confetti + CSS 关键帧 + Web Audio 合成音效 |
 | 存储 | localStorage（星星与通关进度） |
 | 部署 | GitHub Pages，子路径 `/<repo>/` |
@@ -49,7 +49,7 @@ kids-english/
 │   │   └── usePager.js         # ★ 通用分页逻辑
 │   ├── utils/
 │   │   ├── layout.js           # ★ 纯函数布局算法：fitGrid / pickColumns / splitBalanced
-│   │   ├── speech.js           # TTS 朗读
+│   │   ├── speech.js           # 两级发音：预生成 mp3 优先，缺失回退浏览器 TTS
 │   │   ├── speechScore.js      # 发音评分（ASR + 录音双模式）
 │   │   └── effects.js          # 彩带与音效
 │   ├── components/
@@ -64,7 +64,8 @@ kids-english/
 │   │   └── Pager.vue           # ★ 通用翻页控件（大箭头 + 圆点）
 │   └── assets/
 ├── scripts/
-│   └── layout-audit.mjs        # ★ 多视口布局走查脚本（见 §9）
+│   ├── layout-audit.mjs        # ★ 多视口布局走查脚本（见 §9）
+│   └── gen-word-audio.py       # ★ 生成单词发音 mp3（edge-tts，见 §5.1）
 ├── public/
 │   ├── lessons/                # 课时素材目录（约定见 README）
 │   └── avatars/                # 课时封面占位
@@ -241,6 +242,24 @@ function scheduleMeasure() {          // rAF 合并，避免 ResizeObserver 循�
 - `progress.js` 的存储键是 `kids-english-progress-v1`，**不要**跟着应用改名一起改，
   否则孩子攒的星星会全部丢失。
 
+### 5.1 单词发音的两级机制
+
+`speech.js` 按单词的 `en` 名查注册表（lessons.js 导出时自动构建），播放分两级：
+
+```
+speak("star")
+  ├─ 注册表命中 → Audio 播放 /lessons/<课>/audio/<单词id>.mp3（神经网络童声）
+  │     └─ 播放失败（文件缺失/解码错误）──┐
+  └─ 未命中 ─────────────────────────────┴→ 浏览器 TTS 回退（Web Speech API）
+```
+
+- 为什么预生成：浏览器 TTS 音色机械且**各端不一致**（桌面 Chrome 音色最少）；
+  神经网络音色一次生成、永久使用、各端一致，30 个词共约 360KB，无运行时成本。
+- 中文提示语（`speakZh`）不走注册表，始终用浏览器 TTS。
+- **新增/换音色**：`pip install edge-tts` 后跑
+  `python3 scripts/gen-word-audio.py`（增量）或 `--force --voice en-US-AriaNeural`（全量）。
+  放对了文件名无需改任何代码。
+
 ---
 
 ## 6. 发音评分的双模式降级链路
@@ -325,6 +344,7 @@ node scripts/layout-audit.mjs
 | 某页面在某个设备上内容被截断 | 违反 §4：列表没分页、或尺寸只用了一个维度 | 跑 §7.2 的走查脚本定位溢出元素 |
 | 改完样式个别元素尺寸没变 | 写死了 `px`，没走 token | 换成 `clamp(..., min(Xvh, Yvw), ...)` 或 tokens 里的变量 |
 | 发音识别总是失败并提示切换录音模式 | 国内网络连不上 Google 识别服务 | 预期行为，录音回放模式是可用的主路径 |
+| 某个单词发音机械（走了 TTS） | 对应 mp3 没生成（`public/lessons/<课>/audio/<单词id>.mp3` 缺失） | 跑 `python3 scripts/gen-word-audio.py` 补齐 |
 | iOS 上点第一次没声音 | iOS Safari 要求用户手势后才能播放音频 | 已用点击触发规避，勿改成自动播放 |
 | 孩子的星星丢了 | localStorage 被清（换设备/清缓存）或存储键被改动 | 不要改 `progress.js` 里的 KEY |
 
