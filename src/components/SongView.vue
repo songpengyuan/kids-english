@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch, nextTick } from "vue";
 import { bigCelebrate } from "../utils/effects";
 import { hapticTap } from "../utils/haptics";
 import progress from "../store/progress";
@@ -27,6 +27,7 @@ function setMode(m) {
 
 function play() {
   if (audioMissing.value) return;
+  userScrollAt = 0; // 重新播放时恢复自动跟随
   audioEl.value
     .play()
     .then(() => {
@@ -46,12 +47,58 @@ function onAudioError() {
 }
 function onEnded() {
   playing.value = false;
+  activeLine.value = -1;
   bigCelebrate();
   progress.markSong(props.lesson.id);
   emit("song-done");
 }
 function onVideoError() {
   videoMissing.value = true;
+}
+
+/* ---------- 歌词跟随播放滚动 ----------
+ * 没有 LRC 时间戳，按音频进度把歌词行均匀映射：
+ * progress = currentTime / duration → activeLine = floor(progress * 行数)。
+ * 对儿歌这种节奏均匀的歌词，效果足够好。
+ */
+const activeLine = ref(-1);
+const lyricsEl = ref(null);
+let autoScrollAt = 0; // 刚自动滚动的时刻，短暂忽略用户 scroll 事件，避免互相打架
+let userScrollAt = 0; // 用户最后一次手动滚动的时刻
+
+function onTimeUpdate() {
+  const a = audioEl.value;
+  if (!a || !a.duration || !isFinite(a.duration)) return;
+  const lines = props.lesson.song.lyrics;
+  if (!lines.length) return;
+  // 起始留一点缓冲（前奏），结束前 2% 收尾
+  const t = Math.min(0.98, Math.max(0, a.currentTime / a.duration - 0.02)) / 0.96;
+  let idx = Math.min(lines.length - 1, Math.floor(t * lines.length));
+  // 落在段落分隔空行上时，高亮移到接下来的第一句
+  while (idx < lines.length - 1 && !lines[idx]) idx++;
+  activeLine.value = idx;
+}
+
+/** 高亮行变化 → 滚动到歌词面板中间；用户手动滚动后 4 秒内不打扰 */
+watch(activeLine, async (i) => {
+  if (i < 0 || mode.value !== "audio") return;
+  if (Date.now() - userScrollAt < 4000) return;
+  await nextTick();
+  const box = lyricsEl.value;
+  const el = box?.querySelector(".line.on");
+  if (!box || !el) return;
+  autoScrollAt = Date.now();
+  // scrollIntoView 在部分环境不滚动内部容器，手动算目标位置最稳
+  box.scrollTo({
+    top: el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2,
+    behavior: "smooth"
+  });
+});
+
+/** 用户手动滚动歌词 → 暂停自动跟随一小会儿 */
+function onLyricsScroll() {
+  if (Date.now() - autoScrollAt < 300) return; // 忽略自动滚动自己触发的事件
+  userScrollAt = Date.now();
 }
 
 const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
@@ -65,6 +112,7 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
       preload="none"
       @error="onAudioError"
       @ended="onEnded"
+      @timeupdate="onTimeUpdate"
     />
 
     <!-- 视频 / 音频切换 -->
@@ -132,13 +180,18 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
         </div>
       </div>
 
-      <div class="lyrics view-body" :class="{ empty: !lesson.song.lyrics.length }">
+      <div
+        class="lyrics view-body"
+        :class="{ empty: !lesson.song.lyrics.length }"
+        ref="lyricsEl"
+        @scroll="onLyricsScroll"
+      >
         <template v-if="lesson.song.lyrics.length">
           <p
             v-for="(line, i) in lesson.song.lyrics"
             :key="i"
             class="line"
-            :class="{ blank: !line }"
+            :class="{ blank: !line, on: i === activeLine }"
           >
             {{ line }}
           </p>
@@ -262,6 +315,7 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
 
 /* 歌词：占满剩余高度，内部滚动 */
 .lyrics {
+  position: relative; /* 让行 offsetTop 相对本容器，自动滚动按此计算 */
   background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
@@ -274,11 +328,18 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
   margin: 0;
   font-size: clamp(15px, min(2.8vh, 2.2vw), 22px);
   font-weight: 700;
-  color: var(--ink);
+  color: var(--ink-soft);
   line-height: 1.5;
+  transition: color 0.2s, transform 0.2s;
 }
 .line.blank {
   height: var(--gap-m);
+}
+/* 当前演唱行：品牌绿 + 微放大 */
+.line.on {
+  color: var(--green-dark);
+  transform: scale(1.06);
+  font-weight: 800;
 }
 
 .play-btn {
