@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ship": "node scripts/ship.mjs"
   },
   "dependencies": {
     "animate.css": "^4.1.1",
