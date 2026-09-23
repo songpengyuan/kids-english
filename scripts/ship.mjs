@@ -152,8 +152,11 @@ async function main() {
       say(`本地与远端内容一致但 SHA 分叉，分支指针已对齐 ${remoteSha.slice(0, 7)}（工作区文件未变动）`);
       relation = "remote-has";
     } else {
-      console.error("ship: ⚠️ 本地与远端内容不一致且历史分叉，请人工处理（不要盲目强推）");
-      process.exit(1);
+      // 真实内容分叉（本地有新提交，远端是规范化提交不在本地历史）：
+      // 不再放弃，继续走推送链路。git push 会被拒（非快进），最终由
+      // 树对比 API 兜底完成；push-via-api.py 内置「远端多出文件即中止」保护，
+      // 不会覆盖并行会话推上来的内容。
+      say("本地与远端历史分叉且内容不同，尝试推送（git 被拒则走树对比 API 兜底）");
     }
   }
 

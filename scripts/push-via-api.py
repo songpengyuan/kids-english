@@ -76,6 +76,14 @@ changed = [p for p, h in local_files.items() if remote_files.get(p) != h]
 deleted = [p for p in remote_files if p not in local_files]
 print(f"差异：修改/新增 {len(changed)} 项，删除 {len(deleted)} 项")
 
+# 防覆盖保护：远端多出的文件可能是并行会话刚推的，未经确认不删
+if deleted:
+    if os.environ.get("ALLOW_DELETE") != "1":
+        print("⚠️ 远端存在本地没有的文件，已中止以免覆盖并行改动：", deleted, file=sys.stderr)
+        print("确认要删除请加环境变量 ALLOW_DELETE=1 重新执行", file=sys.stderr)
+        sys.exit(2)
+    print("ALLOW_DELETE=1，允许删除上述文件")
+
 # 5. 上传 blob / 构造 tree 项
 tree_items = []
 for p in deleted:
