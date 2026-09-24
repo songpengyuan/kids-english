@@ -434,8 +434,8 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- 组间过场横幅 -->
-      <div v-if="transitioning" class="banner anim-pop">
+      <!-- 组间过场横幅：盖住整块棋盘（含连线），用 banner-in 入场 -->
+      <div v-if="transitioning" class="banner">
         <span>{{ groupIdx + 1 >= groupCount ? "全部连完啦 🎉" : "这组连完啦！下一组 →" }}</span>
       </div>
     </div>
@@ -590,12 +590,19 @@ onBeforeUnmount(() => {
 .banner {
   position: absolute;
   inset: 0;
-  z-index: var(--z-banner);
+  /* 必须高于连线层：刚连完的那几条线正穿在棋盘上，层级低了会横穿横幅压住文案 */
+  z-index: var(--z-floating);
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--overlay-strong);
   border-radius: var(--radius);
+  animation: banner-in 0.3s ease-out both;
+}
+/* 用轻微缩放 + 上浮入场，比 pop-in 更"盖上去"，不会被误读成又来了一张卡片 */
+@keyframes banner-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
 }
 .banner span {
   font-size: clamp(18px, min(4vh, 3.2vw), 34px);

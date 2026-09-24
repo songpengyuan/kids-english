@@ -210,6 +210,54 @@ try {
   check("连线 SVG 在最上层(z-index>=30)", Number(matchRes.zLines) >= 30, "z=" + matchRes.zLines);
   check("线型为实线(dashoffset 已画满)", matchRes.dashOffset === "0px", String(matchRes.dashOffset));
 
+  /* ---------- 4b. 一组连完的过场横幅必须盖在连线之上 ---------- */
+  await goto(BASE + "?lesson=l4&stage=match");
+  await sleep(1500);
+  const bannerRes = await evalJs(`(async () => {
+    const fire = (el, type, x, y) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true }));
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const pair = () => {
+      const imgs = [...document.querySelectorAll('.col.imgs .cell.pic:not(.gone)')];
+      const words = [...document.querySelectorAll('.col.words .cell.word:not(.gone)')];
+      for (const im of imgs) {
+        const w = words.find(x => x.getAttribute('data-word') === im.getAttribute('data-word'));
+        if (w) return [im, w];
+      }
+      return null;
+    };
+    // 把当前组连完
+    for (let i = 0; i < 8; i++) {
+      const p = pair();
+      if (!p) break;
+      const [im, w] = p;
+      const ir = im.getBoundingClientRect(), wr = w.getBoundingClientRect();
+      fire(im, 'pointerdown', ir.left + ir.width / 2, ir.top + ir.height / 2);
+      fire(document, 'pointermove', wr.left + wr.width / 2, wr.top + wr.height / 2);
+      fire(document, 'pointerup', wr.left + wr.width / 2, wr.top + wr.height / 2);
+      await sleep(420);
+      if (document.querySelector('.banner')) break; // 过场横幅出现即为连完
+    }
+    await sleep(250);
+    const banner = document.querySelector('.banner');
+    const lines = document.querySelector('.lines');
+    if (!banner) return { appeared: false };
+    const bz = Number(getComputedStyle(banner).zIndex);
+    const lz = Number(getComputedStyle(lines || banner).zIndex) || 0;
+    const span = banner.querySelector('span');
+    const text = span ? span.textContent.trim() : '';
+    // 文案中心点命中的最上层元素必须是横幅自己（未被任何层压住）
+    let hitSelf = false;
+    if (span) {
+      const r = span.getBoundingClientRect();
+      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      hitSelf = !!top && (top === span || banner.contains(top));
+    }
+    return { appeared: true, bz, lz, text, hitSelf, lineCount: document.querySelectorAll('.done-line').length };
+  })()`);
+  check("连完一组出现「下一组」过场横幅", bannerRes.appeared && /下一组|全部连完/.test(bannerRes.text || ""), JSON.stringify(bannerRes));
+  check("过场横幅层级高于连线", bannerRes.appeared && bannerRes.bz > bannerRes.lz, `banner=${bannerRes.bz} lines=${bannerRes.lz}`);
+  check("横幅文案未被上层元素压住", bannerRes.hitSelf === true);
+
   /* ---------- 5. 连线：单词也能当起点 ---------- */
   await goto(BASE + "?lesson=l4&stage=match");
   await sleep(1500);
