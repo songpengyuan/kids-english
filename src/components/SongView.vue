@@ -46,6 +46,19 @@ function onAudioError() {
   playing.value = false;
 }
 function onEnded() {
+  // 循环模式：回到开头继续唱，不结算、不离开本页
+  if (loop.value) {
+    activeLine.value = -1;
+    userScrollAt = 0;
+    if (lyricsEl.value) lyricsEl.value.scrollTo({ top: 0 });
+    const a = audioEl.value;
+    if (a) {
+      a.currentTime = 0;
+      currentTime.value = 0;
+      a.play().catch(() => (playing.value = false));
+    }
+    return;
+  }
   playing.value = false;
   activeLine.value = -1;
   bigCelebrate();
@@ -54,6 +67,79 @@ function onEnded() {
 }
 function onVideoError() {
   videoMissing.value = true;
+}
+
+/* ---------- 播放进度条 / 循环播放 ---------- */
+const duration = ref(0);
+const currentTime = ref(0);
+const buffered = ref(0);
+const seeking = ref(false);
+const seekEl = ref(null);
+
+const LOOP_KEY = "kids-english-song-loop";
+const loop = ref(localStorage.getItem(LOOP_KEY) === "1");
+
+const playedPct = computed(() =>
+  duration.value ? Math.min(100, (currentTime.value / duration.value) * 100) + "%" : "0%"
+);
+const bufPct = computed(() =>
+  duration.value ? Math.min(100, (buffered.value / duration.value) * 100) + "%" : "0%"
+);
+
+/** 秒 → m:ss */
+function fmt(sec) {
+  if (!isFinite(sec) || sec <= 0) return "0:00";
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return m + ":" + String(s).padStart(2, "0");
+}
+
+function onLoadedMeta() {
+  const a = audioEl.value;
+  duration.value = a && isFinite(a.duration) ? a.duration : 0;
+}
+
+function toggleLoop() {
+  loop.value = !loop.value;
+  try {
+    localStorage.setItem(LOOP_KEY, loop.value ? "1" : "0");
+  } catch {
+    /* 无痕模式写入失败，忽略 */
+  }
+  hapticTap();
+}
+
+/* 拖动进度条：pointer 事件挂在 window 上，手指滑出条外也不丢跟踪 */
+function onSeekDown(e) {
+  if (audioMissing.value || !duration.value) return;
+  seeking.value = true;
+  hapticTap();
+  applySeek(e);
+  window.addEventListener("pointermove", onSeekMove);
+  window.addEventListener("pointerup", onSeekUp);
+  window.addEventListener("pointercancel", onSeekUp);
+  e.preventDefault();
+}
+function onSeekMove(e) {
+  if (seeking.value) applySeek(e);
+}
+function onSeekUp() {
+  seeking.value = false;
+  window.removeEventListener("pointermove", onSeekMove);
+  window.removeEventListener("pointerup", onSeekUp);
+  window.removeEventListener("pointercancel", onSeekUp);
+}
+function applySeek(e) {
+  const box = seekEl.value;
+  const a = audioEl.value;
+  if (!box || !a || !duration.value) return;
+  const p = e.touches ? e.touches[0] : e;
+  const r = box.getBoundingClientRect();
+  const ratio = Math.min(1, Math.max(0, (p.clientX - r.left) / r.width));
+  const t = ratio * duration.value;
+  a.currentTime = t;
+  currentTime.value = t;
+  syncActiveLine(t, duration.value); // 拖动时高亮立刻跟上，不等 timeupdate
 }
 
 /* ---------- 歌词跟随播放滚动 ----------
@@ -68,12 +154,20 @@ let userScrollAt = 0; // 用户最后一次手动滚动的时刻
 
 function onTimeUpdate() {
   const a = audioEl.value;
-  if (!a || !a.duration || !isFinite(a.duration)) return;
+  if (!a) return;
+  if (isFinite(a.duration) && a.duration) duration.value = a.duration;
+  if (a.buffered.length) buffered.value = a.buffered.end(a.buffered.length - 1);
+  if (seeking.value) return; // 拖动中由 applySeek 负责同步，避免被回放进度打断
+  currentTime.value = a.currentTime || 0;
+  syncActiveLine(a.currentTime, a.duration);
+}
+
+/** 把播放进度映射到歌词行（起始留 2% 前奏缓冲） */
+function syncActiveLine(t, d) {
   const lines = props.lesson.song.lyrics;
-  if (!lines.length) return;
-  // 起始留一点缓冲（前奏），结束前 2% 收尾
-  const t = Math.min(0.98, Math.max(0, a.currentTime / a.duration - 0.02)) / 0.96;
-  let idx = Math.min(lines.length - 1, Math.floor(t * lines.length));
+  if (!lines.length || !d || !isFinite(d)) return;
+  const p = Math.min(0.98, Math.max(0, t / d - 0.02)) / 0.96;
+  let idx = Math.min(lines.length - 1, Math.floor(p * lines.length));
   // 落在段落分隔空行上时，高亮移到接下来的第一句
   while (idx < lines.length - 1 && !lines[idx]) idx++;
   activeLine.value = idx;
@@ -109,10 +203,11 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
     <audio
       ref="audioEl"
       :src="lesson.song.audio"
-      preload="none"
+      preload="metadata"
       @error="onAudioError"
       @ended="onEnded"
       @timeupdate="onTimeUpdate"
+      @loadedmetadata="onLoadedMeta"
     />
 
     <!-- 视频 / 音频切换 -->
@@ -178,6 +273,38 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
             🎬 童谣视频/音频还没有上传<br />（把 mp3/mp4 放进对应课时目录就能响）
           </p>
         </div>
+      </div>
+
+      <!-- 播放进度条 + 循环播放（不能挂 data-haptic：透明开关的 touch-action:none 会吃掉拖动） -->
+      <div v-if="!audioMissing" class="transport">
+        <span class="t-time">{{ fmt(currentTime) }}</span>
+        <div
+          class="seek"
+          ref="seekEl"
+          role="slider"
+          tabindex="0"
+          aria-label="播放进度"
+          :aria-valuemin="0"
+          :aria-valuemax="Math.round(duration)"
+          :aria-valuenow="Math.round(currentTime)"
+          @pointerdown="onSeekDown"
+        >
+          <div class="seek-track">
+            <div class="seek-buf" :style="{ width: bufPct }"></div>
+            <div class="seek-fill" :style="{ width: playedPct }"></div>
+          </div>
+          <span class="seek-knob" :style="{ left: playedPct }"></span>
+        </div>
+        <span class="t-time">{{ fmt(duration) }}</span>
+        <button
+          class="loop-btn"
+          :class="{ on: loop }"
+          :aria-pressed="loop"
+          :title="loop ? '循环播放：开' : '循环播放：关'"
+          @click="toggleLoop"
+        >
+          🔁
+        </button>
       </div>
 
       <div
@@ -313,6 +440,90 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
   margin-top: 2px;
 }
 
+/* ---------- 播放进度条 + 循环 ---------- */
+.transport {
+  flex: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-s);
+  padding: 0 2px;
+}
+.t-time {
+  flex: none;
+  min-width: 40px;
+  text-align: center;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+/* 触摸热区靠外层撑高，视觉细条交给内部 track */
+.seek {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: clamp(30px, 5.4vh, 40px);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none; /* 拖进度条时不要连带滚动歌词 */
+}
+.seek-track {
+  position: relative;
+  width: 100%;
+  height: clamp(8px, 1.7vh, 13px);
+  background: var(--line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.seek-buf {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--tint-yellow);
+  border-radius: var(--radius-pill);
+}
+.seek-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  border-radius: var(--radius-pill);
+}
+.seek-knob {
+  position: absolute;
+  top: 50%;
+  width: clamp(18px, 3.2vh, 24px);
+  height: clamp(18px, 3.2vh, 24px);
+  background: var(--card-bg);
+  border: 3px solid var(--blue);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: var(--shadow-soft);
+  pointer-events: none;
+}
+.loop-btn {
+  flex: none;
+  width: clamp(36px, 6.2vh, 46px);
+  height: clamp(36px, 6.2vh, 46px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(15px, 2.6vh, 21px);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-hard);
+  opacity: 0.5; /* 关闭态压暗，开启态亮起 */
+  transition: opacity 0.15s, background 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+.loop-btn.on {
+  opacity: 1;
+  background: var(--green);
+  box-shadow: 0 var(--press) 0 var(--green-dark);
+}
+.loop-btn:active {
+  transform: translateY(calc(var(--press) - 1px));
+}
+
 /* 歌词：固定高度窗口，始终可滚（KTV 式跟随 + 手动滑动均可） */
 .lyrics {
   position: relative; /* 让行 offsetTop 相对本容器，自动滚动按此计算 */
@@ -431,6 +642,25 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
   }
   .audio-bar {
     min-height: 52px;
+  }
+  /* 横屏高度紧张：进度条收窄、时间隐藏，留空间给歌词 */
+  .transport {
+    gap: var(--gap-xs);
+  }
+  .seek {
+    height: 26px;
+  }
+  .t-time {
+    display: none;
+  }
+  .loop-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+  .lyrics {
+    max-height: 34vh;
+    min-height: 72px;
   }
   .line {
     font-size: 13px;

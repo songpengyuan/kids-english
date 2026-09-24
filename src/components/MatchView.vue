@@ -89,6 +89,7 @@ function matchedLine(wordId) {
 const matched = reactive(new Set()); // 当前组已配对 id
 const dragging = ref(false);
 const startWord = ref(null);
+const startSide = ref("img"); // 起点所在侧：'img'（两侧图片）| 'word'（中间单词）
 const line = reactive({ x1: 0, y1: 0, x2: 0, y2: 0 });
 const imgWrong = ref(null);
 const wordWrong = ref(null);
@@ -109,27 +110,56 @@ function localPoint(e) {
   return { x: p.clientX - rect.left, y: p.clientY - rect.top };
 }
 
-function onImgDown(word, e) {
-  if (matched.has(word.id) || dragging.value || transitioning.value) return;
-  // 再点一次已选中的图片 = 取消选择
-  if (startWord.value && startWord.value.id === word.id && !dragging.value) {
-    startWord.value = null;
+let downInfo = null; // 本次按下的意图：drag（拉线）/ pair（点选配对）/ cancel（取消选择）
+
+/** 卡片中心坐标（board 坐标系），按所在侧取对应位置表 */
+function centerOf(id, side) {
+  return (side === "img" ? imgPos[id] : wordPos[id]) || null;
+}
+
+/** id → 单词数据（同一 id 只出现在"一侧图片 + 中间单词"） */
+function findWord(id) {
+  return (
+    leftImgs.value.find((w) => w.id === id) ||
+    rightImgs.value.find((w) => w.id === id) ||
+    midWords.value.find((w) => w.id === id) ||
+    null
+  );
+}
+
+/**
+ * 按下任意卡片（图片或单词都可以当起点）：立即选中并拉起连线。三种意图：
+ *  - 已有选中且按的是另一侧 → 抬指时直接配对（点选模式）
+ *  - 已选中的就是这张 → 抬指时取消选择
+ *  - 其它 → 正常拖拽
+ */
+function onCardDown(word, side, e) {
+  if (matched.has(word.id) || transitioning.value) return;
+  const sel = startWord.value;
+  if (sel && startSide.value !== side) {
+    downInfo = { word, side, act: "pair" };
+    return;
+  }
+  if (sel && startSide.value === side && sel.id === word.id) {
+    downInfo = { word, side, act: "cancel" };
     return;
   }
   dragging.value = true;
   startWord.value = word;
-  const c = imgPos[word.id] || localPoint(e);
+  startSide.value = side;
+  const c = centerOf(word.id, side) || localPoint(e);
   line.x1 = c.x;
   line.y1 = c.y;
   const p = localPoint(e);
   line.x2 = p.x;
   line.y2 = p.y;
+  downInfo = { word, side, act: "drag" };
   speak(word.en);
   e.preventDefault();
 }
 
 function onMove(e) {
-  if (!dragging.value) return;
+  if (!dragging.value || !downInfo) return;
   const p = localPoint(e);
   line.x2 = p.x;
   line.y2 = p.y;
@@ -137,45 +167,57 @@ function onMove(e) {
   const cy = e.touches ? e.touches[0].clientY : e.clientY;
   const el = document.elementFromPoint(cx, cy);
   const hit = el && el.closest ? el.closest("[data-word]") : null;
-  pendingWord = hit ? hit.getAttribute("data-word") : null;
+  // 只有落在"另一侧"且尚未配对的卡片上才算命中
+  pendingWord =
+    hit && hit.getAttribute("data-side") !== startSide.value && !hit.classList.contains("gone")
+      ? hit.getAttribute("data-word")
+      : null;
 }
 
 function onUp() {
-  if (!dragging.value) return;
-  const target = pendingWord ? midWords.value.find((w) => w.id === pendingWord) : null;
+  const info = downInfo;
+  downInfo = null;
+  if (!info) return;
+  if (info.act === "pair") {
+    tryMatch(info.word);
+    return;
+  }
+  if (info.act === "cancel") {
+    startWord.value = null;
+    return;
+  }
+  // 拖拽结束：压在对面卡片上就配对，否则保留选中（点选模式接着点另一侧）
   dragging.value = false;
-  // 未命中单词时保留选中状态（点选模式：先点图，再点词）
+  const target = pendingWord ? findWord(pendingWord) : null;
+  pendingWord = null;
   if (target) tryMatch(target);
 }
 
-/** 点击模式：选中图片后直接点中间单词也能配对 */
-function tapWord(word) {
-  if (matched.has(word.id) || transitioning.value) return;
-  if (startWord.value) {
-    tryMatch(word);
-  } else {
-    speak(word.en);
-  }
+/** 手势被系统抢占（来电 / 切后台）→ 只清拖拽态，保留选中 */
+function onCancel() {
+  downInfo = null;
+  dragging.value = false;
+  pendingWord = null;
 }
 
-function tryMatch(midWord) {
-  const imgWord = startWord.value;
+function tryMatch(other) {
+  const first = startWord.value;
   startWord.value = null;
   pendingWord = null;
-  if (!imgWord) return;
-  if (imgWord.id === midWord.id) {
-    matched.add(imgWord.id);
-    justMatched.value = imgWord.id;
+  if (!first) return;
+  if (first.id === other.id) {
+    matched.add(first.id);
+    justMatched.value = first.id;
     sfxMatch();
-    speak(midWord.en);
+    speak(other.en);
     celebrate();
     setTimeout(() => (justMatched.value = null), 600);
   } else {
     wrongCount.value++;
     sfxWrong();
-    imgWrong.value = imgWord.id;
-    wordWrong.value = midWord.id;
-    setTimeout(() => speak(imgWord.en, { rate: 0.75 }), 420);
+    imgWrong.value = first.id;
+    wordWrong.value = other.id;
+    setTimeout(() => speak(first.en, { rate: 0.75 }), 420);
     setTimeout(() => {
       imgWrong.value = null;
       wordWrong.value = null;
@@ -223,6 +265,7 @@ onMounted(async () => {
   measure();
   window.addEventListener("pointermove", onMove);
   window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onCancel);
   window.addEventListener("resize", scheduleMeasure);
   if (board.value) {
     ro = new ResizeObserver(scheduleMeasure);
@@ -232,6 +275,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener("pointermove", onMove);
   window.removeEventListener("pointerup", onUp);
+  window.removeEventListener("pointercancel", onCancel);
   window.removeEventListener("resize", scheduleMeasure);
   if (ro) ro.disconnect();
   if (raf) cancelAnimationFrame(raf);
@@ -241,7 +285,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="match view">
     <div class="head">
-      <p class="tip">🔗 把两边的图片和中间的单词连起来</p>
+      <p class="tip">🔗 图片和单词连起来，从哪边开始都行</p>
       <span class="counter" v-if="groupCount > 1">
         第 {{ groupIdx + 1 }} / {{ groupCount }} 组 · {{ doneCount }}/{{ totalPairs }}
       </span>
@@ -276,13 +320,15 @@ onBeforeUnmount(() => {
           :ref="(el) => (leftEls[i] = el)"
           class="cell pic anim-pop"
           data-haptic
+          data-side="img"
+          :data-word="w.id"
           :style="{ animationDelay: i * 0.06 + 's' }"
           :class="{
             gone: matched.has(w.id),
             wrong: imgWrong === w.id,
-            active: dragging && startWord && startWord.id === w.id
+            active: startWord && startSide === 'img' && startWord.id === w.id
           }"
-          @pointerdown="onImgDown(w, $event)"
+          @pointerdown="onCardDown(w, 'img', $event)"
         >
           <img
             :src="w.image"
@@ -303,10 +349,15 @@ onBeforeUnmount(() => {
           :ref="(el) => (wordEls[i] = el)"
           class="cell word anim-pop"
           data-haptic
+          data-side="word"
           :style="{ animationDelay: i * 0.06 + 's' }"
           :data-word="w.id"
-          :class="{ gone: matched.has(w.id), wrong: wordWrong === w.id }"
-          @click="tapWord(w)"
+          :class="{
+            gone: matched.has(w.id),
+            wrong: wordWrong === w.id,
+            active: startWord && startSide === 'word' && startWord.id === w.id
+          }"
+          @pointerdown="onCardDown(w, 'word', $event)"
         >
           {{ w.en }}
         </div>
@@ -319,13 +370,15 @@ onBeforeUnmount(() => {
           :ref="(el) => (rightEls[i] = el)"
           class="cell pic anim-pop"
           data-haptic
+          data-side="img"
+          :data-word="w.id"
           :style="{ animationDelay: (i + 2) * 0.06 + 's' }"
           :class="{
             gone: matched.has(w.id),
             wrong: imgWrong === w.id,
-            active: dragging && startWord && startWord.id === w.id
+            active: startWord && startSide === 'img' && startWord.id === w.id
           }"
-          @pointerdown="onImgDown(w, $event)"
+          @pointerdown="onCardDown(w, 'img', $event)"
         >
           <img
             :src="w.image"
@@ -462,11 +515,14 @@ onBeforeUnmount(() => {
 .cell.word {
   font-size: clamp(13px, min(2.6vh, 2.1vw), 23px);
   font-weight: 800;
-  cursor: pointer;
+  cursor: grab;
   padding: 0 4px;
   text-align: center;
   word-break: break-word;
   line-height: 1.1;
+}
+.cell.word:active {
+  cursor: grabbing;
 }
 .cell.active {
   border-color: var(--yellow);
@@ -489,7 +545,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(253, 246, 227, 0.85);
+  background: var(--overlay-strong);
   border-radius: var(--radius);
 }
 .banner span {

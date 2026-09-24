@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 /**
- * 针对本次四项修复的交互验证（CDP 驱动无头 Chrome）：
- *   1. 连线：完成后线条 pathLength=100、端点不进入卡片内部（留 2px 余量）
+ * 交互验证（CDP 驱动无头 Chrome）：
+ *   1. 连线：完成后线条 pathLength=100、端点落在卡片中心、SVG 置顶
  *   2. 听音选图：每个选项下方有英文单词标签
  *   3. 标题：课程卡片 / 顶栏显示英文标题，不含中文
- *   4. 学单词：点卡片触发 animate.css tada 动画且卡片始终可见（无 scale(0)/opacity 0 帧）
+ *   4. 学单词：点卡片触发 animate.css tada 动画且卡片始终可见
+ *   5. 连线：图片与单词都能当起点（拖动 + 点选两种模式）
+ *   6. 音乐模式：播放进度条（可拖动跳转）+ 循环播放开关（状态持久化）
  *
- * 用法：先启动 preview（4173 端口），然后 node scripts/verify-fixes.mjs
+ * 用法：先启动 dev/preview 服务，然后 AUDIT_BASE=http://localhost:5173/kids-english/ node scripts/verify-fixes.mjs
  */
 import { spawn } from "node:child_process";
 
@@ -144,7 +146,7 @@ try {
     const id = img.__vueParentComponent ? null : null;
     // 直接从 DOM 拿不到 id，用 Vue 内部方式太绕 —— 改为遍历：对每个单词位置抬起一次，
     // 释放后检查是否产生 done-line，直到产生为止
-    const words = [...document.querySelectorAll('[data-word]')];
+    const words = [...document.querySelectorAll('.col.words .cell.word')];
     const rb = board.getBoundingClientRect();
     let ok = false;
     for (const w of words) {
@@ -187,6 +189,97 @@ try {
   check("线条端点为卡片中心(中心到中心)", matchRes.badEndpoints === 0, matchRes.badDetail);
   check("连线 SVG 在最上层(z-index>=30)", Number(matchRes.zLines) >= 30, "z=" + matchRes.zLines);
   check("线型为实线(dashoffset 已画满)", matchRes.dashOffset === "0px", String(matchRes.dashOffset));
+
+  /* ---------- 5. 连线：单词也能当起点 ---------- */
+  await goto(BASE + "?lesson=l4&stage=match");
+  await sleep(1500);
+  const wordStartRes = await evalJs(`(async () => {
+    const fire = (el, type, x, y) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true }));
+    const word = document.querySelector('.col.words .cell.word');
+    if (!word) return { found: false };
+    const id = word.getAttribute('data-word');
+    const target = document.querySelector('[data-side="img"][data-word="' + id + '"]');
+    if (!target) return { found: true, hasTarget: false };
+    const wr = word.getBoundingClientRect(), tr = target.getBoundingClientRect();
+    fire(word, 'pointerdown', wr.left + wr.width / 2, wr.top + wr.height / 2);
+    await new Promise(r => setTimeout(r, 120)); // 等 Vue 渲染出拖拽线
+    const draggingAfterDown = !!document.querySelector('.drag-line');
+    const highlighted = !!document.querySelector('.cell.word.active');
+    fire(document, 'pointermove', tr.left + tr.width / 2, tr.top + tr.height / 2);
+    fire(document, 'pointerup', tr.left + tr.width / 2, tr.top + tr.height / 2);
+    await new Promise(r => setTimeout(r, 700));
+    return { found: true, hasTarget: true, draggingAfterDown, highlighted, matched: document.querySelectorAll('.done-line').length };
+  })()`);
+  check("单词卡可作连线起点(按下即拉线)", wordStartRes.draggingAfterDown === true);
+  check("按下单词卡有选中高亮", wordStartRes.highlighted === true);
+  check("从单词拖到图片能配对成功", (wordStartRes.matched || 0) >= 1, "done-line=" + wordStartRes.matched);
+
+  /* ---------- 6. 连线：点选模式（先点单词再点图片） ---------- */
+  await goto(BASE + "?lesson=l4&stage=match");
+  await sleep(1500);
+  const tapModeRes = await evalJs(`(async () => {
+    const fire = (el, type, x, y) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true }));
+    const word = document.querySelector('.col.words .cell.word');
+    const id = word.getAttribute('data-word');
+    const target = document.querySelector('[data-side="img"][data-word="' + id + '"]');
+    const wr = word.getBoundingClientRect(), tr = target.getBoundingClientRect();
+    // 先点单词（原地松手）→ 应保留选中高亮
+    fire(word, 'pointerdown', wr.left + wr.width / 2, wr.top + wr.height / 2);
+    fire(document, 'pointerup', wr.left + wr.width / 2, wr.top + wr.height / 2);
+    await new Promise(r => setTimeout(r, 250));
+    const selected = !!document.querySelector('.cell.word.active');
+    // 再点对应图片 → 配对
+    fire(target, 'pointerdown', tr.left + tr.width / 2, tr.top + tr.height / 2);
+    fire(document, 'pointerup', tr.left + tr.width / 2, tr.top + tr.height / 2);
+    await new Promise(r => setTimeout(r, 700));
+    return { selected, matched: document.querySelectorAll('.done-line').length };
+  })()`);
+  check("点单词后保留选中高亮", tapModeRes.selected === true);
+  check("再点图片即完成配对", (tapModeRes.matched || 0) >= 1, "done-line=" + tapModeRes.matched);
+
+  /* ---------- 7. 音乐模式：进度条 + 循环播放 ---------- */
+  await goto(BASE + "?lesson=l5&stage=song");
+  await sleep(1800);
+  await evalJs(`[...document.querySelectorAll('.song .tab')].find(t => t.textContent.includes('音乐')).click()`);
+  await sleep(600);
+  const seekRes = await evalJs(`(async () => {
+    const seek = document.querySelector('.seek');
+    const audio = document.querySelector('audio');
+    const btn = document.querySelector('.loop-btn');
+    if (!seek || !audio || !btn) return { found: false };
+    // 等元数据把总时长读出来
+    for (let i = 0; i < 60 && !(audio.duration > 0); i++) await new Promise(r => setTimeout(r, 100));
+    const r = seek.getBoundingClientRect();
+    const fire = (el, type, x, y) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true }));
+    fire(seek, 'pointerdown', r.left + r.width * 0.5, r.top + r.height / 2);
+    fire(window, 'pointermove', r.left + r.width * 0.75, r.top + r.height / 2);
+    fire(window, 'pointerup', r.left + r.width * 0.75, r.top + r.height / 2);
+    await new Promise(r2 => setTimeout(r2, 300));
+    const times = [...document.querySelectorAll('.transport .t-time')].map(e => e.textContent.trim());
+    return {
+      found: true, duration: audio.duration, currentTime: audio.currentTime,
+      times, fill: document.querySelector('.seek-fill').style.width,
+      knobLeft: document.querySelector('.seek-knob').style.left
+    };
+  })()`);
+  check("音乐模式有进度条且读到总时长", seekRes.found === true && (seekRes.duration || 0) > 5, (seekRes.duration || 0).toFixed(1) + "s");
+  check("进度条显示 当前/总时长", seekRes.times?.length === 2 && /^\d+:\d\d$/.test(seekRes.times[1] || ""), (seekRes.times || []).join(" / "));
+  check("拖动进度条可跳转播放位置", seekRes.currentTime / seekRes.duration > 0.6 && seekRes.currentTime / seekRes.duration < 0.9, Math.round(100 * seekRes.currentTime / seekRes.duration) + "%");
+  check("进度条视觉同步(填充+滑块)", /7[0-9](\.|%)/.test(seekRes.fill) || parseFloat(seekRes.fill) > 60, seekRes.fill);
+
+  const loopRes = await evalJs(`(async () => {
+    const btn = document.querySelector('.loop-btn');
+    const before = btn.classList.contains('on');
+    btn.click();
+    await new Promise(r => setTimeout(r, 120)); // 等 Vue 更新 class
+    const after = btn.classList.contains('on');
+    const stored = localStorage.getItem('kids-english-song-loop');
+    btn.click();
+    await new Promise(r => setTimeout(r, 120));
+    return { before, after, stored, storedBack: localStorage.getItem('kids-english-song-loop') };
+  })()`);
+  check("循环按钮可切换开关态", loopRes.after !== loopRes.before, loopRes.before + " → " + loopRes.after);
+  check("循环状态持久化", loopRes.stored === (loopRes.before ? "0" : "1") && loopRes.storedBack === (loopRes.before ? "1" : "0"), "stored=" + loopRes.stored);
 
   // 截图存档
   const shot = await send("Page.captureScreenshot", { format: "png" });

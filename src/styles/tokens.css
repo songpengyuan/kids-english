@@ -34,6 +34,7 @@
   --tint-green: #f2fff2;  /* 已听过 / 完成态底色 */
   --tint-cream: #fff7de;  /* 听音选图答案条底色 */
   --overlay: rgba(255, 255, 255, 0.92); /* 悬浮徽章底色 */
+  --overlay-strong: rgba(253, 246, 227, 0.88); /* 组间过场横幅：需盖住下方卡片 */
 
   /* ---------- 间距（流体） ---------- */
   --gap-xs: clamp(4px, min(0.7vh, 0.6vw), 8px);
@@ -97,6 +98,7 @@
   --tint-green: #1e3324;
   --tint-cream: #3b3620;
   --overlay: rgba(23, 28, 43, 0.92);
+  --overlay-strong: rgba(23, 28, 43, 0.88);
 
   --shadow-hard: 0 6px 0 rgba(0, 0, 0, 0.42);
   --shadow-soft: 0 2px 0 rgba(0, 0, 0, 0.3);
