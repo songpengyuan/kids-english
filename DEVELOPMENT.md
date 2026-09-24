@@ -325,9 +325,54 @@ node scripts/layout-audit.mjs
 > 页面里有无限循环的 CSS 动画（`anim-float`/`anim-wiggle`），
 > 虚拟时间永远推进不到 idle，Chrome 会一直挂着不退出。
 
+### 7.3 PWA / 离线验证
+
+```bash
+node scripts/verify-pwa.mjs
+```
+
+脚本自己负责构建（带 `GH_REPO`）→ 起 `vite preview`（4173 端口，模拟子路径）→ CDP 验证 → 杀进程。
+覆盖：manifest 合法、SW 接管、壳缓存就位、媒体进缓存、**真·断网**（直接杀 preview 服务）后
+首页可渲染 / 音频可读 / Range 请求返回 206、改 `dist/index.html` 立即生效（network-first）、
+改 `dist/sw.js` 构建号后 SW 自动升级、玩法中不被强制刷新且回首页静默刷新。
+
 ---
 
-## 8. 构建与部署
+## 8. PWA 架构（离线 + 及时更新）
+
+文件：`src/sw.js`（SW 源码）→ 构建时由 `vite.config.js` 的 `kids-pwa` 插件原样输出为 `dist/sw.js`，
+并把其中的构建占位符替换为当次构建 id（`BUILD_ID`）。
+
+**为什么 SW 字节必须每次构建都变**：浏览器靠字节对比检测 SW 更新。构建 id 变了 →
+下次打开浏览器就会装新 SW → SW 在 install 里 `skipWaiting`、activate 里 `clients.claim` 立即接管。
+这是"部署后用户能及时拿到新版"的前提，别改成内容固定的静态文件。
+
+缓存策略（详见 `src/sw.js` 顶部注释）：
+
+| 请求 | 策略 | 原因 |
+|---|---|---|
+| 页面导航 | network-first（4s 超时回退缓存，后台继续拉新写缓存） | 新部署立刻生效；弱网秒开 |
+| `/assets/*`（带哈希） | cache-first | 哈希即版本，永不取错 |
+| `/lessons/*` 媒体 | 先缓存 + etag 条件校验（304 零下载）；支持 Range 切片 | 换同名素材不会被永久黏住；离线可拖进度条 |
+| manifest / 图标 | SWR | 小文件，保新鲜 |
+
+页面侧（`src/utils/pwa.js`）：注册 SW、切回标签页时 `reg.update()` 主动查新；
+新版本接管后（`controllerchange`）**不打断玩法**——孩子在首页 → 立即静默 `location.reload()`；
+在课时里 → 挂起，`back()` 回首页时再刷（`applyUpdateIfIdle`）。
+
+**媒体缓存名固定为 `kids-media-v1`，不随构建变化**：否则每次更新都要重下几十 MB 音视频。
+壳缓存 `kids-app-<buildId>` 每次 build 新建，activate 时保留最近 2 份、删更老的
+（留 1 份旧的，避免更新瞬间旧页面拿不到自己的资源）。
+
+**dev 模式默认不注册 SW**（避免干扰 HMR），要手动测时加 `?sw=1`；
+dev 的 `/sw.js` 由插件中间件提供，不缓存任何 dev 模块。
+
+注册图标：`public/manifest.webmanifest`（相对路径，天然适配子路径）+
+`scripts/gen-icons.py`（从 192 原图提取闪电形状重绘 512 / maskable-512）。
+
+---
+
+## 9. 构建与部署
 
 推送到 `main` 会自动触发 `.github/workflows/deploy.yml`：
 安装依赖 → `GH_REPO=<仓库名> pnpm build` → 上传 `dist/` → 部署到 GitHub Pages。
@@ -337,7 +382,7 @@ node scripts/layout-audit.mjs
 
 ---
 
-## 9. 排错清单
+## 10. 排错清单
 
 | 症状 | 原因 | 处理 |
 |---|---|---|
@@ -350,9 +395,13 @@ node scripts/layout-audit.mjs
 | iOS 上点第一次没声音 | iOS Safari 要求用户手势后才能播放音频 | 已用点击触发规避，勿改成自动播放 |
 | 孩子的星星丢了 | localStorage 被清（换设备/清缓存）或存储键被改动 | 不要改 `progress.js` 里的 KEY |
 
+| 孩子的星星丢了 | localStorage 被清（换设备/清缓存）或存储键被改动 | 不要改 `progress.js` 里的 KEY |
+| 手机上一直看到旧版本 | SW 被浏览器停用或更新被挂起（正在玩法里） | 回到首页即刷新；或在浏览器设置里清除该站点数据 |
+| 换了同名媒体文件但客户端还是旧的 | 媒体是 SWR，最多旧一次 | 刷新一次页面即可；要彻底立即可见可改文件名 |
+
 ---
 
-## 10. 可选的后续方向
+## 11. 可选的后续方向
 
 - **滑动手势翻页**：点读页可加左右滑动（注意与连线页拖拽的手势边界）。
 - **发音评分升级**：接入讯飞少儿语音评测或 Azure Pronunciation Assessment，逐音素打分。

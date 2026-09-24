@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from "vue";
 import HomePage from "./components/HomePage.vue";
 import LessonView from "./components/LessonView.vue";
 import { getLesson } from "./data/lessons";
+import { initPWA, applyUpdateIfIdle } from "./utils/pwa";
 
 const currentId = ref(null); // null = 首页
 const lesson = computed(() => (currentId.value ? getLesson(currentId.value) : null));
@@ -12,6 +13,8 @@ function open(id) {
 }
 function back() {
   currentId.value = null;
+  // 若有挂起的版本更新，回到首页正是安全刷新时机
+  applyUpdateIfIdle();
 }
 
 /**
@@ -22,6 +25,8 @@ function back() {
 onMounted(() => {
   const id = new URLSearchParams(location.search).get("lesson");
   if (id && getLesson(id)) currentId.value = id;
+  // 「在首页 = 可安全刷新」：有新版本时首页静默刷新，玩法中不打断
+  initPWA(() => currentId.value === null);
 });
 </script>
 
