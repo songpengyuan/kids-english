@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import HomePage from "./components/HomePage.vue";
 import LessonView from "./components/LessonView.vue";
+import CuteBackdrop from "./components/CuteBackdrop.vue";
 import { getLesson } from "./data/lessons";
 import { initPWA, applyUpdateIfIdle } from "./utils/pwa";
 
@@ -31,6 +32,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <CuteBackdrop />
   <KeepAlive include="HomePage">
     <LessonView
       v-if="lesson"

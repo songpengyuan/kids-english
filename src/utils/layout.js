@@ -64,11 +64,17 @@ export function pickColumns({
   minCardH,
   gap = 12,
   maxCols = 5,
+  maxRows = 4,
   targetAspect = 1.25
 }) {
   const maxColsByW = Math.max(
     1,
     Math.min(maxCols, Math.floor((width + gap) / (minCardW + gap)))
+  );
+  // 高度能容纳的行数上限：超过就宁可翻页，也不能把卡片压扁到顶破容器
+  const maxRowsByH = Math.max(
+    1,
+    Math.min(maxRows, Math.floor((height + gap) / (minCardH + gap)))
   );
 
   const shape = (c) => {
@@ -78,10 +84,11 @@ export function pickColumns({
     return { rows, cardW, cardH };
   };
 
-  // 1) 先找完全可读（宽高都不低于下限）的候选里，长宽比最接近目标的
+  // 1) 先找完全可读（宽高都不低于下限、行数不超上限）的候选里，长宽比最接近目标的
   let best = null;
   for (let c = 1; c <= maxColsByW; c++) {
     const { rows, cardW, cardH } = shape(c);
+    if (rows > maxRowsByH) continue;
     if (cardW < minCardW || cardH < minCardH) continue;
     const score = Math.abs(cardW / cardH - targetAspect);
     if (!best || score < best.score) best = { cols: c, rows, score };
@@ -92,12 +99,25 @@ export function pickColumns({
   let fallback = null;
   for (let c = 1; c <= maxColsByW; c++) {
     const { rows, cardW, cardH } = shape(c);
+    if (rows > maxRowsByH) continue;
     const shortfall =
       Math.max(0, minCardW - cardW) + Math.max(0, minCardH - cardH);
     const score = shortfall * 3 + Math.abs(cardW / Math.max(1, cardH) - targetAspect) * 20;
     if (!fallback || score < fallback.score) fallback = { cols: c, rows, score };
   }
-  return { cols: fallback.cols, rows: fallback.rows };
+  if (fallback) return { cols: fallback.cols, rows: fallback.rows };
+
+  // 3) 行数上限太紧、一页装不下全部：固定行数 = maxRowsByH，
+  //    挑长宽比最接近目标的列数，多出来的卡片交给分页器翻页
+  const rows = maxRowsByH;
+  const cardH = (height - (rows - 1) * gap) / rows;
+  let pick = null;
+  for (let c = 1; c <= maxColsByW; c++) {
+    const cardW = (width - (c - 1) * gap) / c;
+    const score = Math.abs(cardW / cardH - targetAspect);
+    if (!pick || score < pick.score) pick = { cols: c, score };
+  }
+  return { cols: pick.cols, rows };
 }
 
 /**

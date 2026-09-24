@@ -97,9 +97,11 @@
   --pad-y: clamp(6px, 1.2vh, 18px);
 
   /* ---------- 圆角 / 阴影 ---------- */
-  --radius: clamp(14px, 2.2vh, 24px);
-  --radius-s: clamp(10px, 1.5vh, 16px);
+  /* 可爱化：圆角整体放大一档，贴纸描边（--sticker）给彩色卡片勾一圈白边 */
+  --radius: clamp(16px, 2.6vh, 28px);
+  --radius-s: clamp(12px, 1.8vh, 20px);
   --radius-pill: 999px;
+  --sticker: inset 0 0 0 3px rgba(255, 255, 255, 0.32);
   --shadow-hard: 0 6px 0 rgba(0, 0, 0, 0.12);
   --shadow-soft: 0 2px 0 rgba(0, 0, 0, 0.08);
   /* 立体按钮的下压深度 */
@@ -125,7 +127,7 @@
   --z-banner: 9;
 
   font-family:
-    "Comic Sans MS", "Chalkboard SE", "Baloo 2", "PingFang SC",
+    "Baloo 2", "Chalkboard SE", "Comic Sans MS", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
 }
 
@@ -200,7 +202,9 @@
   --overlay: rgba(23, 28, 43, 0.92);
   --overlay-strong: rgba(23, 28, 43, 0.88);
 
-  /* 深底上黑色投影几乎不可见，补一圈极淡内描边把卡片边界"描"出来 */
+  /* 深底上黑色投影几乎不可见，补一圈极淡内描边把卡片边界"描"出来；
+   * 贴纸描边同理压暗，避免深色卡片上出现刺眼白圈 */
+  --sticker: inset 0 0 0 3px rgba(255, 255, 255, 0.14);
   --shadow-hard: 0 6px 0 rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
   --shadow-soft: 0 2px 0 rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }

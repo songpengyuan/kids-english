@@ -86,7 +86,17 @@ try {
 
   const goto = async (url) => {
     await send("Page.navigate", { url });
-    await sleep(1200);
+    await sleep(400);
+    // 等 vite 冷启动 / 懒编译完成：readyState 且 #app 真的渲染出内容才继续，
+    // 否则偶发「页面还没画出来就断言」→ 一串 undefined 假失败
+    for (let i = 0; i < 20; i++) {
+      const ready = await evalJs(
+        `document.readyState === 'complete' && !!document.querySelector('#app') && document.querySelector('#app').children.length > 0`
+      ).catch(() => false);
+      if (ready) break;
+      await sleep(300);
+    }
+    await sleep(600);
   };
   const evalJs = async (expr) => {
     const r = await send("Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true });

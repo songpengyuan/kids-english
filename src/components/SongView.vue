@@ -3,13 +3,17 @@ import { ref, computed, watch, nextTick } from "vue";
 import { bigCelebrate } from "../utils/effects";
 import { hapticTap } from "../utils/haptics";
 import progress from "../store/progress";
-import { Film, Headphones, Music, Pause, Play, Repeat, Sparkles } from "@lucide/vue";
+import { Clapperboard, Headphones, Music, Pause, Play, Repeat, Sparkles } from "@lucide/vue";
+import SongStage from "./SongStage.vue";
 
 const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["back", "song-done"]);
 
-/* ---------- 视频 / 音频 Tab ---------- */
-const mode = ref(props.lesson.song.video ? "video" : "audio");
+/* ---------- 动画 / 视频 / 音乐 Tab ---------- */
+/* 没有视频文件 → 第一个 Tab 是内置动画舞台 */
+const hasVideo = computed(() => !!props.lesson.song.video);
+const firstTab = computed(() => (hasVideo.value ? "video" : "stage"));
+const mode = ref(firstTab.value);
 
 const playing = ref(false);
 const audioEl = ref(null);
@@ -26,7 +30,7 @@ const canFinish = computed(() => watched.value || (videoMissing.value && audioMi
 function setMode(m) {
   if (m === mode.value) return;
   hapticTap();
-  if (m === "audio" && videoEl.value) videoEl.value.pause();
+  if (m !== "video" && videoEl.value) videoEl.value.pause();
   if (m === "video" && playing.value) pause();
   mode.value = m;
 }
@@ -40,7 +44,9 @@ function play() {
       playing.value = true;
     })
     .catch(() => {
-      audioMissing.value = true;
+      /* 播放被拒（自动播放策略 / 被打断）只影响这一次；
+       * 文件真打不开时 <audio> 的 @error 事件会负责把 audioMissing 置真 */
+      playing.value = false;
     });
 }
 function pause() {
@@ -182,15 +188,28 @@ function onTimeUpdate() {
   syncActiveLine(a.currentTime, a.duration);
 }
 
-/** 把播放进度映射到歌词行（起始留 2% 前奏缓冲） */
+/**
+ * 把播放进度映射到当前歌词行。
+ * 有 gen-songs.py 生成的逐行时间轴时精确到行；没有（手工换过 mp3）就按比例映射。
+ */
 function syncActiveLine(t, d) {
   const lines = props.lesson.song.lyrics;
-  if (!lines.length || !d || !isFinite(d)) return;
+  if (!lines.length) return;
+  const tl = props.lesson.song.timings?.timeline;
+  if (tl && tl.length === lines.length) {
+    let i = 0;
+    while (i < tl.length && tl[i] <= t) i++;
+    i--;
+    // 空行 = 段间，不点亮（孩子喘口气）
+    activeLine.value = i >= 0 && lines[i] ? i : -1;
+    return;
+  }
+  if (!d || !isFinite(d)) return;
   const p = Math.min(0.98, Math.max(0, t / d - 0.02)) / 0.96;
   let idx = Math.min(lines.length - 1, Math.floor(p * lines.length));
   // 落在段落分隔空行上时，高亮移到接下来的第一句
   while (idx < lines.length - 1 && !lines[idx]) idx++;
-  activeLine.value = idx;
+  activeLine.value = lines[idx] ? idx : -1;
 }
 
 /** 高亮行变化 → 滚动到歌词面板中间；用户手动滚动后 4 秒内不打扰 */
@@ -215,7 +234,6 @@ function onLyricsScroll() {
   userScrollAt = Date.now();
 }
 
-const noteAnim = computed(() => (playing.value ? "anim-wiggle" : "anim-float"));
 </script>
 
 <template>
@@ -230,17 +248,17 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : "anim-float"));
       @loadedmetadata="onLoadedMeta"
     />
 
-    <!-- 视频 / 音频切换 -->
+    <!-- 动画 / 视频 / 音乐切换 -->
     <div class="tabs" role="tablist">
       <button
         class="tab"
-        :class="{ on: mode === 'video' }"
+        :class="{ on: mode === firstTab }"
         role="tab"
-        :aria-selected="mode === 'video'"
+        :aria-selected="mode === firstTab"
         data-haptic
-        @click="setMode('video')"
+        @click="setMode(firstTab)"
       >
-        <Film class="k-ico" />视频
+        <Clapperboard class="k-ico" />{{ hasVideo ? "视频" : "动画" }}
       </button>
       <button
         class="tab"
@@ -254,10 +272,9 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : "anim-float"));
       </button>
     </div>
 
-    <!-- ===== 视频模式 ===== -->
-    <div v-if="mode === 'video'" class="video-zone view-body">
+    <!-- ===== 视频模式（课时放了 song.mp4 时才有） ===== -->
+    <div v-if="mode === 'video' && hasVideo" class="video-zone view-body">
       <video
-        v-if="!videoMissing"
         ref="videoEl"
         :src="lesson.song.video"
         controls
@@ -266,24 +283,18 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : "anim-float"));
         @error="onVideoError"
         @ended="onVideoEnded"
       ></video>
-      <div v-else class="video-ph" data-haptic @click="play">
-        <Music class="k-ico note" :class="noteAnim" />
-        <p v-if="!audioMissing">{{ playing ? "正在播放，跟着唱吧～" : "点我播放童谣音乐" }}</p>
-        <p v-else class="miss">
-          童谣视频/音频还没有上传<br />（把 mp3/mp4 放进对应课时目录就能响）
-        </p>
-        <button v-if="!playing && !audioMissing" class="play-btn anim-pop" aria-label="播放">
-          <Play class="k-ico" />
-        </button>
-        <button
-          v-else-if="playing && !audioMissing"
-          class="play-btn anim-pop"
-          aria-label="暂停"
-          @click.stop="pause"
-        >
-          <Pause class="k-ico" />
-        </button>
-      </div>
+    </div>
+
+    <!-- ===== 动画舞台：随节拍弹跳的角色 + 卡拉OK字幕 ===== -->
+    <div v-else-if="mode === 'stage'" class="video-zone view-body">
+      <SongStage
+        :lesson="lesson"
+        :audio="audioEl"
+        :playing="playing"
+        :line="activeLine"
+        :idle="audioMissing ? '童谣音频还没上传哦' : '点我开始唱吧'"
+        @tap="playing ? pause() : play()"
+      />
     </div>
 
     <!-- ===== 音频模式：播放器 + 完整歌词 ===== -->
@@ -357,11 +368,12 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : "anim-float"));
       </div>
     </template>
 
-    <div v-if="mode === 'video'" class="words-strip">
+    <div v-if="mode !== 'audio'" class="words-strip">
       <span v-for="w in lesson.words" :key="w.id" class="chip anim-pop">
         {{ w.emoji }} {{ w.en }}
       </span>
     </div>
+    <p v-if="mode !== 'audio'" class="under-tip">跟着唱完一遍，就能领小星星啦</p>
 
     <!-- 收尾：完整听过一遍才可领星（循环模式下这是本页唯一出口） -->
     <button v-if="canFinish" class="k-btn finish" data-haptic @click="finishSong">
@@ -419,28 +431,8 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : "anim-float"));
   background: #000;
   object-fit: contain;
 }
-.video-ph {
-  width: 100%;
-  height: 100%;
-  border-radius: var(--radius);
-  background: var(--panel-bg);
-  box-shadow: var(--shadow-hard);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--gap-s);
-  cursor: pointer;
-  position: relative;
-  font-weight: 800;
-  color: var(--panel-ink);
-  text-align: center;
-  padding: var(--gap-s);
-  min-height: 0;
-}
-.note {
-  font-size: var(--fs-emoji-xl);
-}
+
+/* ---------- 动画舞台 ---------- */
 
 /* ---------- 音频模式 ---------- */
 .audio-bar {

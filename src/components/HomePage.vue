@@ -59,6 +59,8 @@ const fit = computed(() => {
     minCardH: MIN_CARD_H,
     gap: GAP,
     maxCols: isNarrow.value ? 2 : 4,
+    // 矮屏（手机横屏）两行课时卡放不下会顶破屏幕：强制单行，靠翻页看剩下的课
+    maxRows: area.h < MIN_CARD_H * 2 + GAP ? 1 : 4,
     // 课时卡偏方形（emoji + 中文 + 英文 + 词数四行），目标略高于 1
     targetAspect: 1.0
   });
@@ -94,7 +96,26 @@ function enter(l) {
       <ThemeToggle />
     </div>
     <header class="hero anim-fade-up">
-      <h1>🌈 丞丞英语乐园</h1>
+      <h1>
+        <!-- 小吉祥物：会眨眼的星星，给标题加一点"有人陪你学"的感觉 -->
+        <svg class="mascot" viewBox="0 0 64 64" aria-hidden="true">
+          <path
+            d="M32 4l7.6 15.6 17.2 2.4-12.5 12 3 17L32 43.2 16.7 51l3-17-12.5-12 17.2-2.4z"
+            fill="var(--yellow)"
+            stroke="var(--gold)"
+            stroke-width="2.5"
+            stroke-linejoin="round"
+          />
+          <g class="face">
+            <circle cx="26" cy="30" r="2.6" fill="#4a3f35" />
+            <circle cx="38" cy="30" r="2.6" fill="#4a3f35" />
+            <path d="M27 36q5 4.5 10 0" stroke="#4a3f35" stroke-width="2.4" fill="none" stroke-linecap="round" />
+            <circle cx="22.5" cy="34.5" r="2.6" fill="#ff9f9f" opacity=".65" />
+            <circle cx="41.5" cy="34.5" r="2.6" fill="#ff9f9f" opacity=".65" />
+          </g>
+        </svg>
+        丞丞英语乐园
+      </h1>
       <p class="sub">点一课，学童谣里的单词吧！</p>
       <div class="star-badge">
         <Star class="k-ico star-fill" />我的星星：{{ progress.totalStars }}
@@ -151,6 +172,23 @@ function enter(l) {
   font-size: var(--fs-hero);
   color: var(--ink);
   line-height: 1.15;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32em;
+}
+/* 吉祥物：轻轻浮动，偶尔眨眼 */
+.mascot {
+  width: 1.5em;
+  height: 1.5em;
+  animation: float-y 2.8s ease-in-out infinite;
+}
+.mascot .face {
+  transform-origin: 32px 30px;
+  animation: blink 4.2s infinite;
+}
+@keyframes blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95%, 97% { transform: scaleY(0.12); }
 }
 .sub {
   margin: 0;
@@ -247,6 +285,10 @@ function enter(l) {
   }
   .cnt {
     display: none;
+  }
+  /* 横屏时吉祥物离顶边只剩几个像素，浮动动画会瞬间探出屏幕，矮屏下关掉 */
+  .mascot {
+    animation: none;
   }
 }
 

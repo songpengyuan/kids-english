@@ -189,8 +189,9 @@ try {
 
     for (const pg of PAGES) {
       await cdp.send("Page.navigate", { url: BASE + pg.q });
-      // 等 Vue 挂载 + ResizeObserver 完成测量与分页（本地服务，1.2s 足够）
-      await sleep(1200);
+      // 等 Vue 挂载 + ResizeObserver 完成测量与分页；再留一点余量让入场动画
+      // （anim-fade-up / anim-pop）跑完，否则探针会撞上动画中间态误报越界
+      await sleep(1800);
 
       const res = await cdp.send("Runtime.evaluate", {
         expression: PROBE,

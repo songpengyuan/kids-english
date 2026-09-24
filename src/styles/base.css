@@ -4,6 +4,20 @@
  * 只在多处以完全相同形式出现的样式才放这里；只在单个页面用的留在组件的 scoped style。
  */
 
+/* ---------- 圆体字（可爱化的地基） ----------
+ * Baloo 2：Google Fonts 的开源圆体（OFL 许可），本地打包 latin 子集只有 ~32KB，
+ * 离线可用、跨设备渲染一致。可变字重 400-800，粗体不再是系统字体的"假加粗"。
+ * 中文回落到苹方/雅黑（圆润中文字体动辄几 MB，不划算）。
+ * 相对路径引用：Vite 会把它带 hash 打进 /assets/，Service Worker 按 hash 资源永久缓存。
+ */
+@font-face {
+  font-family: "Baloo 2";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../assets/fonts/baloo2-latin.woff2") format("woff2");
+}
+
 /* ---------- reset ---------- */
 * {
   box-sizing: border-box;
@@ -75,7 +89,8 @@ button {
     rgba(255, 255, 255, 0) 62%
   );
   background-color: var(--tone);
-  box-shadow: 0 var(--press) 0 var(--tone-deep);
+  /* 贴纸描边：彩色卡片勾一圈半透明白边，像贴纸一样立体可爱 */
+  box-shadow: var(--sticker), 0 var(--press) 0 var(--tone-deep);
   color: var(--on-tone);
 }
 .tone-blue {
@@ -102,15 +117,15 @@ button {
   --tone: var(--c-teal);
   --tone-deep: var(--c-teal-deep);
 }
-/* 按下：整体下沉 --press，投影随之收平（所有彩色卡片一致的手感） */
+/* 按下：整体下沉 --press 并轻微收拢，投影随之收平（所有彩色卡片一致的手感） */
 .tone-blue:active,
 .tone-green:active,
 .tone-orange:active,
 .tone-purple:active,
 .tone-pink:active,
 .tone-teal:active {
-  transform: translateY(calc(var(--press) - 1px));
-  box-shadow: 0 1px 0 var(--tone-deep);
+  transform: translateY(calc(var(--press) - 1px)) scale(0.97);
+  box-shadow: var(--sticker), 0 1px 0 var(--tone-deep);
 }
 
 img {
@@ -256,7 +271,7 @@ img {
   gap: 0.4em;
 }
 .k-btn:active {
-  transform: translateY(calc(var(--press) - 1px));
+  transform: translateY(calc(var(--press) - 1px)) scale(0.97);
   box-shadow: 0 1px 0 var(--green-dark);
 }
 .k-btn.blue {

@@ -262,6 +262,38 @@ speak("star")
   `python3 scripts/gen-word-audio.py`（增量）或 `--force --voice en-US-AriaNeural`（全量）。
   放对了文件名无需改任何代码。
 
+### 5.2 自研课时资源流水线（l6 颜色 / l7 数字 / l8 字母）
+
+后三课（l6 颜色、l7 数字 0-10、l8 字母）的音频和图片**全部是自己合成的**，
+不引用任何第三方素材，避免版权问题、也保证整套风格统一：
+
+| 资源 | 生成方式 | 脚本 |
+|---|---|---|
+| 童谣 mp3 + 逐行时间轴 | 自研合成器（numpy 生成玩具乐器音色 + lameenc 编码），旋律按歌词音节自动落点 | `scripts/gen-songs.py` |
+| 单词贴纸图（SVG，共 29 张） | 手写 SVG：圆角贴纸底 + 粗白描边 + 会笑的眼睛；颜色/数字/字母三种画法 | `scripts/gen-word-art.py` |
+| 单词与口语句发音 | edge-tts 神经网络童声（同 §5.1） | `scripts/gen-word-audio.py` |
+
+```bash
+# 改完 lessons.js 里的歌词/单词后，按这个顺序重跑
+python3 scripts/gen-songs.py        # 覆盖 song.mp3 + 写回 song-timings.json
+python3 scripts/gen-word-art.py     # 覆盖 public/lessons/{l6,l7,l8}/words/*.svg
+python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
+```
+
+- **为什么音频要自己合成**：`song-timings.json` 里的 `bpm` 与逐行 `timeline`
+  是驱动「动画舞台对拍 + 卡拉 OK 字幕」的数据；只有自己生成，才能拿到
+  精确到行的起唱时间（见 §3 的 `SongStage.vue`）。换第三方 mp3 时时间轴会失效，
+  此时 `SongView` 自动回退成「按播放比例估算」。
+- **歌词与旋律的对齐是硬校验**：`gen-songs.py` 会逐句断言
+  `旋律音符数 == 音节数`，对不上直接报错，避免生成「跑调的伴奏」。
+  音节数是脚本按元音规则估算的（如 `seven`/`zero` 算 2 个音节），
+  改歌词后若报错，按提示调整该句的旋律轮廓即可。
+- **图片与课的引用是硬校验**：`gen-word-art.py` 最后会读 `lessons.js`，
+  核对「生成的文件」与「课里引用的路径」完全一致，多一个少一个都报错，
+  防止改名字后留下 404。
+- 生成物已提交进仓库（三课合计约 3.3MB），**运行时不依赖这些脚本**，
+  只在需要改内容时重跑。
+
 ---
 
 ## 6. 发音评分的双模式降级链路
