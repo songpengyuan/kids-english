@@ -7,6 +7,11 @@
  *   4. 学单词：点卡片触发 animate.css tada 动画且卡片始终可见
  *   5. 连线：图片与单词都能当起点（拖动 + 点选两种模式）
  *   6. 音乐模式：播放进度条（可拖动跳转）+ 循环播放开关（状态持久化）
+ *   7. 连线方向：起点=先按下的卡片、终点=后按下的卡片（两个方向都验）
+ *   8. 暗黑模式：品牌色亮度下降、面色比底色亮一档、卡片底色真的被替换
+ *   9. 卡片色调统一：玩法卡/课时卡/封面都走 .tone-* 色调板，无内联写死颜色
+ *  10. 图标库：控件区不再出现 emoji，图标以 SVG 渲染且随字号缩放
+ *  11. 音乐默认循环；完整听一遍后可领星并进入结算页
  *
  * 用法：先启动 dev/preview 服务，然后 AUDIT_BASE=http://localhost:5173/kids-english/ node scripts/verify-fixes.mjs
  */
@@ -40,6 +45,10 @@ const chrome = spawn(CHROME, [
   "--no-first-run",
   "--no-default-browser-check",
   "--disable-gpu",
+  // 无头环境没有真实用户手势，audio.play() 会被自动播放策略拦掉；
+  // 「听完一遍领星」「循环重播」这些用例必须真的播起来才能验证。
+  "--autoplay-policy=no-user-gesture-required",
+  "--mute-audio",
   "--window-size=1200,900",
   "about:blank"
 ], { stdio: "ignore" });
@@ -280,6 +289,222 @@ try {
   })()`);
   check("循环按钮可切换开关态", loopRes.after !== loopRes.before, loopRes.before + " → " + loopRes.after);
   check("循环状态持久化", loopRes.stored === (loopRes.before ? "0" : "1") && loopRes.storedBack === (loopRes.before ? "1" : "0"), "stored=" + loopRes.stored);
+
+  /* ---------- 8. 连线方向 = 用户操作顺序 ---------- */
+  for (const order of ["word→img", "img→word"]) {
+    await goto(BASE + "?lesson=l4&stage=match");
+    await sleep(1500);
+    const dirRes = await evalJs(`(async () => {
+      const fire = (el, type, x, y) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true }));
+      const word = document.querySelector('.col.words .cell.word');
+      if (!word) return { found: false };
+      const id = word.getAttribute('data-word');
+      const img = document.querySelector('[data-side="img"][data-word="' + id + '"]');
+      if (!img) return { found: false };
+      // 组件用 offset* 量卡片中心，这里用同一套算法，免受入场动画 transform 干扰
+      const center = (el) => ({ x: el.offsetLeft + el.offsetWidth / 2, y: el.offsetTop + el.offsetHeight / 2 });
+      const first = ${JSON.stringify(order)} === "word→img" ? word : img;
+      const second = ${JSON.stringify(order)} === "word→img" ? img : word;
+      const fr = first.getBoundingClientRect(), sr = second.getBoundingClientRect();
+      fire(first, 'pointerdown', fr.left + fr.width / 2, fr.top + fr.height / 2);
+      fire(document, 'pointermove', sr.left + sr.width / 2, sr.top + sr.height / 2);
+      fire(document, 'pointerup', sr.left + sr.width / 2, sr.top + sr.height / 2);
+      await new Promise(r => setTimeout(r, 700));
+      const line = document.querySelector('.done-line');
+      if (!line) return { found: true, matched: false };
+      return {
+        found: true, matched: true,
+        x1: +line.getAttribute('x1'), y1: +line.getAttribute('y1'),
+        x2: +line.getAttribute('x2'), y2: +line.getAttribute('y2'),
+        firstC: center(first), secondC: center(second)
+      };
+    })()`);
+    const near = (a, b) => Math.abs(a - b) < 2;
+    check(
+      `${order} 连线起点 = 先按下的卡片`,
+      dirRes.matched === true && near(dirRes.x1, dirRes.firstC.x) && near(dirRes.y1, dirRes.firstC.y),
+      `起点(${dirRes.x1},${dirRes.y1}) 期望(${dirRes.firstC?.x},${dirRes.firstC?.y})`
+    );
+    check(
+      `${order} 连线终点 = 后按下的卡片`,
+      dirRes.matched === true && near(dirRes.x2, dirRes.secondC.x) && near(dirRes.y2, dirRes.secondC.y),
+      `终点(${dirRes.x2},${dirRes.y2}) 期望(${dirRes.secondC?.x},${dirRes.secondC?.y})`
+    );
+  }
+
+  /* ---------- 9. 暗黑模式：亮色被调暗 ---------- */
+  await goto(BASE);
+  const themeRes = await evalJs(`(async () => {
+    const root = document.documentElement;
+    const lum = (hex) => {
+      const n = parseInt(hex.slice(1), 16);
+      const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => {
+        v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      return c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722;
+    };
+    const pick = (theme, props) => {
+      root.setAttribute('data-theme', theme);
+      const cs = getComputedStyle(root);
+      const out = {};
+      for (const p of props) out[p] = cs.getPropertyValue(p).trim();
+      return out;
+    };
+    const props = ['--green', '--blue', '--orange', '--bg', '--card-bg'];
+    const light = pick('light', props);
+    const dark = pick('dark', props);
+    root.setAttribute('data-theme', 'light');
+    const ratios = props.filter(p => /^#/.test(light[p])).map(p => ({ p, l: lum(light[p]), d: lum(dark[p]) }));
+    return { light, dark, ratios };
+  })()`);
+  const brandProps = themeRes.ratios.filter((r) => ["--green", "--blue", "--orange"].includes(r.p));
+  check(
+    "暗色下品牌色亮度整体下降",
+    brandProps.every((r) => r.d < r.l * 0.8),
+    brandProps.map((r) => `${r.p} ${r.l.toFixed(2)}→${r.d.toFixed(2)}`).join(", ")
+  );
+  const bgLum = themeRes.ratios.find((r) => r.p === "--bg");
+  const cardLum = themeRes.ratios.find((r) => r.p === "--card-bg");
+  check("暗色下面色比底色亮一档(卡片有层次)", cardLum.d > bgLum.d, `bg=${themeRes.dark["--bg"]} card=${themeRes.dark["--card-bg"]}`);
+
+  // 真实元素：暗色下按钮底色确实换成了降亮的品牌色
+  await goto(BASE + "?lesson=l4");
+  await sleep(900);
+  const btnRes = await evalJs(`(async () => {
+    const root = document.documentElement;
+    const read = async () => {
+      await new Promise(r => requestAnimationFrame(r));
+      return getComputedStyle(document.querySelector('.act')).backgroundColor;
+    };
+    localStorage.setItem('kids-english-theme', 'light');
+    root.setAttribute('data-theme', 'light');
+    const light = await read();
+    localStorage.setItem('kids-english-theme', 'dark');
+    root.setAttribute('data-theme', 'dark');
+    const dark = await read();
+    root.setAttribute('data-theme', 'light');
+    return { light, dark };
+  })()`);
+  check("玩法卡底色在暗色下被替换", btnRes.light !== btnRes.dark, `${btnRes.light} → ${btnRes.dark}`);
+
+  /* ---------- 10. 卡片色调统一 ---------- */
+  const toneRes = await evalJs(`(() => {
+    const acts = [...document.querySelectorAll('.act')];
+    const tones = acts.map(a => [...a.classList].find(c => c.startsWith('tone-')));
+    return {
+      n: acts.length,
+      tones,
+      missing: tones.filter(t => !t).length,
+      distinct: new Set(tones).size,
+      inlineBg: acts.filter(a => (a.getAttribute('style') || '').includes('background')).length,
+      coverTone: [...(document.querySelector('.lesson-cover')?.classList || [])].find(c => c.startsWith('tone-')) || null
+    };
+  })()`);
+  check("玩法卡全部走统一色调板", toneRes.missing === 0 && toneRes.n > 0, toneRes.tones.join(", "));
+  check("玩法卡色调互不重复(不再撞色)", toneRes.distinct === toneRes.n, `${toneRes.distinct}/${toneRes.n} 个不同`);
+  check("玩法卡不再内联写死背景色", toneRes.inlineBg === 0);
+  check("课时封面走同一色调板", !!toneRes.coverTone, toneRes.coverTone);
+
+  await goto(BASE);
+  await sleep(900);
+  const homeToneRes = await evalJs(`(() => {
+    const cards = [...document.querySelectorAll('.lesson-card')];
+    return {
+      n: cards.length,
+      inlineBg: cards.filter(c => (c.getAttribute('style') || '').includes('background')).length,
+      tones: cards.map(c => [...c.classList].find(x => x.startsWith('tone-')) || null)
+    };
+  })()`);
+  check("课时卡不再内联写死背景色", homeToneRes.inlineBg === 0);
+  check("课时卡走同一色调板", homeToneRes.tones.every(Boolean), homeToneRes.tones.join(", "));
+
+  /* ---------- 11. 图标库：控件不再依赖 emoji ---------- */
+  const ICON_CTRLS = [
+    ".k-btn:not(.result .k-btn)", ".tab", ".loop-btn", ".play-btn", ".theme-toggle",
+    ".pager .arrow", ".topbar .back", ".big-speaker", ".mic", ".star-badge",
+    ".mini-stars", ".heard-mark", ".mode-tag", ".hint", ".tip", ".speaker"
+  ].join(", ");
+  const EMOJI_RE = "\\u{1F300}-\\u{1FAFF}\\u{2600}-\\u{27BF}\\u{2B00}-\\u{2BFF}\\u{FE0F}\\u{2190}-\\u{21FF}";
+  const iconScan = `(() => {
+    const emoji = new RegExp("[${EMOJI_RE}]", "u");
+    const els = [...document.querySelectorAll(${JSON.stringify(ICON_CTRLS)})];
+    const withEmoji = els.filter(e => emoji.test(e.textContent)).map(e => e.className + ":" + e.textContent.trim());
+    const svgEls = [...document.querySelectorAll("svg.k-ico")];
+    const fixed = svgEls.filter(s => { const r = s.getBoundingClientRect(); return Math.round(r.width) === 24 && Math.round(r.height) === 24; });
+    return { ctrls: els.length, withEmoji, svg: svgEls.length, fixed24: fixed.length };
+  })()`;
+
+  const iconPages = ["", "?lesson=l4", "?lesson=l4&stage=learn", "?lesson=l4&stage=quiz", "?lesson=l4&stage=match", "?lesson=l5&stage=song"];
+  let iconAgg = { ctrls: 0, withEmoji: [], svg: 0 };
+  for (const p of iconPages) {
+    await goto(BASE + p);
+    await sleep(1300);
+    if (p.includes("song")) {
+      await evalJs(`[...document.querySelectorAll('.song .tab')].find(t => t.textContent.includes('音乐')).click()`);
+      await sleep(500);
+    }
+    const r = await evalJs(iconScan);
+    iconAgg.ctrls += r.ctrls;
+    iconAgg.svg += r.svg;
+    iconAgg.withEmoji.push(...r.withEmoji);
+  }
+  check("控件区已无 emoji 图标", iconAgg.withEmoji.length === 0, iconAgg.withEmoji.slice(0, 4).join(" | ") || `扫描 ${iconAgg.ctrls} 个控件`);
+  check("图标由图标库渲染为 SVG", iconAgg.svg > 0, `${iconAgg.svg} 个 svg.k-ico`);
+
+  await goto(BASE + "?lesson=l5&stage=song");
+  await sleep(1400);
+  const iconCssRes = await evalJs(`(async () => {
+    await new Promise(r => requestAnimationFrame(r));
+    const s = document.querySelector('.tab .k-ico');
+    const r0 = s.getBoundingClientRect();
+    return { w: Math.round(r0.width), h: Math.round(r0.height), stroke: getComputedStyle(s).strokeWidth };
+  })()`);
+  check("图标随字号缩放(非写死 24px)", iconCssRes.w !== 24 || iconCssRes.h !== 24, `${iconCssRes.w}×${iconCssRes.h} stroke=${iconCssRes.stroke}`);
+
+  /* ---------- 12. 音乐默认循环 + 完成一遍即可领星 ---------- */
+  const loopDefaultRes = await evalJs(`(async () => {
+    localStorage.removeItem('kids-english-song-loop');
+    location.reload();
+    return true;
+  })()`);
+  await sleep(1600);
+  await evalJs(`[...document.querySelectorAll('.song .tab')].find(t => t.textContent.includes('音乐')).click()`);
+  await sleep(500);
+  const loopDefault = await evalJs(`(() => {
+    const btn = document.querySelector('.loop-btn');
+    return { on: btn.classList.contains('on'), aria: btn.getAttribute('aria-pressed') };
+  })()`);
+  check("音乐默认开启循环播放(首次进入)", loopDefaultRes === true && loopDefault.on === true, "aria-pressed=" + loopDefault.aria);
+
+  const finishRes = await evalJs(`(async () => {
+    const find = () => document.querySelector('.song .k-btn.finish');
+    const before = find();
+    if (!before) return { found: false };
+    const disabledBefore = before.disabled;
+    // 把音频直接怼到结尾，让它自然 played 完 → ended
+    const a = document.querySelector('.song audio');
+    a.muted = true;
+    if (a.duration) a.currentTime = Math.max(0, a.duration - 0.2);
+    await a.play().catch(() => {});
+    for (let i = 0; i < 80; i++) {
+      const b = find();
+      if (b && !b.disabled) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+    const after = find();
+    return { found: true, disabledBefore, disabledAfter: after.disabled, text: after.textContent.trim(), loopOn: after && document.querySelector('.loop-btn').classList.contains('on') };
+  })()`);
+  check("听完一遍前领星按钮不可点", finishRes.disabledBefore === true);
+  check("听完一遍后领星按钮可点(循环模式下也生效)", finishRes.disabledAfter === false, finishRes.text + " · loop=" + finishRes.loopOn);
+
+  const finishClickRes = await evalJs(`(async () => {
+    const btn = document.querySelector('.song .k-btn.finish:not([disabled])');
+    if (!btn) return { clicked: false };
+    btn.click();
+    await new Promise(r => setTimeout(r, 700));
+    return { clicked: true, result: !!document.querySelector('.result'), audioPaused: document.querySelector('.song audio')?.paused ?? null };
+  })()`);
+  check("点领星后进入结算页", finishClickRes.clicked === true && finishClickRes.result === true);
 
   // 截图存档
   const shot = await send("Page.captureScreenshot", { format: "png" });

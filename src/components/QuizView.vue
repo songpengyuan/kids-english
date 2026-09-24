@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { speak } from "../utils/speech";
 import { sfxCorrect, sfxWrong, celebrate } from "../utils/effects";
+import { Volume2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
 const emit = defineEmits(["done"]);
@@ -73,7 +74,9 @@ const scoreStars = computed(() => {
   <div class="quiz view">
     <div class="progress"><div class="fill" :style="{ width: percent + '%' }"></div></div>
 
-    <button class="big-speaker anim-float" @click="replay" title="再听一遍">🔊</button>
+    <button class="big-speaker anim-float" @click="replay" aria-label="再听一遍" title="再听一遍">
+      <Volume2 class="k-ico" />
+    </button>
     <p class="tip">听一听，点一点正确的图片</p>
 
     <div class="options view-body">
@@ -121,8 +124,11 @@ const scoreStars = computed(() => {
   border-radius: 50%;
   font-size: clamp(28px, min(7vh, 5.5vw), 56px);
   background: var(--blue);
-  color: #fff;
+  color: var(--on-tone);
   box-shadow: 0 var(--press) 0 var(--blue-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .big-speaker:active {
   transform: translateY(calc(var(--press) - 1px));
@@ -193,14 +199,20 @@ const scoreStars = computed(() => {
 }
 .opt.right {
   border-color: var(--green);
-  background: #eafbe0;
+  background: var(--state-ok-bg);
 }
 .opt.wrong {
   border-color: var(--red);
+  background: var(--state-bad-bg);
   animation: shake-x 0.45s ease;
 }
 .opt.dim {
   opacity: 0.45;
+}
+/* 判定后整张卡是统一底色的，标签条不要留一块"补丁" */
+.opt.right .w,
+.opt.wrong .w {
+  background: transparent;
 }
 
 .praise {

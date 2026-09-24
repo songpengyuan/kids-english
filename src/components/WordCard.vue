@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { speak } from "../utils/speech";
 import { sfxTap } from "../utils/effects";
+import { Volume2 } from "@lucide/vue";
 
 const props = defineProps({
   word: { type: Object, required: true },
@@ -57,7 +58,7 @@ function onWord() {
       <img v-if="!imgFailed" :src="word.image" :alt="word.en" @error="imgFailed = true" />
       <!-- 图片缺失时的 emoji 占位 -->
       <span v-else class="placeholder">{{ word.emoji }}</span>
-      <span class="speaker">🔊</span>
+      <span class="speaker"><Volume2 class="k-ico" /></span>
     </div>
     <div class="word" data-haptic @click="onWord">{{ word.en }}</div>
   </div>
@@ -85,7 +86,7 @@ function onWord() {
   min-height: 0;
   border-radius: var(--radius-s);
   overflow: hidden;
-  background: linear-gradient(160deg, #fff7de, #ffe9c4);
+  background: var(--media-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,9 +111,10 @@ function onWord() {
 .speaker {
   position: absolute;
   right: 6px;
-  bottom: 4px;
-  font-size: clamp(12px, 2vh, 20px);
-  opacity: 0.85;
+  bottom: 6px;
+  font-size: clamp(14px, 2.3vh, 22px);
+  color: var(--blue);
+  opacity: 0.9;
   animation: float-y 2.4s ease-in-out infinite;
 }
 .word {

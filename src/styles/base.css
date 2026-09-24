@@ -34,6 +34,85 @@ button {
   color: inherit;
 }
 
+/**
+ * 图标：lucide-vue-next 的 SVG。
+ *
+ * 用 1em 见方而不是固定像素——本项目的字号已经全部是 `clamp(min(vh, vw))` 的
+ * 流体值，图标跟着 font-size 走才能真正和文字一起缩放，父级只要设 font-size 即可。
+ * 描边加粗到 2.6：儿童界面需要的视觉重量比常规 24px 图标更重一些。
+ */
+.k-ico {
+  width: 1em;
+  height: 1em;
+  stroke-width: 2.6;
+  flex: none;
+  display: block;
+}
+
+/* 星标：实心渲染比描边更像"已获得的星星" */
+.star-fill {
+  fill: currentColor;
+}
+
+/* ---------- 彩色卡片色调板 ----------
+ * 全站唯一的「有颜色的大卡片」上色方式。用法：<button class="act tone-learn">。
+ *
+ * 统一在这里注入三件事，组件里不再各写一套：
+ *   1. 渐变：顶部一抹高光 → 主色，做出"面"的层次（比纯色填充更有体积感）
+ *   2. 立体投影：用同色调的 -deep 实心投影，而不是黑色半透明（后者会让所有卡片
+ *      都蒙一层灰，色调就散了）
+ *   3. 文字色：--on-tone，暗色下是暖白而非纯白
+ */
+.tone-blue,
+.tone-green,
+.tone-orange,
+.tone-purple,
+.tone-pink,
+.tone-teal {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.18),
+    rgba(255, 255, 255, 0) 62%
+  );
+  background-color: var(--tone);
+  box-shadow: 0 var(--press) 0 var(--tone-deep);
+  color: var(--on-tone);
+}
+.tone-blue {
+  --tone: var(--c-blue);
+  --tone-deep: var(--c-blue-deep);
+}
+.tone-green {
+  --tone: var(--c-green);
+  --tone-deep: var(--c-green-deep);
+}
+.tone-orange {
+  --tone: var(--c-orange);
+  --tone-deep: var(--c-orange-deep);
+}
+.tone-purple {
+  --tone: var(--c-purple);
+  --tone-deep: var(--c-purple-deep);
+}
+.tone-pink {
+  --tone: var(--c-pink);
+  --tone-deep: var(--c-pink-deep);
+}
+.tone-teal {
+  --tone: var(--c-teal);
+  --tone-deep: var(--c-teal-deep);
+}
+/* 按下：整体下沉 --press，投影随之收平（所有彩色卡片一致的手感） */
+.tone-blue:active,
+.tone-green:active,
+.tone-orange:active,
+.tone-purple:active,
+.tone-pink:active,
+.tone-teal:active {
+  transform: translateY(calc(var(--press) - 1px));
+  box-shadow: 0 1px 0 var(--tone-deep);
+}
+
 img {
   -webkit-user-drag: none;
   user-select: none;
@@ -116,6 +195,10 @@ img {
   height: var(--tap-min);
   line-height: 1;
   flex: none;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .topbar .title {
   font-size: var(--fs-title);
@@ -156,9 +239,10 @@ img {
 }
 
 /* ---------- 通用按钮 ---------- */
+/* inline-flex 而不是默认的 inline-block：按钮里要能放图标 + 文字并自动居中、留间距 */
 .k-btn {
   background: var(--green);
-  color: #fff;
+  color: var(--on-tone);
   font-size: var(--fs-btn);
   font-weight: 700;
   padding: clamp(10px, 1.8vh, 14px) clamp(20px, 3vw, 32px);
@@ -166,6 +250,10 @@ img {
   box-shadow: 0 var(--press) 0 var(--green-dark);
   transition: transform 0.08s, box-shadow 0.08s;
   min-height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
 }
 .k-btn:active {
   transform: translateY(calc(var(--press) - 1px));
@@ -186,23 +274,23 @@ img {
   box-shadow: 0 1px 0 var(--orange-dark);
 }
 .k-btn.gray {
-  background: #e5e5e5;
+  background: var(--btn-plain-bg);
   color: var(--ink);
-  box-shadow: 0 var(--press) 0 #c9c9c9;
+  box-shadow: 0 var(--press) 0 var(--btn-plain-deep);
 }
 .k-btn.gray:active {
-  box-shadow: 0 1px 0 #c9c9c9;
+  box-shadow: 0 1px 0 var(--btn-plain-deep);
 }
 /* 未达成条件时的禁用态：明显变灰且不再有下压反馈，避免孩子误以为没点中 */
 .k-btn:disabled {
-  background: #dfd9cc;
-  color: #a29a8b;
-  box-shadow: 0 var(--press) 0 #c6bfb1;
+  background: var(--btn-off-bg);
+  color: var(--btn-off-ink);
+  box-shadow: 0 var(--press) 0 var(--btn-off-deep);
   cursor: default;
 }
 .k-btn:disabled:active {
   transform: none;
-  box-shadow: 0 var(--press) 0 #c6bfb1;
+  box-shadow: 0 var(--press) 0 var(--btn-off-deep);
 }
 
 /* 按钮行：小屏自动换行，避免挤压 */
@@ -224,7 +312,7 @@ img {
 }
 .progress .fill {
   height: 100%;
-  background: linear-gradient(90deg, #ffd97a, var(--yellow));
+  background: linear-gradient(90deg, var(--progress-hi), var(--yellow));
   border-radius: var(--radius-pill);
   transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;

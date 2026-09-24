@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick } from "vue";
 import { bigCelebrate } from "../utils/effects";
 import { hapticTap } from "../utils/haptics";
 import progress from "../store/progress";
+import { Film, Headphones, Music, Pause, Play, Repeat, Sparkles } from "@lucide/vue";
 
 const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["back", "song-done"]);
@@ -15,6 +16,11 @@ const audioEl = ref(null);
 const audioMissing = ref(false);
 const videoEl = ref(null);
 const videoMissing = ref(!props.lesson.song.video);
+
+/** 完整听过一遍（音频或视频）→ 才有资格领星；与"是否循环"无关 */
+const watched = ref(false);
+/** 两样素材都没有（还没上传 mp3/mp4）→ 直接放行，别把孩子卡在这一页 */
+const canFinish = computed(() => watched.value || (videoMissing.value && audioMissing.value));
 
 /** 切 Tab：互斥播放（切走的一路立刻暂停），避免两个声音叠在一起 */
 function setMode(m) {
@@ -46,6 +52,8 @@ function onAudioError() {
   playing.value = false;
 }
 function onEnded() {
+  // 先落"听过一遍"的标记：循环模式下也要能领星，否则默认循环就永远领不到
+  watched.value = true;
   // 循环模式：回到开头继续唱，不结算、不离开本页
   if (loop.value) {
     activeLine.value = -1;
@@ -59,7 +67,17 @@ function onEnded() {
     }
     return;
   }
-  playing.value = false;
+  finishSong();
+}
+
+/** 视频也计入"看过一遍"（原来视频路径没有任何 @ended，导致看完视频领不到星） */
+function onVideoEnded() {
+  watched.value = true;
+}
+
+/** 收尾：停播、撒花、记进度、离开本页。循环模式下这是本页唯一的出口 */
+function finishSong() {
+  pause();
   activeLine.value = -1;
   bigCelebrate();
   progress.markSong(props.lesson.id);
@@ -77,7 +95,9 @@ const seeking = ref(false);
 const seekEl = ref(null);
 
 const LOOP_KEY = "kids-english-song-loop";
-const loop = ref(localStorage.getItem(LOOP_KEY) === "1");
+/* 默认循环：童谣就是反复听才上口，孩子不用去管播放到哪了。
+ * 只有"手动关过"（localStorage 里存了 "0"）才保持关闭，尊重用户的选择。 */
+const loop = ref(localStorage.getItem(LOOP_KEY) !== "0");
 
 const playedPct = computed(() =>
   duration.value ? Math.min(100, (currentTime.value / duration.value) * 100) + "%" : "0%"
@@ -195,7 +215,7 @@ function onLyricsScroll() {
   userScrollAt = Date.now();
 }
 
-const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
+const noteAnim = computed(() => (playing.value ? "anim-wiggle" : "anim-float"));
 </script>
 
 <template>
@@ -220,7 +240,7 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
         data-haptic
         @click="setMode('video')"
       >
-        🎬 视频
+        <Film class="k-ico" />视频
       </button>
       <button
         class="tab"
@@ -230,7 +250,7 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
         data-haptic
         @click="setMode('audio')"
       >
-        🎵 音乐
+        <Music class="k-ico" />音乐
       </button>
     </div>
 
@@ -244,16 +264,24 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
         playsinline
         class="video"
         @error="onVideoError"
+        @ended="onVideoEnded"
       ></video>
       <div v-else class="video-ph" data-haptic @click="play">
-        <span class="note anim-float" :class="noteAnim">🎵</span>
+        <Music class="k-ico note" :class="noteAnim" />
         <p v-if="!audioMissing">{{ playing ? "正在播放，跟着唱吧～" : "点我播放童谣音乐" }}</p>
         <p v-else class="miss">
-          🎬 童谣视频/音频还没有上传<br />（把 mp3/mp4 放进对应课时目录就能响）
+          童谣视频/音频还没有上传<br />（把 mp3/mp4 放进对应课时目录就能响）
         </p>
-        <button v-if="!playing && !audioMissing" class="play-btn anim-pop">▶</button>
-        <button v-else-if="playing && !audioMissing" class="play-btn anim-pop" @click.stop="pause">
-          ⏸
+        <button v-if="!playing && !audioMissing" class="play-btn anim-pop" aria-label="播放">
+          <Play class="k-ico" />
+        </button>
+        <button
+          v-else-if="playing && !audioMissing"
+          class="play-btn anim-pop"
+          aria-label="暂停"
+          @click.stop="pause"
+        >
+          <Pause class="k-ico" />
         </button>
       </div>
     </div>
@@ -261,8 +289,9 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
     <!-- ===== 音频模式：播放器 + 完整歌词 ===== -->
     <template v-else>
       <div class="audio-bar" data-haptic @click="playing ? pause() : play()">
-        <button v-if="!audioMissing" class="play-btn anim-pop">
-          {{ playing ? "⏸" : "▶" }}
+        <button v-if="!audioMissing" class="play-btn anim-pop" :aria-label="playing ? '暂停' : '播放'">
+          <Play v-if="!playing" class="k-ico" />
+          <Pause v-else class="k-ico" />
         </button>
         <div class="audio-text">
           <template v-if="!audioMissing">
@@ -270,7 +299,7 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
             <p class="audio-sub">{{ playing ? "正在播放，看着歌词一起唱吧～" : "点我播放童谣音乐" }}</p>
           </template>
           <p v-else class="miss">
-            🎬 童谣视频/音频还没有上传<br />（把 mp3/mp4 放进对应课时目录就能响）
+            童谣视频/音频还没有上传<br />（把 mp3/mp4 放进对应课时目录就能响）
           </p>
         </div>
       </div>
@@ -300,10 +329,11 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
           class="loop-btn"
           :class="{ on: loop }"
           :aria-pressed="loop"
+          :aria-label="'循环播放：' + (loop ? '已开启' : '已关闭')"
           :title="loop ? '循环播放：开' : '循环播放：关'"
           @click="toggleLoop"
         >
-          🔁
+          <Repeat class="k-ico" />
         </button>
       </div>
 
@@ -333,9 +363,12 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
       </span>
     </div>
 
-    <p v-if="mode === 'video' && !videoMissing" class="under-tip">看完视频记得点下方按钮领取小星星哦</p>
-    <button v-if="videoMissing && audioMissing" class="k-btn blue finish" @click="onEnded">
-      看完啦，领星星 ⭐
+    <!-- 收尾：完整听过一遍才可领星（循环模式下这是本页唯一出口） -->
+    <button v-if="canFinish" class="k-btn finish" data-haptic @click="finishSong">
+      <Sparkles class="k-ico" />领到小星星
+    </button>
+    <button v-else class="k-btn finish" disabled>
+      <Headphones class="k-ico" />听完一遍就能领星星
     </button>
   </div>
 </template>
@@ -363,10 +396,13 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
   color: var(--ink-soft);
   background: transparent;
   transition: background 0.15s, color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
 }
 .tab.on {
   background: var(--blue);
-  color: #fff;
+  color: var(--on-tone);
   box-shadow: 0 2px 0 var(--blue-dark);
 }
 
@@ -387,7 +423,7 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
   width: 100%;
   height: 100%;
   border-radius: var(--radius);
-  background: linear-gradient(160deg, #bde8ff, #e6f7ff);
+  background: var(--panel-bg);
   box-shadow: var(--shadow-hard);
   display: flex;
   flex-direction: column;
@@ -397,14 +433,13 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
   cursor: pointer;
   position: relative;
   font-weight: 800;
-  color: #4a7ba6;
+  color: var(--panel-ink);
   text-align: center;
   padding: var(--gap-s);
   min-height: 0;
 }
 .note {
   font-size: var(--fs-emoji-xl);
-  line-height: 1;
 }
 
 /* ---------- 音频模式 ---------- */
@@ -569,7 +604,7 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
   height: clamp(48px, min(11vh, 9vw), 76px);
   border-radius: 50%;
   background: var(--green);
-  color: #fff;
+  color: var(--on-tone);
   font-size: clamp(20px, min(4.4vh, 3.6vw), 30px);
   box-shadow: 0 var(--press) 0 var(--green-dark);
   flex: none;
@@ -577,13 +612,17 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
   align-items: center;
   justify-content: center;
 }
+/* 播放三角/暂停双条填实，比描边更像"按键" */
+.play-btn .k-ico {
+  fill: currentColor;
+}
 .play-btn:active {
   transform: translateY(calc(var(--press) - 1px));
   box-shadow: 0 1px 0 var(--green-dark);
 }
 .miss {
   font-size: var(--fs-small);
-  color: #8aa8c2;
+  color: var(--panel-ink-soft);
   font-weight: 700;
   line-height: 1.6;
   margin: 0;
@@ -611,14 +650,6 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
   color: var(--ink);
 }
 
-.under-tip {
-  margin: 0;
-  color: var(--ink-soft);
-  font-weight: 700;
-  font-size: var(--fs-small);
-  flex: none;
-  text-align: center;
-}
 .finish {
   flex: none;
   width: 100%;
@@ -629,9 +660,6 @@ const noteAnim = computed(() => (playing.value ? "anim-wiggle" : ""));
  * 手机横屏：高度是硬约束（约 300~400px）。
  */
 @media (max-height: 480px) {
-  .under-tip {
-    display: none;
-  }
   .words-strip {
     max-height: 40px;
     overflow: hidden;

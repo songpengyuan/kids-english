@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { speak } from "../utils/speech";
 import { hapticTap } from "../utils/haptics";
 import { sfxCorrect } from "../utils/effects";
+import { Check, Star, Volume2 } from "@lucide/vue";
 
 const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["done"]);
@@ -66,13 +67,14 @@ function finish() {
         <span class="role">{{ i % 2 === 0 ? "🙋 家长说" : "🧒 宝宝答" }}</span>
         <!-- 中文对话在上，英文单词/句子放在对话下面 -->
         <span class="pzh">{{ p.zh }}</span>
-        <span class="pen">🔊 {{ p.en }}</span>
-        <span v-if="listened.has(i)" class="heard-mark">✓ 听过啦</span>
+        <span class="pen"><Volume2 class="k-ico" />{{ p.en }}</span>
+        <span v-if="listened.has(i)" class="heard-mark"><Check class="k-ico" />听过啦</span>
       </button>
     </div>
 
     <button class="k-btn green finish" :disabled="listened.size < phrases.length" @click="finish">
-      {{ listened.size < phrases.length ? "先听一遍所有句子哦" : "我会说啦 ⭐" }}
+      <template v-if="listened.size < phrases.length">先听一遍所有句子哦</template>
+      <template v-else><Star class="k-ico star-fill" />我会说啦</template>
     </button>
   </div>
 </template>
@@ -142,7 +144,10 @@ function finish() {
 .pen {
   font-weight: 800;
   font-size: clamp(15px, min(2.9vh, 2.3vw), 24px);
-  color: var(--blue-dark, #1899d6);
+  color: var(--blue-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
 }
 .heard-mark {
   position: absolute;
@@ -151,6 +156,12 @@ function finish() {
   color: var(--green);
   font-weight: 800;
   font-size: var(--fs-small);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+}
+.heard-mark .k-ico {
+  fill: currentColor;
 }
 
 .finish {

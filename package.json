@@ -10,6 +10,7 @@
     "ship": "node scripts/ship.mjs"
   },
   "dependencies": {
+    "@lucide/vue": "^1.47.0",
     "animate.css": "^4.1.1",
     "canvas-confetti": "^1.9.4",
     "vue": "^3.5.42"

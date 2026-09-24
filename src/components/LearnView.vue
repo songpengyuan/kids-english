@@ -6,6 +6,7 @@ import { celebrate, bigCelebrate, sfxCorrect } from "../utils/effects";
 import { useViewport } from "../composables/useViewport";
 import { usePager } from "../composables/usePager";
 import { fitGrid } from "../utils/layout";
+import { Check, MousePointerClick } from "@lucide/vue";
 
 /**
  * 看图学词（点读）
@@ -111,7 +112,7 @@ function finish() {
 <template>
   <div class="learn view">
     <p class="hint anim-fade-up">
-      👆 点图片听发音，点单词再听一遍
+      <MousePointerClick class="k-ico" />点图片听发音，点单词再听一遍
       <span v-if="total > 1" class="hint-page">（共 {{ total }} 页）</span>
     </p>
 
@@ -131,7 +132,8 @@ function finish() {
     <Pager :page="page" :total="total" @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
 
     <button class="k-btn next" :disabled="!isLast" @click="finish">
-      {{ isLast ? "我都会啦 ✓" : "看完所有图才能完成哦" }}
+      <template v-if="isLast"><Check class="k-ico" />我都会啦</template>
+      <template v-else>看完所有图才能完成哦</template>
     </button>
   </div>
 </template>
@@ -144,6 +146,14 @@ function finish() {
   font-weight: 700;
   flex: none;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  flex-wrap: wrap;
+}
+.hint .k-ico {
+  color: var(--orange);
 }
 .hint-page {
   color: var(--green-dark);

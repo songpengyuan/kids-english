@@ -13,6 +13,11 @@
  *
  * 路径写法：下面一律写站点根路径形式（如 "/lessons/l4/song.mp3"），
  * 由文件末尾的 asset() 自动补上部署基路径，本地与 GitHub Pages 子路径部署通用。
+ *
+ * ⚠️ 配色不要在这里写十六进制！课时卡的底色统一由 `tone` 指定，
+ * 只能取 tokens.css 卡片色调板里的 6 个 hue 之一：
+ *   blue | green | orange | purple | pink | teal
+ * 相邻课时尽量用不同 hue（孩子靠颜色+封面区分课时）。新课时加进来时循环取用即可。
  */
 
 /**
@@ -35,7 +40,7 @@ const rawLessons = [
     title: "A Sailor Went to Sea",
     titleZh: "水手出海去",
     emoji: "🌊",
-    color: "#1cb0f6",
+    tone: "blue",
     date: "2026-09-18",
     song: {
       audio: "/lessons/l4/song.mp3",
@@ -79,7 +84,7 @@ const rawLessons = [
     title: "I Am the Music Man",
     titleZh: "我是一个音乐人",
     emoji: "🎺",
-    color: "#ff9f43",
+    tone: "orange",
     date: "2026-09-16",
     song: {
       audio: "/lessons/l5/song.mp3",
@@ -130,6 +135,8 @@ const rawLessons = [
 
 export const lessons = rawLessons.map((lesson) => ({
   ...lesson,
+  // 缺失时兜底成蓝色，避免 class 变成 tone-undefined 导致卡片没有底色
+  tone: lesson.tone || "blue",
   song: {
     audio: asset(lesson.song.audio),
     video: asset(lesson.song.video),

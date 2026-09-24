@@ -14,6 +14,16 @@ import { speak, speakZh } from "../utils/speech";
 import { hapticTap } from "../utils/haptics";
 import { useViewport } from "../composables/useViewport";
 import { pickColumns } from "../utils/layout";
+import {
+  BookOpen,
+  ChevronLeft,
+  Headphones,
+  Link2,
+  MessageCircle,
+  Mic,
+  Music,
+  Star
+} from "@lucide/vue";
 
 const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["back", "next-lesson"]);
@@ -35,21 +45,28 @@ onMounted(() => {
   }
 });
 
+/**
+ * 玩法清单。
+ *
+ * `tone` 只能取 tokens.css 卡片色调板里的 6 个 hue 之一 —— 加新玩法时从
+ * 「还没被占用的 hue」里挑，别再往同一个 hue 上叠（之前"学单词"和"跟我读"
+ * 都用橙色，孩子一眼分不清是同一类还是两个东西）。
+ */
 const activities = computed(() => {
   const acts = [
-    { key: "learn", name: "学单词", icon: "📖", color: "#ff9f43", game: "learn", desc: "看图听发音" },
-    { key: "quiz", name: "听音选图", icon: "🎧", color: "#1cb0f6", game: "quiz", desc: "听声音找图片" },
-    { key: "match", name: "连一连", icon: "🔗", color: "#ce82ff", game: "match", desc: "图片连线单词" },
-    { key: "speak", name: "跟我读", icon: "🗣️", color: "#ff9f43", game: "speak", desc: "按住麦克风读单词" },
-    { key: "song", name: "唱童谣", icon: "🎵", color: "#58cc02", game: "song", desc: "听歌看视频" }
+    { key: "learn", name: "学单词", icon: BookOpen, tone: "orange", game: "learn", desc: "看图听发音" },
+    { key: "quiz", name: "听音选图", icon: Headphones, tone: "blue", game: "quiz", desc: "听声音找图片" },
+    { key: "match", name: "连一连", icon: Link2, tone: "purple", game: "match", desc: "图片连线单词" },
+    { key: "speak", name: "跟我读", icon: Mic, tone: "pink", game: "speak", desc: "按住麦克风读单词" },
+    { key: "song", name: "唱童谣", icon: Music, tone: "green", game: "song", desc: "听歌看视频" }
   ];
   // 亲子对话是独立玩法，只有配置了 phrases 的课时才显示
   if (props.lesson.phrases?.length) {
     acts.splice(4, 0, {
       key: "talk",
       name: "亲子对话",
-      icon: "💬",
-      color: "#ff6b9d",
+      icon: MessageCircle,
+      tone: "teal",
       game: "talk",
       desc: "和爸爸妈妈练口语"
     });
@@ -166,15 +183,24 @@ const nextLesson = computed(() => {
 <template>
   <div class="lesson view">
     <div class="topbar">
-      <button class="back" @click="back" :title="stage === 'menu' ? '返回课程列表' : '返回本课菜单'">←</button>
+      <button
+        class="back"
+        @click="back"
+        :aria-label="stage === 'menu' ? '返回课程列表' : '返回本课菜单'"
+        :title="stage === 'menu' ? '返回课程列表' : '返回本课菜单'"
+      >
+        <ChevronLeft class="k-ico" />
+      </button>
       <div class="title">{{ lesson.emoji }} {{ lesson.title }}</div>
-      <div class="star-badge">⭐ {{ progress.lessonStars(lesson.id) }}</div>
+      <div class="star-badge">
+        <Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}
+      </div>
       <ThemeToggle />
     </div>
 
     <!-- 课时菜单 -->
     <div v-if="stage === 'menu'" class="menu view-body">
-      <div class="lesson-cover anim-pop" :style="{ background: lesson.color }">
+      <div class="lesson-cover anim-pop" :class="'tone-' + lesson.tone">
         <span class="cover-emoji">{{ lesson.emoji }}</span>
         <p>{{ lesson.title }}</p>
       </div>
@@ -184,13 +210,16 @@ const nextLesson = computed(() => {
           v-for="(a, i) in activities"
           :key="a.key"
           class="act anim-fade-up"
-          :style="{ background: a.color, animationDelay: i * 0.08 + 's' }"
+          :class="'tone-' + a.tone"
+          :style="{ animationDelay: i * 0.08 + 's' }"
           @click="open(a)"
         >
-          <span class="ico">{{ a.icon }}</span>
+          <component :is="a.icon" class="k-ico ico" />
           <span class="nm">{{ a.name }}</span>
           <span class="ds">{{ a.desc }}</span>
-          <span v-if="showStars(a.key)" class="mini-stars">⭐{{ showStars(a.key) }}</span>
+          <span v-if="showStars(a.key)" class="mini-stars">
+            <Star class="k-ico star-fill" />{{ showStars(a.key) }}
+          </span>
         </button>
       </div>
     </div>
@@ -214,8 +243,9 @@ const nextLesson = computed(() => {
           class="star anim-pop"
           :class="{ dim: n > lastStars }"
           :style="{ animationDelay: n * 0.2 + 's' }"
-          >⭐</span
         >
+          <Star class="k-ico star-fill" />
+        </span>
       </div>
       <h2>真棒！获得 {{ lastStars }} 颗星</h2>
       <div class="btn-row">
@@ -239,7 +269,6 @@ const nextLesson = computed(() => {
 .lesson-cover {
   width: 100%;
   border-radius: var(--radius);
-  box-shadow: var(--shadow-hard);
   padding: var(--gap-xs) var(--gap-s);
   flex: none;
   display: flex;
@@ -247,6 +276,7 @@ const nextLesson = computed(() => {
   align-items: center;
   justify-content: center;
   gap: var(--gap-s);
+  position: relative;
 }
 .cover-emoji {
   font-size: var(--fs-emoji-l);
@@ -254,7 +284,7 @@ const nextLesson = computed(() => {
 }
 .lesson-cover p {
   margin: 0;
-  color: #fff;
+  color: var(--on-tone);
   font-weight: 800;
   font-size: clamp(15px, min(2.8vh, 2.2vw), 22px);
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
@@ -287,12 +317,11 @@ const nextLesson = computed(() => {
   flex: 1;
   min-height: 0;
 }
+/* 底色 / 立体投影 / 文字色由 .tone-* 统一注入（见 base.css），这里只管排布 */
 .act {
   position: relative;
   border-radius: var(--radius);
   padding: var(--gap-xs) 4px;
-  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.15);
-  color: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -303,13 +332,8 @@ const nextLesson = computed(() => {
   min-width: 0;
   overflow: hidden;
 }
-.act:active {
-  transform: translateY(calc(var(--press) - 1px));
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
-}
 .act .ico {
   font-size: var(--fs-emoji-l);
-  line-height: 1;
 }
 .act .nm {
   font-size: clamp(14px, min(2.5vh, 2vw), 22px);
@@ -335,6 +359,9 @@ const nextLesson = computed(() => {
   padding: 2px 8px;
   font-size: clamp(10px, 1.7vh, 14px);
   font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 
 /* 卡片太矮时，副标题会成为负担，藏掉换取主标题和图标的空间 */
@@ -357,11 +384,16 @@ const nextLesson = computed(() => {
 }
 .star {
   font-size: var(--fs-emoji-xl);
-  line-height: 1;
+  color: var(--yellow);
+  display: inline-flex;
 }
+/* 未拿到的星用空心 + 压灰，拿到与没拿到一眼可辨 */
 .star.dim {
   filter: grayscale(1);
   opacity: 0.4;
+}
+.star.dim .k-ico {
+  fill: none;
 }
 .result h2 {
   margin: 0;

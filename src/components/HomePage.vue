@@ -8,6 +8,7 @@ import { usePager } from "../composables/usePager";
 import { pickColumns } from "../utils/layout";
 import Pager from "./Pager.vue";
 import ThemeToggle from "./ThemeToggle.vue";
+import { Check, Star } from "@lucide/vue";
 
 const emit = defineEmits(["open"]);
 
@@ -95,7 +96,9 @@ function enter(l) {
     <header class="hero anim-fade-up">
       <h1>🌈 丞丞英语乐园</h1>
       <p class="sub">点一课，学童谣里的单词吧！</p>
-      <div class="star-badge">⭐ 我的星星：{{ progress.totalStars }}</div>
+      <div class="star-badge">
+        <Star class="k-ico star-fill" />我的星星：{{ progress.totalStars }}
+      </div>
     </header>
 
     <div class="stage view-body" ref="stageEl">
@@ -104,12 +107,15 @@ function enter(l) {
           v-for="(l, i) in items"
           :key="l.id"
           class="lesson-card anim-pop"
-          :style="{ background: l.color, animationDelay: Math.min(i, 8) * 0.08 + 's' }"
+          :class="'tone-' + l.tone"
+          :style="{ animationDelay: Math.min(i, 8) * 0.08 + 's' }"
           @click="enter(l)"
         >
           <span class="big-emoji anim-float">{{ l.emoji }}</span>
           <span class="lt">{{ l.title }}</span>
-          <span class="done" v-if="progress.isCompleted(l.id)">全部通关 ✓</span>
+          <span class="done" v-if="progress.isCompleted(l.id)">
+            <Check class="k-ico" />全部通关
+          </span>
           <span class="cnt">{{ l.words.length }} 个单词</span>
         </button>
       </div>
@@ -166,11 +172,10 @@ function enter(l) {
   grid-auto-rows: minmax(0, 1fr);
   gap: var(--grid-gap, 14px);
 }
+/* 底色 / 立体投影 / 文字色由 .tone-* 统一注入（见 base.css），这里只管排布 */
 .lesson-card {
   border-radius: var(--radius);
   padding: var(--gap-s);
-  color: #fff;
-  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.16);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -218,6 +223,9 @@ function enter(l) {
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 .foot {
   text-align: center;

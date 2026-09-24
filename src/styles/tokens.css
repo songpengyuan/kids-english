@@ -7,16 +7,30 @@
  *   - 只用 vw：手机横屏（矮）元素会被撑爆、直接溢出
  * 因此统一用 `min(Avh, Bvw)` 取较小值，再用 clamp() 兜住上下限。
  *
- * 新增样式请优先使用这里的变量，不要在组件里硬编码像素值。
+ * 新增样式请优先使用这里的变量，不要在组件里硬编码像素值 / 颜色值。
+ *
+ * ── 卡片规范（业界通行做法，全站统一）──────────────────────────
+ * 1. 中性卡片：`var(--card-bg)` 面 + `var(--shadow-hard)` 立体投影 + `var(--radius)`
+ *    —— 不写背景色、阴影、圆角的字面值。
+ * 2. 彩色卡片：只能用下面「卡片色调板」里的 6 个 hue，通过 base.css 的
+ *    `.tone-*` 工具类取用（`<button class="act tone-learn">`），
+ *    由工具类统一注入渐变、立体投影与文字色，禁止在组件里写 `background: #xxx`。
+ * 3. 状态色（对/错/选中）：用 `--state-*` / `--line-*`，同样不写字面值。
  */
 
 :root {
-  /* ---------- 颜色 ---------- */
+  /* ---------- 中性色：底 / 面 / 字 ---------- */
   --bg: #fdf6e3;
   --card-bg: #ffffff;
   --ink: #4a3f35;
   --ink-soft: #8a7f6f;
   --ink-faint: #a89b86;
+  --line: #e8e0cf;
+
+  /* ---------- 品牌色（控件底色：按钮 / 进度条 / 连线） ----------
+   * 亮色下是高饱和儿童向配色；暗色下整体降亮度降饱和（见 :root[data-theme="dark"]），
+   * 否则在深底上会「发光」刺眼，这正是「暗黑模式调暗亮色」的落点。
+   */
   --green: #58cc02;
   --green-dark: #46a302;
   --blue: #1cb0f6;
@@ -27,12 +41,48 @@
   --orange: #ff9f43;
   --orange-dark: #d97b1e;
   --gold: #b8860b;
-  --line: #e8e0cf;
+
+  /* ---------- 卡片色调板（全站唯一色源：6 个 hue） ----------
+   * 每个 hue 两个值：主色 + 立体投影色（卡片/按钮底部那层实心厚度）。
+   * 任何"有颜色的大卡片"都从这里取色，保证跨页面色调统一。
+   * 每个 hue 在暗色下都有一份降亮降饱和的对应值。
+   */
+  --c-blue: #1cb0f6;
+  --c-blue-deep: #1590c9;
+  --c-green: #58cc02;
+  --c-green-deep: #46a302;
+  --c-orange: #ff9f43;
+  --c-orange-deep: #d97b1e;
+  --c-purple: #ce82ff;
+  --c-purple-deep: #a95fd6;
+  --c-pink: #ff6b9d;
+  --c-pink-deep: #d94f7e;
+  --c-teal: #14b8a6;
+  --c-teal-deep: #0e9285;
+  /* 彩色卡片上的文字色 */
+  --on-tone: #ffffff;
+
+  /* ---------- 中性控件 / 状态色 ---------- */
+  --btn-plain-bg: #e5e5e5; /* 次要按钮（灰） */
+  --btn-plain-deep: #c9c9c9;
+  --btn-off-bg: #dfd9cc; /* 未达成条件的禁用态 */
+  --btn-off-ink: #a29a8b;
+  --btn-off-deep: #c6bfb1;
+  --state-ok-bg: #eafbe0; /* 答对：卡片底色 */
+  --state-bad-bg: #ffecec; /* 答错：卡片底色 */
+  --dot-bg: #d9cfba; /* 翻页圆点未选中 */
+  --progress-hi: #ffd97a; /* 进度条渐变亮端 */
+
+  /* ---------- 卡片内嵌面板（图片区 / 空状态大面板） ---------- */
+  --media-bg: linear-gradient(160deg, #fff7de, #ffe9c4); /* 词卡图片区 */
+  --panel-bg: linear-gradient(160deg, #d9f0ff, #eaf8ff); /* 童谣空状态面板 */
+  --panel-ink: #4a7ba6;
+  --panel-ink-soft: #8aa8c2;
 
   /* ---------- 色调 / 覆盖层（卡片内的高亮与悬浮底色，暗色下需反转） ---------- */
   --tint-yellow: #fff3c4; /* 单词按压高亮 */
-  --tint-green: #f2fff2;  /* 已听过 / 完成态底色 */
-  --tint-cream: #fff7de;  /* 听音选图答案条底色 */
+  --tint-green: #f2fff2; /* 已听过 / 完成态底色 */
+  --tint-cream: #fff7de; /* 听音选图答案条底色 */
   --overlay: rgba(255, 255, 255, 0.92); /* 悬浮徽章底色 */
   --overlay-strong: rgba(253, 246, 227, 0.88); /* 组间过场横幅：需盖住下方卡片 */
 
@@ -80,9 +130,14 @@
 }
 
 /* ===== 暗黑模式 =====
- * 由 src/utils/theme.js 在 <html> 上切换 data-theme="dark"，
- * 只覆盖「中性色 + 色调 + 阴影」；品牌色（green/blue/orange...）保持不变，
- * 保证按钮、进度条等在两种主题下观感一致。
+ * 由 src/utils/theme.js 在 <html> 上切换 data-theme="dark"。
+ *
+ * 两条原则：
+ *  1. **亮色整体调暗**：品牌色与卡片色调板都换成低亮度、低饱和的对应值。
+ *     直接把亮色主题的高饱和色搬到深底上会产生眩光（halation），
+ *     尤其儿童长时间观看更累眼。
+ *  2. **中性面反而要提亮一点**：深底上卡片若仍是近黑，层次就没了。
+ *     所以 --card-bg 比 --bg 高一档，并给阴影补一圈极淡的内描边做边界。
  */
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -94,14 +149,60 @@
   --ink-faint: #7f7a70;
   --line: #39415a;
 
+  /* 品牌色：亮度约 -20%，饱和度约 -25% */
+  --green: #4f9c31;
+  --green-dark: #3b7722;
+  --blue: #2a8fc4;
+  --blue-dark: #1f6c96;
+  --yellow: #d4a838;
+  --red: #cf5858;
+  --purple: #a377d1;
+  --orange: #cf8330;
+  --orange-dark: #a3631d;
+  --gold: #d0a94f;
+
+  /* 卡片色调板：与品牌色同步降亮降饱和 */
+  --c-blue: #2a8fc4;
+  --c-blue-deep: #1d6b95;
+  --c-green: #4f9c31;
+  --c-green-deep: #3a7422;
+  --c-orange: #cf8330;
+  --c-orange-deep: #9c621d;
+  --c-purple: #a377d1;
+  --c-purple-deep: #7a55a0;
+  --c-pink: #cf5a83;
+  --c-pink-deep: #9c4263;
+  --c-teal: #19988a;
+  --c-teal-deep: #127267;
+  /* 基调偏暖白，纯白在深底上过大反差反而刺眼 */
+  --on-tone: #fdf7ee;
+
+  --btn-plain-bg: #343c52;
+  --btn-plain-deep: #232a3c;
+  --btn-off-bg: #2c3346;
+  --btn-off-ink: #7c8499;
+  --btn-off-deep: #1f2534;
+  --state-ok-bg: #1e3a24;
+  --state-bad-bg: #3d2328;
+  --dot-bg: #3a4258;
+  --progress-hi: #b58f3a;
+
+  --media-bg: linear-gradient(160deg, #2b3348, #262c3e);
+  --panel-bg: linear-gradient(160deg, #1d2637, #223047);
+  --panel-ink: #9fc4dd;
+  --panel-ink-soft: #7d97ad;
+
   --tint-yellow: #3e3a1f;
   --tint-green: #1e3324;
-  --tint-cream: #3b3620;
+  /* 亮色下它是"暖奶油色答案条"；暗色下若照搬暖棕会和冷色卡面打架，
+   * 改成比卡面略亮一档的中性条，视觉上仍是"同一条带子" */
+  --tint-cream: #333b50;
   --overlay: rgba(23, 28, 43, 0.92);
   --overlay-strong: rgba(23, 28, 43, 0.88);
 
-  --shadow-hard: 0 6px 0 rgba(0, 0, 0, 0.42);
-  --shadow-soft: 0 2px 0 rgba(0, 0, 0, 0.3);
+  /* 深底上黑色投影几乎不可见，补一圈极淡内描边把卡片边界"描"出来 */
+  --shadow-hard: 0 6px 0 rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  --shadow-soft: 0 2px 0 rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 /* ===== 断点约定（供参考，CSS 无法定义变量化断点，改动时请同步各处） =====

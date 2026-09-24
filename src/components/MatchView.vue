@@ -4,6 +4,7 @@ import { speak } from "../utils/speech";
 import { sfxMatch, sfxWrong, celebrate } from "../utils/effects";
 import { useViewport } from "../composables/useViewport";
 import { splitBalanced } from "../utils/layout";
+import { Link2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
 const emit = defineEmits(["done"]);
@@ -78,15 +79,24 @@ function scheduleMeasure() {
   });
 }
 
-/** 已配对连线的坐标：图片卡中心 → 单词卡中心（board 坐标系；线在最上层，不会遮挡卡片） */
+/** 已配对连线的坐标：起点卡中心 → 终点卡中心（board 坐标系；线在最上层，不遮挡卡片）
+ *
+ * 「起点」= 孩子实际先按下的那一张，不固定为图片侧：
+ *  - 拖拽：按下哪张就从哪张出发
+ *  - 点选：第一次点的当起点，第二次点的当终点
+ * 端点顺序与操作顺序一致，连线的绘制动画（stroke-dashoffset 从起点reveal）
+ * 才会从孩子出手的那张卡流向另一张，而不是反过来"倒着长"。
+ */
 function matchedLine(wordId) {
-  const a = imgPos[wordId];
-  const b = wordPos[wordId];
-  if (!a || !b) return null;
-  return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+  const fromImg = (matchFrom[wordId] || "img") === "img";
+  const start = fromImg ? imgPos[wordId] : wordPos[wordId];
+  const end = fromImg ? wordPos[wordId] : imgPos[wordId];
+  if (!start || !end) return null;
+  return { x1: start.x, y1: start.y, x2: end.x, y2: end.y };
 }
 
 const matched = reactive(new Set()); // 当前组已配对 id
+const matchFrom = reactive({}); // id → 'img' | 'word'：该配对的起点侧（决定连线方向）
 const dragging = ref(false);
 const startWord = ref(null);
 const startSide = ref("img"); // 起点所在侧：'img'（两侧图片）| 'word'（中间单词）
@@ -202,11 +212,13 @@ function onCancel() {
 
 function tryMatch(other) {
   const first = startWord.value;
+  const from = startSide.value; // 先按下的那一侧 = 连线起点
   startWord.value = null;
   pendingWord = null;
   if (!first) return;
   if (first.id === other.id) {
     matched.add(first.id);
+    matchFrom[first.id] = from;
     justMatched.value = first.id;
     sfxMatch();
     speak(other.en);
@@ -239,6 +251,7 @@ watch(groupDone, async (done) => {
 
 function setupGroup(g) {
   matched.clear();
+  Object.keys(matchFrom).forEach((k) => delete matchFrom[k]); // 方向随配对一起重置
   ready.value = false;
   const imgs = shuffle(g);
   const half = Math.ceil(imgs.length / 2);
@@ -285,7 +298,9 @@ onBeforeUnmount(() => {
 <template>
   <div class="match view">
     <div class="head">
-      <p class="tip">🔗 图片和单词连起来，从哪边开始都行</p>
+      <p class="tip">
+        <Link2 class="k-ico tip-ico" />图片和单词连起来，从哪边开始都行
+      </p>
       <span class="counter" v-if="groupCount > 1">
         第 {{ groupIdx + 1 }} / {{ groupCount }} 组 · {{ doneCount }}/{{ totalPairs }}
       </span>
@@ -414,6 +429,12 @@ onBeforeUnmount(() => {
   color: var(--ink-soft);
   font-size: var(--fs-small);
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.tip-ico {
+  color: var(--purple);
 }
 .counter {
   background: var(--card-bg);
@@ -450,7 +471,7 @@ onBeforeUnmount(() => {
   animation: draw-line 0.45s ease forwards;
 }
 .done-line.flash {
-  filter: drop-shadow(0 0 8px #ffd97a);
+  filter: drop-shadow(0 0 8px var(--progress-hi));
 }
 @keyframes draw-line {
   to {

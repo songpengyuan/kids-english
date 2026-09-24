@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted } from "vue";
+import { ChevronLeft, ChevronRight } from "@lucide/vue";
 
 /**
  * 通用翻页控件。
@@ -41,7 +42,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
       aria-label="上一页"
       @click="emit('prev')"
     >
-      ←
+      <ChevronLeft class="k-ico" />
     </button>
 
     <div class="mid">
@@ -64,7 +65,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
       aria-label="下一页"
       @click="emit('next')"
     >
-      →
+      <ChevronRight class="k-ico" />
     </button>
   </div>
 </template>
@@ -84,21 +85,25 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
   flex: none;
   border-radius: 50%;
   background: var(--green);
-  color: #fff;
+  color: var(--on-tone);
   font-size: var(--fs-btn);
   font-weight: 800;
   line-height: 1;
   box-shadow: 0 var(--press) 0 var(--green-dark);
   transition: transform 0.08s, box-shadow 0.08s, opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .arrow:active:not(:disabled) {
   transform: translateY(calc(var(--press) - 1px));
   box-shadow: 0 1px 0 var(--green-dark);
 }
 .arrow:disabled {
-  opacity: 0.32;
-  box-shadow: 0 var(--press) 0 #c9c9c9;
-  background: #d8d8d8;
+  opacity: 0.4;
+  box-shadow: 0 var(--press) 0 var(--btn-off-deep);
+  background: var(--btn-off-bg);
+  color: var(--btn-off-ink);
   cursor: default;
 }
 
@@ -121,7 +126,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
   height: clamp(9px, 1.6vh, 13px);
   padding: 0;
   border-radius: 50%;
-  background: #d9cfba;
+  background: var(--dot-bg);
   transition: background 0.2s, transform 0.2s;
 }
 .dot.on {

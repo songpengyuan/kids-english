@@ -10,6 +10,7 @@ import {
   createRecorder
 } from "../utils/speechScore";
 import { celebrate, sfxCorrect, sfxWrong, sfxTap } from "../utils/effects";
+import { ChevronRight, Mic, RotateCcw, Square, ThumbsUp, Volume2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Object, required: true } });
 const emit = defineEmits(["done"]);
@@ -179,7 +180,9 @@ onBeforeUnmount(() => {
   <div class="speak view">
     <div class="speak-head">
       <span class="prog">{{ progressText }}</span>
-      <span class="mode-tag">{{ mode === "asr" ? "🎤 自动打分" : "🎙️ 录音回放" }}</span>
+      <span class="mode-tag">
+        <Mic class="k-ico" />{{ mode === "asr" ? "自动打分" : "录音回放" }}
+      </span>
     </div>
 
     <div class="word-zone">
@@ -204,17 +207,20 @@ onBeforeUnmount(() => {
         v-if="mode === 'asr'"
         class="mic"
         :class="{ live: status === 'listening' }"
+        aria-label="按住说话"
         @pointerdown.prevent="startAsr"
       >
-        🎤
+        <Mic class="k-ico" />
       </button>
       <button
         v-else
         class="mic"
         :class="{ live: status === 'listening' }"
+        :aria-label="status === 'listening' ? '结束录音' : '开始录音'"
         @click="status === 'listening' ? stopRecord() : startRecord()"
       >
-        {{ status === "listening" ? "⏹️" : "🎤" }}
+        <Square v-if="status === 'listening'" class="k-ico" />
+        <Mic v-else class="k-ico" />
       </button>
       <div v-if="status === 'listening'" class="waves"><i></i><i></i><i></i></div>
       <p class="mic-label">
@@ -235,32 +241,48 @@ onBeforeUnmount(() => {
         <audio :src="recUrl" controls class="replay big"></audio>
         <p class="judge-q">听一听回放，读得准不准？</p>
         <div class="btn-row">
-          <button class="k-btn green" @click="parentJudge(true)">👍 读得棒</button>
-          <button class="k-btn orange" @click="parentJudge(false)">🔁 再试一次</button>
+          <button class="k-btn green" @click="parentJudge(true)">
+            <ThumbsUp class="k-ico" />读得棒
+          </button>
+          <button class="k-btn orange" @click="parentJudge(false)">
+            <RotateCcw class="k-ico" />再试一次
+          </button>
         </div>
       </template>
       <template v-else-if="mode === 'record'">
         <p class="verdict" :class="grade">
           <span v-if="grade === 'perfect'">🌟 太棒了！</span>
-          <span v-else>🔁 再试一次吧，先听一遍示范</span>
+          <span v-else class="retry-hint"><RotateCcw class="k-ico" />再试一次吧，先听一遍示范</span>
         </p>
         <div class="btn-row">
-          <button class="k-btn gray" @click="hearExample">🔈 再听示范</button>
-          <button v-if="grade === 'retry'" class="k-btn orange" @click="retry">🎤 我再试试</button>
-          <button v-else class="k-btn" @click="next">继续 →</button>
+          <button class="k-btn gray" @click="hearExample">
+            <Volume2 class="k-ico" />再听示范
+          </button>
+          <button v-if="grade === 'retry'" class="k-btn orange" @click="retry">
+            <Mic class="k-ico" />我再试试
+          </button>
+          <button v-else class="k-btn" @click="next">
+            继续<ChevronRight class="k-ico" />
+          </button>
         </div>
       </template>
       <template v-else>
         <p class="verdict" :class="grade">
           <span v-if="grade === 'perfect'">🌟 太棒了！发音很标准</span>
           <span v-else-if="grade === 'good'">😊 很不错，再响亮一点就更棒啦</span>
-          <span v-else>🔁 再试一次吧，先听一遍示范</span>
+          <span v-else class="retry-hint"><RotateCcw class="k-ico" />再试一次吧，先听一遍示范</span>
         </p>
         <p v-if="heard" class="heard">小耳朵听到的是："{{ heard }}"</p>
         <div class="btn-row">
-          <button class="k-btn gray" @click="hearExample">🔈 再听示范</button>
-          <button v-if="grade === 'retry'" class="k-btn orange" @click="retry">🎤 我再试试</button>
-          <button v-else class="k-btn" @click="next">继续 →</button>
+          <button class="k-btn gray" @click="hearExample">
+            <Volume2 class="k-ico" />再听示范
+          </button>
+          <button v-if="grade === 'retry'" class="k-btn orange" @click="retry">
+            <Mic class="k-ico" />我再试试
+          </button>
+          <button v-else class="k-btn" @click="next">
+            继续<ChevronRight class="k-ico" />
+          </button>
         </div>
       </template>
     </div>
@@ -291,6 +313,9 @@ onBeforeUnmount(() => {
   font-size: var(--fs-small);
   box-shadow: var(--shadow-soft);
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
 }
 
 .word-zone {
@@ -371,10 +396,20 @@ onBeforeUnmount(() => {
   font-size: clamp(26px, min(6vh, 4.6vw), 46px);
   border: none;
   cursor: pointer;
-  background: radial-gradient(circle at 35% 30%, #ffd54d, var(--orange));
+  /* 高光用半透明白叠加而不是写死的浅黄，深色主题下同样是"打光"而不是发白 */
+  background: radial-gradient(
+      circle at 35% 30%,
+      rgba(255, 255, 255, 0.42),
+      rgba(255, 255, 255, 0) 62%
+    ),
+    var(--orange);
+  color: var(--on-tone);
   box-shadow: 0 8px 0 var(--orange-dark), 0 12px 22px rgba(0, 0, 0, 0.18);
   transition: transform 0.1s, box-shadow 0.1s;
   touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .mic:active,
 .mic.live {
@@ -452,11 +487,18 @@ onBeforeUnmount(() => {
   font-weight: 800;
   text-align: center;
 }
+/* "再试一次"提示：图标与文字同排，图标跟随字号 */
+.retry-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  justify-content: center;
+}
 .verdict.perfect {
   color: var(--green-dark);
 }
 .verdict.good {
-  color: #1a8ec4;
+  color: var(--blue-dark);
 }
 .verdict.retry {
   color: var(--orange-dark);
