@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { speak } from "../utils/speech";
 import { sfxTap } from "../utils/effects";
 import { Volume2 } from "@lucide/vue";
@@ -7,7 +7,9 @@ import { Volume2 } from "@lucide/vue";
 const props = defineProps({
   word: { type: Object, required: true },
   size: { type: String, default: "md" }, // sm | md | lg
-  speakZhHint: { type: Boolean, default: false }
+  speakZhHint: { type: Boolean, default: false },
+  /** 在页内的序号，用于入场动画的阶梯延迟；-1 表示不做入场动画 */
+  enterIndex: { type: Number, default: -1 }
 });
 
 const imgFailed = ref(false);
@@ -15,20 +17,22 @@ const popping = ref(false);
 const rootEl = ref(null);
 
 /**
- * 点击反馈动画：animate.css 的 tada（摇摆放大），
- * 全程卡片保持可见（无 opacity / scale(0) 帧），只是"晃一下"。
+ * 入场动画用响应式开关管理，而不是手动摘类名。
  *
- * 关键：必须先摘掉 LearnView 传入的入场动画类 anim-pop（pop-in）。
- * CSS 的 animation-name 一旦变化就会重新触发动画——若点击动画结束后
- * 类被移回，pop-in 会带着 fill-mode:both + 延迟重新跑一遍，
- * 延迟期内卡片停在 scale(0)，看起来就是"卡片消失一下"。
+ * 之前 LearnView 透传 class="anim-pop" + style="animation-delay"，点击时手动
+ * remove 掉——但组件因 popping 变化重渲染时，Vue 会把父组件透传的 class/style
+ * **原样补回来**，pop-in（scale(0) 起步 + fill-mode:both）便带着延迟重新播放：
+ * 卡片先隐形零点几秒再蹦出来，看起来就像"点了单词页面跳走了"。
+ * 改成 ref 控制后，Vue 自己摘类、且不会再补回，点击只播 tada。
  */
+const entering = ref(props.enterIndex >= 0);
+const enterDelay = computed(
+  () => Math.min(Math.max(props.enterIndex, 0), 8) * 0.06 + "s"
+);
+
+/** 点击反馈动画：animate.css 的 tada（摇摆放大），全程卡片保持可见 */
 function pop() {
-  const el = rootEl.value;
-  if (el) {
-    el.classList.remove("anim-pop");
-    el.style.removeProperty("animation-delay");
-  }
+  entering.value = false; // 从此入场动画彻底退场（响应式，Vue 负责摘干净）
   popping.value = false;
   requestAnimationFrame(() => (popping.value = true));
 }
@@ -51,7 +55,11 @@ function onWord() {
   <div
     ref="rootEl"
     class="word-card"
-    :class="[size, { animate__animated: popping, animate__tada: popping, animate__faster: popping }]"
+    :class="[
+      size,
+      { 'anim-pop': entering, animate__animated: popping, animate__tada: popping, animate__faster: popping }
+    ]"
+    :style="entering ? { animationDelay: enterDelay } : null"
     @animationend.self="popping = false"
   >
     <div class="pic" data-haptic @click="onImage" :title="'点击听发音：' + word.en">

@@ -14,6 +14,12 @@ function open(id) {
 }
 function back() {
   currentId.value = null;
+  // 深链参数（?lesson=xx&stage=yy）只在"进入应用"那一刻生效。
+  // 回首页时清掉：挂起的版本更新会在回首页时 location.reload()，
+  // 若 URL 里还留着深链，刷新后会直接跳回课程里——表现为"返回按钮失灵"。
+  if (location.search) {
+    history.replaceState(null, "", location.pathname);
+  }
   // 若有挂起的版本更新，回到首页正是安全刷新时机
   applyUpdateIfIdle();
 }

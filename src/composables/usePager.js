@@ -57,6 +57,15 @@ export function usePager(source, perPage, options = {}) {
     if (page.value > t - 1) page.value = t - 1;
   });
 
+  // 每页容量变化（旋转 / 地址栏收放 / 分屏拖动）时，让「当前看到的第一个条目」
+  // 停在原地重新映射页码。只靠上面的夹取不够：比如在第 2 页时视口变高、一页
+  // 装下全部 → total 变 1 → 被夹回第 1 页；等视口再变回来就"莫名回跳上一页"。
+  watch(size, (now, was) => {
+    if (was === now) return;
+    const firstItem = page.value * was;
+    page.value = Math.min(Math.floor(firstItem / now), total.value - 1);
+  });
+
   if (resetOn.length) watch(resetOn, reset);
 
   return {

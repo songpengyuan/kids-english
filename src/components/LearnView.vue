@@ -123,8 +123,7 @@ function finish() {
           v-for="(w, i) in items"
           :key="w.id"
           :word="w"
-          class="anim-pop"
-          :style="{ animationDelay: Math.min(i, 8) * 0.06 + 's' }"
+          :enter-index="i"
         />
       </div>
     </div>

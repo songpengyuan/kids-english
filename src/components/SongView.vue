@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch, nextTick, onBeforeUnmount } from "vue";
 import { bigCelebrate } from "../utils/effects";
 import { hapticTap } from "../utils/haptics";
 import progress from "../store/progress";
@@ -20,6 +20,12 @@ const audioEl = ref(null);
 const audioMissing = ref(false);
 const videoEl = ref(null);
 const videoMissing = ref(!props.lesson.song.video);
+
+/** 离开本页（回菜单 / 换课）必须停播：脱离 DOM 的媒体元素在部分浏览器会继续出声 */
+onBeforeUnmount(() => {
+  audioEl.value?.pause();
+  videoEl.value?.pause();
+});
 
 /** 完整听过一遍（音频或视频）→ 才有资格领星；与"是否循环"无关 */
 const watched = ref(false);
