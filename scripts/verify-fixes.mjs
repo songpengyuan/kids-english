@@ -8,6 +8,7 @@
  *   5. 连线：图片与单词都能当起点（拖动 + 点选两种模式）
  *   6. 音乐模式：播放进度条（可拖动跳转）+ 循环播放开关（状态持久化）
  *   7. 连线方向：起点=先按下的卡片、终点=后按下的卡片（两个方向都验）
+ *   8. 连错标记：标红的必须是孩子实际按下的两张卡，不能因 id 同名误伤另一侧
  *   8. 暗黑模式：品牌色亮度下降、面色比底色亮一档、卡片底色真的被替换
  *   9. 卡片色调统一：玩法卡/课时卡/封面都走 .tone-* 色调板，无内联写死颜色
  *  10. 图标库：控件区不再出现 emoji，图标以 SVG 渲染且随字号缩放
@@ -330,6 +331,51 @@ try {
       dirRes.matched === true && near(dirRes.x2, dirRes.secondC.x) && near(dirRes.y2, dirRes.secondC.y),
       `终点(${dirRes.x2},${dirRes.y2}) 期望(${dirRes.secondC?.x},${dirRes.secondC?.y})`
     );
+  }
+
+  /* ---------- 8.5 连错标记：标红的必须是实际按下的那两张卡 ---------- */
+  for (const order of ["word→img", "img→word"]) {
+    await goto(BASE + "?lesson=l4&stage=match");
+    await sleep(1500);
+    const wrongRes = await evalJs(`(async () => {
+      const fire = (el, type, x, y) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true }));
+      const word = document.querySelector('.col.words .cell.word');
+      if (!word) return { found: false };
+      const id = word.getAttribute('data-word');
+      // 故意挑一张与它不配对的图片
+      const img = [...document.querySelectorAll('.col.imgs .cell.pic')]
+        .find(el => el.getAttribute('data-word') !== id);
+      if (!img) return { found: false };
+      const badId = img.getAttribute('data-word');
+      const first = ${JSON.stringify(order)} === "word→img" ? word : img;
+      const second = ${JSON.stringify(order)} === "word→img" ? img : word;
+      const fr = first.getBoundingClientRect(), sr = second.getBoundingClientRect();
+      fire(first, 'pointerdown', fr.left + fr.width / 2, fr.top + fr.height / 2);
+      fire(document, 'pointermove', sr.left + sr.width / 2, sr.top + sr.height / 2);
+      fire(document, 'pointerup', sr.left + sr.width / 2, sr.top + sr.height / 2);
+      await new Promise(r => setTimeout(r, 200)); // 仍在该对标记存续窗口内
+      const wrong = [...document.querySelectorAll('.cell.wrong')];
+      return {
+        found: true, id, badId,
+        wrongKeys: wrong.map(el => el.getAttribute('data-side') + ':' + el.getAttribute('data-word')),
+        // 同一 id 的另一侧卡片：这两张绝不该被标红
+        sameIdImgWrong: !!document.querySelector('.col.imgs .cell.pic[data-word="' + id + '"].wrong'),
+        sameIdWordWrong: !!document.querySelector('.col.words .cell.word[data-word="' + badId + '"].wrong'),
+        lines: document.querySelectorAll('.done-line').length
+      };
+    })()`);
+    const expect = [`word:${wrongRes.id}`, `img:${wrongRes.badId}`];
+    check(
+      `${order} 连错只标红实际按下的两张卡`,
+      wrongRes.wrongKeys?.length === 2 && expect.every((k) => wrongRes.wrongKeys.includes(k)),
+      JSON.stringify(wrongRes.wrongKeys) + " 期望 " + JSON.stringify(expect)
+    );
+    check(
+      `${order} 连错不误伤同 id 的另一侧卡片`,
+      wrongRes.sameIdImgWrong === false && wrongRes.sameIdWordWrong === false,
+      `同名图片卡=${wrongRes.sameIdImgWrong} 同名单词卡=${wrongRes.sameIdWordWrong}`
+    );
+    check(`${order} 连错不画线`, wrongRes.lines === 0, "done-line=" + wrongRes.lines);
   }
 
   /* ---------- 9. 暗黑模式：亮色被调暗 ---------- */

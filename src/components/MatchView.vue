@@ -104,10 +104,33 @@ const line = reactive({ x1: 0, y1: 0, x2: 0, y2: 0 });
 const imgWrong = ref(null);
 const wordWrong = ref(null);
 const wrongCount = ref(0); // 跨组累计，用于评分
+let wrongTimer = 0;
+
+/**
+ * 标出"刚连错的这一对"。必须带上「侧」：同一个 id 在两侧各有一张卡
+ * （图片列 + 中间单词列），只按 id 标记会误伤另一侧同名的卡——孩子看到的
+ * 是两个没碰过的卡片在闪红。a / b 是实际按下的两张卡：{ id, side }。
+ * 连错是可以连续触发的，所以用同一个 timer，避免前一次的清理把新标记提前抹掉。
+ */
+function markWrong(a, b) {
+  if (a.side === "img") {
+    imgWrong.value = a.id;
+    wordWrong.value = b.id;
+  } else {
+    wordWrong.value = a.id;
+    imgWrong.value = b.id;
+  }
+  clearTimeout(wrongTimer);
+  wrongTimer = setTimeout(() => {
+    imgWrong.value = null;
+    wordWrong.value = null;
+  }, 750);
+}
 const justMatched = ref(null);
 const transitioning = ref(false);
 
 let pendingWord = null;
+let pendingSide = null; // pendingWord 所在侧，供连错时精确定位要标红的卡
 
 const totalPairs = computed(() => curGroup.value.length);
 const doneCount = computed(() => matched.size);
@@ -178,10 +201,9 @@ function onMove(e) {
   const el = document.elementFromPoint(cx, cy);
   const hit = el && el.closest ? el.closest("[data-word]") : null;
   // 只有落在"另一侧"且尚未配对的卡片上才算命中
-  pendingWord =
-    hit && hit.getAttribute("data-side") !== startSide.value && !hit.classList.contains("gone")
-      ? hit.getAttribute("data-word")
-      : null;
+  const ok = hit && hit.getAttribute("data-side") !== startSide.value && !hit.classList.contains("gone");
+  pendingWord = ok ? hit.getAttribute("data-word") : null;
+  pendingSide = ok ? hit.getAttribute("data-side") : null;
 }
 
 function onUp() {
@@ -189,7 +211,7 @@ function onUp() {
   downInfo = null;
   if (!info) return;
   if (info.act === "pair") {
-    tryMatch(info.word);
+    tryMatch(info.word, info.side);
     return;
   }
   if (info.act === "cancel") {
@@ -199,8 +221,10 @@ function onUp() {
   // 拖拽结束：压在对面卡片上就配对，否则保留选中（点选模式接着点另一侧）
   dragging.value = false;
   const target = pendingWord ? findWord(pendingWord) : null;
+  const targetSide = pendingSide;
   pendingWord = null;
-  if (target) tryMatch(target);
+  pendingSide = null;
+  if (target) tryMatch(target, targetSide);
 }
 
 /** 手势被系统抢占（来电 / 切后台）→ 只清拖拽态，保留选中 */
@@ -208,13 +232,15 @@ function onCancel() {
   downInfo = null;
   dragging.value = false;
   pendingWord = null;
+  pendingSide = null;
 }
 
-function tryMatch(other) {
+function tryMatch(other, otherSide) {
   const first = startWord.value;
   const from = startSide.value; // 先按下的那一侧 = 连线起点
   startWord.value = null;
   pendingWord = null;
+  pendingSide = null;
   if (!first) return;
   if (first.id === other.id) {
     matched.add(first.id);
@@ -227,13 +253,8 @@ function tryMatch(other) {
   } else {
     wrongCount.value++;
     sfxWrong();
-    imgWrong.value = first.id;
-    wordWrong.value = other.id;
+    markWrong({ id: first.id, side: from }, { id: other.id, side: otherSide });
     setTimeout(() => speak(first.en, { rate: 0.75 }), 420);
-    setTimeout(() => {
-      imgWrong.value = null;
-      wordWrong.value = null;
-    }, 750);
   }
 }
 
@@ -252,6 +273,11 @@ watch(groupDone, async (done) => {
 function setupGroup(g) {
   matched.clear();
   Object.keys(matchFrom).forEach((k) => delete matchFrom[k]); // 方向随配对一起重置
+  clearTimeout(wrongTimer);
+  imgWrong.value = null;
+  wordWrong.value = null;
+  pendingWord = null;
+  pendingSide = null;
   ready.value = false;
   const imgs = shuffle(g);
   const half = Math.ceil(imgs.length / 2);
@@ -292,6 +318,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", scheduleMeasure);
   if (ro) ro.disconnect();
   if (raf) cancelAnimationFrame(raf);
+  clearTimeout(wrongTimer);
 });
 </script>
 
@@ -551,6 +578,7 @@ onBeforeUnmount(() => {
 }
 .cell.wrong {
   border-color: var(--red);
+  background: var(--state-bad-bg);
   animation: shake-x 0.45s ease;
 }
 .cell.gone {
