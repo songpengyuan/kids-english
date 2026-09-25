@@ -20,13 +20,15 @@ const questions = computed(() =>
 );
 
 const idx = ref(0);
-const picked = ref(null); // 已选 word id
+const picked = ref(null); // 答对时锁定为正确答案 id；答错时为 null（可继续选）
+const wrongPicks = ref(new Set()); // 选错的选项集合：只标红，不揭示正确答案
 const imgFail = ref({}); // 记录加载失败的图
 const rightCount = ref(0);
 
 const q = computed(() => questions.value[idx.value]);
 const total = computed(() => questions.value.length);
 const percent = computed(() => Math.round((idx.value / total.value) * 100));
+// 只有答对才锁定本题（答错不锁，可以继续选）
 const locked = computed(() => picked.value !== null);
 
 function autoSpeak() {
@@ -38,21 +40,23 @@ function replay() {
   speak(q.value.target.en);
 }
 
-function choose(opt) {
-  if (locked.value) return;
-  picked.value = opt.id;
+// 判题：选对才前进；选错只标红（wrongPicks），不揭示正确答案、不自动读答案、不前进
+const pick = (opt) => {
+  if (locked.value || wrongPicks.value.has(opt.id)) return;
   if (opt.id === q.value.target.id) {
+    picked.value = opt.id;
     rightCount.value++;
     sfxCorrect();
     speak(opt.en);
     celebrate();
+    setTimeout(next, 1300);
   } else {
+    // 答错：只把这一项标红，不显示正确答案、不自动读答案、不前进；
+    // 孩子可以继续点其他选项，直到选对才进入下一题
     sfxWrong();
-    // 答错：自动再读一遍正确发音
-    setTimeout(() => speak(q.value.target.en, { rate: 0.75 }), 500);
+    wrongPicks.value = new Set([...wrongPicks.value, opt.id]);
   }
-  setTimeout(next, 1300);
-}
+};
 
 function next() {
   if (idx.value >= total.value - 1) {
@@ -61,6 +65,7 @@ function next() {
   }
   idx.value++;
   picked.value = null;
+  wrongPicks.value = new Set();
   autoSpeak();
 }
 
@@ -87,10 +92,10 @@ const scoreStars = computed(() => {
         data-haptic
         :class="{
           right: locked && opt.id === q.target.id,
-          wrong: locked && picked === opt.id && opt.id !== q.target.id,
-          dim: locked && opt.id !== q.target.id && picked !== opt.id
+          wrong: wrongPicks.has(opt.id),
+          dim: locked && opt.id !== q.target.id
         }"
-        @click="choose(opt)"
+        @click="pick(opt)"
       >
         <div class="pic">
           <img
@@ -106,8 +111,8 @@ const scoreStars = computed(() => {
       </div>
     </div>
 
-    <p v-if="locked && picked === q.target.id" class="praise anim-pop">太棒了！🎉</p>
-    <p v-else-if="locked" class="oh anim-pop">再听一次哦～</p>
+    <p v-if="locked" class="praise anim-pop">太棒了！🎉</p>
+    <p v-else-if="wrongPicks.size" class="oh anim-pop">再听一次哦～</p>
     <!-- 占位：忙时用透明文本撑住高度，避免答题后整页上下跳动 -->
     <p v-else class="praise placeholder" aria-hidden="true">占位</p>
   </div>

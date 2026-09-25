@@ -60,23 +60,95 @@ const rawLessons = [
       /* 动画舞台的场景：sea = 大海和小帆船 / stage = 小小演奏会
        * （视频缺失时才会用到，见 SongStage.vue） */
       scene: "sea",
-      /* 完整歌词（空字符串 = 段落分隔） */
+      /* 完整歌词（空字符串 = 段落分隔）
+       * ⚠️ l4 的 mp3 是"整曲唱 3 遍"的课堂版（约 200s，每遍 66s），
+       * 歌词必须重复 3 遍才能和音频全程对应（song-timings.json 的 l4 时间轴按 42 行生成）。 */
       lyrics: [
         "A sailor went to sea, sea, sea",
+
         "To see what he could see, see, see",
+
         "But all that he could see, see, see",
+
         "Was the bottom of the deep blue sea, sea, sea",
+
         "",
+
         "A sailor went to sea, sea, sea",
+
         "To see what he could see, see, see",
+
         "But all that he could see, see, see",
+
         "Was the bottom of the deep blue sea, sea, sea",
+
         "",
+
         "A sailor went to sea, sea, sea",
+
         "To see what he could see, see, see",
+
         "But all that he could see, see, see",
+
+        "Was the bottom of the deep blue sea, sea, sea",
+
+        "A sailor went to sea, sea, sea",
+
+        "To see what he could see, see, see",
+
+        "But all that he could see, see, see",
+
+        "Was the bottom of the deep blue sea, sea, sea",
+
+        "",
+
+        "A sailor went to sea, sea, sea",
+
+        "To see what he could see, see, see",
+
+        "But all that he could see, see, see",
+
+        "Was the bottom of the deep blue sea, sea, sea",
+
+        "",
+
+        "A sailor went to sea, sea, sea",
+
+        "To see what he could see, see, see",
+
+        "But all that he could see, see, see",
+
+        "Was the bottom of the deep blue sea, sea, sea",
+
+        "A sailor went to sea, sea, sea",
+
+        "To see what he could see, see, see",
+
+        "But all that he could see, see, see",
+
+        "Was the bottom of the deep blue sea, sea, sea",
+
+        "",
+
+        "A sailor went to sea, sea, sea",
+
+        "To see what he could see, see, see",
+
+        "But all that he could see, see, see",
+
+        "Was the bottom of the deep blue sea, sea, sea",
+
+        "",
+
+        "A sailor went to sea, sea, sea",
+
+        "To see what he could see, see, see",
+
+        "But all that he could see, see, see",
+
         "Was the bottom of the deep blue sea, sea, sea"
-      ]
+      
+]
     },
     words: [
       { id: "seahorse", en: "seahorse", zh: "海马", emoji: "🐴", image: "/lessons/l4/words/seahorse.png" },

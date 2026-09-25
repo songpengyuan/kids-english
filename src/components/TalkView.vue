@@ -9,6 +9,8 @@ const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["done"]);
 
 const phrases = props.lesson.phrases || [];
+/** 本课单词 = 对话的备选词库（孩子可以挑一个"填进"省略号句子） */
+const words = props.lesson.words || [];
 const activeIdx = ref(-1);
 
 /** 每条口语句一个 Audio 实例（懒创建）；加载失败置 null，自动回退 TTS */
@@ -17,6 +19,14 @@ const audios = new Map();
 function playPhrase(p, i) {
   hapticTap();
   activeIdx.value = i;
+  // 带填空 "..." 的句子（如 "I see a ..."）：不播预生成音频——
+  // 冠词 a 后是省略号（句尾），合成引擎会把 a 读成字母音 /eɪ/。
+  // 改为实时合成朗读，把省略号读成 something → "I see a something"，
+  // a 后跟名词自然弱读成 /ə/。歌词文本本身不动，音频文件也不动。
+  if (p.en.includes("...")) {
+    speak(p.en.replace("...", "something"));
+    return;
+  }
   if (!audios.has(p.en)) {
     const a = new Audio(p.audio);
     a.addEventListener("error", () => audios.set(p.en, null), { once: true });
@@ -40,6 +50,36 @@ function tap(p, i) {
   playPhrase(p, i);
   listened.value.add(i);
   listened.value = new Set(listened.value);
+}
+
+/* ---------- 备选单词：先点一张卡片，再挑词填进省略号句子 ---------- */
+/** 卡片 index → 当前填入的单词 id */
+const filled = ref({});
+function pickWord(w) {
+  hapticTap();
+  const i = activeIdx.value;
+  // 还没点过对话卡片：只朗读单词，让孩子先熟悉备选词
+  if (i < 0 || !phrases[i]) {
+    speak(w.en);
+    return;
+  }
+  const p = phrases[i];
+  filled.value = { ...filled.value, [i]: w.id };
+  // 句子里有 "..."（如 "I see a ..."）→ 填入并朗读完整句；否则只朗读单词
+  if (p.en.includes("...")) {
+    speak(p.en.replace("...", w.en));
+  } else {
+    speak(w.en);
+  }
+  listened.value.add(i);
+  listened.value = new Set(listened.value);
+}
+/** 填入后的完整句（没填或句子无省略号 → null） */
+function filledSentence(p, i) {
+  const id = filled.value[i];
+  if (!id || !p.en.includes("...")) return null;
+  const w = words.find((x) => x.id === id);
+  return w ? p.en.replace("...", w.en) : null;
 }
 
 function finish() {
@@ -68,8 +108,26 @@ function finish() {
         <!-- 中文对话在上，英文单词/句子放在对话下面 -->
         <span class="pzh">{{ p.zh }}</span>
         <span class="pen"><Volume2 class="k-ico" />{{ p.en }}</span>
+        <!-- 填入后的完整句（选了备选单词后出现） -->
+        <span v-if="filledSentence(p, i)" class="pfill anim-pop">{{ filledSentence(p, i) }}</span>
         <span v-if="listened.has(i)" class="heard-mark"><Check class="k-ico" />听过啦</span>
       </button>
+    </div>
+
+    <!-- 备选单词：整页只显示一次，点它填进"当前选中的那张卡片" -->
+    <div class="word-bank">
+      <p class="bank-tip">先点一张对话卡片，再挑一个单词填进去：</p>
+      <div class="word-row">
+        <button
+          v-for="w in words"
+          :key="w.id"
+          class="wchip"
+          :class="{ on: activeIdx >= 0 && filled[activeIdx] === w.id }"
+          @click="pickWord(w)"
+        >
+          {{ w.emoji }} {{ w.en }}
+        </button>
+      </div>
     </div>
 
     <button class="k-btn green finish" :disabled="listened.size < phrases.length" @click="finish">
@@ -164,6 +222,66 @@ function finish() {
   fill: currentColor;
 }
 
+/* ---------- 备选单词：填入省略号句子的词库 ---------- */
+/* 词库面板：整页只出现一次，放在对话卡片下方 */
+.word-bank {
+  width: 100%;
+  max-width: 680px;
+  flex: none;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: var(--gap-s) var(--gap-m);
+  margin-top: var(--gap-xs);
+}
+.bank-tip {
+  margin: 0 0 var(--gap-xs);
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: var(--fs-small);
+  text-align: center;
+}
+/* 填入后的完整句：绿色高亮，一眼看出"这句话现在说全了" */
+.pfill {
+  font-weight: 800;
+  font-size: clamp(15px, min(2.9vh, 2.3vw), 24px);
+  color: var(--green-dark);
+  background: var(--tint-green);
+  border-radius: var(--radius-s);
+  padding: 2px clamp(8px, 1.2vw, 12px);
+}
+.word-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(4px, 0.8vh, 8px);
+  margin-top: var(--gap-xs);
+  max-width: 100%;
+}
+.wchip {
+  background: var(--card-bg);
+  border-radius: var(--radius-pill);
+  padding: clamp(2px, 0.6vh, 4px) clamp(8px, 1.2vw, 12px);
+  font-weight: 800;
+  font-size: clamp(12px, min(2vh, 1.7vw), 16px);
+  color: var(--ink);
+  box-shadow: var(--shadow-soft);
+  border: 2px solid transparent;
+  transition: border-color 0.15s, transform 0.1s, background 0.15s;
+  white-space: nowrap;
+  min-height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+}
+.wchip:active {
+  transform: scale(0.95);
+}
+/* 已填入当前句的单词：品牌色描边 + 浅绿底 */
+.wchip.on {
+  border-color: var(--green);
+  background: var(--tint-green);
+  color: var(--green-dark);
+}
+
 .finish {
   flex: none;
   width: 100%;
@@ -187,6 +305,16 @@ function finish() {
   }
   .talk-tip {
     display: none;
+  }
+  /* 横屏高度紧张：备选单词收敛成紧凑小条 */
+  .word-row {
+    gap: 3px;
+    margin-top: 2px;
+  }
+  .wchip {
+    font-size: 11px;
+    padding: 1px 6px;
+    min-height: 26px;
   }
 }
 </style>

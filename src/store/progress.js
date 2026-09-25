@@ -5,6 +5,8 @@
  * 注意：KEY 里的 kids-english 是**历史存储键名**，不要跟着应用显示名一起改。
  * 改了会读不到已有数据，孩子攒的星星就全没了。
  */
+import { reactive } from "vue";
+
 const KEY = "kids-english-progress-v1";
 
 function load() {
@@ -16,7 +18,12 @@ function load() {
 }
 
 const state = {
-  progress: load(),
+  /**
+   * 必须用 reactive 包装：LessonView/HomePage 里的 computed 依赖它，
+   * 普通对象不会建立响应式依赖，进度更新后 computed 缓存永不失效
+   * （表现为"唱完童谣返回菜单进度条不涨"）。
+   */
+  progress: reactive(load()),
   get totalStars() {
     return Object.values(this.progress).reduce(
       (sum, l) =>
@@ -45,6 +52,10 @@ const state = {
   markSong(id) {
     const prev = this.progress[id] || {};
     prev.song = 1;
+    // 童谣也计入"完成过的玩法"：否则唱完歌返回菜单，进度条/通关判断不涨，
+    // 孩子看着"玩了但没进度"会觉得不对劲。
+    prev.completed = prev.completed || [];
+    if (!prev.completed.includes("song")) prev.completed.push("song");
     this.progress[id] = prev;
     this.save();
   },

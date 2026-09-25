@@ -110,6 +110,25 @@ function fallbackToRecord(reason) {
   status.value = "idle";
 }
 
+/* ---------- 统一交互：按住说话，松开停止 ----------
+ * asr    —— 按住开始识别，松开立即出分（不傻等 3.5 秒自动收尾）
+ * record —— 按住开始录音，松开停止并自动播放回放
+ */
+function startMic() {
+  if (mode.value === "asr") {
+    startAsr();
+  } else {
+    startRecord();
+  }
+}
+function stopMic() {
+  if (mode.value === "asr") {
+    if (recognizer) recognizer.stop();
+    return;
+  }
+  stopRecord();
+}
+
 /* ---------- 降级路径：录音回放 + 家长判定 ---------- */
 async function startRecord() {
   status.value = "listening";
@@ -195,31 +214,25 @@ onBeforeUnmount(() => {
         <p class="tip" v-if="mode === 'asr'">点图听一遍，再按住大麦克风跟读给小耳朵听</p>
         <p class="tip" v-else>
           {{
-            recordHint || "按住大麦克风录音，说完点方形按钮结束，和爸爸妈妈一起听回放"
+            recordHint || "按住大麦克风说话，松开手自动播放回放，和爸爸妈妈一起听"
           }}
         </p>
       </div>
     </div>
 
-    <!-- 麦克风按钮：ASR=按住即说；录音=点开始/点结束 -->
+    <!-- 麦克风按钮：按住即说话，松开即停止（录音模式松手自动播放回放） -->
     <div class="mic-zone" v-if="status !== 'feedback' || mode === 'asr'">
       <button
-        v-if="mode === 'asr'"
         class="mic"
         :class="{ live: status === 'listening' }"
         aria-label="按住说话"
-        @pointerdown.prevent="startAsr"
+        title="按住说话"
+        @pointerdown.prevent="startMic"
+        @pointerup.prevent="stopMic"
+        @pointercancel="stopMic"
+        @contextmenu.prevent
       >
-        <Mic class="k-ico" />
-      </button>
-      <button
-        v-else
-        class="mic"
-        :class="{ live: status === 'listening' }"
-        :aria-label="status === 'listening' ? '结束录音' : '开始录音'"
-        @click="status === 'listening' ? stopRecord() : startRecord()"
-      >
-        <Square v-if="status === 'listening'" class="k-ico" />
+        <Square v-if="status === 'listening' && mode === 'record'" class="k-ico" />
         <Mic v-else class="k-ico" />
       </button>
       <div v-if="status === 'listening'" class="waves"><i></i><i></i><i></i></div>
@@ -227,18 +240,18 @@ onBeforeUnmount(() => {
         {{
           status === "listening"
             ? mode === "asr"
-              ? "正在听…说给麦克风听"
-              : "录音中…点方形结束"
+              ? "正在听…松开就打分"
+              : "录音中…松开就回放"
             : "按住说话"
         }}
       </p>
-      <audio v-if="recUrl && mode === 'record'" :src="recUrl" controls class="replay"></audio>
     </div>
 
     <!-- 反馈 -->
     <div v-if="status === 'feedback'" class="feedback anim-fade-up">
       <template v-if="mode === 'record' && grade === ''">
-        <audio :src="recUrl" controls class="replay big"></audio>
+        <!-- 松手后自动播放回放，家长/孩子听完再判定 -->
+        <audio :src="recUrl" controls autoplay class="replay big"></audio>
         <p class="judge-q">听一听回放，读得准不准？</p>
         <div class="btn-row">
           <button class="k-btn green" @click="parentJudge(true)">
