@@ -1,11 +1,16 @@
 <script setup>
-import { onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import CuteBackdrop from "./components/CuteBackdrop.vue";
+import BottomNav from "./components/BottomNav.vue";
 import { getLesson } from "./data/lessons";
 import { initPWA, applyUpdateIfIdle } from "./utils/pwa";
 
 const router = useRouter();
+const route = useRoute();
+
+/** 底部导航常驻（App 风格）：首页/我的/宝藏/报告/复习显示，课程内隐藏（沉浸学习） */
+const showNav = computed(() => !route.path.startsWith("/lesson"));
 
 /**
  * 兼容旧深链 ?lesson=l4&stage=talk（业务复杂化前的书签/分享链接）：
@@ -43,4 +48,5 @@ onMounted(() => {
       <component :is="Component" />
     </KeepAlive>
   </router-view>
+  <BottomNav v-if="showNav" />
 </template>

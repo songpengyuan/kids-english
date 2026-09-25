@@ -43,7 +43,7 @@ kids-english/
 │   ├── main.js                 # 入口：主题 → Pinia → 路由 → 挂载；注册触感与错误上报
 │   ├── App.vue                 # 顶层外壳：首页 KeepAlive 缓存（返回不丢模式/页码）
 │   ├── router/
-│   │   └── index.ts            # hash 路由：/ /treasure /report /review /lesson/:id
+│   │   └── index.ts            # hash 路由：/ /me /treasure /report /review /lesson/:id
 │   ├── styles/
 │   │   ├── tokens.css          # ★ 设计 token：颜色/间距/字号/圆角/阴影 + 断点表注释
 │   │   └── base.css            # ★ reset、应用外壳、跨页面共享 UI（.view/.k-btn/.topbar/进度条/动画）
@@ -63,8 +63,10 @@ kids-english/
 │   │   ├── effects.js          # 彩带与音效
 │   │   └── errors.js           # 未捕获错误本地环形缓冲（控制台 __kidsErrors()）
 │   ├── components/
-│   │   ├── HomePage.vue        # 首页：课时卡（分页）+ 双模式 + 复习/继续/家长入口
-│   │   ├── LessonView.vue      # 单课状态机：菜单 ↔ 各玩法 ↔ 结算（含闯关模式）
+│   │   ├── HomePage.vue        # 首页：课时卡（分页）+ 复习/继续，模式由底部导航驱动
+│   │   ├── BottomNav.vue      # 底部导航：自由/游戏/我的（App 常驻，课程内隐藏）
+│   │   ├── MyView.vue         # 我的页（/me）：统计 + 宝藏/报告/复习入口
+│   │   ├── LessonView.vue     # 单课状态机：菜单 ↔ 各玩法 ↔ 结算（含闯关模式）
 │   │   ├── LearnView.vue       # 看图学词（★ 动态分页）
 │   │   ├── QuizView.vue        # 听音选图（单题推进，错词落库）
 │   │   ├── MatchView.vue       # 图词连线（分组 + SVG 连线，连错落库）
@@ -99,12 +101,16 @@ kids-english/
 ### 3.1 页面路由 + 两层状态机
 
 ```
-router (hash)   / 首页(HomePage，KeepAlive 缓存)  /lesson/:id  /treasure  /report  /review
-LessonView.vue   stage: menu | learn | quiz | match | speak | song | talk | result
+router (hash)   / 首页(HomePage，KeepAlive 缓存)  /me  /lesson/:id  /treasure  /report  /review
+                └── 底部导航 BottomNav（App.vue 全局挂载）：自由 / 游戏 / 我的
+LessonView.vue   stage: menu | questStart | learn | quiz | match | speak | song | talk | result
 ```
 
-- 页面级用 vue-router（hash 模式）：/treasure、/report、/review、/lesson/:id 都是独立页面，
+- 页面级用 vue-router（hash 模式）：/me、/treasure、/report、/review、/lesson/:id 都是独立页面，
   深链刷新不掉链（GitHub Pages 静态托管下 history 模式深链会 404）。
+- **底部导航常驻三入口**（App.vue 全局）：自由（/ 不带 query）/ 游戏（/?mode=game）/ 我的（/me）。
+  首页的自由/游戏是同一路由的两种浏览模式，用 query 区分，URL 可直达可分享；
+  /me、/treasure、/report、/review 高亮"我的"tab；/lesson/:id 沉浸学习不显示导航。
 - 课程内**不逐玩法拆路由**：stage 仍在 LessonView 内部管理，玩法间共享大量状态，
   拆路由反而增加耦合；需要"直达/分享"某个玩法时再提为独立路由。
 - 需要真机直达验收时用调试深链（见 §7.1）。
@@ -113,8 +119,10 @@ LessonView.vue   stage: menu | learn | quiz | match | speak | song | talk | resu
 
 | 组件 | props | emits | 说明 |
 |---|---|---|---|
-| HomePage | — | — | 课时卡片分页 + 双模式 tab + 复习/继续/家长入口 |
-| LessonView | — | — | 按 `stage` 渲染各玩法或结算页；闯关模式直接按序列推进 |
+| BottomNav | — | — | 底部导航：自由/游戏/我的，路由高亮（App.vue 全局，玩法页隐藏） |
+| HomePage | — | — | 课时卡片分页 + 复习/继续入口；模式由路由 query（?mode=game）驱动 |
+| MyView | — | — | 独立页 /me：统计（星星/连击/贝壳/贴纸/今日学情）+ 宝藏/报告/复习入口 |
+| LessonView | — | — | 按 `stage` 渲染各玩法或结算页；闯关模式有关卡卡（questStart） |
 | LearnView / QuizView / MatchView / SpeakView | `words` | `done(stars)` | 玩法结束上报星级（1~3）；内部把错词记入 progress.words |
 | SongView | `lesson` | `back` / `song-done` | 童谣页，星级固定 1（内部 markSong） |
 | TalkView | `lesson` | `done(stars)` | 亲子对话，带首次引导 |
@@ -370,6 +378,7 @@ python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
 #/lesson/l4?stage=speak        → 直达"跟我读"
 #/lesson/l4?stage=song         → 直达"唱童谣"
 #/lesson/l4?mode=quest         → 闯关模式（游戏地图进入）
+#/me                           → 我的（个人中心）
 #/review                       → 错词复习页
 #/report                       → 家长学情页
 #/treasure                     → 宝藏罐（图鉴 + 贴纸商店）

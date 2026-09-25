@@ -57,6 +57,7 @@ const PAGES = [
   { name: "song", q: "#/lesson/l4?stage=song" },
   { name: "talk", q: "#/lesson/l4?stage=talk" },
   { name: "quest-start", q: "#/lesson/l4?mode=quest" },
+  { name: "me", q: "#/me" },
   { name: "treasure", q: "#/treasure" },
   { name: "report", q: "#/report" },
   { name: "review", q: "#/review" }
