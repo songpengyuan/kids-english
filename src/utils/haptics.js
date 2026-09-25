@@ -186,6 +186,12 @@ export const hapticMatch = () => haptic([15, 30, 15]);
 /** 过关庆祝：三连节奏 */
 export const hapticCelebrate = () => haptic([30, 50, 30, 50, 80]);
 
+/** 宝箱开盖：低重音一下（模拟木箱"咚"） */
+export const hapticChestOpen = () => haptic([70, 50, 90]);
+
+/** 金币/贝壳落袋：轻快两下 */
+export const hapticCoin = () => haptic([18, 40, 30]);
+
 /** 自检信息（控制台 `__kidsHaptics()` 可看） */
 export function hapticsInfo() {
   return {

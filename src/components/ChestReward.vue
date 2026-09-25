@@ -4,16 +4,24 @@
  *
  * - 自包含：开箱动画（CSS）、撒花（复用 effects 礼花）、奖励生成与入账（rewards store）都在内部，
  *   父组件只需挂载并监听 done 决定下一步。
- * - 状态机：closed（可点）→ shaking（摇晃）→ opening（开盖+金光+入账）→ reward（展示奖励）。
- * - 动画全部用 CSS keyframes + 已有 canvas-confetti，不引入额外动画库（体积与可控性考虑）。
+ * - 状态机：closed（可点）→ shaking（摇晃+发光）→ opening（开盖+闪光+冲击波+奖励喷出+入账）→ reward（展示奖励）→ collected（已收下）。
+ * - 反馈三路齐备：CSS 动画（金光/粒子/弹性面板）+ WebAudio 音效（开盖低音/金币叮/星光）+ 触感震动（开盖重震/入袋轻震）。
+ * - 不引入额外动画库：canvas-confetti 已有，其余全 CSS，体积与可控性兼顾。
  */
 import { ref } from "vue";
-import { bigCelebrate, sfxCorrect } from "../utils/effects";
+import {
+  bigCelebrate,
+  sfxChestOpen,
+  sfxCoin,
+  sfxCollect,
+  sfxSticker,
+  sfxTap
+} from "../utils/effects";
 import { grant, rollChest } from "../store/rewards";
 
 const emit = defineEmits(["done"]);
 
-const phase = ref("closed"); // closed | shaking | opening | reward
+const phase = ref("closed"); // closed | shaking | opening | reward | collected
 const reward = ref(null); // { shells, sticker }
 
 let timers = [];
@@ -23,15 +31,20 @@ function later(fn, ms) {
 
 function openChest() {
   if (phase.value !== "closed") return;
+  sfxTap(); // 撬动：轻点音 + 触感
   phase.value = "shaking";
   later(() => {
     phase.value = "opening";
-    // 开箱瞬间：撒花 + 音效 + 奖励入账
+    // 开盖瞬间：低重音"咚"+金光上行音阶（自带重震）+ 双侧撒花
+    sfxChestOpen();
     bigCelebrate();
-    sfxCorrect();
+    // 奖励生成并入账（幂等，贴纸去重）
     const r = rollChest();
     grant(r);
     reward.value = r;
+    // 奖励落袋音效：贝壳"叮"，再抽到贴纸补一段星光
+    sfxCoin();
+    if (r.sticker) sfxSticker();
     later(() => {
       phase.value = "reward";
     }, 1300);
@@ -39,6 +52,7 @@ function openChest() {
 }
 
 function collect() {
+  sfxCollect(); // 收尾双响
   phase.value = "collected";
   emit("done");
 }
@@ -46,10 +60,20 @@ function collect() {
 
 <template>
   <div class="chest-wrap" :class="'ph-' + phase">
-    <!-- 全屏光晕：开箱时铺一层暖光，把注意力聚到宝箱上 -->
+    <!-- 开盖瞬间：全屏金光一闪（聚光到宝箱） -->
+    <div v-if="phase === 'opening'" class="flash"></div>
+    <!-- 全屏暖光晕：把注意力聚到宝箱上 -->
     <div v-if="phase === 'opening' || phase === 'reward'" class="glow"></div>
 
-    <div class="chest" @click="openChest" :aria-label="phase === 'closed' ? '开宝箱' : '宝箱'">
+    <div
+      class="chest"
+      data-haptic="true"
+      @click="openChest"
+      :aria-label="phase === 'closed' ? '开宝箱' : '宝箱'"
+    >
+      <!-- 摇晃阶段：宝箱底部金色光晕脉动（"在发光"的视觉） -->
+      <div v-if="phase === 'shaking'" class="chest-glow"></div>
+
       <!-- 金光柱：开盖瞬间从箱口射出 -->
       <div v-if="phase === 'opening' || phase === 'reward'" class="light">
         <span class="beam"></span>
@@ -57,7 +81,23 @@ function collect() {
         <span class="beam b3"></span>
       </div>
       <!-- 迸出的星星粒子 -->
-      <span v-for="n in 8" :key="n" class="spark" :style="{ '--d': n * 0.07 + 's', '--x': (n % 4) * 26 - 39 + 'px' }"></span>
+      <span v-for="n in 8" :key="'s' + n" class="spark" :style="{ '--d': n * 0.07 + 's', '--x': (n % 4) * 26 - 39 + 'px' }"></span>
+      <!-- 奖励喷出：贝壳/金星从箱口飞向四周 -->
+      <span
+        v-for="n in 8"
+        :key="'p' + n"
+        class="pay"
+        :style="{
+          '--dx': ((n % 5) - 2) * 30 + 'px',
+          '--dy': -(44 + (n % 3) * 28) + 'px',
+          '--d': (n % 4) * 0.06 + 's',
+          '--r': (n % 2 ? 1 : -1) * (50 + (n % 3) * 30) + 'deg'
+        }"
+      >{{ n % 3 === 0 ? "🐚" : "✦" }}</span>
+
+      <!-- 冲击波：开盖瞬间从箱口扩散两圈 -->
+      <span v-if="phase === 'opening'" class="shock"></span>
+      <span v-if="phase === 'opening'" class="shock s2"></span>
 
       <div class="lid">
         <div class="lid-knob"></div>
@@ -73,11 +113,11 @@ function collect() {
     <p v-else-if="phase === 'opening'" class="cap">哇——</p>
 
     <!-- 奖励展示 -->
-    <div v-if="phase === 'reward' && reward" class="reward anim-pop">
+    <div v-if="phase === 'reward' && reward" class="reward">
       <p class="got">获得</p>
       <div class="rewards">
-        <span class="shells">🐚 ×{{ reward.shells }}</span>
-        <span v-if="reward.sticker" class="stick">{{ reward.sticker }} 贴纸</span>
+        <span class="shells anim-pop">🐚 ×{{ reward.shells }}</span>
+        <span v-if="reward.sticker" class="stick anim-pop" :style="{ animationDelay: '0.12s' }">{{ reward.sticker }} 贴纸</span>
       </div>
       <button class="k-btn take" @click="collect">收下，继续玩！</button>
     </div>
@@ -95,6 +135,21 @@ function collect() {
   align-items: center;
   gap: var(--gap-s);
   padding: var(--gap-s);
+}
+
+/* ---------- 开盖瞬间：全屏金光一闪 ---------- */
+.flash {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.95), rgba(255, 230, 140, 0.55) 45%, transparent 72%);
+  animation: flash-in 0.55s ease-out forwards;
+}
+@keyframes flash-in {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 /* 全屏暖光晕 */
@@ -118,6 +173,7 @@ function collect() {
   height: clamp(120px, 22vh, 160px);
   cursor: pointer;
   touch-action: manipulation;
+  z-index: 3;
 }
 .ph-closed .chest:hover { transform: translateY(-4px); }
 .ph-shaking .chest { animation: chest-shake 0.55s ease-in-out; }
@@ -135,6 +191,25 @@ function collect() {
   35% { transform: scale(1.06) translateY(-6px); }
   70% { transform: scale(0.98); }
   100% { transform: scale(1); }
+}
+
+/* 摇晃阶段：宝箱底部金色光晕脉动 */
+.chest-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  transform: translateX(-50%);
+  width: 140%;
+  height: 45%;
+  background: radial-gradient(ellipse at center, rgba(255, 214, 110, 0.75), transparent 70%);
+  filter: blur(6px);
+  z-index: 0;
+  pointer-events: none;
+  animation: glow-pulse 0.6s ease-in-out infinite alternate;
+}
+@keyframes glow-pulse {
+  from { transform: translateX(-50%) scale(0.85); opacity: 0.55; }
+  to { transform: translateX(-50%) scale(1.15); opacity: 0.95; }
 }
 
 /* 盖子：开盖时向上掀 + 旋转 */
@@ -255,6 +330,48 @@ function collect() {
   100% { transform: translate(calc(var(--x) * 0.6), -190px) scale(0.5); opacity: 0; }
 }
 
+/* ---------- 奖励喷出：贝壳/金星 ---------- */
+.pay {
+  position: absolute;
+  bottom: 40%;
+  left: 50%;
+  font-size: clamp(14px, 2.6vh, 20px);
+  line-height: 1;
+  opacity: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.ph-opening .pay, .ph-reward .pay {
+  animation: pay-fly 1.15s cubic-bezier(0.2, 0.7, 0.35, 1) var(--d) forwards;
+}
+@keyframes pay-fly {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0) scale(0.3); }
+  12% { opacity: 1; transform: translate(0, -14px) rotate(var(--r)) scale(1); }
+  70% { transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1); opacity: 1; }
+  100% { transform: translate(calc(var(--dx) * 0.7), calc(var(--dy) * 0.6)) rotate(calc(var(--r) * 1.4)) scale(0.4); opacity: 0; }
+}
+
+/* ---------- 冲击波：开盖扩散圆环 ---------- */
+.shock {
+  position: absolute;
+  left: 50%;
+  bottom: 40%;
+  width: 46px;
+  height: 46px;
+  transform: translate(-50%, -50%);
+  border: 5px solid rgba(255, 224, 130, 0.95);
+  border-radius: 50%;
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
+  animation: shock-ring 1s ease-out forwards;
+}
+.shock.s2 { animation-delay: 0.16s; border-color: rgba(255, 200, 80, 0.7); }
+@keyframes shock-ring {
+  0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.35); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(3.4); }
+}
+
 /* ---------- 文案与奖励 ---------- */
 .cap {
   margin: 0;
@@ -271,10 +388,22 @@ function collect() {
   background: var(--card-bg);
   border: 3px solid var(--yellow);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-hard);
   padding: var(--gap-m);
   min-width: min(78vw, 300px);
   z-index: 12;
+  /* 弹入：旋转回正 + 弹性过冲；随后金色光晕温柔脉冲 */
+  animation:
+    reward-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
+    reward-glow 1.8s ease-in-out 0.6s infinite;
+}
+@keyframes reward-in {
+  0% { transform: scale(0.2) rotate(10deg); opacity: 0; }
+  60% { transform: scale(1.08) rotate(-2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes reward-glow {
+  0%, 100% { box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18), 0 0 0 0 rgba(255, 214, 110, 0); }
+  50% { box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18), 0 0 26px 5px rgba(255, 214, 110, 0.45); }
 }
 .got {
   margin: 0;

@@ -1,6 +1,8 @@
 import confetti from "canvas-confetti";
 import {
   hapticCelebrate,
+  hapticChestOpen,
+  hapticCoin,
   hapticMatch,
   hapticSuccess,
   hapticTap,
@@ -95,4 +97,41 @@ export function sfxMatch() {
   hapticMatch();
   tone(784, 0, 0.1, "triangle");
   tone(1046, 0.08, 0.16, "triangle");
+}
+
+
+/* ---------- 宝箱开箱音效 ---------- */
+
+/**
+ * 开盖瞬间：低频"咚"（木箱重击）+ 快速上行金光"唰"。
+ * 三下上行音阶模拟金光射出，层次感比单音强。
+ */
+export function sfxChestOpen() {
+  hapticChestOpen();
+  tone(120, 0, 0.4, "sine", 0.24); // 重低音开盖
+  tone(196, 0.06, 0.35, "triangle", 0.13); // 木箱共鸣
+  tone(523, 0.18, 0.1, "triangle", 0.1); // 金光上行…
+  tone(784, 0.3, 0.12, "triangle", 0.12);
+  tone(1046, 0.42, 0.22, "triangle", 0.14);
+}
+
+/** 金币/贝壳入袋：清脆"叮"（基音+泛音，明亮不刺耳） */
+export function sfxCoin() {
+  hapticCoin();
+  tone(1318, 0, 0.22, "sine", 0.12);
+  tone(1975, 0.03, 0.28, "sine", 0.05);
+}
+
+/** 贴纸到手：星光上升三连，比金币更"魔法" */
+export function sfxSticker() {
+  tone(880, 0, 0.12, "triangle", 0.14);
+  tone(1108, 0.08, 0.12, "triangle", 0.14);
+  tone(1318, 0.16, 0.26, "triangle", 0.16);
+}
+
+/** 收下奖励：轻快双响收尾 */
+export function sfxCollect() {
+  hapticSuccess();
+  tone(1046, 0, 0.1, "triangle", 0.12);
+  tone(1318, 0.09, 0.18, "triangle", 0.12);
 }
