@@ -8,7 +8,7 @@
  * - 高内聚：只读 progress store，点击关卡 emit open，不碰任何业务逻辑。
  * - TS 渐进：本组件是第一批 lang="ts" 组件，类型约束后续游戏玩法直接复用。
  */
-import { computed } from "vue";
+import { computed, onActivated, onDeactivated, ref } from "vue";
 import { lessons } from "../data/lessons";
 import { useProgressStore } from "../stores/progress";
 import { Check, Lock, Star } from "@lucide/vue";
@@ -28,6 +28,18 @@ interface PathNode {
   x: number;
   y: number;
   stars: number;
+  /** 已玩玩法数 / 全部玩法数（引导卡与进度条用） */
+  done: number;
+  total: number;
+}
+
+/* ---------- 玩法数口径 ---------- */
+/**
+ * 每课玩法数 = 5 基础（学单词/听音选图/连一连/跟我读/唱童谣）+ 亲子对话（phrases 课时）。
+ * 与 LessonView 的 activities 逻辑保持一致（两处独立实现，此处只读 lessons 数据）。
+ */
+function activityCount(l: { phrases?: unknown[] }): number {
+  return 5 + (l.phrases?.length ? 1 : 0);
 }
 
 /* ---------- 蛇形路径几何（viewBox: 0 0 100 H） ---------- */
@@ -50,6 +62,8 @@ const nodes = computed<PathNode[]>(() => {
       state = activeAssigned ? "ready" : "active";
       activeAssigned = true;
     } else state = "locked";
+    const total = activityCount(l);
+    const done = Math.min(total, (progress.progress[l.id]?.completed?.length || 0));
     return {
       id: l.id,
       title: l.title,
@@ -59,8 +73,48 @@ const nodes = computed<PathNode[]>(() => {
       state,
       x: i % 2 === 0 ? 78 : 22, // 左右交替
       y: START_Y + i * ROW_H,
-      stars: progress.lessonStars(l.id)
+      stars: progress.lessonStars(l.id),
+      done,
+      total
     };
+  });
+});
+
+/** 当前关卡（active）节点——引导卡用 */
+const activeNode = computed(() => nodes.value.find((n) => n.state === "active") ?? null);
+
+/** 节点完成度 0-1（引导卡与进度条共用） */
+const nodePct = (id: string): number => {
+  const n = nodes.value.find((x) => x.id === id);
+  if (!n || n.total === 0) return 0;
+  return n.done / n.total;
+};
+
+/* ---------- 解锁动效：locked → 可玩的瞬间，节点金色闪光 + 弹跳 ---------- */
+/**
+ * HomePage 被 KeepAlive 缓存：课程期间节点状态其实已变化，若用 watch 会在
+ * HomePage 失活（deactivated）时触发，用户回到首页时动画早已结束。
+ * 正确时机 = "离开首页时的快照" vs "回到首页时的状态" 对比：
+ *   离开时还是 locked、回来变成可玩 → 刚解锁 → 播闪光动效。
+ */
+const unlocking = ref<Record<string, boolean>>({});
+let snapshotBefore: PathNode["state"][] = [];
+
+function triggerUnlock(id: string) {
+  unlocking.value = { ...unlocking.value, [id]: true };
+  setTimeout(() => {
+    unlocking.value = { ...unlocking.value, [id]: false };
+  }, 900);
+}
+
+onDeactivated(() => {
+  snapshotBefore = nodes.value.map((n) => n.state);
+});
+
+onActivated(() => {
+  nodes.value.forEach((n, i) => {
+    const prev = snapshotBefore[i];
+    if (prev === "locked" && n.state !== "locked") triggerUnlock(n.id);
   });
 });
 
@@ -96,6 +150,16 @@ function enter(n: PathNode) {
     </div>
     <p class="gp-tip">从起点出发，玩过一关才能解锁下一关</p>
 
+    <!-- 当前关卡引导卡：告诉孩子这关是什么、玩到哪了 -->
+    <div v-if="activeNode" class="guide-card anim-pop">
+      <div class="gc-info">
+        <p class="gc-label">🎯 当前关卡</p>
+        <p class="gc-title">{{ activeNode.emoji }} {{ activeNode.titleZh }}</p>
+        <p class="gc-sub">{{ activeNode.title }} · 已玩 {{ activeNode.done }}/{{ activeNode.total }} 种玩法</p>
+      </div>
+      <button class="k-btn small" @click="enter(activeNode)">开始</button>
+    </div>
+
     <!-- 蛇形路径 -->
     <div class="path">
       <svg class="links" :viewBox="`0 0 100 ${pathH}`" preserveAspectRatio="none" aria-hidden="true">
@@ -112,7 +176,7 @@ function enter(n: PathNode) {
         v-for="(n, i) in nodes"
         :key="n.id"
         class="node"
-        :class="['st-' + n.state, 'tone-' + n.tone]"
+        :class="['st-' + n.state, 'tone-' + n.tone, { 'unlock-pop': unlocking[n.id] }]"
         :style="{ left: n.x + '%', top: n.y / pathH * 100 + '%' }"
         :disabled="n.state === 'locked'"
         :aria-label="n.state === 'locked' ? n.title + '（未解锁）' : n.title"
@@ -126,6 +190,11 @@ function enter(n: PathNode) {
         <span v-else-if="n.state === 'played'" class="tag played"><Check class="k-ico" /></span>
         <span v-else-if="n.state === 'active'" class="tag now">▶</span>
         <span v-else class="tag ready">·</span>
+
+        <!-- 完成度小进度条 -->
+        <span class="node-progress" :class="{ full: n.state === 'done' }">
+          <span class="fill" :style="{ width: (n.state === 'locked' ? 0 : nodePct(n.id) * 100) + '%' }"></span>
+        </span>
 
         <span class="node-cap">
           {{ n.titleZh }}<br /><small>{{ n.title }}</small>
@@ -168,6 +237,40 @@ function enter(n: PathNode) {
   color: var(--ink-faint);
   font-size: var(--fs-small);
   text-align: center;
+}
+
+/* ---------- 当前关卡引导卡 ---------- */
+.guide-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-s);
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: var(--gap-s) var(--gap-m);
+  border-left: 6px solid var(--gold);
+}
+.gc-label {
+  margin: 0;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--gold);
+}
+.gc-title {
+  margin: 0;
+  font-weight: 800;
+  color: var(--ink);
+  font-size: var(--fs-body);
+}
+.gc-sub {
+  margin: 0;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.guide-card .k-btn {
+  flex-shrink: 0;
 }
 
 /* ---------- 路径容器 ---------- */
@@ -299,4 +402,36 @@ function enter(n: PathNode) {
   color: var(--ink-soft);
 }
 .st-locked .node-cap { opacity: 0.55; }
+
+/* ---------- 完成度小进度条 ---------- */
+.node-progress {
+  display: block;
+  width: 54px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(120, 120, 120, 0.22);
+  overflow: hidden;
+}
+.st-locked .node-progress { visibility: hidden; }
+.node-progress .fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--green), var(--teal));
+  transition: width 0.5s ease;
+}
+.node-progress.full .fill {
+  background: linear-gradient(90deg, var(--yellow), var(--gold));
+}
+
+/* ---------- 解锁动效：金色闪光 + 弹跳 ---------- */
+.unlock-pop .node-emoji {
+  animation: unlock-burst 0.9s ease-out;
+}
+@keyframes unlock-burst {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 214, 110, 0.9); }
+  30% { transform: scale(1.18); box-shadow: 0 0 0 20px rgba(255, 214, 110, 0.35); }
+  70% { transform: scale(0.96); box-shadow: 0 0 0 8px rgba(255, 214, 110, 0.25); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 214, 110, 0); }
+}
 </style>
