@@ -476,6 +476,39 @@ dev 的 `/sw.js` 由插件中间件提供，不缓存任何 dev 模块。
 2. `pnpm build:ci`（部署构建）：`scripts/guard-build.mjs` 强制要求 GH_REPO，缺失直接报错退出。
 3. CI（deploy.yml）总是传 `GH_REPO=<仓库名>`，并走 `build:ci`。
 
+### 9.1 本地推送工作流（git）
+
+**常规流程**（开发机在本机直跑，仓库 `origin = github.com/songpengyuan/kids-english`）：
+
+```bash
+git add <具体文件>        # 按文件加，不用 git add -A 一把梭
+git commit -m "feat: 一句话说明改了什么/为什么"   # 前缀：feat / fix / refactor / docs
+git push origin main      # 触发 GitHub Actions deploy.yml → Pages 自动发布（约 1~2 分钟生效）
+```
+
+**提交信息规范**：`feat:`（新功能）/ `fix:`（修 bug）/ `refactor:`（重构）/ `docs:`（文档）；
+正文用中文写"做了什么 + 为什么"，复杂改动带关键细节（如存储键、兼容点）。
+
+**验收节奏（本项目约定）**：功能在本机浏览器实测通过后，**由用户发话**才提交并推送；
+没验证完或用户没开口，代码可以留在工作区/本地 commit，不要擅自上远程。
+
+**网络问题处理（github.com 直连不稳定，最高频的坑）**：
+
+- 症状：`Failed to connect to github.com port 443 after …` / `Recv failure: Operation timed out`。
+- 处理：
+  1. 先确认 commit 已落盘（`git log --oneline -3`）——push 失败**代码不丢**，只是没上远程。
+  2. 稍等后重试：`sleep 5~30 && git push origin main`，最多 2~3 次，不无限重试。
+  3. **报 fatal 不一定真的失败**：本项目出现过 push 报连接错误、实际已推送成功的情况。
+     判断真实状态用对比，不要盲猜：
+     ```bash
+     git fetch origin
+     git rev-parse --short origin/main   # 远程 HEAD
+     git rev-parse --short HEAD          # 本地 HEAD
+     git log origin/main..HEAD --oneline # 待推送清单（空 = 已同步）
+     ```
+- 推送前查看待推送内容：`git log origin/main..HEAD --oneline`；工作区干净度：`git status --short`。
+- 推送成功后 Pages 自动构建发布，无需任何手动部署操作。
+
 ## 10. 单元测试
 
 ```bash
