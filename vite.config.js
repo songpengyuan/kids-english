@@ -42,9 +42,25 @@ function kidsPwa() {
 }
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => ({
-  plugins: [vue(), kidsPwa()],
-  // GitHub Pages 部署在项目子路径（https://<user>.github.io/<repo>/）下，
-  // 资源必须带对应 base；用环境变量注入仓库名，本地 dev/build 不受影响。
-  base: mode === 'production' && process.env.GH_REPO ? `/${process.env.GH_REPO}/` : '/',
-}))
+export default defineConfig(({ mode }) => {
+  // 部署防护：生产构建且未带 GH_REPO 时，产物 base 会指向根路径，
+  // 部署到 GitHub Pages 子路径必 404。本地预览可忽略；CI 部署请走 pnpm build:ci（强制）。
+  if (mode === 'production' && !process.env.GH_REPO) {
+    console.warn(
+      '\n⚠️  [kids-english] 生产构建未设置 GH_REPO 环境变量，产物 base 为 "/"。\n' +
+        '    部署到 GitHub Pages 子路径会 404。\n' +
+        '    CI 部署请使用 pnpm build:ci（带 GH_REPO）；仅本地预览可忽略本警告。\n'
+    )
+  }
+  return {
+    plugins: [vue(), kidsPwa()],
+    // GitHub Pages 部署在项目子路径（https://<user>.github.io/<repo>/）下，
+    // 资源必须带对应 base；用环境变量注入仓库名，本地 dev/build 不受影响。
+    base: mode === 'production' && process.env.GH_REPO ? `/${process.env.GH_REPO}/` : '/',
+    // 单元测试（vitest）：默认 node 环境；用到 localStorage 的用例在文件头标 jsdom
+    test: {
+      environment: 'node',
+      include: ['src/**/*.test.{js,ts}'],
+    },
+  }
+})

@@ -25,7 +25,7 @@ jobs:
       - name: Build
         run: |
           pnpm install --frozen-lockfile
-          GH_REPO="${{ github.event.repository.name }}" pnpm build
+          GH_REPO="${{ github.event.repository.name }}" pnpm build:ci
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

@@ -12,7 +12,7 @@
  * - 交互：canvas 点击 → 命中检测 → emit open；锁定节点点击给错误触感提示。
  */
 import { computed, onActivated, onDeactivated, onMounted, onBeforeUnmount, ref } from "vue";
-import { lessons } from "../data/lessons";
+import { activityKeys, lessons } from "../data/lessons";
 import { useProgressStore } from "../stores/progress";
 import { hapticTap, hapticWrong } from "../utils/haptics";
 
@@ -34,9 +34,9 @@ interface PathNode {
   total: number;
 }
 
-/* ---------- 玩法数口径（与 LessonView activities 一致） ---------- */
+/* ---------- 玩法数口径（与 LessonView activities / activityKeys 一致） ---------- */
 function activityCount(l: { phrases?: unknown[] }): number {
-  return 5 + (l.phrases?.length ? 1 : 0);
+  return activityKeys(l as unknown as { phrases?: { length: number } }).length;
 }
 
 /* ---------- 画布几何（像素，固定行高与半径，宽松不重叠） ---------- */
@@ -53,7 +53,7 @@ const nodes = computed<PathNode[]>(() => {
   let activeAssigned = false;
   return lessons.map((l, i) => {
     let state: PathNode["state"];
-    if (progress.isCompleted(l.id)) state = "done";
+    if (progress.isCompleted(l.id, activityKeys(l))) state = "done";
     else if (progress.isPlayed(l.id)) state = "played";
     else if (progress.isUnlocked(l.id, lessonIds)) {
       // 只有"第一个未玩且已解锁"的是当前关卡（▶ 引导）；其后解锁未玩的课可点但不再标 ▶

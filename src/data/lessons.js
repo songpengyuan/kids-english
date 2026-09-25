@@ -386,12 +386,27 @@ export const lessons = rawLessons.map((lesson) => ({
   })),
   words: lesson.words.map((word) => ({
     ...word,
+    // 词归属的课时 id：发音注册表按 (lessonId, wordId) 精确定位，
+    // 单词级掌握度（progress.words）也依赖它；跨课同词（如 l4/l6 的 blue）不再串音
+    lessonId: lesson.id,
     image: asset(word.image),
     // 预生成的神经网络童声发音（public/lessons/<id>/audio/<wordId>.mp3），
     // 文件不存在时 speech.js 会自动回退到浏览器 TTS
     audio: asset(`/lessons/${lesson.id}/audio/${word.id}.mp3`)
   }))
 }));
+
+/**
+ * 一课的全部玩法 key（按课时菜单/闯关序列顺序）。
+ * 「通关」判定与家长报告都需要它——progress store 不感知玩法编排，
+ * 由数据层给出统一口径，避免 HomePage / GamePath / LessonView 各写一份。
+ */
+export function activityKeys(lesson) {
+  const base = ["learn", "quiz", "match", "speak"];
+  if (lesson.phrases?.length) base.push("talk");
+  base.push("song");
+  return base;
+}
 
 export function getLesson(id) {
   return lessons.find((l) => l.id === id) || null;

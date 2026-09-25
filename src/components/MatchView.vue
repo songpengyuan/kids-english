@@ -2,12 +2,15 @@
 import { ref, computed, onMounted, onBeforeUnmount, reactive, nextTick, watch } from "vue";
 import { speak } from "../utils/speech";
 import { sfxMatch, sfxWrong, celebrate } from "../utils/effects";
+import { useProgressStore } from "../stores/progress";
 import { useViewport } from "../composables/useViewport";
 import { splitBalanced } from "../utils/layout";
 import { Link2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
 const emit = defineEmits(["done"]);
+
+const progress = useProgressStore();
 
 const { sizeTier, isNarrow } = useViewport();
 
@@ -187,7 +190,7 @@ function onCardDown(word, side, e) {
   line.x2 = p.x;
   line.y2 = p.y;
   downInfo = { word, side, act: "drag" };
-  speak(word.en);
+  speak(word.en, { lessonId: word.lessonId, wordId: word.id });
   e.preventDefault();
 }
 
@@ -247,14 +250,19 @@ function tryMatch(other, otherSide) {
     matchFrom[first.id] = from;
     justMatched.value = first.id;
     sfxMatch();
-    speak(other.en);
+    speak(other.en, { lessonId: other.lessonId, wordId: other.id });
     celebrate();
+    // 单词掌握度：配对成功记一次正确（first/other 同 id，记一次）
+    progress.recordWord(other.lessonId, other.id, { correct: 1 });
     setTimeout(() => (justMatched.value = null), 600);
   } else {
     wrongCount.value++;
     sfxWrong();
     markWrong({ id: first.id, side: from }, { id: other.id, side: otherSide });
-    setTimeout(() => speak(first.en, { rate: 0.75 }), 420);
+    // 统一错误反馈（与听音选图一致）：连错只标红，不自动读答案、不揭示；
+    // 两个词都记一次错误 → 进入复习池
+    progress.recordWord(first.lessonId, first.id, { wrong: 1 });
+    progress.recordWord(other.lessonId, other.id, { wrong: 1 });
   }
 }
 

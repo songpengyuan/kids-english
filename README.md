@@ -6,18 +6,20 @@
 
 ## 技术栈
 
-- Vue 3 + Vite（纯前端，无后端）
-- Web Speech API 朗读单词发音（浏览器内置 TTS，零成本、任意单词可读）
+- Vue 3 + Vite + vue-router（hash 模式）+ Pinia（纯前端，无后端）
+- Web Speech API 朗读单词发音（浏览器内置 TTS，零成本、任意单词可读）+ 预生成童声 mp3 优先
 - canvas-confetti 彩带 + CSS 关键帧动画 + Web Audio 合成音效
 - SVG 实现图词连线，Pointer Events 兼容鼠标与平板触屏
-- localStorage 保存星星与通关进度
+- localStorage 保存进度 / 奖励 / 连击（含单词级掌握度与今日学情，供家长报告）
 
 ## 快速开始
 
 ```bash
 pnpm install
 pnpm dev      # 本地开发，浏览器打开终端提示的地址
-pnpm build    # 产出 dist/，可静态托管或双击预览
+pnpm test     # 单元测试（vitest）
+pnpm build    # 产出 dist/，可静态托管或双击预览（本地预览：base 指向根路径，正常）
+pnpm build:ci # CI/部署构建：强制要求 GH_REPO 环境变量，防止子路径部署 404
 ```
 
 ## 目录结构
@@ -27,21 +29,27 @@ kids-english/
 ├── src/
 │   ├── styles/                # 设计 token + 基础样式（响应式规范的落点）
 │   ├── composables/           # useViewport 视口分档 / usePager 分页
-│   ├── data/lessons.js        # ★ 课时数据（每节课：童谣 + 单词表）
+│   ├── data/lessons.js        # ★ 课时数据（每节课：童谣 + 单词表 + activityKeys 玩法口径）
+│   ├── stores/                # Pinia：progress（进度/掌握度/今日学情）/ streak（连击）/ rewards（贝壳/贴纸）
+│   ├── router/                # vue-router（hash 模式）：首页 / 课程 / 宝藏罐 / 家长报告 / 错词复习
 │   ├── components/
-│   │   ├── HomePage.vue       # 首页课时卡片（分页）
+│   │   ├── HomePage.vue       # 首页课时卡片（分页）+ 复习/继续学习/家长入口
 │   │   ├── LessonView.vue     # 单课流程与活动菜单
 │   │   ├── LearnView.vue      # 看图学词（按屏幕大小自动分页）
-│   │   ├── QuizView.vue       # 听音选图
-│   │   ├── MatchView.vue      # 图词连线（分组随屏幕大小变化）
+│   │   ├── QuizView.vue       # 听音选图（答错词自动进复习池）
+│   │   ├── MatchView.vue      # 图词连线（分组随屏幕大小变化，连错词进复习池）
 │   │   ├── SpeakView.vue      # 跟我读（发音打分/录音回放）
 │   │   ├── SongView.vue       # 童谣音频/视频
-│   │   ├── TalkView.vue       # 亲子对话（点句听发音）
+│   │   ├── TalkView.vue       # 亲子对话（点句听发音，带首次引导）
+│   │   ├── ReviewView.vue     # 错词复习（听音选图式集中练弱词）
+│   │   ├── ReportView.vue     # 家长学情页（今日时长/单词明细/错词清单/宝藏概览）
+│   │   ├── TreasureView.vue   # 宝藏罐（贝壳 + 贴纸图鉴 + 贴纸商店）
+│   │   ├── ChestReward.vue    # 开宝箱（可跳过动画）
 │   │   ├── WordCard.vue       # 可复用的发音词卡
 │   │   └── Pager.vue          # 通用翻页控件
-│   ├── utils/                 # layout.js 布局算法 / speech / effects / speechScore
-│   └── store/progress.js      # 星星/进度持久化
-├── scripts/layout-audit.mjs   # 多视口布局走查脚本
+│   ├── utils/                 # layout.js 布局算法 / speech / effects / speechScore / errors
+│   └── __tests__              # vitest 单元测试（layout/speechScore/streak/usePager）
+├── scripts/                   # layout-audit / verify-pwa / gen-* / guard-build
 └── public/lessons/            # ★ 课时资源目录（见下）
 ```
 
@@ -92,6 +100,18 @@ public/lessons/
 | `en` / `zh` | 单词英文（发音用）/ 中文释义 |
 | `image` | 图片路径，放进 `words/` 即自动生效 |
 | `emoji` | 图片未就绪时的占位 |
+
+## 学习闭环：复习 + 家长报告
+
+应用不只"玩过就完"，练习中对错的单词都会落库：
+
+- **错词复习**（首页"📚 复习 N 个词"入口）：练习中答错/连错的单词自动进入弱词池，
+  以听音选图式集中复习；答对次数超过错误次数后自动移出弱词池。
+- **家长报告**（首页"📊 家长"入口）：今日学习时长、完成玩法数、今日单词明细（点读/答对/答错）、
+  错词清单、连击天数与宝藏概览——给家长一个"作业完成情况"的视图。数据只在本机，不上传。
+- **通关口径**：一课显示"全部通关"需要全部玩法都玩过 **且** 星级达标
+  （学/辨/连/读需 ≥2 星，唱/对话 ≥1 分），避免"只玩过一遍就显示通关"。
+- **贴纸商店**（宝藏罐内）：贝壳多了没处花会失去激励，可用 20 贝壳定向购买一张未收集贴纸。
 
 ## 离线与更新（PWA）
 

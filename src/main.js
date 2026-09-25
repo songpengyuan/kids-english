@@ -9,6 +9,7 @@ import 'animate.css'
 import App from './App.vue'
 import { initHaptics, hapticsInfo } from './utils/haptics'
 import { initTheme } from './utils/theme'
+import { initErrorCapture } from './utils/errors'
 
 // 先应用主题再挂载，避免暗色用户刷新时闪白
 initTheme()
@@ -19,3 +20,5 @@ createApp(App).use(createPinia()).use(router).mount('#app')
 initHaptics()
 // 便于在 Safari 控制台自检：输入 __kidsHaptics()
 window.__kidsHaptics = hapticsInfo
+// 错误上报：未捕获异常/未处理 Promise 写入本地环形缓冲（控制台输入 __kidsErrors() 查看）
+initErrorCapture()

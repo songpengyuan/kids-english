@@ -4,14 +4,25 @@
  *
  * 预生成音色为 en-US-AnaNeural（微软神经网络童声），比浏览器 TTS 自然得多，
  * 且不再依赖设备上装了什么音色——各端体验一致。
+ *
+ * 发音定位有两级注册表：
+ *   1. 精确键 `lessonId:wordId` —— 同词出现在多课（如 l4/l6 的 blue）时各用各的音频，
+ *      不会因"先到先得"串音。
+ *   2. 兜底键 `en` —— 只按英文名也能发音（兼容旧调用/未带上下文的场景）。
  */
 import { lessons } from "../data/lessons";
 
-/* ---------- 预生成发音注册表：en 单词 → mp3 地址 ---------- */
-const wordAudio = {};
+/* ---------- 预生成发音注册表 ---------- */
+const wordAudioByKey = {}; // "lessonId:wordId" -> url
+const wordAudioByEn = {}; // en -> url（兜底）
+
 for (const l of lessons) {
   for (const w of l.words) {
-    if (w.audio && !wordAudio[w.en]) wordAudio[w.en] = w.audio;
+    if (w.audio) {
+      const key = `${l.id}:${w.id}`;
+      if (!wordAudioByKey[key]) wordAudioByKey[key] = w.audio;
+      if (!wordAudioByEn[w.en]) wordAudioByEn[w.en] = w.audio;
+    }
   }
 }
 
@@ -76,9 +87,22 @@ function speakWithTTS(text, { rate = 0.85, lang = "en-US" }) {
 }
 
 /* ---------- 对外接口 ---------- */
-export async function speak(text, { rate = 0.85, lang = "en-US" } = {}) {
+/**
+ * 朗读一个英文词/句。
+ * @param text 要朗读的文本（通常是单词的 en）
+ * @param opts.rate      语速（TTS 用）
+ * @param opts.lang      语言（TTS 用）
+ * @param opts.lessonId  词所属课时 id（可选；提供后按精确键查预生成发音）
+ * @param opts.wordId    词 id（可选；与 lessonId 成对使用）
+ */
+export async function speak(
+  text,
+  { rate = 0.85, lang = "en-US", lessonId = null, wordId = null } = {}
+) {
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-  const src = wordAudio[text];
+  let src = null;
+  if (lessonId && wordId) src = wordAudioByKey[`${lessonId}:${wordId}`];
+  if (!src) src = wordAudioByEn[text];
   if (src && (await playAudio(src))) return;
   speakWithTTS(text, { rate, lang });
 }

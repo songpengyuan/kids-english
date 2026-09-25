@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
-import { lessons } from "../data/lessons";
+import { activityKeys, getLesson, lessons } from "../data/lessons";
 import { useProgressStore } from "../stores/progress";
 import { useRewardsStore } from "../stores/rewards";
 import { useStreakStore } from "../stores/streak";
@@ -12,7 +12,7 @@ import { pickColumns } from "../utils/layout";
 import Pager from "./Pager.vue";
 import GamePath from "./GamePath.vue";
 import ThemeToggle from "./ThemeToggle.vue";
-import { Check, Star } from "@lucide/vue";
+import { BookOpenText, Check, Star } from "@lucide/vue";
 
 defineOptions({ name: "HomePage" }); // KeepAlive include 需要稳定组件名
 
@@ -100,9 +100,18 @@ const cardsStyle = computed(() => ({
 }));
 
 function enter(l) {
-  speak(l.words[0].en); // 进课时先读一个单词，暖场
+  speak(l.words[0].en, { lessonId: l.id, wordId: l.words[0].id }); // 进课时先读一个单词，暖场
   router.push(`/lesson/${l.id}`);
 }
+
+/* ---------- 快捷引导：复习入口 + 继续上次课程 ---------- */
+/** 待复习弱词数（答错过且正确 ≤ 错误）——有则显示"复习"入口 */
+const weakCount = computed(() => progress.getWeakWords().length);
+/** 最近进入过的课时（继续学习入口） */
+const lastLessonObj = computed(() => {
+  const id = progress.lastLesson;
+  return id ? getLesson(id) : null;
+});
 </script>
 
 <template>
@@ -142,8 +151,22 @@ function enter(l) {
         <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今天已达成目标' : '完成一个玩法点亮今天的火焰'">
           🔥 {{ streak.streak }}<span class="sb-cap">连击</span>
         </div>
+        <!-- 家长入口：学情报告（作业补充场景的决策者视图） -->
+        <button class="report-badge" aria-label="家长报告" title="家长报告" @click="router.push('/report')">
+          📊<span class="rb-cap">家长</span>
+        </button>
       </div>
     </header>
+
+    <!-- 快捷引导：有弱词显示"复习"，有最近课程显示"继续学习"（自由练习模式） -->
+    <div v-if="mode === 'practice' && (weakCount > 0 || lastLessonObj)" class="quick-links anim-fade-up">
+      <button v-if="weakCount > 0" class="q-link review" @click="router.push('/review')">
+        <BookOpenText class="k-ico" />复习 {{ weakCount }} 个词
+      </button>
+      <button v-if="lastLessonObj" class="q-link" @click="enter(lastLessonObj)">
+        ⏩ 继续：{{ lastLessonObj.emoji }} {{ lastLessonObj.titleZh }}
+      </button>
+    </div>
 
     <div class="mode-tabs anim-pop" role="tablist" aria-label="选择浏览模式">
       <button :class="{ on: mode === 'practice' }" role="tab" :aria-selected="mode === 'practice'" @click="setMode('practice')">
@@ -167,7 +190,7 @@ function enter(l) {
           >
             <span class="big-emoji anim-float">{{ l.emoji }}</span>
             <span class="lt">{{ l.title }}</span>
-            <span class="done" v-if="progress.isCompleted(l.id)">
+            <span class="done" v-if="progress.isCompleted(l.id, activityKeys(l))">
               <Check class="k-ico" />全部通关
             </span>
             <span class="cnt">{{ l.words.length }} 个单词</span>
@@ -312,6 +335,56 @@ function enter(l) {
 .tb-cap {
   font-size: var(--fs-small);
   opacity: 0.85;
+}
+/* 家长报告入口：与连击徽章同构，但用中性色区分（这是大人看的，不是孩子的奖励） */
+.report-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  border-radius: var(--radius-s);
+  padding: clamp(6px, 1.2vh, 10px) clamp(10px, 1.6vw, 16px);
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.12);
+  font-weight: 800;
+  font-size: var(--fs-body);
+  transition: transform 0.1s;
+}
+.report-badge:active {
+  transform: translateY(calc(var(--press) - 1px));
+}
+.rb-cap {
+  font-size: var(--fs-small);
+  opacity: 0.9;
+}
+
+/* 快捷引导（复习 / 继续学习）：给"练完就走"的孩子一个明确的下一步 */
+.quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--gap-s);
+  margin-top: var(--gap-s);
+}
+.q-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: clamp(7px, 1.4vh, 10px) clamp(12px, 1.8vw, 18px);
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--ink);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-hard);
+  transition: transform 0.1s, background 0.2s;
+}
+.q-link.review {
+  background: linear-gradient(160deg, #ffd6a5, #ffb26b);
+  color: #5c3a00;
+}
+.q-link:active {
+  transform: translateY(calc(var(--press) - 1px));
 }
 
 /* 卡片区只负责"占满剩余高度"并可被测量 */

@@ -5,7 +5,8 @@
  */
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { useRewardsStore, stickerPool, stickerTotal } from "../stores/rewards";
+import { useRewardsStore, stickerPool, stickerPrice, stickerTotal } from "../stores/rewards";
+import { sfxCoin, sfxTap, sfxWrong } from "../utils/effects";
 import { ChevronLeft, Star } from "@lucide/vue";
 
 defineOptions({ name: "TreasureView" }); // KeepAlive include 需要稳定组件名
@@ -21,6 +22,18 @@ const album = computed(() => {
 const albumPct = computed(() =>
   stickerTotal ? Math.round((rewards.stickers.length / stickerTotal) * 100) : 0
 );
+
+/** 商店与图鉴同构：未收集的贴纸可按标价定向购买（贝壳的消耗出口） */
+const shop = computed(() =>
+  stickerPool.map((s) => ({ emoji: s, got: rewards.stickers.includes(s) }))
+);
+
+function buy(emoji) {
+  sfxTap();
+  const ok = rewards.buySticker(emoji);
+  if (ok) sfxCoin();
+  else sfxWrong();
+}
 </script>
 
 <template>
@@ -61,6 +74,35 @@ const albumPct = computed(() =>
           >
             <span class="sticker">{{ s.got ? s.emoji : "?" }}</span>
             <span class="cell-cap">{{ s.got ? "已收集" : "待收集" }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 贴纸商店：贝壳定向购买未收集贴纸（消耗出口，避免贝壳只进不出） -->
+      <div class="album anim-fade-up">
+        <div class="album-head">
+          <span class="album-title">🛍️ 贴纸商店</span>
+          <span class="album-progress">🐚 {{ rewards.shells }}</span>
+        </div>
+        <p class="shop-tip">贝壳攒着也是攒着，买下还没集到的贴纸吧！一张 {{ stickerPrice }} 贝壳</p>
+        <div class="grid">
+          <div
+            v-for="(s, i) in shop"
+            :key="'shop' + s.emoji + i"
+            class="cell"
+            :class="{ got: s.got }"
+          >
+            <span class="sticker">{{ s.got ? s.emoji : "?" }}</span>
+            <button
+              v-if="!s.got"
+              class="buy"
+              :disabled="rewards.shells < stickerPrice"
+              :aria-label="'购买' + s.emoji + '贴纸'"
+              @click="buy(s.emoji)"
+            >
+              🐚 {{ stickerPrice }}
+            </button>
+            <span v-else class="cell-cap">已收集</span>
           </div>
         </div>
       </div>
@@ -173,5 +215,32 @@ const albumPct = computed(() =>
 }
 .cell.got .cell-cap {
   color: var(--green-dark);
+}
+
+/* ---------- 贴纸商店 ---------- */
+.shop-tip {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+  font-weight: 700;
+}
+.buy {
+  margin-top: 4px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(160deg, #ffd87a, #f0b429);
+  color: #6b4e00;
+  font-weight: 800;
+  font-size: 12px;
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.14);
+  transition: transform 0.1s, opacity 0.2s;
+}
+.buy:active {
+  transform: translateY(2px);
+}
+.buy:disabled {
+  opacity: 0.45;
+  transform: none;
+  cursor: not-allowed;
 }
 </style>

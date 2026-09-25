@@ -65,7 +65,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-/* ---------- activate：清理旧壳缓存（保留最近 2 份）并接管页面 ---------- */
+/* ---------- activate：清理旧壳缓存（保留最近 2 份）、裁剪媒体缓存并接管页面 ---------- */
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
@@ -74,10 +74,57 @@ self.addEventListener("activate", (event) => {
         .filter((n) => n.startsWith("kids-app-") && n !== SHELL_CACHE)
         .sort((a, b) => (a < b ? 1 : -1)); // 同长度时间戳 id，字符串序即时间序
       await Promise.all(olds.slice(1).map((n) => caches.delete(n)));
+      await trimMediaCache();
       await self.clients.claim();
     })()
   );
 });
+
+/**
+ * 媒体缓存裁剪：kids-media-v1 名字固定、只增不减，课程多了本地会膨胀到几十 MB。
+ * 超过上限时按缓存条目顺序删最旧的文件，直到降到目标值。
+ * （Cache API 不保证 keys() 顺序，主流实现近似插入序，尽力而为即可。）
+ */
+const MEDIA_LIMIT = 100 * 1024 * 1024; // 100 MB 触发
+const MEDIA_TARGET = 80 * 1024 * 1024; // 清理到 80 MB 以下
+
+async function trimMediaCache() {
+  try {
+    const cache = await caches.open(MEDIA_CACHE);
+    const keys = await cache.keys();
+    if (keys.length === 0) return;
+    const sizes = [];
+    let total = 0;
+    for (const req of keys) {
+      let size = 0;
+      try {
+        const resp = await cache.match(req, { ignoreVary: true });
+        const len = resp && resp.headers.get("Content-Length");
+        if (len && Number(len)) {
+          size = Number(len);
+        } else {
+          // 无 Content-Length 的响应（部分代理会去掉）→ 读 Content-Range 总数
+          const cr = resp && resp.headers.get("Content-Range");
+          const m = cr && /\/\s*(\d+)\s*$/.exec(cr);
+          size = m ? Number(m[1]) || 0 : 0;
+        }
+        if (!size && resp) size = (await resp.clone().arrayBuffer()).byteLength || 0;
+      } catch {
+        size = 0;
+      }
+      sizes.push(size);
+      total += size;
+    }
+    let i = 0;
+    while (total > MEDIA_LIMIT && i < keys.length) {
+      total -= sizes[i] || 0;
+      await cache.delete(keys[i]); // 删最旧，直到低于目标
+      i++;
+    }
+  } catch {
+    /* 裁剪失败不影响激活主流程 */
+  }
+}
 
 /* ---------- 调试/测试通道 ---------- */
 self.addEventListener("message", (event) => {

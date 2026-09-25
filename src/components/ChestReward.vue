@@ -8,7 +8,7 @@
  * - 反馈三路齐备：CSS 动画（金光/粒子/弹性面板）+ WebAudio 音效（开盖低音/金币叮/星光）+ 触感震动（开盖重震/入袋轻震）。
  * - 不引入额外动画库：canvas-confetti 已有，其余全 CSS，体积与可控性兼顾。
  */
-import { ref } from "vue";
+import { onBeforeUnmount, ref } from "vue";
 import {
   bigCelebrate,
   sfxChestOpen,
@@ -30,6 +30,12 @@ let timers = [];
 function later(fn, ms) {
   timers.push(setTimeout(fn, ms));
 }
+// 组件卸载时清掉未触发的定时器：结算页在动画中途被切走时，
+// 不会再有 timer 去 setState 一个已卸载的组件（防泄漏/告警）
+onBeforeUnmount(() => {
+  timers.forEach((t) => clearTimeout(t));
+  timers = [];
+});
 
 function openChest() {
   if (phase.value !== "closed") return;
@@ -53,6 +59,31 @@ function openChest() {
   }, 700);
 }
 
+/**
+ * 跳过开箱动画（奖励照常入账）：
+ * - shaking 阶段点跳过 → 直接完成开盖入账 → 展示奖励
+ * - opening 阶段点跳过 → 直接展示奖励（已在 opening 时入账）
+ * 给高频完成玩法、已经看过 N 次动画的孩子一条快通道，
+ * 不再被 2 秒动画强制牵着走。
+ */
+function skip() {
+  timers.forEach((t) => clearTimeout(t));
+  timers = [];
+  if (phase.value === "shaking") {
+    phase.value = "opening";
+    sfxChestOpen();
+    bigCelebrate();
+    const r = rewards.rollChest();
+    rewards.grant(r);
+    reward.value = r;
+    sfxCoin();
+    if (r.sticker) sfxSticker();
+  }
+  if (phase.value === "opening" || phase.value === "shaking") {
+    phase.value = "reward";
+  }
+}
+
 function collect() {
   sfxCollect(); // 收尾双响
   phase.value = "collected";
@@ -62,6 +93,10 @@ function collect() {
 
 <template>
   <div class="chest-wrap" :class="'ph-' + phase">
+    <!-- 跳过动画：动画阶段的右上角快捷按钮，奖励照常入账 -->
+    <button v-if="phase === 'shaking' || phase === 'opening'" class="skip-btn" @click="skip">
+      ⏭ 跳过
+    </button>
     <!-- 开盖瞬间：全屏金光一闪（聚光到宝箱） -->
     <div v-if="phase === 'opening'" class="flash"></div>
     <!-- 全屏暖光晕：把注意力聚到宝箱上 -->
@@ -137,6 +172,25 @@ function collect() {
   align-items: center;
   gap: var(--gap-s);
   padding: var(--gap-s);
+}
+
+/* 跳过按钮：置顶于闪光/光晕之上，动画阶段可见 */
+.skip-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 20;
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  border-radius: var(--radius-pill);
+  padding: 6px 12px;
+  font-weight: 800;
+  font-size: var(--fs-small);
+  box-shadow: var(--shadow-hard);
+  transition: transform 0.1s;
+}
+.skip-btn:active {
+  transform: translateY(2px);
 }
 
 /* ---------- 开盖瞬间：全屏金光一闪 ---------- */

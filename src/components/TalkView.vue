@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import { speak } from "../utils/speech";
 import { hapticTap } from "../utils/haptics";
 import { sfxCorrect } from "../utils/effects";
@@ -12,6 +12,22 @@ const phrases = props.lesson.phrases || [];
 /** 本课单词 = 对话的备选词库（孩子可以挑一个"填进"省略号句子） */
 const words = props.lesson.words || [];
 const activeIdx = ref(-1);
+
+/* ---------- 首次引导：两步操作（先点卡片→再挑词），5 岁孩子需要看一遍 ---------- */
+const showGuide = ref(true);
+const guideLeaving = ref(false);
+let guideTimer = null;
+function closeGuide() {
+  if (guideLeaving.value) return;
+  guideLeaving.value = true;
+  clearTimeout(guideTimer);
+  // 淡出后移除遮罩（防止误触挡住玩法）
+  setTimeout(() => (showGuide.value = false), 280);
+}
+onMounted(() => {
+  guideTimer = setTimeout(closeGuide, 6000); // 不点也会自动淡出
+});
+onBeforeUnmount(() => clearTimeout(guideTimer));
 
 /** 每条口语句一个 Audio 实例（懒创建）；加载失败置 null，自动回退 TTS */
 const audios = new Map();
@@ -60,7 +76,7 @@ function pickWord(w) {
   const i = activeIdx.value;
   // 还没点过对话卡片：只朗读单词，让孩子先熟悉备选词
   if (i < 0 || !phrases[i]) {
-    speak(w.en);
+    speak(w.en, { lessonId: w.lessonId, wordId: w.id });
     return;
   }
   const p = phrases[i];
@@ -69,7 +85,7 @@ function pickWord(w) {
   if (p.en.includes("...")) {
     speak(p.en.replace("...", w.en));
   } else {
-    speak(w.en);
+    speak(w.en, { lessonId: w.lessonId, wordId: w.id });
   }
   listened.value.add(i);
   listened.value = new Set(listened.value);
@@ -90,6 +106,19 @@ function finish() {
 
 <template>
   <div class="talk view">
+    <!-- 首次引导：两步操作说明（自动淡出，也可点击关闭） -->
+    <div v-if="showGuide" class="guide-overlay" @click.self="closeGuide">
+      <div class="guide-card anim-pop" :class="{ leave: guideLeaving }" role="dialog" aria-label="亲子对话玩法说明">
+        <h3 class="g-title">怎么玩亲子对话？</h3>
+        <ol class="g-steps">
+          <li><b>1</b> 先点一张对话卡片，听一听怎么说</li>
+          <li><b>2</b> 再点下面的单词，把它填进句子里</li>
+        </ol>
+        <p class="g-note">每句话都听过一遍，就能点亮"我会说啦"</p>
+        <button class="k-btn" @click="closeGuide">知道了，开始玩！</button>
+      </div>
+    </div>
+
     <div class="talk-head view-body-head">
       <h2 class="talk-title">👨‍👩‍👧 亲子对话</h2>
       <p class="talk-tip">点卡片听发音，然后和爸爸妈妈轮流说一说吧</p>
@@ -141,6 +170,76 @@ function finish() {
 .talk {
   align-items: center;
 }
+
+/* ---------- 首次引导遮罩 ---------- */
+.guide-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(40, 30, 20, 0.55);
+  padding: var(--gap-l);
+}
+.guide-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: var(--gap-l);
+  max-width: min(88vw, 420px);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-s);
+  transition: opacity 0.28s, transform 0.28s;
+}
+.guide-card.leave {
+  opacity: 0;
+  transform: scale(0.92);
+}
+.g-title {
+  margin: 0;
+  font-size: var(--fs-title);
+  color: var(--ink);
+}
+.g-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
+  text-align: left;
+}
+.g-steps li {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-s);
+  font-weight: 700;
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+.g-steps b {
+  flex: none;
+  width: clamp(26px, 4.6vh, 34px);
+  height: clamp(26px, 4.6vh, 34px);
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--yellow), var(--gold));
+  color: #6b4e00;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+.g-note {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
 .talk-head {
   width: 100%;
   text-align: center;

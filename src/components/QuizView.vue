@@ -2,10 +2,13 @@
 import { ref, computed, onMounted } from "vue";
 import { speak } from "../utils/speech";
 import { sfxCorrect, sfxWrong, celebrate } from "../utils/effects";
+import { useProgressStore } from "../stores/progress";
 import { Volume2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
 const emit = defineEmits(["done"]);
+
+const progress = useProgressStore();
 
 function shuffle(a) {
   return [...a].sort(() => Math.random() - 0.5);
@@ -32,12 +35,14 @@ const percent = computed(() => Math.round((idx.value / total.value) * 100));
 const locked = computed(() => picked.value !== null);
 
 function autoSpeak() {
-  setTimeout(() => speak(q.value.target.en), 350);
+  const t = q.value.target;
+  setTimeout(() => speak(t.en, { lessonId: t.lessonId, wordId: t.id }), 350);
 }
 onMounted(autoSpeak);
 
 function replay() {
-  speak(q.value.target.en);
+  const t = q.value.target;
+  speak(t.en, { lessonId: t.lessonId, wordId: t.id });
 }
 
 // 判题：选对才前进；选错只标红（wrongPicks），不揭示正确答案、不自动读答案、不前进
@@ -47,13 +52,16 @@ const pick = (opt) => {
     picked.value = opt.id;
     rightCount.value++;
     sfxCorrect();
-    speak(opt.en);
+    speak(opt.en, { lessonId: opt.lessonId, wordId: opt.id });
     celebrate();
+    // 单词掌握度：答对记一次正确（此前在该题答错已各记一次错误）
+    progress.recordWord(opt.lessonId, opt.id, { correct: 1 });
     setTimeout(next, 1300);
   } else {
     // 答错：只把这一项标红，不显示正确答案、不自动读答案、不前进；
     // 孩子可以继续点其他选项，直到选对才进入下一题
     sfxWrong();
+    progress.recordWord(opt.lessonId, opt.id, { wrong: 1 }); // 错词落库 → 复习池
     wrongPicks.value = new Set([...wrongPicks.value, opt.id]);
   }
 };

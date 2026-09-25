@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { speak } from "../utils/speech";
 import { sfxTap } from "../utils/effects";
+import { useProgressStore } from "../stores/progress";
 import { Volume2 } from "@lucide/vue";
 
 const props = defineProps({
@@ -11,6 +12,8 @@ const props = defineProps({
   /** 在页内的序号，用于入场动画的阶梯延迟；-1 表示不做入场动画 */
   enterIndex: { type: Number, default: -1 }
 });
+
+const progress = useProgressStore();
 
 const imgFailed = ref(false);
 const popping = ref(false);
@@ -40,13 +43,15 @@ function pop() {
 /** 点图片：读单词；点单词：也读单词（慢速+中文提示） */
 function onImage() {
   sfxTap();
-  speak(props.word.en);
+  speak(props.word.en, { lessonId: props.word.lessonId, wordId: props.word.id });
+  progress.recordWord(props.word.lessonId, props.word.id, { seen: 1 }); // 今日单词明细
   pop();
 }
 function onWord() {
   sfxTap();
-  speak(props.word.en, { rate: 0.7 });
+  speak(props.word.en, { rate: 0.7, lessonId: props.word.lessonId, wordId: props.word.id });
   if (props.speakZhHint) speak(props.word.zh, { lang: "zh-CN", rate: 1 });
+  progress.recordWord(props.word.lessonId, props.word.id, { seen: 1 });
   pop();
 }
 </script>

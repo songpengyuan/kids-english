@@ -10,10 +10,13 @@ import {
   createRecorder
 } from "../utils/speechScore";
 import { celebrate, sfxCorrect, sfxWrong, sfxTap } from "../utils/effects";
+import { useProgressStore } from "../stores/progress";
 import { ChevronRight, Mic, RotateCcw, Square, ThumbsUp, Volume2 } from "@lucide/vue";
 
-const props = defineProps({ words: { type: Object, required: true } });
+const props = defineProps({ words: { type: Array, required: true } });
 const emit = defineEmits(["done"]);
+
+const progress = useProgressStore();
 
 /*
  * 双模式：
@@ -40,7 +43,7 @@ const progressText = computed(() => `${idx.value + 1} / ${props.words.length}`);
 
 function hearExample() {
   sfxTap();
-  speak(cur().en, { slow: false });
+  speak(cur().en, { lessonId: cur().lessonId, wordId: cur().id });
 }
 
 /* ---------- ASR 主路径 ---------- */
@@ -87,11 +90,13 @@ function startAsr() {
     status.value = "feedback";
     if (grade.value === "retry") {
       sfxWrong();
+      progress.recordWord(cur().lessonId, cur().id, { wrong: 1 }); // 错词落库 → 复习池
     } else {
       sfxCorrect();
       celebrate();
       if (attempts.value === 1) firstAttemptOk.value++;
-      speak(cur().en);
+      speak(cur().en, { lessonId: cur().lessonId, wordId: cur().id });
+      progress.recordWord(cur().lessonId, cur().id, { correct: 1 });
     }
   });
   my.start();
@@ -157,9 +162,11 @@ function parentJudge(ok) {
     sfxCorrect();
     celebrate();
     if (attempts.value === 1) firstAttemptOk.value++;
-    speak(cur().en);
+    speak(cur().en, { lessonId: cur().lessonId, wordId: cur().id });
+    progress.recordWord(cur().lessonId, cur().id, { correct: 1 });
   } else {
     sfxWrong();
+    progress.recordWord(cur().lessonId, cur().id, { wrong: 1 }); // 错词落库 → 复习池
   }
 }
 

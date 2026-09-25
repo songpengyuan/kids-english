@@ -14,18 +14,22 @@
 | 项 | 说明 |
 |---|---|
 | 框架 | Vue 3（`<script setup>` 组合式 API） |
+| 路由 | vue-router，**hash 模式**（`/#/lesson/l4`；GitHub Pages 静态托管下 history 深链刷新会 404） |
+| 状态 | Pinia 3 个 store：progress（进度/单词掌握度/今日学情）、streak（连击）、rewards（贝壳/贴纸） |
 | 构建 | Vite 8 |
 | 包管理 | pnpm |
 | 后端 | 无，纯前端静态站点 |
 | 语音 | 预生成神经网络发音（edge-tts，童声 AnaNeural）+ Web Speech API 回退；发音评分见 §6 |
 | 动效 | canvas-confetti + CSS 关键帧 + Web Audio 合成音效 |
-| 存储 | localStorage（星星与通关进度） |
+| 存储 | localStorage（进度 / 奖励 / 连击三键独立） |
 | 部署 | GitHub Pages，子路径 `/<repo>/` |
 
 ```bash
 pnpm install
 pnpm dev      # 本地开发
-pnpm build    # 产出 dist/（部署时带 GH_REPO 环境变量，见 §8）
+pnpm test     # 单元测试（vitest）
+pnpm build    # 产出 dist/（本地预览；部署时带 GH_REPO 环境变量，见 §9）
+pnpm build:ci # 部署构建（强制要求 GH_REPO，防止子路径部署 404）
 ```
 
 ---
@@ -36,37 +40,49 @@ pnpm build    # 产出 dist/（部署时带 GH_REPO 环境变量，见 §8）
 kids-english/
 ├── index.html
 ├── src/
-│   ├── main.js                 # 入口：按序引入 tokens.css → base.css → App
-│   ├── App.vue                 # 顶层状态机：首页 ↔ 课时页；读取调试深链
+│   ├── main.js                 # 入口：主题 → Pinia → 路由 → 挂载；注册触感与错误上报
+│   ├── App.vue                 # 顶层外壳：首页 KeepAlive 缓存（返回不丢模式/页码）
+│   ├── router/
+│   │   └── index.ts            # hash 路由：/ /treasure /report /review /lesson/:id
 │   ├── styles/
 │   │   ├── tokens.css          # ★ 设计 token：颜色/间距/字号/圆角/阴影 + 断点表注释
 │   │   └── base.css            # ★ reset、应用外壳、跨页面共享 UI（.view/.k-btn/.topbar/进度条/动画）
 │   ├── data/
-│   │   └── lessons.js          # ★ 课时数据唯一入口，导出时统一补部署基路径
-│   ├── store/
-│   │   └── progress.js         # 星星/进度持久化（localStorage，模块级单例）
+│   │   └── lessons.js          # ★ 课时数据唯一入口，导出时统一补部署基路径 + activityKeys
+│   ├── stores/
+│   │   ├── progress.ts         # 进度 + 单词掌握度 + 今日学情 + 通关口径（Pinia）
+│   │   ├── streak.ts           # 连击火焰（每日目标 + 连续天数，Pinia）
+│   │   └── rewards.ts          # 贝壳 / 贴纸图鉴 / 贴纸商店（Pinia）
 │   ├── composables/
 │   │   ├── useViewport.js      # ★ 视口状态（模块级单例，尺寸 + 分档）
 │   │   └── usePager.js         # ★ 通用分页逻辑
 │   ├── utils/
 │   │   ├── layout.js           # ★ 纯函数布局算法：fitGrid / pickColumns / splitBalanced
-│   │   ├── speech.js           # 两级发音：预生成 mp3 优先，缺失回退浏览器 TTS
+│   │   ├── speech.js           # 两级发音：按 (lessonId, wordId) 精确查 mp3，缺失回退浏览器 TTS
 │   │   ├── speechScore.js      # 发音评分（ASR + 录音双模式）
-│   │   └── effects.js          # 彩带与音效
+│   │   ├── effects.js          # 彩带与音效
+│   │   └── errors.js           # 未捕获错误本地环形缓冲（控制台 __kidsErrors()）
 │   ├── components/
-│   │   ├── HomePage.vue        # 首页课时卡片（分页）
-│   │   ├── LessonView.vue      # 单课状态机：菜单 ↔ 各玩法 ↔ 结算
+│   │   ├── HomePage.vue        # 首页：课时卡（分页）+ 双模式 + 复习/继续/家长入口
+│   │   ├── LessonView.vue      # 单课状态机：菜单 ↔ 各玩法 ↔ 结算（含闯关模式）
 │   │   ├── LearnView.vue       # 看图学词（★ 动态分页）
-│   │   ├── QuizView.vue        # 听音选图（单题推进）
-│   │   ├── MatchView.vue       # 图词连线（分组 + SVG 连线）
+│   │   ├── QuizView.vue        # 听音选图（单题推进，错词落库）
+│   │   ├── MatchView.vue       # 图词连线（分组 + SVG 连线，连错落库）
 │   │   ├── SpeakView.vue       # 跟我读（ASR 打分 / 录音回放双模式）
-│   │   ├── SongView.vue        # 童谣音频/视频
-│   │   ├── TalkView.vue        # 亲子对话（点句听发音，家长/宝宝轮流说）
+│   │   ├── SongView.vue        # 童谣音频/视频 + 动画舞台
+│   │   ├── TalkView.vue        # 亲子对话（首次引导 + 填词）
+│   │   ├── ReviewView.vue      # 错词复习页（/review）
+│   │   ├── ReportView.vue      # 家长学情页（/report）
+│   │   ├── TreasureView.vue    # 宝藏罐（/treasure）：贝壳 + 图鉴 + 贴纸商店
+│   │   ├── ChestReward.vue     # 开宝箱（可跳过动画，卸载清理 timer）
+│   │   ├── GamePath.vue        # 游戏模式关卡路径图（Canvas，KeepAlive 下离开即停帧）
 │   │   ├── WordCard.vue        # 可复用发音词卡
 │   │   └── Pager.vue           # ★ 通用翻页控件（大箭头 + 圆点）
-│   └── assets/
+│   └── **/__tests__/           # vitest 单测：layout / speechScore / streak / usePager
 ├── scripts/
-│   ├── layout-audit.mjs        # ★ 多视口布局走查脚本（见 §9）
+│   ├── layout-audit.mjs        # ★ 多视口布局走查脚本（见 §7.2）
+│   ├── verify-pwa.mjs          # PWA 离线/更新 E2E 验证
+│   ├── guard-build.mjs         # 部署构建防护（build:ci 用，强制 GH_REPO）
 │   └── gen-word-audio.py       # ★ 生成单词发音 mp3（edge-tts，见 §5.1）
 ├── public/
 │   ├── lessons/                # 课时素材目录（约定见 README）
@@ -80,42 +96,63 @@ kids-english/
 
 ## 3. 架构总览
 
-### 3.1 两层状态机，无路由
+### 3.1 页面路由 + 两层状态机
 
 ```
-App.vue          currentId: null | 'l1'..'lN'      ←→  HomePage / LessonView
+router (hash)   / 首页(HomePage，KeepAlive 缓存)  /lesson/:id  /treasure  /report  /review
 LessonView.vue   stage: menu | learn | quiz | match | speak | song | talk | result
 ```
 
-- 状态都在内存里，**没有引入 vue-router**。理由：这是给 5 岁孩子用的单机应用，
-  没有分享单课链接、浏览器后退的需求；引入路由只会增加复杂度。
-- 需要在真机上直达某个页面时用**调试深链**（见 §9.1），不引入路由也能达到目的。
+- 页面级用 vue-router（hash 模式）：/treasure、/report、/review、/lesson/:id 都是独立页面，
+  深链刷新不掉链（GitHub Pages 静态托管下 history 模式深链会 404）。
+- 课程内**不逐玩法拆路由**：stage 仍在 LessonView 内部管理，玩法间共享大量状态，
+  拆路由反而增加耦合；需要"直达/分享"某个玩法时再提为独立路由。
+- 需要真机直达验收时用调试深链（见 §7.1）。
 
 ### 3.2 组件契约
 
 | 组件 | props | emits | 说明 |
 |---|---|---|---|
-| HomePage | — | `open(id)` | 课时卡片，内部自己分页 |
-| LessonView | `lesson` | `back` | 按 `stage` 渲染各玩法或结算页 |
-| LearnView / QuizView / MatchView / SpeakView | `words` | `done(stars)` | 玩法结束上报星级（1~3） |
-| SongView | `lesson` | `back` / `song-done` | 童谣页，星级固定 1 |
-| WordCard | `word`, `size`, `speakZhHint` | — | 纯展示 + 点击朗读 |
+| HomePage | — | — | 课时卡片分页 + 双模式 tab + 复习/继续/家长入口 |
+| LessonView | — | — | 按 `stage` 渲染各玩法或结算页；闯关模式直接按序列推进 |
+| LearnView / QuizView / MatchView / SpeakView | `words` | `done(stars)` | 玩法结束上报星级（1~3）；内部把错词记入 progress.words |
+| SongView | `lesson` | `back` / `song-done` | 童谣页，星级固定 1（内部 markSong） |
+| TalkView | `lesson` | `done(stars)` | 亲子对话，带首次引导 |
+| ReviewView | — | — | 独立页 /review：从 progress 捞弱词集中复习 |
+| ReportView | — | — | 独立页 /report：今日学情 + 错词清单 + 宝藏概览 |
+| TreasureView | — | — | 独立页 /treasure：贝壳 + 图鉴 + 贴纸商店 |
+| ChestReward | — | `done` | 自包含开箱动画与入账，可跳过 |
+| WordCard | `word`, `size`, `speakZhHint` | — | 纯展示 + 点击朗读（点读记 seen） |
 | Pager | `page`, `total` | `prev` / `next` / `go` | 受控组件，不持有页码状态 |
 
 玩法组件统一走 `words` 进、`done(stars)` 出，因此 LessonView 可以用同一个
 `<component :is>` 挂载它们，新增玩法只要遵守这个契约即可零改动接入。
+单词级记录（recordWord）由玩法组件直接调用 progress store，
+不改变 `done(stars)` 契约——旧玩法/测试场景不受影响。
 
 ### 3.3 数据流
 
 ```
-lessons.js ──(补 BASE_URL)──► LessonView ──► 各玩法组件
-                                  │
-                                  ▼ done(stars)
-                             progress.js ──► localStorage
+lessons.js ──(补 BASE_URL + activityKeys)──► 页面/玩法组件
+                                                  │
+                ┌─────────── recordWord / setGameStars / addDailyActivity ───────────┐
+                ▼                                                                      ▼ done(stars)
+        progress store (Pinia) ◄────────────── LessonView 结算
+                │
+                ▼
+        localStorage (kids-english-progress-v1)
 ```
 
-`progress.js` 是模块级单例（不是 Pinia）：状态就一个对象 + 几个方法，
-不值得为它引一个状态库。
+三个 store 均为 Pinia：
+
+- **progress**：每课星级 + 玩过的玩法 + **单词级掌握度**（`words: { [wordId]: { seen, correct, wrong, lastAt } }`）
+  + 今日学情（`_daily: { date, durationSec, activities }`）+ 最近课程（`_last`）。
+  老数据在 load() 时增量迁移补字段，历史星星不丢。
+- **streak**：每日目标 + 连续天数（独立键，跨天自动断档）。
+- **rewards**：贝壳 / 贴纸图鉴 / 开箱次数（独立键）+ buySticker 消耗出口。
+
+「通关」判定统一走 `activityKeys(lesson)`（learn/quiz/match/speak + [talk] + song）：
+全部玩法玩过 **且** 星级达标（学/辨/连/读 ≥2，唱/对话 ≥1）。
 
 ---
 
@@ -246,15 +283,19 @@ function scheduleMeasure() {          // rAF 合并，避免 ResizeObserver 循�
 
 ### 5.1 单词发音的两级机制
 
-`speech.js` 按单词的 `en` 名查注册表（lessons.js 导出时自动构建），播放分两级：
+`speech.js` 维护两级注册表（lessons.js 导出时自动构建）：
 
 ```
-speak("star")
-  ├─ 注册表命中 → Audio 播放 /lessons/<课>/audio/<单词id>.mp3（神经网络童声）
+speak(text, { lessonId, wordId })
+  ├─ 精确键 "lessonId:wordId" 命中 → Audio 播放 /lessons/<课>/audio/<单词id>.mp3（神经网络童声）
   │     └─ 播放失败（文件缺失/解码错误）──┐
-  └─ 未命中 ─────────────────────────────┴→ 浏览器 TTS 回退（Web Speech API）
+  ├─ 兜底键 en 命中（兼容未带上下文的调用）─┴→ 浏览器 TTS 回退（Web Speech API）
+  └─ 都未命中 ──────────────────────────→ 浏览器 TTS 回退
 ```
 
+- 为什么按 `(lessonId, wordId)` 精确键：同一个词可能出现在多课（如 l4 与 l6 都有 blue），
+  "先到先得"的 en 注册表会让后来者覆盖先者，若某课单独换过发音文件会全局串音。
+  组件调用发音时带上 `{ lessonId: word.lessonId, wordId: word.id }`（word 对象由 lessons.js 注入）。
 - 为什么预生成：浏览器 TTS 音色机械且**各端不一致**（桌面 Chrome 音色最少）；
   神经网络音色一次生成、永久使用、各端一致，30 个词共约 360KB，无运行时成本。
 - 中文提示语（`speakZh`）不走注册表，始终用浏览器 TTS。
@@ -322,15 +363,19 @@ python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
 不用一路点进来，直接在真机上打开指定页面验收布局：
 
 ```
-/?lesson=l4                  → 直接进第 4 课的菜单
-/?lesson=l4&stage=learn      → 直达"看图学词"
-/?lesson=l4&stage=quiz       → 直达"听音选图"
-/?lesson=l4&stage=match      → 直达"图词连线"
-/?lesson=l4&stage=speak      → 直达"跟我读"
-/?lesson=l4&stage=song       → 直达"唱童谣"
+#/lesson/l4                    → 直接进第 4 课的菜单
+#/lesson/l4?stage=learn        → 直达"看图学词"
+#/lesson/l4?stage=quiz         → 直达"听音选图"
+#/lesson/l4?stage=match        → 直达"图词连线"
+#/lesson/l4?stage=speak        → 直达"跟我读"
+#/lesson/l4?stage=song         → 直达"唱童谣"
+#/lesson/l4?mode=quest         → 闯关模式（游戏地图进入）
+#/review                       → 错词复习页
+#/report                       → 家长学情页
+#/treasure                     → 宝藏罐（图鉴 + 贴纸商店）
 ```
 
-`stage` 取值：`learn | quiz | match | speak | song`。仅在开发/验收时用，不影响正常流程。
+`stage` 取值：`learn | quiz | match | speak | song | talk`。仅在开发/验收时用，不影响正常流程。
 
 ### 7.2 多视口布局走查
 
@@ -396,6 +441,10 @@ node scripts/verify-pwa.mjs
 壳缓存 `kids-app-<buildId>` 每次 build 新建，activate 时保留最近 2 份、删更老的
 （留 1 份旧的，避免更新瞬间旧页面拿不到自己的资源）。
 
+**媒体缓存有容量上限**：activate 时会扫描 `kids-media-v1` 总大小，超过 100MB
+按条目顺序删除最旧文件，直到降到 80MB 以下（`trimMediaCache`）——课程只增不减，
+不加裁剪本地会无限膨胀。
+
 **dev 模式默认不注册 SW**（避免干扰 HMR），要手动测时加 `?sw=1`；
 dev 的 `/sw.js` 由插件中间件提供，不缓存任何 dev 模块。
 
@@ -407,35 +456,59 @@ dev 的 `/sw.js` 由插件中间件提供，不缓存任何 dev 模块。
 ## 9. 构建与部署
 
 推送到 `main` 会自动触发 `.github/workflows/deploy.yml`：
-安装依赖 → `GH_REPO=<仓库名> pnpm build` → 上传 `dist/` → 部署到 GitHub Pages。
+安装依赖 → `GH_REPO=<仓库名> pnpm build:ci` → 上传 `dist/` → 部署到 GitHub Pages。
 
 `GH_REPO` 环境变量决定 `vite.config.js` 里的 `base`，即部署子路径。
 **本地构建如果不带这个变量，产物资源路径会指向根目录**，部署后必挂 —— 本地想复现线上就带上它。
 
+三道防护：
+
+1. `pnpm build`（本地预览）：不带 GH_REPO 只打**警告**，不拦截（本地静态预览 base 用 `/` 没问题）。
+2. `pnpm build:ci`（部署构建）：`scripts/guard-build.mjs` 强制要求 GH_REPO，缺失直接报错退出。
+3. CI（deploy.yml）总是传 `GH_REPO=<仓库名>`，并走 `build:ci`。
+
+## 10. 单元测试
+
+```bash
+pnpm test   # vitest run，覆盖：
+```
+
+| 文件 | 覆盖 |
+|---|---|
+| `src/utils/__tests__/layout.test.js` | fitGrid / pickColumns / splitBalanced（一屏装下的核心承诺） |
+| `src/utils/__tests__/speechScore.test.js` | 打分归一化 / 编辑距离 / 档位边界（0.85 / 0.55） |
+| `src/stores/__tests__/streak.test.ts` | 连击：幂等 / 跨天 / 断档 / 持久化读回 / 损坏数据 |
+| `src/composables/__tests__/usePager.test.js` | 分页切片 / 容量变化夹页码 / 数据源变化回第一页 |
+
+改动布局算法、评分阈值、连击逻辑、分页逻辑时必须补/跑对应测试。
+
 ---
 
-## 10. 排错清单
+## 11. 排错清单
 
 | 症状 | 原因 | 处理 |
 |---|---|---|
 | 线上音频/视频/图片 404，但 `dist/` 里文件都在 | `public/` 目录的文件**不经过** Vite 路径重写，代码里写死的 `/lessons/...` 在子路径部署下被解析到站点根目录 | 路径必须经 `lessons.js` 的 `asset()` 补前缀，不要在新代码里裸写根路径 |
-| 本地构建的产物部署后白屏 | 构建时没带 `GH_REPO`，`base` 是 `/` 而非 `/<repo>/` | 带 `GH_REPO=kids-english pnpm build` |
+| 本地构建的产物部署后白屏 | 构建时没带 `GH_REPO`，`base` 是 `/` 而非 `/<repo>/` | 部署用 `GH_REPO=<仓库名> pnpm build:ci`（CI 已强制） |
 | 某页面在某个设备上内容被截断 | 违反 §4：列表没分页、或尺寸只用了一个维度 | 跑 §7.2 的走查脚本定位溢出元素 |
 | 改完样式个别元素尺寸没变 | 写死了 `px`，没走 token | 换成 `clamp(..., min(Xvh, Yvw), ...)` 或 tokens 里的变量 |
 | 发音识别总是失败并提示切换录音模式 | 国内网络连不上 Google 识别服务 | 预期行为，录音回放模式是可用的主路径 |
 | 某个单词发音机械（走了 TTS） | 对应 mp3 没生成（`public/lessons/<课>/audio/<单词id>.mp3` 缺失） | 跑 `python3 scripts/gen-word-audio.py` 补齐 |
 | iOS 上点第一次没声音 | iOS Safari 要求用户手势后才能播放音频 | 已用点击触发规避，勿改成自动播放 |
-| 孩子的星星丢了 | localStorage 被清（换设备/清缓存）或存储键被改动 | 不要改 `progress.js` 里的 KEY |
+| 孩子的星星丢了 | localStorage 被清（换设备/清缓存）或存储键被改动 | 不要改 `stores/progress.ts` 里的 KEY；老数据会在 load() 增量迁移 |
 
-| 孩子的星星丢了 | localStorage 被清（换设备/清缓存）或存储键被改动 | 不要改 `progress.js` 里的 KEY |
+| 孩子的星星丢了 | localStorage 被清（换设备/清缓存）或存储键被改动 | 不要改 `stores/progress.ts` 里的 KEY；老数据会在 load() 增量迁移 |
 | 手机上一直看到旧版本 | SW 被浏览器停用或更新被挂起（正在玩法里） | 回到首页即刷新；或在浏览器设置里清除该站点数据 |
 | 换了同名媒体文件但客户端还是旧的 | 媒体是 SWR，最多旧一次 | 刷新一次页面即可；要彻底立即可见可改文件名 |
 
 ---
 
-## 11. 可选的后续方向
+## 12. 可选的后续方向
 
 - **滑动手势翻页**：点读页可加左右滑动（注意与连线页拖拽的手势边界）。
 - **发音评分升级**：接入讯飞少儿语音评测或 Azure Pronunciation Assessment，逐音素打分。
-- **跨设备同步进度**：需要一个后端（当前纯前端，进度只在本机）。
+- **跨设备同步进度**：需要一个后端（当前纯前端，进度只在本机）；届时 `errors.js` 的上报通道
+  也只需把 localStorage 落盘换成 POST 即可。
 - **素材管理**：补素材放进对应课时目录，无需改代码即可生效。
+- **弱词算法调优**：`getWeakWords` 目前是"答错且正确 ≤ 错误"，可升级为间隔重复
+  （按 lastAt 与错误率排复习顺序）。

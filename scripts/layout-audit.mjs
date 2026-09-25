@@ -46,14 +46,19 @@ const VIEWPORTS = [
   { name: "ipad_pro_landscape", w: 1366, h: 1024, mobile: true }
 ];
 
+/** 页面清单：hash 路由（#/lesson/l4?stage=xxx），新页面 /treasure /report /review */
 const PAGES = [
-  { name: "home", q: "" },
-  { name: "menu", q: "?lesson=l4" },
-  { name: "learn", q: "?lesson=l4&stage=learn" },
-  { name: "quiz", q: "?lesson=l4&stage=quiz" },
-  { name: "match", q: "?lesson=l4&stage=match" },
-  { name: "speak", q: "?lesson=l4&stage=speak" },
-  { name: "song", q: "?lesson=l4&stage=song" }
+  { name: "home", q: "#/" },
+  { name: "menu", q: "#/lesson/l4" },
+  { name: "learn", q: "#/lesson/l4?stage=learn" },
+  { name: "quiz", q: "#/lesson/l4?stage=quiz" },
+  { name: "match", q: "#/lesson/l4?stage=match" },
+  { name: "speak", q: "#/lesson/l4?stage=speak" },
+  { name: "song", q: "#/lesson/l4?stage=song" },
+  { name: "talk", q: "#/lesson/l4?stage=talk" },
+  { name: "treasure", q: "#/treasure" },
+  { name: "report", q: "#/report" },
+  { name: "review", q: "#/review" }
 ];
 
 /** 检测当前页是否真实渲染、是否溢出、哪些元素越界 */
@@ -62,12 +67,25 @@ const PROBE = `(() => {
   const app = document.getElementById('app');
   const vw = window.innerWidth, vh = window.innerHeight;
   const bad = [];
+  // 找最近的纵向可滚动祖先：信息页（家长报告/宝藏罐）允许内容超一屏内部滚动，
+  // 容器内容区内的"越界"是正常滚动，不是布局溢出
+  const scrollAncestor = (el) => {
+    let p = el.parentElement;
+    while (p) {
+      const cs = getComputedStyle(p);
+      if ((cs.overflowY === 'auto' || cs.overflowY === 'scroll') && p.scrollHeight > p.clientHeight + 1) return p;
+      p = p.parentElement;
+    }
+    return null;
+  };
   if (app) {
     for (const el of app.querySelectorAll('*')) {
       const r = el.getBoundingClientRect();
       if (r.width === 0 && r.height === 0) continue;
-      // 容差 2px：动画 transform 会让元素瞬时越界
-      if (r.bottom > vh + 2 || r.right > vw + 2 || r.top < -2 || r.left < -2) {
+      const sa = scrollAncestor(el);
+      const inScroll = !!sa && r.bottom <= sa.getBoundingClientRect().top + sa.scrollHeight + 2;
+      // 横向越界始终报（页面不应横向滚动）；纵向越界仅在没有可滚容器时报
+      if (r.right > vw + 2 || r.left < -2 || (!inScroll && (r.bottom > vh + 2 || r.top < -2))) {
         bad.push({
           c: (typeof el.className === 'string' ? el.className : el.tagName).slice(0, 48),
           b: Math.round(r.bottom), r: Math.round(r.right)
@@ -190,8 +208,9 @@ try {
     for (const pg of PAGES) {
       await cdp.send("Page.navigate", { url: BASE + pg.q });
       // 等 Vue 挂载 + ResizeObserver 完成测量与分页；再留一点余量让入场动画
-      // （anim-fade-up / anim-pop）跑完，否则探针会撞上动画中间态误报越界
-      await sleep(1800);
+      // （anim-fade-up / anim-pop）跑完，否则探针会撞上动画中间态误报越界。
+      // 首次导航（首个视口 × 首页）偶发更慢，统一给足 2.4s。
+      await sleep(2400);
 
       const res = await cdp.send("Runtime.evaluate", {
         expression: PROBE,

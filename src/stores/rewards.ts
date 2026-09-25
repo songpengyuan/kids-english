@@ -16,6 +16,9 @@ export const stickerPool = ["🐙", "🐬", "⭐", "🎺", "🎵", "🌊", "🚢
 /** 贴纸总数（图鉴进度展示用） */
 export const stickerTotal = stickerPool.length;
 
+/** 商店定向购买一张未收集贴纸的价格（贝壳）——给"只进不出"的贝壳一个消耗出口 */
+export const stickerPrice = 20;
+
 /** 一次开箱的结果 */
 export interface ChestRoll {
   shells: number;
@@ -86,5 +89,18 @@ export const useRewardsStore = defineStore("rewards", () => {
     return stickers.value.length >= stickerPool.length;
   }
 
-  return { shells, stickers, chestsOpened, rollChest, grant, allStickers };
+  /**
+   * 定向购买一张未收集的贴纸（贝壳消耗出口）。
+   * 失败（已收集/余额不足/不在池内）返回 false，不改任何状态。
+   */
+  function buySticker(emoji: string): boolean {
+    if (!stickerPool.includes(emoji) || stickers.value.includes(emoji)) return false;
+    if (shells.value < stickerPrice) return false;
+    shells.value -= stickerPrice;
+    stickers.value.push(emoji);
+    save();
+    return true;
+  }
+
+  return { shells, stickers, chestsOpened, rollChest, grant, allStickers, buySticker, stickerTotal };
 });

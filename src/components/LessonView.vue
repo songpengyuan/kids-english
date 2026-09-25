@@ -8,7 +8,7 @@ import ChestReward from "./ChestReward.vue";
 import SpeakView from "./SpeakView.vue";
 import TalkView from "./TalkView.vue";
 import ThemeToggle from "./ThemeToggle.vue";
-import { bigCelebrate } from "../utils/effects";
+import { bigCelebrate, celebrate } from "../utils/effects";
 import { getLesson, lessons } from "../data/lessons";
 import { useProgressStore } from "../stores/progress";
 import { useStreakStore } from "../stores/streak";
@@ -43,6 +43,9 @@ const { isNarrow } = useViewport();
 const stage = ref("menu"); // menu | learn | quiz | match | song | talk | result
 const lastStars = ref(0);
 
+/** 当前玩法会话的开始时间戳（0 = 未开始），结算时累计进今日学情（家长报告） */
+let actStart = 0;
+
 /* ---------- 游戏模式：关卡内闯关（Quest） ---------- */
 /** 是否闯关模式：游戏模式路径图进入时带 ?mode=quest，自由练习入口不带 */
 const questMode = computed(() => route.query.mode === "quest");
@@ -61,13 +64,17 @@ const currentActName = computed(() => questSeq.value[questDoneCount.value - 1]?.
 /** 调试深链：?lesson=l4&stage=learn，直接进入某个玩法页 */
 const STAGES = ["learn", "quiz", "match", "speak", "song", "talk"];
 onMounted(() => {
+  // 记录最近进入的课时 → 首页「继续学习」入口
+  if (lesson.value) progress.setLastLesson(lesson.value.id);
   const s = typeof route.query.stage === "string" ? route.query.stage : "";
   if (questMode.value) {
     // 闯关模式：跳过菜单，直接开第一个玩法
     const first = questSeq.value[0];
     if (first) stage.value = first.game === "song" ? "song" : first.key;
+    actStart = Date.now();
   } else if (STAGES.includes(s)) {
     stage.value = s;
+    actStart = Date.now();
   } else {
     // 进入课程时报出主题歌名（英文），给孩子一个"这一课唱什么"的预期
     setTimeout(() => speak(lesson.value?.title || ""), 400);
@@ -162,6 +169,7 @@ const actsStyle = computed(() => ({
 
 function open(a) {
   hapticTap();
+  actStart = Date.now(); // 玩法会话计时起点
   stage.value = a.game === "song" ? "song" : a.key;
 }
 
@@ -189,19 +197,30 @@ function nextQuestStep() {
   const a = questSeq.value[questIdx.value];
   if (!a) return;
   hapticTap();
+  actStart = Date.now(); // 玩法会话计时起点
   stage.value = a.game === "song" ? "song" : a.key;
+}
+
+/** 结算一次玩法会话：累计今日时长与玩法数（家长报告数据源） */
+function settleActivity() {
+  progress.addDailyActivity(actStart ? (Date.now() - actStart) / 1000 : 0);
+  actStart = 0;
 }
 
 function afterGame(stars) {
   lastStars.value = stars;
   progress.setGameStars(lesson.value.id, stage.value, stars);
+  settleActivity();
   // 完成玩法 → 记今日目标；今天第一次达成时结算页亮横幅
   const first = streak.markActivity();
   streakJustHit.value = first && streak.todayDone;
   if (questMode.value) {
     finishQuestStep();
   } else {
-    bigCelebrate();
+    // 庆祝收敛：满分才双彩带大庆祝，其余用小彩带——
+    // 避免"每完成一步都全屏庆祝"，庆祝多了孩子就无感了
+    if (stars >= 3) bigCelebrate();
+    else celebrate();
     speakZh(stars >= 3 ? "太厉害了，满分三颗星" : "做得好，继续加油");
     stage.value = "result";
   }
@@ -210,6 +229,8 @@ function afterGame(stars) {
 function afterSong() {
   stage.value = "result";
   lastStars.value = 1;
+  // 童谣星数由 SongView 内部记（markSong 幂等），这里只累计今日学情
+  settleActivity();
   const first = streak.markActivity();
   streakJustHit.value = first && streak.todayDone;
   if (questMode.value) finishQuestStep();
