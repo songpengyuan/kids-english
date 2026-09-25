@@ -25,6 +25,8 @@ interface PathNode {
   titleZh: string;
   emoji: string;
   tone: string;
+  /** 关卡序号（第几关，从 1 起）——多邻国式编号 */
+  level: number;
   state: "locked" | "active" | "ready" | "played" | "done";
   /** 画布坐标（像素，宽随容器自适应） */
   x: number;
@@ -68,6 +70,7 @@ const nodes = computed<PathNode[]>(() => {
       titleZh: l.titleZh,
       emoji: l.emoji,
       tone: l.tone,
+      level: i + 1,
       state,
       x: 0, // 每帧按容器宽重算
       y: TOP + i * ROW_H,
@@ -255,6 +258,13 @@ function drawNode(ctx: CanvasRenderingContext2D, n: PathNode, now: number) {
 
   ctx.globalAlpha = 1;
 
+  // 关卡序号（圆上方，多邻国式"第 N 关"）
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.font = "800 11px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif";
+  ctx.fillStyle = n.state === "locked" ? "rgba(120,120,120,0.55)" : inkSoft();
+  ctx.fillText("第 " + n.level + " 关", x, y - R - 16);
+
   // 状态角标（右下）
   const tagR = 12;
   const tx = x + R * 0.72;
@@ -269,7 +279,7 @@ function drawNode(ctx: CanvasRenderingContext2D, n: PathNode, now: number) {
   ctx.font = "bold 11px sans-serif";
   ctx.fillStyle = n.state === "locked" ? "#9a938a" : "#6b4e00";
   if (n.state === "locked") ctx.fillText("🔒", tx, ty + 1);
-  else if (n.state === "done") ctx.fillText("✓", tx, ty);
+  else if (n.state === "done") ctx.fillText("👑", tx, ty + 1); // 通关 = 皇冠（多邻国式成就）
   else if (n.state === "played") { ctx.fillStyle = "#58cc02"; ctx.fillText("✓", tx, ty); }
   else if (n.state === "active") ctx.fillText("▶", tx, ty);
   else ctx.fillText("·", tx, ty);

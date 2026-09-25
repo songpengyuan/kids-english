@@ -40,7 +40,7 @@ const lesson = computed(() => getLesson(route.params.id) || null);
 
 const { isNarrow } = useViewport();
 
-const stage = ref("menu"); // menu | learn | quiz | match | song | talk | result
+const stage = ref("menu"); // menu | questStart | learn | quiz | match | song | talk | result
 const lastStars = ref(0);
 
 /** 当前玩法会话的开始时间戳（0 = 未开始），结算时累计进今日学情（家长报告） */
@@ -63,15 +63,27 @@ const currentActName = computed(() => questSeq.value[questDoneCount.value - 1]?.
 
 /** 调试深链：?lesson=l4&stage=learn，直接进入某个玩法页 */
 const STAGES = ["learn", "quiz", "match", "speak", "song", "talk"];
+/** 关卡序号（第几关，从 1 起，按课时出场顺序）——多邻国式编号 */
+const questLevel = computed(() => {
+  const i = lessons.findIndex((l) => l.id === lesson.value?.id);
+  return i >= 0 ? i + 1 : 1;
+});
+
+/** 闯关模式：点"出发"开始第 1 步 */
+function startQuest() {
+  const a = questSeq.value[0];
+  if (!a) return;
+  hapticTap();
+  actStart = Date.now(); // 玩法会话计时起点
+  stage.value = a.game === "song" ? "song" : a.key;
+}
 onMounted(() => {
   // 记录最近进入的课时 → 首页「继续学习」入口
   if (lesson.value) progress.setLastLesson(lesson.value.id);
   const s = typeof route.query.stage === "string" ? route.query.stage : "";
   if (questMode.value) {
-    // 闯关模式：跳过菜单，直接开第一个玩法
-    const first = questSeq.value[0];
-    if (first) stage.value = first.game === "song" ? "song" : first.key;
-    actStart = Date.now();
+    // 闯关模式：先看"关卡卡"（编号/步数/目标），点出发才开第一个玩法——与自由练习的菜单形成区分
+    stage.value = "questStart";
   } else if (STAGES.includes(s)) {
     stage.value = s;
     actStart = Date.now();
@@ -269,8 +281,8 @@ const nextLesson = computed(() => {
       <button
         class="back"
         @click="back"
-        :aria-label="stage === 'menu' ? '返回课程列表' : '返回本课菜单'"
-        :title="stage === 'menu' ? '返回课程列表' : '返回本课菜单'"
+        :aria-label="questMode ? '返回闯关地图' : stage === 'menu' ? '返回课程列表' : '返回本课菜单'"
+        :title="questMode ? '返回闯关地图' : stage === 'menu' ? '返回课程列表' : '返回本课菜单'"
       >
         <ChevronLeft class="k-ico" />
       </button>
@@ -307,6 +319,23 @@ const nextLesson = computed(() => {
       </div>
     </div>
 
+    <!-- 闯关：关卡卡（多邻国式开始仪式：编号/步数/目标，点"出发"才开玩） -->
+    <div v-else-if="stage === 'questStart'" class="quest-start view-body view-center">
+      <div class="qs-card anim-pop">
+        <span class="qs-level">🎮 第 {{ questLevel }} 关</span>
+        <span class="qs-emoji">{{ lesson.emoji }}</span>
+        <p class="qs-title">{{ lesson.titleZh }}</p>
+        <p class="qs-sub">{{ lesson.title }}</p>
+        <div class="qs-steps">
+          <span v-for="(a, i) in questSeq" :key="a.key" class="qs-step">
+            <span class="qs-dot" :class="'tone-' + a.tone"></span>{{ i + 1 }}. {{ a.name }}
+          </span>
+        </div>
+        <p class="qs-goal">全部完成 · 拿到 👑 通关</p>
+        <button class="k-btn big" @click="startQuest">出发！</button>
+      </div>
+    </div>
+
     <!-- 各玩法 -->
     <component
       v-else-if="stage === 'learn' || stage === 'quiz' || stage === 'match' || stage === 'speak'"
@@ -319,15 +348,19 @@ const nextLesson = computed(() => {
 
     <!-- 结算 -->
     <div v-else-if="stage === 'result'" class="result view-body view-center">
-      <!-- 闯关：关卡通关大画面（全部玩法完成） -->
+      <!-- 闯关：关卡通关大画面（全部玩法完成，👑 成就卡） -->
       <template v-if="questMode && questDone">
-        <div class="quest-done-badge anim-pop">🎉 关卡通关！</div>
+        <div class="quest-done-badge anim-pop">👑 第 {{ questLevel }} 关通关！</div>
         <div class="stars">
           <span v-for="n in 3" :key="n" class="star anim-pop" :style="{ animationDelay: n * 0.2 + 's' }">
             <Star class="k-ico star-fill" />
           </span>
         </div>
-        <h2>完成 {{ questTotal }} 种玩法 · 本关共 {{ progress.lessonStars(lesson.id) }} 颗星</h2>
+        <h2>
+          完成 {{ questTotal }} 种玩法 · 本关共
+          <span class="total-stars"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</span>
+          颗星
+        </h2>
         <!-- 今日目标首次达成：连击火焰横幅 -->
         <div v-if="streakJustHit" class="streak-banner anim-pop">
           🔥 今日目标达成！已连续 {{ streak.streak }} 天
@@ -341,8 +374,9 @@ const nextLesson = computed(() => {
         </div>
       </template>
 
-      <!-- 闯关：单步结算（一个玩法完成，点"继续"进下一个） -->
+      <!-- 闯关：单步结算（一个玩法完成 = 一步，点"继续"进下一步） -->
       <template v-else-if="questMode">
+        <span class="quest-step-badge">第 {{ questDoneCount }} / {{ questTotal }} 步</span>
         <div class="stars">
           <span
             v-for="n in 3"
@@ -355,9 +389,13 @@ const nextLesson = computed(() => {
           </span>
         </div>
         <h2>{{ currentActName }} 完成！</h2>
+        <p class="quest-total-stars">
+          本关已得 <Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }} 颗
+          <template v-if="lastStars < 3">· 重玩可拿满 3 星</template>
+        </p>
         <div class="quest-progress" aria-label="关卡进度">
           <div class="qp-bar"><div class="qp-fill" :style="{ width: (questDoneCount / questTotal) * 100 + '%' }"></div></div>
-          <span>第 {{ questDoneCount }}/{{ questTotal }} 关</span>
+          <span>第 {{ questDoneCount }}/{{ questTotal }} 步</span>
         </div>
         <!-- 今日目标首次达成：连击火焰横幅 -->
         <div v-if="streakJustHit" class="streak-banner anim-pop">
@@ -365,7 +403,9 @@ const nextLesson = computed(() => {
         </div>
         <ChestReward />
         <div class="btn-row">
-          <button class="k-btn" @click="nextQuestStep">继续闯关 →</button>
+          <button class="k-btn" @click="nextQuestStep">
+            继续：{{ questSeq[questIdx]?.name }} →
+          </button>
         </div>
       </template>
 
@@ -556,6 +596,114 @@ const nextLesson = computed(() => {
 }
 
 /* ---------- 闯关模式 ---------- */
+/* 关卡卡（多邻国式开始仪式） */
+.quest-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.qs-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-s);
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: var(--gap-l) var(--gap-m);
+  max-width: min(420px, 100%);
+  border-top: 6px solid var(--gold);
+}
+.qs-level {
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--gold);
+  background: #fff3cd;
+  border-radius: var(--radius-pill);
+  padding: 4px var(--gap-m);
+}
+.qs-emoji {
+  font-size: var(--fs-emoji-xl);
+  line-height: 1;
+}
+.qs-title {
+  margin: 0;
+  font-weight: 800;
+  font-size: var(--fs-title);
+  color: var(--ink);
+}
+.qs-sub {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+}
+.qs-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 6px;
+  width: 100%;
+  margin: var(--gap-s) 0;
+}
+.qs-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--bg);
+  border-radius: var(--radius-pill);
+  padding: 5px 10px;
+}
+.qs-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+.qs-goal {
+  margin: 0;
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--green-dark);
+}
+.qs-card .k-btn.big {
+  padding: clamp(10px, 2vh, 14px) clamp(28px, 4vw, 44px);
+  font-size: var(--fs-body);
+  border-radius: var(--radius-pill);
+}
+
+/* 单步结算：步数徽章 + 本关累计星 */
+.quest-step-badge {
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--gold);
+  background: var(--card-bg);
+  border-radius: var(--radius-pill);
+  padding: 4px var(--gap-m);
+  box-shadow: var(--shadow-hard);
+}
+.quest-total-stars {
+  margin: 0;
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.quest-total-stars .k-ico {
+  color: var(--gold);
+}
+.result h2 .total-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--gold);
+  vertical-align: baseline;
+}
 .quest-done-badge {
   font-size: var(--fs-emoji-xl);
   font-weight: 800;

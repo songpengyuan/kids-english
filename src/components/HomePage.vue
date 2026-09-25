@@ -168,12 +168,14 @@ const lastLessonObj = computed(() => {
       </button>
     </div>
 
-    <div class="mode-tabs anim-pop" role="tablist" aria-label="选择浏览模式">
+    <!-- App 风格分段控件：滑块随模式平滑移动，选中态更直观 -->
+    <div class="mode-tabs anim-pop" :class="mode" role="tablist" aria-label="选择浏览模式">
+      <span class="mode-slider" aria-hidden="true"></span>
       <button :class="{ on: mode === 'practice' }" role="tab" :aria-selected="mode === 'practice'" @click="setMode('practice')">
-        🎯 自由练习
+        <span class="mt-ico">🎯</span>自由练习
       </button>
       <button :class="{ on: mode === 'game' }" role="tab" :aria-selected="mode === 'game'" @click="setMode('game')">
-        🎮 游戏闯关
+        <span class="mt-ico">🎮</span>游戏闯关
       </button>
     </div>
 
@@ -256,30 +258,55 @@ const lastLessonObj = computed(() => {
   font-size: var(--fs-small);
 }
 
-/* 模式切换 tab */
+/* App 风格分段控件：容器胶囊 + 滑块 + 图标，选中态由滑块承担 */
 .mode-tabs {
-  display: flex;
-  gap: var(--gap-s);
-  margin-top: var(--gap-s);
-}
-.mode-tabs button {
-  flex: 1;
-  max-width: 180px;
-  padding: clamp(8px, 1.6vh, 12px) var(--gap-m);
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: min(380px, 100%);
+  padding: 4px;
   border-radius: var(--radius-pill);
   background: var(--card-bg);
   box-shadow: var(--shadow-hard);
+}
+.mode-slider {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: calc(var(--radius-pill) - 4px);
+  background: linear-gradient(160deg, var(--yellow), var(--gold));
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.14), 0 0 12px rgba(255, 214, 110, 0.35);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+.mode-tabs.game .mode-slider {
+  transform: translateX(100%);
+}
+.mode-tabs button {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: clamp(8px, 1.6vh, 12px) var(--gap-m);
+  border-radius: calc(var(--radius-pill) - 4px);
   font-weight: 800;
   font-size: var(--fs-body);
   color: var(--ink-soft);
-  transition: transform 0.1s, background 0.2s, color 0.2s;
+  transition: color 0.2s, transform 0.1s;
 }
 .mode-tabs button.on {
-  background: linear-gradient(160deg, var(--yellow), var(--gold));
   color: #6b4e00;
 }
-.mode-tabs button:active {
-  transform: translateY(2px);
+.mode-tabs button:not(.on):active {
+  transform: translateY(1px);
+}
+.mt-ico {
+  font-size: var(--fs-body);
+  line-height: 1;
 }
 .gp-slot {
   margin-top: var(--gap-s);
