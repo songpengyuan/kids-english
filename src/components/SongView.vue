@@ -2,9 +2,11 @@
 import { ref, computed, watch, nextTick, onBeforeUnmount } from "vue";
 import { bigCelebrate } from "../utils/effects";
 import { hapticTap } from "../utils/haptics";
-import progress from "../store/progress";
+import { useProgressStore } from "../stores/progress";
 import { Clapperboard, Headphones, Music, Pause, Play, Repeat, Sparkles } from "@lucide/vue";
 import SongStage from "./SongStage.vue";
+
+const progress = useProgressStore();
 
 const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["back", "song-done"]);

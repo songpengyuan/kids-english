@@ -10,7 +10,7 @@ import TalkView from "./TalkView.vue";
 import ThemeToggle from "./ThemeToggle.vue";
 import { bigCelebrate } from "../utils/effects";
 import { lessons } from "../data/lessons";
-import progress from "../store/progress";
+import { useProgressStore } from "../stores/progress";
 import { speak, speakZh } from "../utils/speech";
 import { hapticTap } from "../utils/haptics";
 import { useViewport } from "../composables/useViewport";
@@ -25,6 +25,8 @@ import {
   Music,
   Star
 } from "@lucide/vue";
+
+const progress = useProgressStore();
 
 const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["back", "next-lesson"]);

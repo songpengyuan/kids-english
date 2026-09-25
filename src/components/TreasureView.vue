@@ -4,8 +4,10 @@
  * 只读 rewards store，不在此页发奖励——数据流单向。
  */
 import { computed } from "vue";
-import rewards, { stickerPool, stickerTotal } from "../store/rewards";
+import { useRewardsStore, stickerPool, stickerTotal } from "../stores/rewards";
 import { ChevronLeft, Star } from "@lucide/vue";
+
+const rewards = useRewardsStore();
 
 const emit = defineEmits(["back"]);
 

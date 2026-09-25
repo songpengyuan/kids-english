@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import './styles/tokens.css'
 import './styles/base.css'
 // animate.css 必须在 base.css 之后引入：同权重的 .animate__tada / .anim-pop
@@ -11,7 +12,7 @@ import { initTheme } from './utils/theme'
 // 先应用主题再挂载，避免暗色用户刷新时闪白
 initTheme()
 
-createApp(App).mount('#app')
+createApp(App).use(createPinia()).mount('#app')
 
 // Safari 没有 Vibration API，挂载后给可点元素叠加透明 switch 以获得原生触感
 initHaptics()

@@ -1,15 +1,25 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { lessons } from "../data/lessons";
-import progress from "../store/progress";
-import rewards from "../store/rewards";
+import { useProgressStore } from "../stores/progress";
+import { useRewardsStore } from "../stores/rewards";
 import { speak } from "../utils/speech";
 import { useViewport } from "../composables/useViewport";
 import { usePager } from "../composables/usePager";
 import { pickColumns } from "../utils/layout";
 import Pager from "./Pager.vue";
+import GamePath from "./GamePath.vue";
 import ThemeToggle from "./ThemeToggle.vue";
 import { Check, Star } from "@lucide/vue";
+
+const progress = useProgressStore();
+const rewards = useRewardsStore();
+
+/** 首页浏览模式：practice = 自由练习课程网格 / game = 游戏模式关卡路径 */
+const mode = ref("practice");
+function setMode(m) {
+  mode.value = m;
+}
 
 const emit = defineEmits(["open", "treasure"]);
 
@@ -128,27 +138,40 @@ function enter(l) {
       </div>
     </header>
 
-    <div class="stage view-body" ref="stageEl">
-      <div class="cards" :style="cardsStyle">
-        <button
-          v-for="(l, i) in items"
-          :key="l.id"
-          class="lesson-card anim-pop"
-          :class="'tone-' + l.tone"
-          :style="{ animationDelay: Math.min(i, 8) * 0.08 + 's' }"
-          @click="enter(l)"
-        >
-          <span class="big-emoji anim-float">{{ l.emoji }}</span>
-          <span class="lt">{{ l.title }}</span>
-          <span class="done" v-if="progress.isCompleted(l.id)">
-            <Check class="k-ico" />全部通关
-          </span>
-          <span class="cnt">{{ l.words.length }} 个单词</span>
-        </button>
-      </div>
+    <div class="mode-tabs anim-pop" role="tablist" aria-label="选择浏览模式">
+      <button :class="{ on: mode === 'practice' }" role="tab" :aria-selected="mode === 'practice'" @click="setMode('practice')">
+        🎯 自由练习
+      </button>
+      <button :class="{ on: mode === 'game' }" role="tab" :aria-selected="mode === 'game'" @click="setMode('game')">
+        🎮 游戏闯关
+      </button>
     </div>
 
-    <Pager :page="page" :total="total" @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
+    <template v-if="mode === 'practice'">
+      <div class="stage view-body" ref="stageEl">
+        <div class="cards" :style="cardsStyle">
+          <button
+            v-for="(l, i) in items"
+            :key="l.id"
+            class="lesson-card anim-pop"
+            :class="'tone-' + l.tone"
+            :style="{ animationDelay: Math.min(i, 8) * 0.08 + 's' }"
+            @click="enter(l)"
+          >
+            <span class="big-emoji anim-float">{{ l.emoji }}</span>
+            <span class="lt">{{ l.title }}</span>
+            <span class="done" v-if="progress.isCompleted(l.id)">
+              <Check class="k-ico" />全部通关
+            </span>
+            <span class="cnt">{{ l.words.length }} 个单词</span>
+          </button>
+        </div>
+      </div>
+
+      <Pager :page="page" :total="total" @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
+    </template>
+
+    <GamePath v-else class="gp-slot" @open="(id) => emit('open', id)" />
 
     <p class="foot">👨‍👩‍👧 建议家长陪同，每次 10~15 分钟</p>
   </div>
@@ -201,6 +224,35 @@ function enter(l) {
   color: var(--ink-soft);
   font-weight: 700;
   font-size: var(--fs-small);
+}
+
+/* 模式切换 tab */
+.mode-tabs {
+  display: flex;
+  gap: var(--gap-s);
+  margin-top: var(--gap-s);
+}
+.mode-tabs button {
+  flex: 1;
+  max-width: 180px;
+  padding: clamp(8px, 1.6vh, 12px) var(--gap-m);
+  border-radius: var(--radius-pill);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-hard);
+  font-weight: 800;
+  font-size: var(--fs-body);
+  color: var(--ink-soft);
+  transition: transform 0.1s, background 0.2s, color 0.2s;
+}
+.mode-tabs button.on {
+  background: linear-gradient(160deg, var(--yellow), var(--gold));
+  color: #6b4e00;
+}
+.mode-tabs button:active {
+  transform: translateY(2px);
+}
+.gp-slot {
+  margin-top: var(--gap-s);
 }
 
 /* 星星 + 宝藏入口并排 */

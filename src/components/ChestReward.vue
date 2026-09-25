@@ -17,7 +17,9 @@ import {
   sfxSticker,
   sfxTap
 } from "../utils/effects";
-import { grant, rollChest } from "../store/rewards";
+import { useRewardsStore } from "../stores/rewards";
+
+const rewards = useRewardsStore();
 
 const emit = defineEmits(["done"]);
 
@@ -39,8 +41,8 @@ function openChest() {
     sfxChestOpen();
     bigCelebrate();
     // 奖励生成并入账（幂等，贴纸去重）
-    const r = rollChest();
-    grant(r);
+    const r = rewards.rollChest();
+    rewards.grant(r);
     reward.value = r;
     // 奖励落袋音效：贝壳"叮"，再抽到贴纸补一段星光
     sfxCoin();
