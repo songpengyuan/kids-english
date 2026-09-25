@@ -4,6 +4,7 @@ import LearnView from "./LearnView.vue";
 import QuizView from "./QuizView.vue";
 import MatchView from "./MatchView.vue";
 import SongView from "./SongView.vue";
+import ChestReward from "./ChestReward.vue";
 import SpeakView from "./SpeakView.vue";
 import TalkView from "./TalkView.vue";
 import ThemeToggle from "./ThemeToggle.vue";
@@ -248,6 +249,8 @@ const nextLesson = computed(() => {
         </span>
       </div>
       <h2>真棒！获得 {{ lastStars }} 颗星</h2>
+      <!-- 完成玩法 → 开宝箱拿奖励（每完成一次开一次） -->
+      <ChestReward />
       <div class="btn-row">
         <button class="k-btn" @click="toMenu">再选一个玩法</button>
         <button v-if="nextLesson" class="k-btn gray" @click="emit('next-lesson', nextLesson.id)">
@@ -377,6 +380,8 @@ const nextLesson = computed(() => {
   align-items: center;
   justify-content: center;
   gap: var(--gap-m);
+  overflow-y: auto; /* 加入宝箱后内容变多：矮屏/横屏时可滚动，不压破布局 */
+  -webkit-overflow-scrolling: touch;
 }
 .stars {
   display: flex;

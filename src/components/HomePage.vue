@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { lessons } from "../data/lessons";
 import progress from "../store/progress";
+import rewards from "../store/rewards";
 import { speak } from "../utils/speech";
 import { useViewport } from "../composables/useViewport";
 import { usePager } from "../composables/usePager";
@@ -10,7 +11,7 @@ import Pager from "./Pager.vue";
 import ThemeToggle from "./ThemeToggle.vue";
 import { Check, Star } from "@lucide/vue";
 
-const emit = defineEmits(["open"]);
+const emit = defineEmits(["open", "treasure"]);
 
 const { isNarrow } = useViewport();
 
@@ -117,8 +118,13 @@ function enter(l) {
         丞丞英语乐园
       </h1>
       <p class="sub">点一课，学童谣里的单词吧！</p>
-      <div class="star-badge">
-        <Star class="k-ico star-fill" />我的星星：{{ progress.totalStars }}
+      <div class="badges">
+        <div class="star-badge">
+          <Star class="k-ico star-fill" />我的星星：{{ progress.totalStars }}
+        </div>
+        <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐" @click="emit('treasure')">
+          🐚 {{ rewards.shells }}<span class="tb-cap">宝藏</span>
+        </button>
       </div>
     </header>
 
@@ -195,6 +201,35 @@ function enter(l) {
   color: var(--ink-soft);
   font-weight: 700;
   font-size: var(--fs-small);
+}
+
+/* 星星 + 宝藏入口并排 */
+.badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-s);
+  margin-top: 4px;
+}
+.treasure-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(160deg, #ffd87a, #f0b429);
+  color: #6b4e00;
+  border-radius: var(--radius-s);
+  padding: clamp(6px, 1.2vh, 10px) clamp(10px, 1.6vw, 16px);
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18);
+  font-weight: 800;
+  font-size: var(--fs-body);
+  transition: transform 0.1s;
+}
+.treasure-badge:active {
+  transform: translateY(calc(var(--press) - 1px));
+}
+.tb-cap {
+  font-size: var(--fs-small);
+  opacity: 0.85;
 }
 
 /* 卡片区只负责"占满剩余高度"并可被测量 */

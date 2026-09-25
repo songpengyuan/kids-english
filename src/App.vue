@@ -2,18 +2,26 @@
 import { ref, computed, onMounted } from "vue";
 import HomePage from "./components/HomePage.vue";
 import LessonView from "./components/LessonView.vue";
+import TreasureView from "./components/TreasureView.vue";
 import CuteBackdrop from "./components/CuteBackdrop.vue";
 import { getLesson } from "./data/lessons";
 import { initPWA, applyUpdateIfIdle } from "./utils/pwa";
 
-const currentId = ref(null); // null = 首页
+const currentId = ref(null); // null = 首页/宝藏罐
+const view = ref("home"); // home | treasure（课时视图由 currentId 决定）
 const lesson = computed(() => (currentId.value ? getLesson(currentId.value) : null));
 
 function open(id) {
   currentId.value = id;
+  view.value = "home";
+}
+function openTreasure() {
+  currentId.value = null;
+  view.value = "treasure";
 }
 function back() {
   currentId.value = null;
+  view.value = "home";
   // 深链参数（?lesson=xx&stage=yy）只在"进入应用"那一刻生效。
   // 回首页时清掉：挂起的版本更新会在回首页时 location.reload()，
   // 若 URL 里还留着深链，刷新后会直接跳回课程里——表现为"返回按钮失灵"。
@@ -47,6 +55,7 @@ onMounted(() => {
       @back="back"
       @next-lesson="open"
     />
-    <HomePage v-else key="HomePage" @open="open" />
+    <HomePage v-else-if="view === 'home'" key="HomePage" @open="open" @treasure="openTreasure" />
+    <TreasureView v-else key="Treasure" @back="back" />
   </KeepAlive>
 </template>
