@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { lessons } from "../data/lessons";
 import { useProgressStore } from "../stores/progress";
 import { useRewardsStore } from "../stores/rewards";
+import { useStreakStore } from "../stores/streak";
 import { speak } from "../utils/speech";
 import { useViewport } from "../composables/useViewport";
 import { usePager } from "../composables/usePager";
@@ -14,6 +15,7 @@ import { Check, Star } from "@lucide/vue";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();
+const streak = useStreakStore();
 
 /** 首页浏览模式：practice = 自由练习课程网格 / game = 游戏模式关卡路径 */
 const mode = ref("practice");
@@ -135,6 +137,9 @@ function enter(l) {
         <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐" @click="emit('treasure')">
           🐚 {{ rewards.shells }}<span class="tb-cap">宝藏</span>
         </button>
+        <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今天已达成目标' : '完成一个玩法点亮今天的火焰'">
+          🔥 {{ streak.streak }}<span class="sb-cap">连击</span>
+        </div>
       </div>
     </header>
 
@@ -255,13 +260,36 @@ function enter(l) {
   margin-top: var(--gap-s);
 }
 
-/* 星星 + 宝藏入口并排 */
+/* 星星 + 宝藏 + 连击火焰并排（窄屏自动换行） */
 .badges {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: var(--gap-s);
   margin-top: 4px;
+}
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  border-radius: var(--radius-s);
+  padding: clamp(6px, 1.2vh, 10px) clamp(10px, 1.6vw, 16px);
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.12);
+  font-weight: 800;
+  font-size: var(--fs-body);
+  transition: background 0.3s, color 0.3s;
+}
+.streak-badge.done {
+  background: linear-gradient(160deg, #ff9f43, #ff6b3d);
+  color: #fff;
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18), 0 0 14px rgba(255, 122, 61, 0.4);
+}
+.sb-cap {
+  font-size: var(--fs-small);
+  opacity: 0.9;
 }
 .treasure-badge {
   display: inline-flex;

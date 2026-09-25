@@ -11,6 +11,7 @@ import ThemeToggle from "./ThemeToggle.vue";
 import { bigCelebrate } from "../utils/effects";
 import { lessons } from "../data/lessons";
 import { useProgressStore } from "../stores/progress";
+import { useStreakStore } from "../stores/streak";
 import { speak, speakZh } from "../utils/speech";
 import { hapticTap } from "../utils/haptics";
 import { useViewport } from "../composables/useViewport";
@@ -27,6 +28,9 @@ import {
 } from "@lucide/vue";
 
 const progress = useProgressStore();
+const streak = useStreakStore();
+/** 今日目标刚达成（结算页显示 🔥 横幅） */
+const streakJustHit = ref(false);
 
 const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["back", "next-lesson"]);
@@ -147,6 +151,9 @@ function showStars(key) {
 function afterGame(stars) {
   lastStars.value = stars;
   progress.setGameStars(props.lesson.id, stage.value, stars);
+  // 完成玩法 → 记今日目标；今天第一次达成时结算页亮横幅
+  const first = streak.markActivity();
+  streakJustHit.value = first && streak.todayDone;
   bigCelebrate();
   speakZh(stars >= 3 ? "太厉害了，满分三颗星" : "做得好，继续加油");
   stage.value = "result";
@@ -155,6 +162,8 @@ function afterGame(stars) {
 function afterSong() {
   stage.value = "result";
   lastStars.value = 1;
+  const first = streak.markActivity();
+  streakJustHit.value = first && streak.todayDone;
 }
 
 const lessonProgress = computed(() => {
@@ -251,6 +260,10 @@ const nextLesson = computed(() => {
         </span>
       </div>
       <h2>真棒！获得 {{ lastStars }} 颗星</h2>
+      <!-- 今日目标首次达成：连击火焰横幅 -->
+      <div v-if="streakJustHit" class="streak-banner anim-pop">
+        🔥 今日目标达成！已连续 {{ streak.streak }} 天
+      </div>
       <!-- 完成玩法 → 开宝箱拿奖励（每完成一次开一次） -->
       <ChestReward />
       <div class="btn-row">
@@ -384,6 +397,16 @@ const nextLesson = computed(() => {
   gap: var(--gap-m);
   overflow-y: auto; /* 加入宝箱后内容变多：矮屏/横屏时可滚动，不压破布局 */
   -webkit-overflow-scrolling: touch;
+}
+.streak-banner {
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: #7a4a00;
+  background: linear-gradient(160deg, #ffe9a8, #ffd87a);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-pill);
+  padding: var(--gap-xs) var(--gap-m);
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.12);
 }
 .stars {
   display: flex;
