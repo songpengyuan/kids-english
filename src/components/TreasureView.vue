@@ -4,12 +4,14 @@
  * 只读 rewards store，不在此页发奖励——数据流单向。
  */
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import { useRewardsStore, stickerPool, stickerTotal } from "../stores/rewards";
 import { ChevronLeft, Star } from "@lucide/vue";
 
-const rewards = useRewardsStore();
+defineOptions({ name: "TreasureView" }); // KeepAlive include 需要稳定组件名
 
-const emit = defineEmits(["back"]);
+const rewards = useRewardsStore();
+const router = useRouter();
 
 /** 图鉴：池子里的贴纸 + 是否已收集 */
 const album = computed(() => {
@@ -24,7 +26,7 @@ const albumPct = computed(() =>
 <template>
   <div class="treasure view">
     <div class="topbar">
-      <button class="back" aria-label="返回首页" title="返回首页" @click="emit('back')">
+      <button class="back" aria-label="返回首页" title="返回首页" @click="router.push('/')">
         <ChevronLeft class="k-ico" />
       </button>
       <div class="title">🎁 宝藏罐</div>

@@ -9,9 +9,10 @@ import SpeakView from "./SpeakView.vue";
 import TalkView from "./TalkView.vue";
 import ThemeToggle from "./ThemeToggle.vue";
 import { bigCelebrate } from "../utils/effects";
-import { lessons } from "../data/lessons";
+import { getLesson, lessons } from "../data/lessons";
 import { useProgressStore } from "../stores/progress";
 import { useStreakStore } from "../stores/streak";
+import { useRoute, useRouter } from "vue-router";
 import { speak, speakZh } from "../utils/speech";
 import { hapticTap } from "../utils/haptics";
 import { useViewport } from "../composables/useViewport";
@@ -32,8 +33,10 @@ const streak = useStreakStore();
 /** 今日目标刚达成（结算页显示 🔥 横幅） */
 const streakJustHit = ref(false);
 
-const props = defineProps({ lesson: { type: Object, required: true } });
-const emit = defineEmits(["back", "next-lesson"]);
+const route = useRoute();
+const router = useRouter();
+/** 当前课时（由路由 :id 解析，hash 深链 #/lesson/l4 可直达） */
+const lesson = computed(() => getLesson(route.params.id) || null);
 
 const { isNarrow } = useViewport();
 
@@ -43,12 +46,12 @@ const lastStars = ref(0);
 /** 调试深链：?lesson=l4&stage=learn，直接进入某个玩法页 */
 const STAGES = ["learn", "quiz", "match", "speak", "song", "talk"];
 onMounted(() => {
-  const s = new URLSearchParams(location.search).get("stage");
+  const s = typeof route.query.stage === "string" ? route.query.stage : "";
   if (STAGES.includes(s)) {
     stage.value = s;
   } else {
     // 进入课程时报出主题歌名（英文），给孩子一个"这一课唱什么"的预期
-    setTimeout(() => speak(props.lesson.title), 400);
+    setTimeout(() => speak(lesson.value?.title || ""), 400);
   }
 });
 
@@ -68,7 +71,7 @@ const activities = computed(() => {
     { key: "song", name: "唱童谣", icon: Music, tone: "green", game: "song", desc: "听歌看视频" }
   ];
   // 亲子对话是独立玩法，只有配置了 phrases 的课时才显示
-  if (props.lesson.phrases?.length) {
+  if (lesson.value.phrases?.length) {
     acts.splice(4, 0, {
       key: "talk",
       name: "亲子对话",
@@ -145,12 +148,12 @@ function open(a) {
 
 /** 菜单卡片右上角的星星徽章：该玩法已获得的星数 */
 function showStars(key) {
-  return progress.progress[props.lesson.id]?.[key] || 0;
+  return progress.progress[lesson.value.id]?.[key] || 0;
 }
 
 function afterGame(stars) {
   lastStars.value = stars;
-  progress.setGameStars(props.lesson.id, stage.value, stars);
+  progress.setGameStars(lesson.value.id, stage.value, stars);
   // 完成玩法 → 记今日目标；今天第一次达成时结算页亮横幅
   const first = streak.markActivity();
   streakJustHit.value = first && streak.todayDone;
@@ -167,7 +170,7 @@ function afterSong() {
 }
 
 const lessonProgress = computed(() => {
-  const done = progress.progress[props.lesson.id]?.completed?.length || 0;
+  const done = progress.progress[lesson.value.id]?.completed?.length || 0;
   return Math.min(100, Math.round((done / activities.value.length) * 100));
 });
 
@@ -177,7 +180,7 @@ function back() {
     stage.value = "menu";
     return;
   }
-  emit("back");
+  router.push("/");
 }
 
 function toMenu() {
@@ -186,7 +189,7 @@ function toMenu() {
 
 /** 下一课（当前课是最后一课则为 null，结算页隐藏该按钮） */
 const nextLesson = computed(() => {
-  const i = lessons.findIndex((l) => l.id === props.lesson.id);
+  const i = lessons.findIndex((l) => l.id === lesson.value.id);
   return i >= 0 ? lessons[i + 1] || null : null;
 });
 
@@ -268,7 +271,7 @@ const nextLesson = computed(() => {
       <ChestReward />
       <div class="btn-row">
         <button class="k-btn" @click="toMenu">再选一个玩法</button>
-        <button v-if="nextLesson" class="k-btn gray" @click="emit('next-lesson', nextLesson.id)">
+        <button v-if="nextLesson" class="k-btn gray" @click="router.push('/lesson/' + nextLesson.id)">
           下一课：{{ nextLesson.emoji }}{{ nextLesson.title }}
         </button>
       </div>

@@ -4,6 +4,7 @@ import { lessons } from "../data/lessons";
 import { useProgressStore } from "../stores/progress";
 import { useRewardsStore } from "../stores/rewards";
 import { useStreakStore } from "../stores/streak";
+import { useRouter } from "vue-router";
 import { speak } from "../utils/speech";
 import { useViewport } from "../composables/useViewport";
 import { usePager } from "../composables/usePager";
@@ -13,17 +14,18 @@ import GamePath from "./GamePath.vue";
 import ThemeToggle from "./ThemeToggle.vue";
 import { Check, Star } from "@lucide/vue";
 
+defineOptions({ name: "HomePage" }); // KeepAlive include 需要稳定组件名
+
 const progress = useProgressStore();
 const rewards = useRewardsStore();
 const streak = useStreakStore();
+const router = useRouter();
 
 /** 首页浏览模式：practice = 自由练习课程网格 / game = 游戏模式关卡路径 */
 const mode = ref("practice");
 function setMode(m) {
   mode.value = m;
 }
-
-const emit = defineEmits(["open", "treasure"]);
 
 const { isNarrow } = useViewport();
 
@@ -99,7 +101,7 @@ const cardsStyle = computed(() => ({
 
 function enter(l) {
   speak(l.words[0].en); // 进课时先读一个单词，暖场
-  emit("open", l.id);
+  router.push(`/lesson/${l.id}`);
 }
 </script>
 
@@ -134,7 +136,7 @@ function enter(l) {
         <div class="star-badge">
           <Star class="k-ico star-fill" />我的星星：{{ progress.totalStars }}
         </div>
-        <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐" @click="emit('treasure')">
+        <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐" @click="router.push('/treasure')">
           🐚 {{ rewards.shells }}<span class="tb-cap">宝藏</span>
         </button>
         <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今天已达成目标' : '完成一个玩法点亮今天的火焰'">
@@ -176,7 +178,7 @@ function enter(l) {
       <Pager :page="page" :total="total" @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
     </template>
 
-    <GamePath v-else class="gp-slot" @open="(id) => emit('open', id)" />
+    <GamePath v-else class="gp-slot" @open="(id) => router.push(`/lesson/${id}`)" />
 
     <p class="foot">👨‍👩‍👧 建议家长陪同，每次 10~15 分钟</p>
   </div>
