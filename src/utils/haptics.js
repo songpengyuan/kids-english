@@ -63,6 +63,12 @@ const OVERLAY_ATTR = "data-haptic-switch";
 /** 需要叠加开关的元素：所有按钮，以及显式标注 data-haptic 的自定义可点元素 */
 const TARGET_SELECTOR = `button:not([disabled]), [data-haptic]`;
 const OVERLAY_ICON = "input[" + OVERLAY_ATTR + "]";
+/**
+ * 不叠加开关的关键导航元素（`.back` 返回按钮）。
+ * 透明 switch 覆盖层在 iOS Safari 的真实触摸下会吞掉宿主点击（实测：返回按钮
+ * 被覆盖后点击无响应）；返回是全局关键导航，必须保证点击直达，触感收益可牺牲。
+ */
+const EXCLUDE_SELECTOR = ".back";
 
 let styleReady = false;
 let observer = null;
@@ -100,6 +106,11 @@ ${OVERLAY_ICON} {
 /** 给单个元素挂上透明开关（幂等） */
 function attach(el) {
   if (!el || !el.querySelectorAll) return;
+  // 排除的关键导航（返回按钮等）：不叠开关，并清掉之前版本已叠的，保证点击直达
+  if (el.matches && el.matches(EXCLUDE_SELECTOR)) {
+    el.querySelectorAll(":scope > " + OVERLAY_ICON).forEach((i) => i.remove());
+    return;
+  }
   if (el.querySelector(":scope > " + OVERLAY_ICON)) return;
   // 已经挂过但被框架重渲染吞掉的，重新挂
   const input = DOC.createElement("input");
