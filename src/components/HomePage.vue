@@ -178,7 +178,7 @@ function enter(l) {
       <Pager :page="page" :total="total" @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
     </template>
 
-    <GamePath v-else class="gp-slot" @open="(id) => router.push(`/lesson/${id}`)" />
+    <GamePath v-else class="gp-slot" @open="(id) => router.push(`/lesson/${id}?mode=quest`)" />
 
     <p class="foot">👨‍👩‍👧 建议家长陪同，每次 10~15 分钟</p>
   </div>

@@ -43,11 +43,30 @@ const { isNarrow } = useViewport();
 const stage = ref("menu"); // menu | learn | quiz | match | song | talk | result
 const lastStars = ref(0);
 
+/* ---------- 游戏模式：关卡内闯关（Quest） ---------- */
+/** 是否闯关模式：游戏模式路径图进入时带 ?mode=quest，自由练习入口不带 */
+const questMode = computed(() => route.query.mode === "quest");
+/** 闯关玩法序列（按 activities 顺序逐个完成，不做 menu） */
+const questSeq = computed(() => activities.value);
+const questTotal = computed(() => questSeq.value.length);
+/** 当前正在玩的玩法在序列中的下标（0 起） */
+const questIdx = ref(0);
+/** 已完成的玩法数 */
+const questDoneCount = ref(0);
+/** 全部玩法完成 → 关卡通关大画面 */
+const questDone = ref(false);
+/** 刚完成的玩法名（结算页"xx 完成！"） */
+const currentActName = computed(() => questSeq.value[questDoneCount.value - 1]?.name || "");
+
 /** 调试深链：?lesson=l4&stage=learn，直接进入某个玩法页 */
 const STAGES = ["learn", "quiz", "match", "speak", "song", "talk"];
 onMounted(() => {
   const s = typeof route.query.stage === "string" ? route.query.stage : "";
-  if (STAGES.includes(s)) {
+  if (questMode.value) {
+    // 闯关模式：跳过菜单，直接开第一个玩法
+    const first = questSeq.value[0];
+    if (first) stage.value = first.game === "song" ? "song" : first.key;
+  } else if (STAGES.includes(s)) {
     stage.value = s;
   } else {
     // 进入课程时报出主题歌名（英文），给孩子一个"这一课唱什么"的预期
@@ -151,15 +170,41 @@ function showStars(key) {
   return progress.progress[lesson.value.id]?.[key] || 0;
 }
 
+/** 闯关模式：推进一个玩法完成。全部完成 → 关卡通关；否则停在单步结算等"继续" */
+function finishQuestStep() {
+  questDoneCount.value++;
+  if (questIdx.value >= questTotal.value - 1) {
+    questDone.value = true;
+    bigCelebrate();
+    speakZh("关卡通关，太棒了");
+  } else {
+    questIdx.value++;
+    speakZh("完成一个玩法，继续闯关");
+  }
+  stage.value = "result";
+}
+
+/** 闯关模式：进入下一个玩法 */
+function nextQuestStep() {
+  const a = questSeq.value[questIdx.value];
+  if (!a) return;
+  hapticTap();
+  stage.value = a.game === "song" ? "song" : a.key;
+}
+
 function afterGame(stars) {
   lastStars.value = stars;
   progress.setGameStars(lesson.value.id, stage.value, stars);
   // 完成玩法 → 记今日目标；今天第一次达成时结算页亮横幅
   const first = streak.markActivity();
   streakJustHit.value = first && streak.todayDone;
-  bigCelebrate();
-  speakZh(stars >= 3 ? "太厉害了，满分三颗星" : "做得好，继续加油");
-  stage.value = "result";
+  if (questMode.value) {
+    finishQuestStep();
+  } else {
+    bigCelebrate();
+    speakZh(stars >= 3 ? "太厉害了，满分三颗星" : "做得好，继续加油");
+    stage.value = "result";
+  }
 }
 
 function afterSong() {
@@ -167,6 +212,7 @@ function afterSong() {
   lastStars.value = 1;
   const first = streak.markActivity();
   streakJustHit.value = first && streak.todayDone;
+  if (questMode.value) finishQuestStep();
 }
 
 const lessonProgress = computed(() => {
@@ -174,9 +220,10 @@ const lessonProgress = computed(() => {
   return Math.min(100, Math.round((done / activities.value.length) * 100));
 });
 
-/** 左上角 ←：玩法中先回本课菜单，菜单里再点才回课程列表（两步退出，防止误触跳走） */
+/** 左上角 ←：玩法中先回本课菜单，菜单里再点才回课程列表（两步退出，防止误触跳走）；
+ * 闯关模式没有菜单，直接回闯关地图 */
 function back() {
-  if (stage.value !== "menu") {
+  if (!questMode.value && stage.value !== "menu") {
     stage.value = "menu";
     return;
   }
@@ -213,8 +260,8 @@ const nextLesson = computed(() => {
       <ThemeToggle />
     </div>
 
-    <!-- 课时菜单 -->
-    <div v-if="stage === 'menu'" class="menu view-body">
+    <!-- 课时菜单（闯关模式无菜单，直接开玩） -->
+    <div v-if="stage === 'menu' && !questMode" class="menu view-body">
       <div class="lesson-cover anim-pop" :class="'tone-' + lesson.tone">
         <span class="cover-emoji">{{ lesson.emoji }}</span>
         <p>{{ lesson.title }}</p>
@@ -251,30 +298,83 @@ const nextLesson = computed(() => {
 
     <!-- 结算 -->
     <div v-else-if="stage === 'result'" class="result view-body view-center">
-      <div class="stars">
-        <span
-          v-for="n in 3"
-          :key="n"
-          class="star anim-pop"
-          :class="{ dim: n > lastStars }"
-          :style="{ animationDelay: n * 0.2 + 's' }"
-        >
-          <Star class="k-ico star-fill" />
-        </span>
-      </div>
-      <h2>真棒！获得 {{ lastStars }} 颗星</h2>
-      <!-- 今日目标首次达成：连击火焰横幅 -->
-      <div v-if="streakJustHit" class="streak-banner anim-pop">
-        🔥 今日目标达成！已连续 {{ streak.streak }} 天
-      </div>
-      <!-- 完成玩法 → 开宝箱拿奖励（每完成一次开一次） -->
-      <ChestReward />
-      <div class="btn-row">
-        <button class="k-btn" @click="toMenu">再选一个玩法</button>
-        <button v-if="nextLesson" class="k-btn gray" @click="router.push('/lesson/' + nextLesson.id)">
-          下一课：{{ nextLesson.emoji }}{{ nextLesson.title }}
-        </button>
-      </div>
+      <!-- 闯关：关卡通关大画面（全部玩法完成） -->
+      <template v-if="questMode && questDone">
+        <div class="quest-done-badge anim-pop">🎉 关卡通关！</div>
+        <div class="stars">
+          <span v-for="n in 3" :key="n" class="star anim-pop" :style="{ animationDelay: n * 0.2 + 's' }">
+            <Star class="k-ico star-fill" />
+          </span>
+        </div>
+        <h2>完成 {{ questTotal }} 种玩法 · 本关共 {{ progress.lessonStars(lesson.id) }} 颗星</h2>
+        <!-- 今日目标首次达成：连击火焰横幅 -->
+        <div v-if="streakJustHit" class="streak-banner anim-pop">
+          🔥 今日目标达成！已连续 {{ streak.streak }} 天
+        </div>
+        <ChestReward />
+        <div class="btn-row">
+          <button class="k-btn gray" @click="router.push('/')">返回闯关地图</button>
+          <button v-if="nextLesson" class="k-btn" @click="router.push('/lesson/' + nextLesson.id + '?mode=quest')">
+            下一关：{{ nextLesson.emoji }}{{ nextLesson.title }}
+          </button>
+        </div>
+      </template>
+
+      <!-- 闯关：单步结算（一个玩法完成，点"继续"进下一个） -->
+      <template v-else-if="questMode">
+        <div class="stars">
+          <span
+            v-for="n in 3"
+            :key="n"
+            class="star anim-pop"
+            :class="{ dim: n > lastStars }"
+            :style="{ animationDelay: n * 0.2 + 's' }"
+          >
+            <Star class="k-ico star-fill" />
+          </span>
+        </div>
+        <h2>{{ currentActName }} 完成！</h2>
+        <div class="quest-progress" aria-label="关卡进度">
+          <div class="qp-bar"><div class="qp-fill" :style="{ width: (questDoneCount / questTotal) * 100 + '%' }"></div></div>
+          <span>第 {{ questDoneCount }}/{{ questTotal }} 关</span>
+        </div>
+        <!-- 今日目标首次达成：连击火焰横幅 -->
+        <div v-if="streakJustHit" class="streak-banner anim-pop">
+          🔥 今日目标达成！已连续 {{ streak.streak }} 天
+        </div>
+        <ChestReward />
+        <div class="btn-row">
+          <button class="k-btn" @click="nextQuestStep">继续闯关 →</button>
+        </div>
+      </template>
+
+      <!-- 自由练习：原结算 -->
+      <template v-else>
+        <div class="stars">
+          <span
+            v-for="n in 3"
+            :key="n"
+            class="star anim-pop"
+            :class="{ dim: n > lastStars }"
+            :style="{ animationDelay: n * 0.2 + 's' }"
+          >
+            <Star class="k-ico star-fill" />
+          </span>
+        </div>
+        <h2>真棒！获得 {{ lastStars }} 颗星</h2>
+        <!-- 今日目标首次达成：连击火焰横幅 -->
+        <div v-if="streakJustHit" class="streak-banner anim-pop">
+          🔥 今日目标达成！已连续 {{ streak.streak }} 天
+        </div>
+        <!-- 完成玩法 → 开宝箱拿奖励（每完成一次开一次） -->
+        <ChestReward />
+        <div class="btn-row">
+          <button class="k-btn" @click="toMenu">再选一个玩法</button>
+          <button v-if="nextLesson" class="k-btn gray" @click="router.push('/lesson/' + nextLesson.id)">
+            下一课：{{ nextLesson.emoji }}{{ nextLesson.title }}
+          </button>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -432,5 +532,39 @@ const nextLesson = computed(() => {
   margin: 0;
   font-size: var(--fs-title);
   text-align: center;
+}
+
+/* ---------- 闯关模式 ---------- */
+.quest-done-badge {
+  font-size: var(--fs-emoji-xl);
+  font-weight: 800;
+  color: var(--gold);
+  background: linear-gradient(160deg, #fff3cd, #ffe9a8);
+  border: 3px solid var(--gold);
+  border-radius: var(--radius-pill);
+  padding: var(--gap-s) var(--gap-l);
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.14), 0 0 20px rgba(255, 214, 110, 0.45);
+}
+.quest-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-s);
+  width: min(300px, 80%);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+}
+.qp-bar {
+  flex: 1;
+  height: 10px;
+  background: var(--line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.qp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--yellow));
+  border-radius: var(--radius-pill);
+  transition: width 0.5s;
 }
 </style>
