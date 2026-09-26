@@ -27,6 +27,7 @@ import GamePath from "../../components/GamePath.vue";
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   margin-top: var(--gap-s);
   width: calc(100% + var(--pad-x));
   max-width: none;
