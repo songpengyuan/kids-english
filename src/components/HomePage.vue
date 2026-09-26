@@ -11,6 +11,7 @@ import { usePager } from "../composables/usePager";
 import { pickColumns } from "../utils/layout";
 import Pager from "./Pager.vue";
 import GamePath from "./GamePath.vue";
+import { buildLevels, levelDone } from "../data/pathLevels";
 import { BookOpenText, Check, Star } from "@lucide/vue";
 import ThemeToggle from "./ThemeToggle.vue";
 
@@ -114,10 +115,9 @@ const lastLessonObj = computed(() => {
   return id ? getLesson(id) : null;
 });
 
-/** 游戏模式通关数（顶部 header 进度，与 GamePath 节点口径一致） */
-const gameDoneCount = computed(() =>
-  lessons.filter((l) => progress.isCompleted(l.id, activityKeys(l))).length
-);
+/** 游戏模式通关关卡数（顶部 header 进度，与 GamePath 关卡节点口径一致：关卡 = 课程玩法） */
+const pathLevels = buildLevels();
+const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, progress.progress)).length);
 </script>
 
 <template>
@@ -142,10 +142,14 @@ const gameDoneCount = computed(() =>
               <circle cx="41.5" cy="34.5" r="2.6" fill="#ff9f9f" opacity=".65" />
             </g>
           </svg>
-          <span v-else class="hdr-title">🎮 游戏闯关</span>
+          <span v-else class="hdr-title">游戏闯关</span>
         </div>
         <div class="hdr-right">
-          <span v-if="mode === 'game'" class="hdr-prog">{{ gameDoneCount }} / {{ lessons.length }} 关通关</span>
+          <span
+            v-if="mode === 'game'"
+            class="hdr-streak"
+            :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天' : '完成一个玩法点亮今天的火焰'"
+          >🔥 {{ streak.streak }}</span>
           <div v-else class="badges">
             <div class="star-badge" title="我的星星总数">
               <Star class="k-ico star-fill" />{{ progress.totalStars }}
@@ -196,7 +200,7 @@ const gameDoneCount = computed(() =>
       <Pager :page="page" :total="total" @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
     </template>
 
-    <GamePath v-else class="gp-slot" @open="(id) => router.push(`/lesson/${id}?mode=quest`)" />
+    <GamePath v-else class="gp-slot" />
 
     <p class="foot">👨‍👩‍👧 建议家长陪同，每次 10~15 分钟</p>
   </div>
@@ -206,10 +210,17 @@ const gameDoneCount = computed(() =>
 .home {
   position: relative;
 }
-/* 顶部 header bar：一行，左右分栏（不再占两行的大标题/副标题） */
+/* 顶部 header bar：一行，左右分栏（不再占两行的大标题/副标题）；
+   吸顶：滚动路径图时标题保持置顶，背景遮挡下方内容（多邻国式） */
 .hero {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   flex: none;
   width: 100%;
+  padding: var(--gap-s) 0 var(--gap-xs);
+  background: var(--bg);
+  border-bottom: 1px solid var(--line, rgba(128,128,128,0.16));
 }
 .hdr-row {
   display: flex;
@@ -239,11 +250,16 @@ const gameDoneCount = computed(() =>
   color: var(--ink);
   white-space: nowrap;
 }
-.hdr-prog {
+/* 多邻国式连击徽章：火焰 + 天数，金色胶囊 */
+.hdr-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-weight: 800;
   font-size: var(--fs-small);
-  color: var(--ink-soft);
-  background: var(--card-bg);
+  color: #6b4e00;
+  background: linear-gradient(160deg, #ffe9a8, #ffd87a);
+  border: 2px solid var(--gold);
   border-radius: var(--radius-pill);
   padding: 4px var(--gap-m);
   box-shadow: var(--shadow-hard);
@@ -266,12 +282,21 @@ const gameDoneCount = computed(() =>
   95%, 97% { transform: scaleY(0.12); }
 }
 
-/* 游戏模式：占满剩余高度，路径图超高时可上下滚动（#app overflow hidden 下必须内部滚） */
-.gp-slot {
+/* 游戏模式：占满剩余高度，路径图超高时可上下滚动（#app overflow hidden 下必须内部滚）；
+   滚动条贴到视口最右缘：slot 宽度向右多伸一个 --pad-x，右缘直达视口边缘；
+   地图内容自带留白（节点列 0.24/0.76 外侧留白），无需右 padding。
+   注意不用负 margin（flex stretch 下负 margin 不生效），用宽度扩展。
+   .home 前缀保证特异性压过 GamePath 根样式 */
+.home .gp-slot {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   margin-top: var(--gap-s);
+  width: calc(100% + var(--pad-x));
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  padding-right: 0;
   -webkit-overflow-scrolling: touch;
 }
 
