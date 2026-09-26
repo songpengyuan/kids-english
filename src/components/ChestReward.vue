@@ -1,14 +1,19 @@
 <script setup>
 /**
- * 开宝箱奖励组件。
+ * 开宝箱奖励组件（游戏闯关通关结算，多邻国式激励）。
  *
- * - 自包含：开箱动画（CSS）、撒花（复用 effects 礼花）、奖励生成与入账（rewards store）都在内部，
- *   父组件只需挂载并监听 done 决定下一步。
- * - 状态机：closed（可点）→ shaking（摇晃+发光）→ opening（开盖+闪光+冲击波+奖励喷出+入账）→ reward（展示奖励）→ collected（已收下）。
- * - 反馈三路齐备：CSS 动画（金光/粒子/弹性面板）+ WebAudio 音效（开盖低音/金币叮/星光）+ 触感震动（开盖重震/入袋轻震）。
- * - 不引入额外动画库：canvas-confetti 已有，其余全 CSS，体积与可控性兼顾。
+ * 交互（2026-09-26 重设计）：
+ *   1. 宝箱初始关闭，下面三个图标（贝壳/贴纸/礼物）灰色待点亮；
+ *   2. 点宝箱中间区域 = 敲一下：宝箱晃动 + 音效 + 下方图标逐个高亮（共 3 下）；
+ *   3. 第 3 下宝箱打开（开盖 + 金光 + 撒花 + 奖励入账），展示奖励与「收取」按钮；
+ *   4. 点「收取」：宝石/贝壳从宝箱位置沿抛物线逐个飞向顶部贝壳徽标，
+ *      徽标接收时脉冲 + 数字逐个递增，全部收完动画停止 → done。
+ *
+ * - 抛物线轨迹为纯函数 `parabola()`（src/utils/flyCurve.ts，TDD 覆盖）。
+ * - 反馈齐备：CSS 动画 + WebAudio 音效 + 触感震动；不引入额外动画库。
  */
-import { onBeforeUnmount, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref } from "vue";
+import PathIcon from "./PathIcon.vue";
 import {
   bigCelebrate,
   sfxChestOpen,
@@ -18,149 +23,211 @@ import {
   sfxTap
 } from "../utils/effects";
 import { useRewardsStore } from "../stores/rewards";
+import { parabola } from "../utils/flyCurve";
 
 const rewards = useRewardsStore();
 
 const emit = defineEmits(["done"]);
 
-const phase = ref("closed"); // closed | shaking | opening | reward | collected
+/** 已敲击次数（0..3；3 = 开箱） */
+const taps = ref(0);
+/** 阶段：closed(<3 敲击) | open(第 3 下开箱瞬间) | reward(展示+收取) | flying(飞行中) | collected */
+const phase = ref("closed");
 const reward = ref(null); // { shells, sticker }
+/** 顶部徽标当前显示数（收取动画前 = 入账前旧值，收取时逐个 +1 到新值） */
+const shown = ref(0);
+/** 徽标脉冲重触发计数 */
+const pulseTick = ref(0);
+/** 宝箱晃动重触发计数 */
+const shakeTick = ref(0);
+
+const chestEl = ref(null);
+const badgeEl = ref(null);
+const flyEl = ref(null);
 
 let timers = [];
 function later(fn, ms) {
   timers.push(setTimeout(fn, ms));
 }
-// 组件卸载时清掉未触发的定时器：结算页在动画中途被切走时，
-// 不会再有 timer 去 setState 一个已卸载的组件（防泄漏/告警）
 onBeforeUnmount(() => {
   timers.forEach((t) => clearTimeout(t));
   timers = [];
 });
 
+/** 第 3 下：开箱 + 奖励入账（幂等，贴纸去重） */
 function openChest() {
-  if (phase.value !== "closed") return;
-  sfxTap(); // 撬动：轻点音 + 触感
-  phase.value = "shaking";
+  const oldShells = rewards.shells;
+  shown.value = oldShells; // 徽标先显示旧余额，收取时递增
+  sfxChestOpen();
+  bigCelebrate();
+  const r = rewards.rollChest();
+  rewards.grant(r);
+  reward.value = r;
+  sfxCoin();
+  if (r.sticker) sfxSticker();
   later(() => {
-    phase.value = "opening";
-    // 开盖瞬间：低重音"咚"+金光上行音阶（自带重震）+ 双侧撒花
-    sfxChestOpen();
-    bigCelebrate();
-    // 奖励生成并入账（幂等，贴纸去重）
-    const r = rewards.rollChest();
-    rewards.grant(r);
-    reward.value = r;
-    // 奖励落袋音效：贝壳"叮"，再抽到贴纸补一段星光
-    sfxCoin();
-    if (r.sticker) sfxSticker();
-    later(() => {
-      phase.value = "reward";
-    }, 1300);
-  }, 700);
+    phase.value = "reward";
+  }, 1000);
 }
 
-/**
- * 跳过开箱动画（奖励照常入账）：
- * - shaking 阶段点跳过 → 直接完成开盖入账 → 展示奖励
- * - opening 阶段点跳过 → 直接展示奖励（已在 opening 时入账）
- * 给高频完成玩法、已经看过 N 次动画的孩子一条快通道，
- * 不再被 2 秒动画强制牵着走。
- */
+function tapChest() {
+  if (phase.value === "flying" || phase.value === "collected") return;
+  if (taps.value >= 3) return; // 已开箱，点宝箱不再响应
+  taps.value++;
+  sfxTap(); // 每次敲击：轻点音 + 触感
+  shakeTick.value++; // 重触发晃动动画
+  if (taps.value === 3) {
+    phase.value = "open";
+    openChest();
+  }
+}
+
+/** 跳过开箱动画（奖励照常入账）：直接完成三连击 → 展示奖励 */
 function skip() {
+  if (phase.value !== "closed") return;
   timers.forEach((t) => clearTimeout(t));
   timers = [];
-  if (phase.value === "shaking") {
-    phase.value = "opening";
-    sfxChestOpen();
-    bigCelebrate();
-    const r = rewards.rollChest();
-    rewards.grant(r);
-    reward.value = r;
-    sfxCoin();
-    if (r.sticker) sfxSticker();
-  }
-  if (phase.value === "opening" || phase.value === "shaking") {
-    phase.value = "reward";
-  }
+  taps.value = 3;
+  phase.value = "open";
+  openChest();
 }
 
-function collect() {
-  sfxCollect(); // 收尾双响
+/** 逐个抛物线飞入顶部贝壳徽标 */
+async function collect() {
+  if (phase.value !== "reward" || !reward.value) return;
+  phase.value = "flying";
+  sfxCollect();
+  const src = chestEl.value?.getBoundingClientRect();
+  const dst = badgeEl.value?.getBoundingClientRect();
+  if (!src || !dst) {
+    phase.value = "collected";
+    emit("done");
+    return;
+  }
+  const from = { x: src.left + src.width / 2, y: src.top + src.height * 0.45 };
+  const to = { x: dst.left + dst.width / 2, y: dst.top + dst.height / 2 };
+  const apex = Math.max(140, Math.abs(from.y - to.y) * 0.55); // 上抛弧度随距离增大
+
+  const n = Math.min(reward.value.shells, 5); // 贝壳逐个飞入（最多 5 个节奏感）
+  const step = Math.ceil(reward.value.shells / n); // 每次递增步长，最后一次对齐余额
+  await nextTick();
+  for (let i = 0; i < n; i++) {
+    if (i > 0) await sleep(240); // 逐个小间隔
+    await flyOne(from, to, apex);
+    shown.value = Math.min(shown.value + step, rewards.shells); // 数量随之增加
+    sfxCoin(); // 落地：硬币"叮"
+    pulseTick.value++; // 徽标接收脉冲
+  }
   phase.value = "collected";
   emit("done");
 }
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** 单个宝石/贝壳沿抛物线飞行（rAF，丝滑 680ms） */
+function flyOne(from, to, apex) {
+  return new Promise((resolve) => {
+    const el = flyEl.value;
+    if (!el) return resolve();
+    el.style.opacity = "1";
+    el.style.left = from.x + "px";
+    el.style.top = from.y + "px";
+    const t0 = performance.now();
+    const dur = 680;
+    function step(now) {
+      const t = Math.min((now - t0) / dur, 1);
+      const p = parabola(from, to, apex, t);
+      el.style.left = p.x + "px";
+      el.style.top = p.y + "px";
+      if (t < 1) requestAnimationFrame(step);
+      else {
+        el.style.opacity = "0";
+        resolve();
+      }
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+const opened = computed(() => taps.value >= 3);
+const cap = computed(() => {
+  if (phase.value === "collected") return "";
+  if (taps.value === 0) return "完成啦！点三下开宝箱";
+  if (taps.value < 3) return `再点 ${3 - taps.value} 下，宝箱就开啦！`;
+  if (phase.value === "flying") return "宝石飞向宝藏罐……";
+  return "哇——";
+});
 </script>
 
 <template>
-  <div class="chest-wrap" :class="'ph-' + phase">
-    <!-- 跳过动画：动画阶段的右上角快捷按钮，奖励照常入账 -->
-    <button v-if="phase === 'shaking' || phase === 'opening'" class="skip-btn" @click="skip">
-      ⏭ 跳过
+  <div class="chest-wrap">
+    <!-- 顶部贝壳徽标：收取动画的目标（fixed 右上，接收时脉冲 + 数字递增） -->
+    <div ref="badgeEl" class="shell-badge" :class="{ pulsing: phase === 'flying' }" :key="'pulse-' + pulseTick">
+      <PathIcon name="shell" class="b-ico" />
+      <span class="b-num">{{ shown }}</span>
+    </div>
+
+    <!-- 跳过动画（三连击前）：奖励照常入账 -->
+    <button v-if="phase === 'closed' && taps === 0" class="skip-btn" @click="skip">
+      跳过
     </button>
-    <!-- 开盖瞬间：全屏金光一闪（聚光到宝箱） -->
-    <div v-if="phase === 'opening'" class="flash"></div>
-    <!-- 全屏暖光晕：把注意力聚到宝箱上 -->
-    <div v-if="phase === 'opening' || phase === 'reward'" class="glow"></div>
+
+    <!-- 开盖瞬间：全屏金光一闪 -->
+    <div v-if="phase === 'open' || phase === 'reward' || phase === 'flying'" class="flash"></div>
+    <div v-if="phase === 'open' || phase === 'reward'" class="glow"></div>
 
     <div
+      ref="chestEl"
       class="chest"
       data-haptic="true"
-      @click="openChest"
-      :aria-label="phase === 'closed' ? '开宝箱' : '宝箱'"
+      @click="tapChest"
+      :class="{ opened: opened }"
+      :key="'shake-' + shakeTick"
+      :aria-label="taps < 3 ? '敲宝箱' : '宝箱'"
     >
-      <!-- 摇晃阶段：宝箱底部金色光晕脉动（"在发光"的视觉） -->
-      <div v-if="phase === 'shaking'" class="chest-glow"></div>
-
-      <!-- 金光柱：开盖瞬间从箱口射出 -->
-      <div v-if="phase === 'opening' || phase === 'reward'" class="light">
+      <div v-if="phase === 'open' || phase === 'reward' || phase === 'flying'" class="light">
         <span class="beam"></span>
         <span class="beam b2"></span>
         <span class="beam b3"></span>
       </div>
-      <!-- 迸出的星星粒子 -->
-      <span v-for="n in 8" :key="'s' + n" class="spark" :style="{ '--d': n * 0.07 + 's', '--x': (n % 4) * 26 - 39 + 'px' }"></span>
-      <!-- 奖励喷出：贝壳/金星从箱口飞向四周 -->
-      <span
-        v-for="n in 8"
-        :key="'p' + n"
-        class="pay"
-        :style="{
-          '--dx': ((n % 5) - 2) * 30 + 'px',
-          '--dy': -(44 + (n % 3) * 28) + 'px',
-          '--d': (n % 4) * 0.06 + 's',
-          '--r': (n % 2 ? 1 : -1) * (50 + (n % 3) * 30) + 'deg'
-        }"
-      >{{ n % 3 === 0 ? "🐚" : "✦" }}</span>
-
-      <!-- 冲击波：开盖瞬间从箱口扩散两圈 -->
-      <span v-if="phase === 'opening'" class="shock"></span>
-      <span v-if="phase === 'opening'" class="shock s2"></span>
-
-      <div class="lid">
-        <div class="lid-knob"></div>
-      </div>
-      <div class="body">
-        <div class="lock"></div>
-      </div>
+      <span v-if="opened" v-for="n in 8" :key="'s' + n" class="spark" :style="{ '--d': n * 0.07 + 's', '--x': (n % 4) * 26 - 39 + 'px' }"></span>
+      <div class="lid"><div class="lid-knob"></div></div>
+      <div class="body"><div class="lock"></div></div>
       <div class="keyhole"></div>
     </div>
 
-    <p v-if="phase === 'closed'" class="cap">完成啦！点一下开宝箱</p>
-    <p v-else-if="phase === 'shaking'" class="cap">宝箱在发光……</p>
-    <p v-else-if="phase === 'opening'" class="cap">哇——</p>
+    <!-- 三个点击 icon：敲一次高亮一个 -->
+    <div class="tap-hints">
+      <span
+        v-for="i in 3"
+        :key="i"
+        class="hint"
+        :class="{ on: taps >= i }"
+        :style="{ animationDelay: (i - 1) * 0.08 + 's' }"
+      >
+        <PathIcon :name="['shell', 'sticker', 'gift'][i - 1]" class="h-ico" />
+      </span>
+    </div>
 
-    <!-- 奖励展示 -->
+    <p v-if="cap" class="cap">{{ cap }}</p>
+
+    <!-- 奖励展示 + 收取 -->
     <div v-if="phase === 'reward' && reward" class="reward">
       <p class="got">获得</p>
       <div class="rewards">
-        <span class="shells anim-pop">🐚 ×{{ reward.shells }}</span>
+        <span class="shells anim-pop"><PathIcon name="shell" class="r-ico" /> ×{{ reward.shells }}</span>
         <span v-if="reward.sticker" class="stick anim-pop" :style="{ animationDelay: '0.12s' }">{{ reward.sticker }} 贴纸</span>
       </div>
-      <button class="k-btn take" @click="collect">收下，继续玩！</button>
+      <button class="k-btn take" @click="collect">收取 <PathIcon name="shell" class="r-ico" /></button>
     </div>
+    <p v-if="phase === 'collected'" class="cap collected">
+      <PathIcon name="gift" class="gift-ico" /> 已收进宝藏罐！
+    </p>
 
-    <!-- 已收下 -->
-    <p v-if="phase === 'collected'" class="cap collected">🎁 已收进宝藏罐！</p>
+    <!-- 飞行中的宝石/贝壳（fixed，跟随抛物线轨迹） -->
+    <span v-if="phase === 'flying'" ref="flyEl" class="fly"><PathIcon name="shell" class="fly-ico" /></span>
   </div>
 </template>
 
@@ -174,7 +241,40 @@ function collect() {
   padding: var(--gap-s);
 }
 
-/* 跳过按钮：置顶于闪光/光晕之上，动画阶段可见 */
+/* ---------- 顶部贝壳徽标（收取目标） ---------- */
+.shell-badge {
+  position: fixed;
+  top: 72px;
+  right: 14px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--card-bg);
+  border: 2px solid var(--c-orange);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-hard);
+  transform-origin: center;
+}
+.shell-badge .b-ico {
+  width: 16px;
+  height: 16px;
+  color: var(--c-orange);
+}
+.shell-badge.pulsing {
+  animation: badge-pulse 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes badge-pulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+/* 跳过按钮 */
 .skip-btn {
   position: absolute;
   top: 6px;
@@ -189,11 +289,9 @@ function collect() {
   box-shadow: var(--shadow-hard);
   transition: transform 0.1s;
 }
-.skip-btn:active {
-  transform: translateY(2px);
-}
+.skip-btn:active { transform: translateY(2px); }
 
-/* ---------- 开盖瞬间：全屏金光一闪 ---------- */
+/* ---------- 开盖瞬间全屏效果 ---------- */
 .flash {
   position: fixed;
   inset: 0;
@@ -207,8 +305,6 @@ function collect() {
   15% { opacity: 1; }
   100% { opacity: 0; }
 }
-
-/* 全屏暖光晕 */
 .glow {
   position: fixed;
   inset: 0;
@@ -230,17 +326,18 @@ function collect() {
   cursor: pointer;
   touch-action: manipulation;
   z-index: 3;
+  animation: chest-bump 0.42s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
-.ph-closed .chest:hover { transform: translateY(-4px); }
-.ph-shaking .chest { animation: chest-shake 0.55s ease-in-out; }
-.ph-opening .chest, .ph-reward .chest { animation: chest-bounce 0.5s ease-out; }
-
-@keyframes chest-shake {
+/* 未开箱：每次敲击晃动 */
+@keyframes chest-bump {
   0%, 100% { transform: rotate(0); }
-  20% { transform: rotate(-7deg) translateY(-3px); }
-  40% { transform: rotate(7deg) translateY(-6px); }
-  60% { transform: rotate(-6deg) translateY(-4px); }
-  80% { transform: rotate(5deg) translateY(-2px); }
+  25% { transform: rotate(-7deg) translateY(-4px); }
+  55% { transform: rotate(6deg) translateY(-6px); }
+  80% { transform: rotate(-3deg) translateY(-2px); }
+}
+/* 开箱后：宝箱弹跳一次 */
+.chest.opened {
+  animation: chest-bounce 0.5s ease-out;
 }
 @keyframes chest-bounce {
   0% { transform: scale(1); }
@@ -249,26 +346,6 @@ function collect() {
   100% { transform: scale(1); }
 }
 
-/* 摇晃阶段：宝箱底部金色光晕脉动 */
-.chest-glow {
-  position: absolute;
-  left: 50%;
-  bottom: 6%;
-  transform: translateX(-50%);
-  width: 140%;
-  height: 45%;
-  background: radial-gradient(ellipse at center, rgba(255, 214, 110, 0.75), transparent 70%);
-  filter: blur(6px);
-  z-index: 0;
-  pointer-events: none;
-  animation: glow-pulse 0.6s ease-in-out infinite alternate;
-}
-@keyframes glow-pulse {
-  from { transform: translateX(-50%) scale(0.85); opacity: 0.55; }
-  to { transform: translateX(-50%) scale(1.15); opacity: 0.95; }
-}
-
-/* 盖子：开盖时向上掀 + 旋转 */
 .lid {
   position: absolute;
   top: 0;
@@ -293,12 +370,10 @@ function collect() {
   background: linear-gradient(180deg, #ffd87a, #e0a83e);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
 }
-.ph-opening .lid, .ph-reward .lid {
+.chest.opened .lid {
   transform: translateY(-46%) rotate(-24deg);
   opacity: 0.92;
 }
-
-/* 箱体 */
 .body {
   position: absolute;
   bottom: 0;
@@ -309,7 +384,6 @@ function collect() {
   background: linear-gradient(180deg, #c98a3d, #8b5a2b);
   box-shadow: inset 0 4px 0 rgba(255, 255, 255, 0.3), 0 6px 0 rgba(0, 0, 0, 0.18);
 }
-/* 金属锁扣 */
 .lock {
   position: absolute;
   top: -14%;
@@ -322,7 +396,6 @@ function collect() {
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
   z-index: 4;
 }
-/* 锁孔（开箱后出现小光点） */
 .keyhole {
   position: absolute;
   top: 16%;
@@ -335,12 +408,12 @@ function collect() {
   z-index: 5;
   transition: background 0.3s;
 }
-.ph-opening .keyhole, .ph-reward .keyhole {
+.chest.opened .keyhole {
   background: rgba(255, 235, 160, 0.95);
   box-shadow: 0 0 12px 4px rgba(255, 220, 120, 0.8);
 }
 
-/* ---------- 金光柱 ---------- */
+/* 金光柱 */
 .light { position: absolute; inset: -8% -20% auto; z-index: 1; pointer-events: none; }
 .beam {
   position: absolute;
@@ -362,7 +435,7 @@ function collect() {
   to { opacity: 0; transform: translateX(-50%) scaleY(1.25); }
 }
 
-/* ---------- 星星粒子 ---------- */
+/* 星星粒子 */
 .spark {
   position: absolute;
   bottom: 38%;
@@ -375,8 +448,6 @@ function collect() {
   opacity: 0;
   z-index: 2;
   pointer-events: none;
-}
-.ph-opening .spark, .ph-reward .spark {
   animation: spark-fly 1.1s ease-out var(--d) forwards;
 }
 @keyframes spark-fly {
@@ -386,46 +457,39 @@ function collect() {
   100% { transform: translate(calc(var(--x) * 0.6), -190px) scale(0.5); opacity: 0; }
 }
 
-/* ---------- 奖励喷出：贝壳/金星 ---------- */
-.pay {
-  position: absolute;
-  bottom: 40%;
-  left: 50%;
-  font-size: clamp(14px, 2.6vh, 20px);
-  line-height: 1;
-  opacity: 0;
-  z-index: 2;
-  pointer-events: none;
+/* ---------- 三个点击 icon ---------- */
+.tap-hints {
+  display: flex;
+  gap: var(--gap-m);
+  margin-top: 2px;
 }
-.ph-opening .pay, .ph-reward .pay {
-  animation: pay-fly 1.15s cubic-bezier(0.2, 0.7, 0.35, 1) var(--d) forwards;
-}
-@keyframes pay-fly {
-  0% { opacity: 0; transform: translate(0, 0) rotate(0) scale(0.3); }
-  12% { opacity: 1; transform: translate(0, -14px) rotate(var(--r)) scale(1); }
-  70% { transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1); opacity: 1; }
-  100% { transform: translate(calc(var(--dx) * 0.7), calc(var(--dy) * 0.6)) rotate(calc(var(--r) * 1.4)) scale(0.4); opacity: 0; }
-}
-
-/* ---------- 冲击波：开盖扩散圆环 ---------- */
-.shock {
-  position: absolute;
-  left: 50%;
-  bottom: 40%;
+.hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 46px;
   height: 46px;
-  transform: translate(-50%, -50%);
-  border: 5px solid rgba(255, 224, 130, 0.95);
   border-radius: 50%;
-  opacity: 0;
-  z-index: 1;
-  pointer-events: none;
-  animation: shock-ring 1s ease-out forwards;
+  background: var(--card-bg);
+  border: 3px solid var(--line);
+  color: var(--ink-faint);
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: hint-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
 }
-.shock.s2 { animation-delay: 0.16s; border-color: rgba(255, 200, 80, 0.7); }
-@keyframes shock-ring {
-  0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.35); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(3.4); }
+.hint .h-ico {
+  width: 24px;
+  height: 24px;
+}
+.hint.on {
+  border-color: var(--c-orange);
+  background: linear-gradient(180deg, #fff3d6, #ffe3a8);
+  color: var(--c-orange);
+  transform: translateY(-3px) scale(1.08);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12), 0 0 14px 2px rgba(255, 200, 90, 0.4);
+}
+@keyframes hint-pop {
+  from { transform: scale(0.3); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 /* ---------- 文案与奖励 ---------- */
@@ -447,7 +511,6 @@ function collect() {
   padding: var(--gap-m);
   min-width: min(78vw, 300px);
   z-index: 12;
-  /* 弹入：旋转回正 + 弹性过冲；随后金色光晕温柔脉冲 */
   animation:
     reward-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
     reward-glow 1.8s ease-in-out 0.6s infinite;
@@ -493,4 +556,33 @@ function collect() {
   font-weight: 800;
   animation: pop-in 0.3s ease-out;
 }
+
+/* ---------- 飞行中的宝石/贝壳 ---------- */
+.fly {
+  position: fixed;
+  z-index: 45;
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  margin-top: -13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: opacity 0.12s;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.25));
+}
+.fly-ico {
+  width: 22px;
+  height: 22px;
+  color: var(--c-orange);
+}
+.r-ico, .gift-ico {
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.2em;
+}
+.shells .r-ico { color: var(--on-tone); }
+.take .r-ico { color: var(--on-tone); }
+.collected .gift-ico { color: var(--green-dark); }
 </style>
