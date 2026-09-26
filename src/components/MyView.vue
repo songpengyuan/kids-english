@@ -13,6 +13,7 @@ import { useStreakStore } from "../stores/streak";
 import { useRouter } from "vue-router";
 import ThemeToggle from "./ThemeToggle.vue";
 import { ChevronRight, Flame, Star } from "@lucide/vue";
+import PathIcon from "./PathIcon.vue";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();
@@ -59,7 +60,7 @@ const todayWords = computed(() => {
 <template>
   <div class="me view">
     <div class="topbar">
-      <div class="title">👤 我的</div>
+      <div class="title"><PathIcon name="me" /> 我的</div>
       <ThemeToggle />
     </div>
 
@@ -87,19 +88,19 @@ const todayWords = computed(() => {
           <span class="k">连击天数</span>
         </div>
         <div class="cell">
-          <span class="v">🐚 {{ rewards.shells }}</span>
+          <span class="v"><PathIcon name="shell" class="st-ico" />{{ rewards.shells }}</span>
           <span class="k">贝壳</span>
         </div>
         <div class="cell">
-          <span class="v">🎨 {{ stickerDone }}</span>
+          <span class="v"><PathIcon name="sticker" class="st-ico" />{{ stickerDone }}</span>
           <span class="k">贴纸图鉴</span>
         </div>
         <div class="cell">
-          <span class="v">⏱ {{ fmtDuration(progress.todayStats.durationSec) }}</span>
+          <span class="v"><PathIcon name="clock" class="st-ico" />{{ fmtDuration(progress.todayStats.durationSec) }}</span>
           <span class="k">今日时长</span>
         </div>
         <div class="cell">
-          <span class="v">🎯 {{ progress.todayStats.activities }} 次</span>
+          <span class="v"><PathIcon name="activity" class="st-ico" />{{ progress.todayStats.activities }} 次</span>
           <span class="k">今日玩法</span>
         </div>
       </section>
@@ -107,19 +108,19 @@ const todayWords = computed(() => {
       <!-- 功能入口 -->
       <section class="entries anim-fade-up">
         <button class="entry" @click="router.push('/treasure')">
-          <span class="en-ico">🎁</span>
+          <span class="en-ico"><PathIcon name="gift" /></span>
           <span class="en-cap">宝藏罐</span>
           <span class="en-desc">贝壳 · 贴纸图鉴</span>
           <ChevronRight class="k-ico en-arrow" />
         </button>
         <button class="entry" @click="router.push('/report')">
-          <span class="en-ico">📊</span>
+          <span class="en-ico"><PathIcon name="chart" /></span>
           <span class="en-cap">家长报告</span>
           <span class="en-desc">今日学情 · 错词清单</span>
           <ChevronRight class="k-ico en-arrow" />
         </button>
         <button class="entry" @click="router.push('/review')">
-          <span class="en-ico">📚</span>
+          <span class="en-ico"><PathIcon name="review" /></span>
           <span class="en-cap">错词复习</span>
           <span class="en-desc" v-if="weakCount">有 {{ weakCount }} 个词要复习</span>
           <span class="en-desc" v-else>都掌握得很好！</span>
@@ -170,6 +171,16 @@ const todayWords = computed(() => {
   align-items: center;
   gap: var(--gap-m);
   border-left: 8px solid var(--yellow);
+}
+.st-ico {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.12em;
+  margin-right: 4px;
+}
+.en-ico {
+  display: inline-flex;
+  font-size: 22px;
 }
 .pf-emoji {
   font-size: var(--fs-emoji-xl);
