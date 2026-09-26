@@ -1,10 +1,16 @@
+<script lang="ts">
+/** 模块级滚动记忆：KeepAlive 缓存下 GamePath 子树可能被重建，
+ *  script setup 内局部变量每次挂载重置，故存模块作用域，跨实例/跨 KeepAlive 保留。 */
+export let savedGameTop = 0;
+</script>
+
 <script setup lang="ts">
 /**
  * 游戏模式：多邻国式关卡路径图（Canvas 版）。
  *
  * - 每个课程展开为"多个关卡"（玩法序列 = 关卡序列），地图直接展示所有关卡：
- *   课程单元卡（渐变横幅：emoji + 课名 + 完成进度 x/y + 进度条）
- *   + 关卡节点（玩法 emoji + 玩法名 + 状态角标 + 星徽章）。
+ *   课名胶囊（小圆角渐变：课 icon + 课名 + 完成进度）+ 关卡节点（矢量 icon + 玩法名 + 状态角标 + 星徽章）。
+ * - 无连线：关卡节点按全局序号左右交替（0.24/0.76 列）蜿蜒排列，每课一段。
  * - 全局线性解锁：第一关总是可玩，前一关完成解锁下一关（跨课连续）。
  *   状态：done（金渐变+✓）/ active（当前，光圈脉动）/ locked（灰+🔒）。
  * - 点关卡节点 → 直接开玩该玩法（/lesson/:id?mode=quest&step=<玩法>）。
@@ -26,6 +32,7 @@ import {
 import { iconEl, ICON_TEXT } from "../data/pathIcons";
 import { useProgressStore } from "../stores/progress";
 import { hapticTap, hapticWrong } from "../utils/haptics";
+import { buildPathGeometry, hitTestPath, R, ROW_H, BAR_H, BAR_GAP, UNIT_BREAK, TOP, BOTTOM } from "../utils/pathGeometry";
 
 const router = useRouter();
 const progress = useProgressStore();
@@ -36,18 +43,13 @@ const states = computed(() => computeStates(levels, progress.progress));
 /** 当前关卡（第一个 active）——键盘 Enter 直达 */
 const activeLevel = computed(() => currentLevel(levels, states.value));
 
-/* ---------- 画布几何 ---------- */
-const R = 28; // 关卡节点半径
-const ROW_H = 84; // 节点行距（圆 + 玩法名小字）
-const UNIT_H = 104; // 单元卡顶 → 首个节点圆心：圆顶(卡顶+76) 落在卡底(卡顶+64) 下方 12px，避免节点圆压到卡上
-const TOP = 40;
-const BOTTOM = 36;
+/* ---------- 画布几何（多邻国式：每课渐变横幅 + 蛇形蜿蜒圆节点 + 细路径线） ---------- */
 
 interface GeoItem {
   type: "unit" | "level";
   x: number;
   y: number;
-  lessonId?: string;
+  lessonId: string;
   level?: PathLevel;
   state?: LevelState;
   stars?: number;
@@ -55,34 +57,28 @@ interface GeoItem {
   total?: number;
 }
 
-/** 整图几何（单元卡 + 关卡节点坐标），宽随容器自适应 */
+/** 整图几何（课名胶囊 + 关卡节点坐标），宽随容器自适应 */
 const geo = computed<GeoItem[]>(() => {
-  const out: GeoItem[] = [];
-  let y = TOP;
-  for (const l of lessons) {
-    out.push({
-      type: "unit",
-      x: 0,
-      y: y + 32, // 单元卡中心
-      lessonId: l.id,
-      done: lessonDoneCount(l.id, progress.progress),
-      total: levels.filter((lv) => lv.lessonId === l.id).length,
-    });
-    y += UNIT_H;
-    for (const lv of levels) {
-      if (lv.lessonId !== l.id) continue;
-      out.push({
-        type: "level",
+  // 布局坐标来自纯函数 pathGeometry（TDD 基线），这里只补充展示字段
+  const geom = buildPathGeometry(lessons, levels);
+  return geom.map((g) => {
+    if (g.type === "unit") {
+      return {
+        ...g,
         x: 0,
-        y,
-        level: lv,
-        state: states.value[lv.id],
-        stars: (progress.progress[lv.lessonId] as Record<string, number> | undefined)?.[lv.actKey] || 0,
-      });
-      y += ROW_H;
+        done: lessonDoneCount(g.lessonId, progress.progress),
+        total: levels.filter((lv) => lv.lessonId === g.lessonId).length,
+      } as GeoItem;
     }
-  }
-  return out;
+    const lv = levels.find((l) => l.lessonId === g.lessonId && l.actKey === g.activityKey);
+    return {
+      ...g,
+      x: 0,
+      level: lv,
+      state: lv ? states.value[lv.id] : undefined,
+      stars: (progress.progress[g.lessonId] as Record<string, number> | undefined)?.[g.activityKey!] || 0,
+    } as GeoItem;
+  });
 });
 
 const pathH = computed(() => {
@@ -105,6 +101,19 @@ const gold = () => css("--gold", "#f0b429");
 const yellow = () => css("--yellow", "#ffd87a");
 const toneColor = (tone: string) => css(`--c-${tone}`, "#1cb0f6");
 
+/* ---------- 滚动位置记忆（底部 tab 切换不丢位置） ----------
+ * KeepAlive 缓存 HomePage 时 v-else 分支的 GamePath 会被卸载（unmount 时内容已清空），
+ * 不能依赖 deactivated/unmount 时机保存；改为 scroll 事件实时记录到模块级变量，挂载时恢复。 */
+const rootEl = ref<HTMLDivElement | null>(null);
+function onScroll() {
+  if (rootEl.value) savedGameTop = rootEl.value.scrollTop;
+}
+function restoreTop() {
+  requestAnimationFrame(() => {
+    if (rootEl.value) rootEl.value.scrollTop = savedGameTop;
+  });
+}
+
 /* ---------- 解锁闪光 ---------- */
 const unlockT0 = ref<Record<string, number>>({});
 let snapshotBefore: Record<string, LevelState> = {};
@@ -119,14 +128,23 @@ onDeactivated(() => {
   cancelAnimationFrame(raf);
   raf = 0;
 });
+onBeforeUnmount(() => {
+  rootEl.value?.removeEventListener("scroll", onScroll);
+  cancelAnimationFrame(raf);
+});
 onActivated(() => {
   levels.forEach((lv) => {
     if (snapshotBefore[lv.id] === "locked" && states.value[lv.id] !== "locked") triggerUnlock(lv.id);
   });
+  restoreTop();
   startLoop();
 });
-onMounted(startLoop);
-onBeforeUnmount(() => cancelAnimationFrame(raf));
+onMounted(() => {
+  rootEl.value?.addEventListener("scroll", onScroll, { passive: true });
+  startLoop();
+  restoreTop();
+});
+
 
 function startLoop() {
   if (raf) return;
@@ -166,7 +184,7 @@ function draw() {
   const items = layoutItems(w);
   const now = performance.now();
 
-  // 1) 关卡节点间的连线（跨课连续）
+  // 1) 细路径线（多邻国式）：解锁段淡金实线、锁定段浅灰虚线，细且不抢节点
   const lvItems = items.filter((it) => it.type === "level") as GeoItem[];
   for (let i = 0; i < lvItems.length - 1; i++) {
     const a = lvItems[i];
@@ -177,79 +195,79 @@ function draw() {
     ctx.quadraticCurveTo((a.x + b.x) / 2, mid, b.x, b.y - R);
     const on = a.state !== "locked" && b.state !== "locked";
     if (on) {
-      ctx.strokeStyle = gold();
-      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = "rgba(240,180,41,0.45)";
+      ctx.lineWidth = 2;
       ctx.setLineDash([]);
     } else {
-      ctx.strokeStyle = "rgba(120,120,120,0.4)";
-      ctx.lineWidth = 2.5;
-      ctx.setLineDash([7, 6]);
+      ctx.strokeStyle = "rgba(168,162,150,0.55)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 6]);
     }
     ctx.stroke();
     ctx.setLineDash([]);
   }
 
-  // 2) 单元卡 + 关卡节点
+  // 2) 课程横幅 + 关卡节点
   for (const it of items) {
     if (it.type === "unit") drawUnit(ctx, it, w);
     else drawLevel(ctx, it, now);
   }
 }
 
+/** 课程横幅（多邻国式）：全宽渐变栏 = 课 icon + 课名 + 完成进度 x/y + 底部细进度条 */
 function drawUnit(ctx: CanvasRenderingContext2D, it: GeoItem, w: number) {
-  const done = it.done || 0;
-  const total = it.total || 1;
-  const cardW = Math.min(360, w - 40);
-  const h = 64;
-  const x = it.x - cardW / 2;
-  const y = it.y - h / 2;
   const lesson = lessons.find((l) => l.id === it.lessonId);
   if (!lesson) return;
+  const done = it.done || 0;
+  const total = it.total || 1;
+  const h = BAR_H;
+  const y = it.y - h / 2;
 
-  // 渐变横幅（课程色调）
-  const g = ctx.createLinearGradient(x, y, x, y + h);
+  // 全宽渐变横幅（课程色调）
+  const g = ctx.createLinearGradient(0, y, 0, y + h);
   const c = toneColor(lesson.tone);
   g.addColorStop(0, c);
-  g.addColorStop(1, shade(c, -22));
+  g.addColorStop(1, shade(c, -24));
   ctx.beginPath();
-  roundRect(ctx, x, y, cardW, h, 16);
+  roundRect(ctx, 0, y, w, h, 14);
   ctx.fillStyle = g;
   ctx.fill();
+  // 底部微光条
   ctx.beginPath();
-  roundRect(ctx, x, y, cardW, h, 16);
+  roundRect(ctx, 0, y + h - 8, w, 8, 0);
   ctx.fillStyle = "rgba(0,0,0,0.10)";
   ctx.fill();
 
-  // 课程 icon（矢量，替代 emoji）+ 课名（左）
+  // 左：课 icon（白）+ 课名
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  const uic = iconEl(lesson.id);
+  const uic = iconEl(lesson.id, "#ffffff");
   if (uic && uic.complete && uic.naturalWidth > 0) {
-    ctx.drawImage(uic, x + 16, y + 8, 26, 26);
+    ctx.drawImage(uic, 16, y + (h - 30) / 2, 30, 30);
   } else if (ICON_TEXT[lesson.id]) {
-    ctx.font = "800 15px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif";
+    ctx.font = "800 18px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif";
     ctx.fillStyle = "#fff";
-    ctx.fillText(ICON_TEXT[lesson.id], x + 16, y + 22);
+    ctx.fillText(ICON_TEXT[lesson.id], 16, y + h / 2 + 1);
   }
-  ctx.font = "800 15px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif";
+  ctx.font = "800 18px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif";
   ctx.fillStyle = "#fff";
-  ctx.fillText(lesson.titleZh, x + 56, y + 20);
+  ctx.fillText(lesson.titleZh, 58, y + h / 2 + 1);
 
-  // 完成度 x/y（右上）
-  ctx.font = "800 12px 'Baloo 2','PingFang SC',sans-serif";
+  // 右：完成进度 x/y
+  ctx.font = "800 14px 'Baloo 2','PingFang SC',sans-serif";
   ctx.textAlign = "right";
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.fillText(`${done}/${total}`, x + cardW - 16, y + 20);
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.fillText(`${done}/${total}`, w - 16, y + h / 2 + 1);
 
-  // 进度条（卡底）
-  const barW = cardW - 32;
+  // 底部细进度条
+  const barY = y + h - 12;
   ctx.beginPath();
-  roundRect(ctx, x + 16, y + h - 14, barW, 6, 3);
+  roundRect(ctx, 16, barY, w - 32, 5, 2.5);
   ctx.fillStyle = "rgba(255,255,255,0.35)";
   ctx.fill();
   if (total > 0) {
     ctx.beginPath();
-    roundRect(ctx, x + 16, y + h - 14, barW * Math.min(1, done / total), 6, 3);
+    roundRect(ctx, 16, barY, (w - 32) * Math.min(1, done / total), 5, 2.5);
     ctx.fillStyle = "#fff";
     ctx.fill();
   }
@@ -283,47 +301,43 @@ function drawLevel(ctx: CanvasRenderingContext2D, it: GeoItem, now: number) {
     ctx.stroke();
   }
 
-  // 节点圆（渐变）
-  ctx.beginPath();
-  ctx.arc(x, y, R, 0, Math.PI * 2);
-  let g: CanvasGradient;
-  if (state === "locked") {
-    g = ctx.createLinearGradient(x, y - R, x, y + R);
-    g.addColorStop(0, "#e9e5db");
-    g.addColorStop(1, "#d4cfc3");
-  } else if (state === "done") {
-    g = ctx.createLinearGradient(x, y - R, x, y + R);
-    g.addColorStop(0, yellow());
-    g.addColorStop(1, gold());
-  } else {
-    const c = toneColor(lv.tone);
-    g = ctx.createLinearGradient(x, y - R, x, y + R);
-    g.addColorStop(0, c);
-    g.addColorStop(1, shade(c, -18));
-  }
-  ctx.fillStyle = g;
-  ctx.fill();
+  // 多邻国式节点：白底圆 + 浅投影 + 状态彩色描边 + 彩色 icon
   ctx.beginPath();
   ctx.arc(x, y + 3, R, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(0,0,0,0.14)";
+  ctx.fillStyle = "rgba(0,0,0,0.12)";
   ctx.fill();
   ctx.beginPath();
   ctx.arc(x, y, R, 0, Math.PI * 2);
-  ctx.fillStyle = g;
+  ctx.fillStyle = "#ffffff";
   ctx.fill();
 
-  // 锁定整体压灰
-  if (state === "locked") ctx.globalAlpha = 0.5;
+  let ring = "#d6d2c7"; // 锁定：浅灰描边
+  let iconColor = "#b9b2a6";
+  if (state === "done") {
+    ring = gold();
+    iconColor = "#c8860b";
+  } else if (state === "active") {
+    ring = toneColor(lv.tone);
+    iconColor = shade(toneColor(lv.tone), -30);
+  }
+  ctx.beginPath();
+  ctx.arc(x, y, R, 0, Math.PI * 2);
+  ctx.strokeStyle = ring;
+  ctx.lineWidth = state === "active" ? 4 : state === "done" ? 3.5 : 2.5;
+  ctx.stroke();
 
-  // 玩法 icon 居中（矢量，替代 emoji）
+  // 锁定压灰
+  if (state === "locked") ctx.globalAlpha = 0.85;
+
+  // 玩法 icon 居中（彩色描边，与状态一致）
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  const ic = iconEl(lv.actKey);
+  const ic = iconEl(lv.actKey, iconColor);
   if (ic && ic.complete && ic.naturalWidth > 0) {
     ctx.drawImage(ic, x - 13, y - 13, 26, 26);
   } else if (ICON_TEXT[lv.actKey]) {
     ctx.font = "800 13px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif";
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = iconColor;
     ctx.fillText(ICON_TEXT[lv.actKey], x, y);
   }
   ctx.globalAlpha = 1;
@@ -402,17 +416,27 @@ function onCanvasClick(e: MouseEvent) {
   const px = e.clientX - rect.left;
   const py = e.clientY - rect.top;
   const w = cv.clientWidth || rect.width;
-  for (const it of layoutItems(w)) {
-    if (it.type !== "level") continue;
-    if (Math.hypot(px - it.x, py - it.y) <= R + 10) {
-      if (it.state === "locked") {
-        hapticWrong();
-      } else {
-        hapticTap();
-        router.push(`/lesson/${it.level!.lessonId}?mode=quest&step=${it.level!.actKey}`);
-      }
-      return;
+  // 命中判定来自纯函数 hitTestPath（TDD 基线）：关卡节点优先于课程横幅
+  const hit = hitTestPath(layoutItems(w), px, py, w);
+  if (!hit) return;
+  if (hit.type === "level") {
+    if (hit.state === "locked") {
+      hapticWrong();
+    } else {
+      hapticTap();
+      router.push(`/lesson/${hit.level!.lessonId}?mode=quest&step=${hit.level!.actKey}`);
     }
+    return;
+  }
+  // 课程横幅命中 → 进该课第一关
+  const first = levels.find((lv) => lv.lessonId === hit.lessonId);
+  if (!first) return;
+  const st = states.value[first.id];
+  if (st === "locked") {
+    hapticWrong();
+  } else {
+    hapticTap();
+    router.push(`/lesson/${first.lessonId}?mode=quest&step=${first.actKey}`);
   }
 }
 
@@ -437,8 +461,8 @@ const pathLabel = computed(() => {
 </script>
 
 <template>
-  <div class="game-path anim-fade-up">
-    <!-- 蛇形路径（Canvas 整绘：课程单元卡 + 关卡节点，点关卡直接开玩） -->
+  <div ref="rootEl" class="game-path anim-fade-up">
+    <!-- 蛇形路径（Canvas 整绘：课名胶囊 + 圆节点蜿蜒，点节点直接开玩） -->
     <div class="path">
       <canvas
         ref="canvasEl"
