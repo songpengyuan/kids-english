@@ -76,7 +76,7 @@ kids-english/
 │   │   ├── ReviewView.vue      # 错词复习页（/review）
 │   │   ├── ReportView.vue      # 家长学情页（/report）
 │   │   ├── TreasureView.vue    # 宝藏罐（/treasure）：贝壳 + 图鉴 + 贴纸商店
-│   │   ├── ChestReward.vue     # 开宝箱（可跳过动画，卸载清理 timer）
+│   │   ├── ChestReward.vue     # 开宝箱：三连击开箱 + 抛物线收取飞入顶部贝壳徽标
 │   │   ├── GamePath.vue        # 游戏模式关卡路径图（Canvas，KeepAlive 下离开即停帧）
 │   │   ├── WordCard.vue        # 可复用发音词卡
 │   │   └── Pager.vue           # ★ 通用翻页控件（大箭头 + 圆点）
@@ -129,7 +129,7 @@ LessonView.vue   stage: menu | questStart | learn | quiz | match | speak | song 
 | ReviewView | — | — | 独立页 /review：从 progress 捞弱词集中复习 |
 | ReportView | — | — | 独立页 /report：今日学情 + 错词清单 + 宝藏概览 |
 | TreasureView | — | — | 独立页 /treasure：贝壳 + 图鉴 + 贴纸商店 |
-| ChestReward | — | `done` | 自包含开箱动画与入账，可跳过 |
+| ChestReward | — | `done` | 自包含三连击开箱 + 抛物线收取（flyCurve 纯函数轨迹），可跳过 |
 | WordCard | `word`, `size`, `speakZhHint` | — | 纯展示 + 点击朗读（点读记 seen） |
 | Pager | `page`, `total` | `prev` / `next` / `go` | 受控组件，不持有页码状态 |
 
@@ -343,6 +343,21 @@ python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
 - 生成物已提交进仓库（三课合计约 3.3MB），**运行时不依赖这些脚本**，
   只在需要改内容时重跑。
 
+### 5.3 儿童字体（5 岁孩子友好）
+
+| 用途 | 字体 | 说明 |
+|---|---|---|
+| 英文/数字 | **Baloo 2** | Google Fonts 开源圆体（OFL），latin 子集 32KB 离线打包 |
+| 中文 | **ZCOOL KuaiLe 站酷快乐体** | 免费商用儿童圆体；全量 ~700KB，子集化后 116KB |
+
+- 字体栈在 `src/styles/tokens.css`：`"Baloo 2", "ZCOOL KuaiLe", ...`——
+  英文落到 Baloo 2（只含 latin），中文落到快乐体，互不干扰。
+- **中文子集化**：`python3 scripts/subset-font.py` 扫描 `src/` 下所有
+  `.vue/.ts/.js/.css` 里的汉字与全角标点，用 fonttools 子集化生成
+  `src/assets/fonts/zcool-kuaile-subset.woff2`。
+- ⚠️ **新增页面/文案后必须重跑子集脚本**，否则新字回退系统字体
+  （子集只含项目当前出现过的字符；`pnpm build` 前的 guard 可加检查提示）。
+
 ---
 
 ## 6. 发音评分的双模式降级链路
@@ -549,16 +564,34 @@ pnpm test   # vitest run，覆盖：
 |---|---|---|
 | `TOP` | 16 | 首课横幅中心到画布顶 |
 | `BAR_H` | 56 | 课程横幅高度（居中整宽带） |
-| `BAR_GAP` | 26 | 横幅底 → 首节点圆心 |
+| `BAR_GAP` | 66 | 横幅底 → 首节点圆心（2026-09-26 由 26 逐次加大，避开节点光圈/解锁闪光遮挡横幅；首节点=横幅中心+94） |
 | `ROW_H` | 84 | 关卡节点纵向步进 |
 | `UNIT_BREAK` | 46 | 课末节点 → 下节横幅中心 |
 | `R` | 28 | 节点圆半径（命中半径 R+10） |
 | `BOTTOM` | 36 | 末节点到画布底 |
 
-布局：`首节点 = 横幅中心 + BAR_H/2 + BAR_GAP(=54)`，之后每关 `+ROW_H`；
+布局：`首节点 = 横幅中心 + BAR_H/2 + BAR_GAP(=94)`，之后每关 `+ROW_H`；
 `下节横幅 = 本课末节点 + UNIT_BREAK`。命中：**关卡节点（圆心距离 ≤ R+10）优先于
-课程横幅**（`px∈[0,w]` 且 `py∈[中心-34, 中心+34]`）。节点列：全图关卡序号
-偶数 → `0.24w`，奇数 → `0.76w`；横幅居中 `w/2`。
+课程横幅**（`px∈[0,w]` 且 `py∈[中心-34, 中心+34]`）。节点列：**等弧长 S 形**（多邻国式，2026-09-26 起），纯函数 `snakeNodes(width, n, startY, endY)`：
+曲线 `x(t)=w/2+0.12w·sin(2πt)`、`y(t)=startY+(endY-startY)·t`，**沿曲线弧长等距取 n 个点** →
+**每课首末关都在水平中线**、相邻节点间距视觉均匀（小振幅下弦长差异 < 20px 约 14%）；单关/零宽兜底居中。
+每课节点组从该课首节点 buildPathGeometry y 起、跨 `(n-1)·ROW_H`。
+
+> 2026-09-26 起地图**不再绘制节点间连线**（删除解锁金实线/锁定灰虚线），
+> 只保留蜿蜒交替的圆节点与课程横幅（用户确认，参考多邻国式无连线排布）。
+
+## 10.3 通关开宝箱交互（2026-09-26）
+
+- **三连击开箱**：点宝箱区域 = 敲一下（宝箱晃动 + 音效 + 下方三个图标逐个高亮），
+  第 3 下开箱（开盖 + 金光 + 撒花 + 奖励入账）→ 展示奖励与「收取」按钮。
+- **抛物线收取**：点「收取」后宝石/贝壳从宝箱位置沿抛物线逐个飞向顶部贝壳徽标
+  （右上角 fixed，72px 避开 topbar 主题切换按钮）；轨迹为二次贝塞尔纯函数
+  `parabola()`（`src/utils/flyCurve.ts`，TDD 4 用例）。
+- **徽标接收动画**：每个贝壳落地时徽标脉冲（scale 1→1.35）+ 数字按步长递增
+  （`step=ceil(shells/n)`，最后一次对齐余额）；全部收完动画停止 → `done`。
+- **跳过**：保留「跳过」按钮（奖励照常入账，直接进 reward 展示）。
+- 测试基线：`flyCurve.test.ts` 4 用例；全量 `npx vitest run` 51 passed。
+
 
 ---
 
@@ -590,3 +623,43 @@ pnpm test   # vitest run，覆盖：
 - **素材管理**：补素材放进对应课时目录，无需改代码即可生效。
 - **弱词算法调优**：`getWeakWords` 目前是"答错且正确 ≤ 错误"，可升级为间隔重复
   （按 lastAt 与错误率排复习顺序）。
+
+## 13. 三阶段全面优化（2026-09-26）
+
+面向"架构合理、交互直觉、细节打磨、向业界优秀案例看齐"的三阶段改造。全部 TDD + 本机浏览器实测通过。
+
+### 13.1 阶段 1：体验快赢
+
+| 项 | 内容 |
+| --- | --- |
+| 1-1 emoji 清理 | 新增 `flame` 矢量图标（lucide Flame path）到 pathIcons；HomePage/LessonView/ChestReward/TreasureView/ReviewView/ReportView/SpeakView/MatchView/QuizView 全部改为 PathIcon 矢量图标。**铁律：界面一律不用 emoji/符号表情，用统一图标库**（底部 tab、我的、各玩法、宝藏罐、报告全部矢量）。教学内容 emoji（课程封面 emoji）与童谣漂浮装饰保留为氛围元素。 |
+| 1-2 HeaderBar 统一 | 新建 `components/layout/HeaderBar.vue`（showBack/backLabel props + #title/#right 插槽，44px 圆钮、min-height 56px），替换 LessonView/TreasureView/ReportView/ReviewView/MyView 五页手写 topbar。 |
+| 1-3 LessonResult 统一 | 抽 `components/LessonResult.vue`：闯关（关卡完成大画面：第 N 关/星星/连击横幅/ChestReward/返回地图&下一关）与自由（星星/连击横幅/ChestReward/再选玩法&下一课）两套结算合一。 |
+| 1-4 空状态 | ReviewView 空态、ReportView"今天还没有学习记录"、玩法首屏 tip、HomePage"建议家长陪同"逐一核对补齐。 |
+| ReviewView bug 修复 | /review 直接进入时弱词响应式晚到 → 模板 target null 白屏。修复：`watch(words)` 晚到时自动 start + `(target?.en ?? '')` 兜底。 |
+
+### 13.2 阶段 2：架构重组
+
+| 项 | 内容 |
+| --- | --- |
+| 2-1 目录分层 | `src/views/`（页面级）+ `src/components/activities/`（玩法）+ `src/components/layout/`（HeaderBar/ThemeToggle/BottomNav）+ `src/composables/`（逻辑）。20+ 组件搬移 + import 全量重写。 |
+| 2-2 HomePage 拆分 | 壳 + PracticeView（自由练习：课程卡/继续学习/quick 入口）+ GameView（游戏闯关地图，canvas 蜿蜒路径 + 关卡 + 星星/连击顶栏）。URL 兼容 `#/` 与 `#/?mode=game`，BottomNav 语义不变。 |
+| 2-3 composables | `useLessonFlow.ts`（stage 机：菜单→玩法→结算 + 结算/测量/引导，从 LessonView 711 行抽离）+ `useQuest.ts`（闯关身份：模式/关卡序列/当前关/下一关）。LessonView 瘦身为流程编排层（~150 行）。 |
+| 2-4 JS→TS | 数据/工具全量 TS 化：`lessons.ts`（Lesson 类型 + words 生成）、`layout.ts`、`usePager.ts`、`speech.ts`（SpeakOptions/类型化 Audio）、`speechScore.ts`（SRImpl/RecorderLike 接口）。核心组件 script 转 `lang="ts"`（LessonView 等）。**迁移规则：Vite 不认显式 `.js` 后缀 import，迁移后重启 dev server 清旧依赖图。** |
+
+### 13.3 阶段 3：体验精修
+
+| 项 | 内容 |
+| --- | --- |
+| 3-1 动效 tokens | `tokens.css` 新增 `--dur-fast/--dur-base/--dur-slow/--dur-fly` + `--ease-pop/--ease-out/--ease-in-out/--ease-bounce`。新增动效先查 tokens 再写值，禁止散用魔法时长。base.css 高频过渡已改 tokens。 |
+| 3-2 点击区/触感/音效 | `--tap-min: 52px` 全局；haptic 32 处覆盖（tap/成功/错误/连击/宝箱）；WebAudio 音效体系（sfxCorrect/sfxWrong/sfxTap/sfxMatch/sfxChestOpen/sfxCoin/sfxSticker）已接到全部玩法（Quiz 对错/Match 连线/Speak 判定/Learn 完成/宝箱三连击/收取入袋）。 |
+| 3-3 可达性 + PWA | BottomNav tab aria-label + role=tablist/aria-selected；HeaderBar back aria-label；ThemeToggle 双语 aria；star-badge role=img。PWA：manifest（name/icons/maskable/theme_color）+ SW 注册已有并保持。 |
+
+### 13.4 铁律沉淀（每次改动对照）
+
+1. **TDD**：先写失败测试 → 实现 → 绿 → 同步 DEVELOPMENT.md；无测试保护的组件重构用"浏览器实测 + type-check"双门。
+2. **实测通过 → 用户发话才 commit/push**。
+3. **图标统一**：界面禁止 emoji/符号表情 → PathIcon 矢量库；新增图标先查 pathIcons.ts 是否有，没有再加（lucide path）。
+4. **高内聚低耦合**：逻辑进 composables（useQuest/useLessonFlow），页面瘦身；数据进 data/，几何进 utils/，样式进 tokens/。
+5. **TS 渐进**：新代码必须 TS；核心数据/工具逐步迁移，测试保护下进行。
+6. **儿童向**：字体（站酷快乐体 + Baloo 2）、点击区 ≥ 52px、音效温柔（正弦波、不刺耳）、错误不打击（只标红不揭示答案）。
