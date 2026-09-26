@@ -11,8 +11,8 @@ import { usePager } from "../composables/usePager";
 import { pickColumns } from "../utils/layout";
 import Pager from "./Pager.vue";
 import GamePath from "./GamePath.vue";
-import ThemeToggle from "./ThemeToggle.vue";
 import { BookOpenText, Check, Star } from "@lucide/vue";
+import ThemeToggle from "./ThemeToggle.vue";
 
 defineOptions({ name: "HomePage" }); // KeepAlive include 需要稳定组件名
 
@@ -147,14 +147,14 @@ const gameDoneCount = computed(() =>
         <div class="hdr-right">
           <span v-if="mode === 'game'" class="hdr-prog">{{ gameDoneCount }} / {{ lessons.length }} 关通关</span>
           <div v-else class="badges">
-            <div class="star-badge">
-              <Star class="k-ico star-fill" />我的星星：{{ progress.totalStars }}
+            <div class="star-badge" title="我的星星总数">
+              <Star class="k-ico star-fill" />{{ progress.totalStars }}
             </div>
-            <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐" @click="router.push('/treasure')">
-              🐚 {{ rewards.shells }}<span class="tb-cap">宝藏</span>
+            <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐：贝壳余额" @click="router.push('/treasure')">
+              🐚 {{ rewards.shells }}
             </button>
-            <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今天已达成目标' : '完成一个玩法点亮今天的火焰'">
-              🔥 {{ streak.streak }}<span class="sb-cap">连击</span>
+            <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天' : '完成一个玩法点亮今天的火焰'">
+              🔥 {{ streak.streak }}
             </div>
           </div>
           <ThemeToggle />
@@ -185,7 +185,7 @@ const gameDoneCount = computed(() =>
           >
             <span class="big-emoji anim-float">{{ l.emoji }}</span>
             <span class="lt">{{ l.title }}</span>
-            <span class="done" v-if="progress.isCompleted(l.id, activityKeys(l))">
+            <span class="card-done" v-if="progress.isCompleted(l.id, activityKeys(l))">
               <Check class="k-ico" />全部通关
             </span>
             <span class="cnt">{{ l.words.length }} 个单词</span>
@@ -225,12 +225,13 @@ const gameDoneCount = computed(() =>
   min-width: 0;
 }
 .hdr-right {
+  flex: 1; /* 撑满 header 剩余空间：徽章+主题按钮不再被压缩溢出 */
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: var(--gap-s);
-  flex: none;
 }
 .hdr-title {
   font-size: var(--fs-title);
@@ -274,12 +275,22 @@ const gameDoneCount = computed(() =>
   -webkit-overflow-scrolling: touch;
 }
 
-/* 星星 + 宝藏 + 连击火焰并排（header 右侧容器内，窄屏自动换行） */
+/* 星星 + 宝藏 + 连击火焰并排：inline-flex 内容宽（不参与父容器 grow/shrink），
+   三项一行固定排布，hdr-right 的 flex-end 负责右对齐 */
 .badges {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--gap-s);
+}
+/* header 徽章紧凑化：图标+数字，避免三项+主题按钮超宽互相遮挡 */
+.hdr-right .star-badge,
+.hdr-right .treasure-badge,
+.hdr-right .streak-badge {
+  font-size: var(--fs-small);
+  padding: 4px 10px;
+  gap: 4px;
+  white-space: nowrap;
 }
 .streak-badge {
   display: inline-flex;
@@ -295,6 +306,7 @@ const gameDoneCount = computed(() =>
   transition: background 0.3s, color 0.3s;
 }
 .streak-badge.done {
+  position: static; /* 防御：角标 .done 曾污染导致 absolute 遮挡，显式恢复静态布局 */
   background: linear-gradient(160deg, #ff9f43, #ff6b3d);
   color: #fff;
   box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18), 0 0 14px rgba(255, 122, 61, 0.4);
@@ -406,7 +418,7 @@ const gameDoneCount = computed(() =>
   font-weight: 700;
   white-space: nowrap;
 }
-.done {
+.card-done {
   position: absolute;
   top: 8px;
   right: 8px;
