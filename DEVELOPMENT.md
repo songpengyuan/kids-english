@@ -690,3 +690,14 @@ pnpm test   # vitest run，覆盖：
 - **内容区让位**：tokens 新增 `--nav-h: 76px`；#app padding-bottom 改为 `calc(var(--nav-h) + env(safe-area-inset-bottom))`——各页滚动容器自动让位（容器底 = nav 顶）。
 - **HeaderBar → position: sticky 顶栏**：课程页/带顶栏页面滚动时 header 固定（z-index 30、背景 var(--bg)）。
 - HomePage hero 原本已是 sticky，保持不变。
+### 13.8 关卡 UI 优化（2026-09-26 用户需求）
+
+**需求**：①未学习关卡只显示锁；②开宝箱成为地图独立关卡；③关卡外增加分段进度圆环（学一部分亮一部分）。
+
+**实现**（TDD：新增 pathLevels.test.ts 13 用例 + pathGeometry 7 关几何）：
+- **数据层（pathLevels.ts）**：每课追加 1 个宝箱关（id `${lessonId}-chest`，actKey `chest`，名称「开宝箱」）→ 全图 30→35 关；chest 状态：该课 6 玩法全 done → active（可开箱）、completed 含 chest → done（已领取）、否则 locked；**nextLevelAfter 跳过 chest**（玩法→玩法推进不受影响）；lessonDoneCount/单元进度只数玩法（chest 不计入 x/y）。
+- **进度圆环**：每关按钮外包 SVG 3 段弧（circle + pathLength=100 + rotate 分段）；点亮段数 = done→星级数（1-3 段金）/ active→1 段蓝 / locked→0；宝箱关：已领取 3 段、可开 1 段、锁定 0。
+- **锁样式**：locked 关卡主体只显示大锁（lv-ico-lock），玩法图标不展示，玩法名保留小字。
+- **宝箱关卡**：金色礼物节点（PathIcon chest，lucide Gift path）；点击直接在地图弹 ChestReward overlay；收取完成 markChest（progress store 新增）→ 宝箱关变 done（一次性奖励）。
+- **LessonResult quest 分支移除自动宝箱**：宝箱只在地图宝箱关卡触发（每关完成不再弹）。
+- 几何自动适应 7 关/课（snakeNodes 等弧长，首末居中），pathGeometry 测试更新为 7 关口径。

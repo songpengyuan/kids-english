@@ -37,6 +37,7 @@ export const ACT_EMOJI: Record<string, string> = {
   speak: "🎤",
   talk: "💬",
   song: "🎵",
+  chest: "🎁",
 };
 
 export const ACT_NAMES: Record<string, string> = {
@@ -46,6 +47,7 @@ export const ACT_NAMES: Record<string, string> = {
   speak: "跟我读",
   talk: "亲子对话",
   song: "唱童谣",
+  chest: "开宝箱",
 };
 
 /** 全部分解为关卡（课程顺序 + 课程内玩法顺序），一次构建缓存 */
@@ -69,6 +71,19 @@ export function buildLevels(): PathLevel[] {
         tone: l.tone,
       });
     }
+    // 开宝箱独立关卡（课末尾；不参与玩法序列，地图奖励节点）
+    out.push({
+      id: `${l.id}-chest`,
+      lessonId: l.id,
+      actKey: "chest",
+      name: ACT_NAMES.chest,
+      emoji: ACT_EMOJI.chest,
+      no: out.length + 1,
+      lessonEmoji: l.emoji,
+      titleZh: l.titleZh,
+      title: l.title,
+      tone: l.tone,
+    });
   }
   cache = out;
   return out;
@@ -78,6 +93,10 @@ export function buildLevels(): PathLevel[] {
 export function levelDone(level: PathLevel, progress: Record<string, LessonProgress | undefined>): boolean {
   const l = progress[level.lessonId];
   if (!l) return false;
+  // 宝箱关：completed 含 chest = 已领取（无星数）
+  if (level.actKey === "chest") {
+    return !!l.completed && l.completed.includes("chest");
+  }
   const v = (l as unknown as Record<string, unknown>)[level.actKey];
   return typeof v === "number" && v > 0;
 }
@@ -113,11 +132,26 @@ export function computeStates(
       seen[lv.lessonId] = true;
       continue;
     }
+    // 宝箱关：该课 6 个玩法关全部完成才解锁（不依赖"前一关"链）
+    if (lv.actKey === "chest") {
+      states[lv.id] = lessonReadyForChest(lv.lessonId, levels, progress) ? "active" : "locked";
+      continue;
+    }
     const open = seen[lv.lessonId] !== false;
     states[lv.id] = open ? "active" : "locked";
     seen[lv.lessonId] = false;
   }
   return states;
+}
+
+/** 宝箱关解锁条件：该课全部玩法关（非 chest）均已完成 */
+function lessonReadyForChest(
+  lessonId: string,
+  levels: PathLevel[],
+  progress: Record<string, LessonProgress | undefined>
+): boolean {
+  const acts = levels.filter((l) => l.lessonId === lessonId && l.actKey !== "chest");
+  return acts.length > 0 && acts.every((l) => levelDone(l, progress));
 }
 
 /** 当前关卡（第一个 active，默认落在第一课）——供返回地图/单关完成后的入口判断 */
@@ -131,5 +165,11 @@ export function currentLevel(
 /** 某关卡的后一关（单关完成画面"下一关"按钮用）；最后一关返回 null */
 export function nextLevelAfter(levelId: string, levels: PathLevel[]): PathLevel | null {
   const i = levels.findIndex((l) => l.id === levelId);
-  return i >= 0 && i < levels.length - 1 ? levels[i + 1] : null;
+  if (i < 0 || i >= levels.length - 1) return null;
+  // 宝箱关是地图奖励节点，不参与"玩法→玩法"推进：跳过它找下一个玩法关
+  const next = levels[i + 1];
+  if (next.actKey === "chest") {
+    return i + 1 < levels.length - 1 ? levels[i + 2] : null;
+  }
+  return next;
 }

@@ -129,6 +129,14 @@ export const APP_ICON_PATHS: Record<string, string[]> = {
   ],
   // 播放（lucide Play）
   play: ["M6 4l14 8-14 8V4z"],
+  // 宝箱/礼物（lucide Gift）
+  chest: [
+    "M20 12v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V12",
+    "M2 7h20v5H2z",
+    "M12 22V7",
+    "M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z",
+    "M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z",
+  ],
 };
 
 /** 取应用级通用图标（canvas 用不到，PathIcon 组件用） */

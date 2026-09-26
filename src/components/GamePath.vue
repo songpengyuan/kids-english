@@ -31,6 +31,7 @@ import {
 import { useProgressStore } from "../stores/progress";
 import { hapticTap, hapticWrong } from "../utils/haptics";
 import PathIcon from "./PathIcon.vue";
+import ChestReward from "./ChestReward.vue";
 import { buildPathGeometry, snakeNodes, R, ROW_H, BAR_H, BOTTOM, type PathGeoItem } from "../utils/pathGeometry";
 
 const router = useRouter();
@@ -60,7 +61,7 @@ const geo = computed<GeoItem[]>(() => {
       return {
         ...g,
         done: lessonDoneCount(g.lessonId, progress.progress),
-        total: levels.filter((lv) => lv.lessonId === g.lessonId).length,
+        total: levels.filter((lv) => lv.lessonId === g.lessonId && lv.actKey !== "chest").length,
       } as GeoItem;
     }
     const lv = levels.find((l) => l.lessonId === g.lessonId && l.actKey === g.activityKey);
@@ -180,16 +181,42 @@ function showLockedTip() {
   }, 1600);
 }
 
-/** 点击关卡节点：锁定提示 / 可玩直达该玩法 */
+/** 点击关卡节点：锁定提示 / 可玩直达该玩法 / 宝箱关卡直接开箱 */
 function enterLevel(lv: PathLevel) {
   const st = states.value[lv.id];
   if (st === "locked") {
     hapticWrong();
     showLockedTip();
-  } else {
-    hapticTap();
-    router.push(`/lesson/${lv.lessonId}?mode=quest&step=${lv.actKey}`);
+    return;
   }
+  hapticTap();
+  if (lv.actKey === "chest") {
+    chestLessonId.value = lv.lessonId;
+    chestOpen.value = true;
+    return;
+  }
+  router.push(`/lesson/${lv.lessonId}?mode=quest&step=${lv.actKey}`);
+}
+
+/** 宝箱关卡打开状态（地图上直接弹开宝箱奖励层） */
+const chestOpen = ref(false);
+const chestLessonId = ref("");
+
+/** 宝箱收取完成：标记该课宝箱已领取 → 关闭层，地图状态刷新（宝箱关变 done） */
+function onChestDone() {
+  if (chestLessonId.value) progress.markChest(chestLessonId.value);
+  chestOpen.value = false;
+  chestLessonId.value = "";
+}
+
+/** 关卡圆环点亮段数（0..3）：完成=星级数（至少 1），学习中=1 段，锁定=0；
+ *  宝箱关：已领取=3、可开=1、锁定=0 —— "学一部分亮一部分" */
+function ringOf(lv: GeoItem): number {
+  const st = states.value[lv.level!.id];
+  if (lv.level!.actKey === "chest") return st === "done" ? 3 : st === "active" ? 1 : 0;
+  if (st === "done") return Math.min(3, Math.max(1, lv.stars || 0));
+  if (st === "active") return 1;
+  return 0;
 }
 
 /** 点击课程横幅 → 进该课第一关 */
@@ -217,6 +244,10 @@ function tagOf(lv: PathLevel): string {
 /** 单关无障碍描述 */
 function levelLabel(lv: PathLevel): string {
   const st = states.value[lv.id];
+  if (lv.actKey === "chest") {
+    const zh = st === "locked" ? "未解锁" : st === "done" ? "已领取" : "可开箱";
+    return `第${lv.no}关${lv.name}（${zh}）`;
+  }
   const zh = st === "locked" ? "未解锁" : st === "done" ? "已通关" : "可玩";
   return `第${lv.no}关${lv.name}（${zh}）`;
 }
@@ -251,29 +282,51 @@ function unitLesson(id: string) {
         <span class="u-bar"><span class="u-bar-fill" :style="{ width: Math.min(100, Math.round(((u.done || 0) / (u.total || 1)) * 100)) + '%' }"></span></span>
       </div>
 
-      <!-- 关卡节点（圆形按钮，S 形蜿蜒） -->
+      <!-- 关卡节点（圆形按钮 + 进度圆环，S 形蜿蜒） -->
       <button
         v-for="lv in levelItems"
         :key="'l-' + lv.level!.id"
         class="gp-level"
-        :class="[states[lv.level!.id], { flash: flashIds.has(lv.level!.id) }]"
+        :class="[states[lv.level!.id], { flash: flashIds.has(lv.level!.id), chest: lv.level!.actKey === 'chest' }]"
         :style="{ left: lv.x - R + 'px', top: lv.y - R + 'px' }"
         :aria-label="levelLabel(lv.level!)"
         @click="enterLevel(lv.level!)"
         @keydown.enter.prevent="enterLevel(lv.level!)"
         @keydown.space.prevent="enterLevel(lv.level!)"
       >
+        <!-- 进度圆环：3 段弧，学一部分亮一部分 -->
+        <svg class="lv-ring" viewBox="0 0 72 72" aria-hidden="true">
+          <circle class="ring-bg" cx="36" cy="36" r="30" pathLength="100" />
+          <circle
+            v-for="seg in 3"
+            :key="seg"
+            class="ring-seg"
+            :class="{ on: ringOf(lv) >= seg }"
+            cx="36"
+            cy="36"
+            r="30"
+            pathLength="100"
+            stroke-dasharray="33.34 66.66"
+            :style="{ transform: 'rotate(' + ((seg - 1) * 120 - 90) + 'deg)' }"
+          />
+        </svg>
         <span class="lv-pulse" aria-hidden="true"></span>
-        <PathIcon :name="lv.level!.actKey" class="lv-ico" />
+        <!-- 未学习只显示锁；宝箱关显示礼物；其余显示玩法图标 -->
+        <PathIcon v-if="lv.state === 'locked'" name="lock" class="lv-ico lv-ico-lock" />
+        <PathIcon v-else-if="lv.level!.actKey === 'chest'" name="chest" class="lv-ico lv-ico-chest" />
+        <PathIcon v-else :name="lv.level!.actKey" class="lv-ico" />
         <span class="lv-tag" aria-hidden="true">
           <PathIcon v-if="tagOf(lv.level!) === 'lock'" name="lock" />
           <span v-else-if="tagOf(lv.level!) === 'done'" class="tick">✓</span>
           <PathIcon v-else name="play" />
         </span>
-        <span v-if="lv.stars" class="lv-star" aria-hidden="true">★{{ lv.stars }}</span>
+        <span v-if="lv.stars && lv.level!.actKey !== 'chest'" class="lv-star" aria-hidden="true">★{{ lv.stars }}</span>
         <span class="lv-name">{{ lv.level!.name }}</span>
       </button>
     </div>
+
+    <!-- 开宝箱独立关卡：地图上直接弹奖励层 -->
+    <ChestReward v-if="chestOpen" @done="onChestDone" />
 
     <Transition name="tip">
       <p v-if="lockedMsg" class="locked-tip anim-pop" role="status">先完成前面的关卡就能解锁啦</p>
@@ -494,5 +547,56 @@ function unitLesson(id: string) {
 @keyframes lv-flash {
   from { transform: scale(1); opacity: 0.9; }
   to { transform: scale(2.1); opacity: 0; }
+}
+
+/* ---------- 关卡进度圆环（3 段弧：学一部分亮一部分） ---------- */
+.lv-ring {
+  position: absolute;
+  inset: -8px;
+  width: 72px;
+  height: 72px;
+  pointer-events: none;
+}
+.ring-bg {
+  fill: none;
+  stroke: rgba(128, 128, 128, 0.18);
+  stroke-width: 5;
+}
+.ring-seg {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 5;
+  stroke-linecap: round;
+  transform-origin: 36px 36px;
+  transition: stroke var(--dur-base) var(--ease-out);
+}
+.gp-level.done .ring-seg.on { stroke: var(--gold, #f0b429); }
+.gp-level.active .ring-seg.on { stroke: var(--c-blue, #1cb0f6); }
+.gp-level.chest .ring-seg.on { stroke: #d98e04; }
+.gp-level.locked .ring-seg.on { stroke: #c9c2b8; }
+
+/* 未学习关卡：主体只显示大锁（玩法图标不展示） */
+.gp-level.locked .lv-ico-lock {
+  width: 30px;
+  height: 30px;
+  color: #b8b0a4;
+}
+
+/* 宝箱独立关卡：金色礼物节点 */
+.gp-level.chest {
+  background: linear-gradient(160deg, #ffe9a8, #ffd87a);
+  box-shadow: 0 3px 0 rgba(176, 120, 0, 0.32);
+}
+.gp-level.chest .lv-ico-chest {
+  width: 30px;
+  height: 30px;
+  color: #8a5a00;
+}
+/* 已领取：稍褪色示意"开过了" */
+.gp-level.chest.done {
+  filter: grayscale(0.35) opacity(0.82);
+}
+.gp-level.chest .lv-tag {
+  border-color: rgba(176, 120, 0, 0.4);
 }
 </style>

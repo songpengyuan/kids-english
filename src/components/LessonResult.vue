@@ -53,7 +53,7 @@ const emit = defineEmits<{
       <div v-if="streakJustHit" class="streak-banner anim-pop">
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
-      <ChestReward />
+      <!-- 开宝箱已移到闯关地图（独立宝箱关卡）；闯关完成不再自动弹宝箱 -->
       <div class="btn-row">
         <button class="k-btn gray" @click="emit('backToMap')">返回闯关地图</button>
         <button v-if="nextLevel" class="k-btn" @click="emit('goNextLevel')">

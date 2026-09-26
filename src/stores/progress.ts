@@ -134,6 +134,15 @@ export const useProgressStore = defineStore("progress", () => {
     save();
   }
 
+  /** 宝箱关领取记录：completed 含 chest（地图宝箱关卡一次性奖励） */
+  function markChest(id: string) {
+    const prev = progress[id] || {};
+    prev.completed = prev.completed || [];
+    if (!prev.completed.includes("chest")) prev.completed.push("chest");
+    progress[id] = prev;
+    save();
+  }
+
   /** 童谣完成：只记 1 分，同时计入"玩过的玩法" */
   function markSong(id: string) {
     const prev = progress[id] || {};
@@ -268,6 +277,7 @@ export const useProgressStore = defineStore("progress", () => {
     totalStars,
     lessonStars,
     setGameStars,
+    markChest,
     markSong,
     isCompleted,
     isPlayed,
