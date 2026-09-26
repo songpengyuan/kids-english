@@ -669,3 +669,15 @@ pnpm test   # vitest run，覆盖：
 | --- | --- | --- |
 | 底部切换反应慢/失败 | HomePage v-if 切换时 GameView 每次全量重建 canvas（1862×5668 重绘 ~500ms）；重复导航 NavigationDuplicated 未捕获 | HomePage 双视图包 `<KeepAlive>`（切回秒开 ~80ms，保留 canvas 状态与滚动位置）；BottomNav 全部 `router.push().catch(()=>{})` 静默容错 |
 | 游戏关卡点不进去 | 可玩关卡滚动后点击实测正常；真正原因是 **locked 关卡点击只有震动（桌面/无震动设备无反馈）**，误以为失效 | GamePath 加锁关可见提示条「先完成前面的关卡就能解锁啦」（1.6s 自动消失，role=status） |
+### 13.6 关卡地图 Canvas → DOM 改造（2026-09-26 用户反馈）
+
+**背景**：用户反馈游戏关卡滚动不顺、点击偶发失效——根因是整幅 1862×5668 大 canvas 作为滚动内容（超大图层 + hitTest 模拟交互）。
+
+**改造**（GamePath.vue 515 行 → 501 行 DOM 版）：
+- 移除 canvas 整绘与 rAF 逐帧循环；每个关卡 = 原生 `<button>`（绝对定位，坐标来自 snakeNodes），课程 = 全宽渐变横幅 div。
+- **滚动**：普通 DOM 滚动（惯性/贴边浏览器原生处理），滚动条贴最右缘；滚动位置记忆保留（模块级 savedGameTop）。
+- **交互**：点击/聚焦/键盘/aria 全部原生（button + aria-label「第 N 关…（可玩/未解锁/已通关）」+ 显式 @keydown.enter/space）。
+- **动画 CSS 化**：active 金色光圈脉动（lv-pulse keyframes）、解锁金色闪光（lv-flash forwards）、锁定 grayscale。
+- 几何与状态逻辑零改动：buildPathGeometry/snakeNodes/ROW_H/BAR_GAP（TDD 测试继续保护）；hitTestPath 保留（测试用）。
+- 新增 lock/play 矢量图标（lucide path）到 pathIcons。
+- 布局只随容器宽度重算（ResizeObserver + w ref），不再每帧重绘。

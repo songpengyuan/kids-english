@@ -122,6 +122,13 @@ export const APP_ICON_PATHS: Record<string, string[]> = {
     "M12 7v14",
     "M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z",
   ],
+  // 锁定（lucide Lock）
+  lock: [
+    "M7 9V6a5 5 0 0 1 10 0v3",
+    "M5 9h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z",
+  ],
+  // 播放（lucide Play）
+  play: ["M6 4l14 8-14 8V4z"],
 };
 
 /** 取应用级通用图标（canvas 用不到，PathIcon 组件用） */
