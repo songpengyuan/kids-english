@@ -158,7 +158,7 @@ img {
   padding:
     calc(var(--pad-y) + env(safe-area-inset-top))
     calc(var(--pad-x) + env(safe-area-inset-right))
-    calc(var(--pad-y) + env(safe-area-inset-bottom))
+    calc(var(--nav-h) + env(safe-area-inset-bottom))
     calc(var(--pad-x) + env(safe-area-inset-left));
 }
 

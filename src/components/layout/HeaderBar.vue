@@ -31,12 +31,17 @@ const emit = defineEmits<{ back: [] }>();
 
 <style scoped>
 .hdr {
+  /* App 化：顶栏固定在视口顶部，内容滚动时不离开 */
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
   min-height: 56px;
   box-sizing: border-box;
+  background: var(--bg);
 }
 .hdr-back {
   flex: none;

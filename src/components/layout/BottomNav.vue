@@ -60,11 +60,19 @@ function goMe() {
 
 <style scoped>
 .bottom-nav {
-  flex: none;
+  /* App 化：底栏脱离文档流，固定钉在视口底部（内容再高也不会把它挤出/盖住） */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  margin-inline: auto;
+  max-width: 1180px; /* 与 #app 同宽居中 */
   display: flex;
-  padding: 6px calc(var(--pad-x) + env(safe-area-inset-right)) 8px calc(var(--pad-x) + env(safe-area-inset-left));
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
   gap: var(--gap-s);
+  padding: 6px calc(var(--pad-x) + env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) calc(var(--pad-x) + env(safe-area-inset-left));
+  background: var(--bg);
+  box-shadow: 0 -2px 0 rgba(0, 0, 0, 0.06), 0 -6px 16px rgba(0, 0, 0, 0.05);
 }
 .bottom-nav button {
   flex: 1;

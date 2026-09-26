@@ -681,3 +681,12 @@ pnpm test   # vitest run，覆盖：
 - 几何与状态逻辑零改动：buildPathGeometry/snakeNodes/ROW_H/BAR_GAP（TDD 测试继续保护）；hitTestPath 保留（测试用）。
 - 新增 lock/play 矢量图标（lucide path）到 pathIcons。
 - 布局只随容器宽度重算（ResizeObserver + w ref），不再每帧重绘。
+### 13.7 App 化布局（2026-09-26 用户反馈手机端底部切换切不动）
+
+**背景**：用户手机端实测底部 tab 切换依旧无响应。排查：flex 流内 BottomNav 在特定布局（内容超高/窄视口）下会被挤出视口或被内容遮挡；桌面 bu 用 ref 点击绕过遮挡，掩盖了问题。
+
+**重构（App 三明治布局）**：
+- **BottomNav → position: fixed 底栏**：脱离文档流钉在视口底部（z-index 40、max-width 1180 居中、safe-area、背景 var(--bg) + 顶部细阴影）。**任何内容高度下 nav 永远可见可点**。
+- **内容区让位**：tokens 新增 `--nav-h: 76px`；#app padding-bottom 改为 `calc(var(--nav-h) + env(safe-area-inset-bottom))`——各页滚动容器自动让位（容器底 = nav 顶）。
+- **HeaderBar → position: sticky 顶栏**：课程页/带顶栏页面滚动时 header 固定（z-index 30、背景 var(--bg)）。
+- HomePage hero 原本已是 sticky，保持不变。
