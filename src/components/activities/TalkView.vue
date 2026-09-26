@@ -1,8 +1,8 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from "vue";
-import { speak } from "../utils/speech";
-import { hapticTap } from "../utils/haptics";
-import { sfxCorrect } from "../utils/effects";
+import { speak } from "../../utils/speech";
+import { hapticTap } from "../../utils/haptics";
+import { sfxCorrect } from "../../utils/effects";
 import { Check, Star, Volume2 } from "@lucide/vue";
 
 const props = defineProps({ lesson: { type: Object, required: true } });
@@ -120,7 +120,7 @@ function finish() {
     </div>
 
     <div class="talk-head view-body-head">
-      <h2 class="talk-title">👨‍👩‍👧 亲子对话</h2>
+      <h2 class="talk-title">亲子对话</h2>
       <p class="talk-tip">点卡片听发音，然后和爸爸妈妈轮流说一说吧</p>
     </div>
 
@@ -133,7 +133,7 @@ function finish() {
         :style="{ animationDelay: i * 0.1 + 's' }"
         @click="tap(p, i)"
       >
-        <span class="role">{{ i % 2 === 0 ? "🙋 家长说" : "🧒 宝宝答" }}</span>
+        <span class="role">{{ i % 2 === 0 ? "家长说" : "宝宝答" }}</span>
         <!-- 中文对话在上，英文单词/句子放在对话下面 -->
         <span class="pzh">{{ p.zh }}</span>
         <span class="pen"><Volume2 class="k-ico" />{{ p.en }}</span>

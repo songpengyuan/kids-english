@@ -2,7 +2,7 @@
 import { computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import CuteBackdrop from "./components/CuteBackdrop.vue";
-import BottomNav from "./components/BottomNav.vue";
+import BottomNav from "./components/layout/BottomNav.vue";
 import { getLesson } from "./data/lessons";
 import { initPWA, applyUpdateIfIdle } from "./utils/pwa";
 

@@ -9,14 +9,16 @@
  * 规则与听音选图一致（统一错误反馈）：答错只标红、不揭示答案、不前进；
  * 点错的选项也记一次错误（说明它同样不熟）。
  */
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { lessons } from "../data/lessons";
 import { useProgressStore } from "../stores/progress";
 import { useRouter } from "vue-router";
 import { speak } from "../utils/speech";
 import { sfxCorrect, sfxWrong, celebrate, sfxTap } from "../utils/effects";
 import { useViewport } from "../composables/useViewport";
-import { Check, ChevronLeft, RotateCcw, Volume2 } from "@lucide/vue";
+import { Check, RotateCcw, Volume2 } from "@lucide/vue";
+import HeaderBar from "../components/layout/HeaderBar.vue";
+import PathIcon from "../components/PathIcon.vue";
 
 const progress = useProgressStore();
 const router = useRouter();
@@ -72,6 +74,10 @@ function start() {
 onMounted(() => {
   if (words.value.length > 0) start();
 });
+// 弱词数据晚到（响应式从 0 → N）时兜底开一轮；避免 seq 为空但 quiz 分支已渲染导致 target.en 报错
+watch(words, (w) => {
+  if (w.length > 0 && seq.value.length === 0) start();
+});
 
 /** 当前题目标词 */
 const target = computed(() => seq.value[idx.value] || null);
@@ -111,17 +117,14 @@ function next() {
 
 <template>
   <div class="review view">
-    <div class="topbar">
-      <button class="back" aria-label="返回首页" title="返回首页" @click="router.push('/')">
-        <ChevronLeft class="k-ico" />
-      </button>
-      <div class="title">📚 错词复习</div>
-      <div class="cnt-badge">{{ words.length }} 个待练</div>
-    </div>
+    <HeaderBar show-back back-label="返回首页" @back="router.push('/')">
+      <template #title><PathIcon name="learn" class="title-ico" /> 错词复习</template>
+      <template #right><span class="cnt-badge">{{ words.length }} 个待练</span></template>
+    </HeaderBar>
 
     <!-- 空态：没有弱词 -->
     <div v-if="words.length === 0" class="empty view-body view-center">
-      <div class="empty-emoji anim-float">🌟</div>
+      <div class="empty-emoji anim-float"><PathIcon name="learn" class="empty-ico" /></div>
       <h2>没有要复习的词</h2>
       <p>答错的单词会自动出现在这里，先回首页学一课吧！</p>
       <button class="k-btn" @click="router.push('/')">回首页</button>
@@ -136,7 +139,7 @@ function next() {
 
       <div class="prompt anim-pop">
         <p>听一听，选出对的图片</p>
-        <button class="replay" :aria-label="'再听一遍' + target.en" @click="replay">
+        <button class="replay" :aria-label="'再听一遍' + (target?.en ?? '')" @click="replay">
           <Volume2 class="k-ico" />
         </button>
       </div>
@@ -170,7 +173,7 @@ function next() {
       <p class="again" v-if="againCount > 0">
         还有 <b>{{ againCount }}</b> 个词要继续练<br />（再答对几次就会从列表里消失）
       </p>
-      <p class="again ok" v-else>全部掌握啦，真棒！🎉</p>
+      <p class="again ok" v-else>全部掌握啦，真棒！</p>
       <div class="btn-row">
         <button v-if="againCount > 0" class="k-btn" @click="start">
           <RotateCcw class="k-ico" />再练一次
@@ -184,32 +187,6 @@ function next() {
 <style scoped>
 .review {
   gap: var(--gap-s);
-}
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-s);
-}
-.back {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: clamp(44px, 7vh, 52px);
-  height: clamp(44px, 7vh, 52px);
-  border-radius: var(--radius-pill);
-  background: var(--card-bg);
-  box-shadow: var(--shadow-hard);
-  flex: none;
-}
-.topbar .title {
-  font-weight: 800;
-  font-size: var(--fs-title);
-  color: var(--ink);
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .cnt-badge {
   font-weight: 800;

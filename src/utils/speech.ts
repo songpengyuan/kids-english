@@ -13,8 +13,8 @@
 import { lessons } from "../data/lessons";
 
 /* ---------- 预生成发音注册表 ---------- */
-const wordAudioByKey = {}; // "lessonId:wordId" -> url
-const wordAudioByEn = {}; // en -> url（兜底）
+const wordAudioByKey: Record<string, string> = {}; // "lessonId:wordId" -> url
+const wordAudioByEn: Record<string, string> = {}; // en -> url（兜底）
 
 for (const l of lessons) {
   for (const w of l.words) {
@@ -26,17 +26,17 @@ for (const l of lessons) {
   }
 }
 
-let curAudio = null;
+let curAudio: HTMLAudioElement | null = null;
 
 /** 播放音频文件；成功结束返回 true，出错返回 false（让调用方回退 TTS） */
-function playAudio(src) {
+function playAudio(src: string): Promise<boolean> {
   return new Promise((resolve) => {
     if (curAudio) {
       curAudio.pause();
       curAudio = null;
     }
     let settled = false;
-    const done = (ok) => {
+    const done = (ok: boolean) => {
       if (!settled) {
         settled = true;
         resolve(ok);
@@ -52,9 +52,9 @@ function playAudio(src) {
 }
 
 /* ---------- 浏览器 TTS（回退通道）---------- */
-let cachedVoice = null;
+let cachedVoice: SpeechSynthesisVoice | null = null;
 
-function pickVoice() {
+function pickVoice(): SpeechSynthesisVoice | null {
   if (!("speechSynthesis" in window)) return null;
   if (cachedVoice) return cachedVoice;
   const voices = window.speechSynthesis.getVoices();
@@ -74,7 +74,7 @@ if ("speechSynthesis" in window) {
   };
 }
 
-function speakWithTTS(text, { rate = 0.85, lang = "en-US" }) {
+function speakWithTTS(text: string, { rate = 0.85, lang = "en-US" }: { rate?: number; lang?: string }): void {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel(); // 打断上一条，避免连点重叠
   const u = new SpeechSynthesisUtterance(text);
@@ -95,10 +95,17 @@ function speakWithTTS(text, { rate = 0.85, lang = "en-US" }) {
  * @param opts.lessonId  词所属课时 id（可选；提供后按精确键查预生成发音）
  * @param opts.wordId    词 id（可选；与 lessonId 成对使用）
  */
+export interface SpeakOptions {
+  rate?: number;
+  lang?: string;
+  lessonId?: string | null;
+  wordId?: string | null;
+}
+
 export async function speak(
-  text,
-  { rate = 0.85, lang = "en-US", lessonId = null, wordId = null } = {}
-) {
+  text: string,
+  { rate = 0.85, lang = "en-US", lessonId = null, wordId = null }: SpeakOptions = {}
+): Promise<void> {
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   let src = null;
   if (lessonId && wordId) src = wordAudioByKey[`${lessonId}:${wordId}`];
@@ -107,6 +114,6 @@ export async function speak(
   speakWithTTS(text, { rate, lang });
 }
 
-export function speakZh(text, rate = 1) {
+export function speakZh(text: string, rate = 1): void {
   speakWithTTS(text, { rate, lang: "zh-CN" });
 }

@@ -11,9 +11,10 @@ import { useProgressStore } from "../stores/progress";
 import { useRewardsStore } from "../stores/rewards";
 import { useStreakStore } from "../stores/streak";
 import { useRouter } from "vue-router";
-import ThemeToggle from "./ThemeToggle.vue";
+import ThemeToggle from "../components/layout/ThemeToggle.vue";
+import HeaderBar from "../components/layout/HeaderBar.vue";
 import { ChevronRight, Flame, Star } from "@lucide/vue";
-import PathIcon from "./PathIcon.vue";
+import PathIcon from "../components/PathIcon.vue";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();
@@ -59,10 +60,10 @@ const todayWords = computed(() => {
 
 <template>
   <div class="me view">
-    <div class="topbar">
-      <div class="title"><PathIcon name="me" /> 我的</div>
-      <ThemeToggle />
-    </div>
+    <HeaderBar>
+      <template #title><PathIcon name="me" /> 我的</template>
+      <template #right><ThemeToggle /></template>
+    </HeaderBar>
 
     <div class="me-body view-body">
       <!-- 身份卡 -->
@@ -136,20 +137,6 @@ const todayWords = computed(() => {
 <style scoped>
 .me {
   align-items: center;
-}
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-s);
-  width: 100%;
-  flex: none;
-}
-.topbar .title {
-  flex: 1;
-  font-weight: 800;
-  font-size: var(--fs-title);
-  color: var(--ink);
-  text-align: center;
 }
 .me-body {
   display: flex;

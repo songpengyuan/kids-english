@@ -10,7 +10,7 @@
  */
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import PathIcon from "./PathIcon.vue";
+import PathIcon from "../PathIcon.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -39,6 +39,7 @@ function goMe() {
   <nav class="bottom-nav" role="tablist" aria-label="主导航">
     <button
       role="tab"
+      aria-label="自由练习"
       :aria-selected="isHome && !isGame"
       :class="{ on: isHome && !isGame }"
       @click="goPractice"
@@ -46,11 +47,11 @@ function goMe() {
       <span class="bn-ico"><PathIcon name="free" /></span>
       <span class="bn-cap">自由</span>
     </button>
-    <button role="tab" :aria-selected="isGame" :class="{ on: isGame }" @click="goGame">
+    <button role="tab" aria-label="游戏闯关" :aria-selected="isGame" :class="{ on: isGame }" @click="goGame">
       <span class="bn-ico"><PathIcon name="game" /></span>
       <span class="bn-cap">游戏</span>
     </button>
-    <button role="tab" :aria-selected="isMe" :class="{ on: isMe }" @click="goMe">
+    <button role="tab" aria-label="我的" :aria-selected="isMe" :class="{ on: isMe }" @click="goMe">
       <span class="bn-ico"><PathIcon name="me" /></span>
       <span class="bn-cap">我的</span>
     </button>

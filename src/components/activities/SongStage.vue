@@ -141,7 +141,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
     <Transition name="sub" mode="out-in">
       <p v-if="subtitle" :key="props.line" class="subtitle">{{ subtitle }}</p>
       <p v-else :key="'idle'" class="subtitle idle">
-        {{ playing ? "🎵" : idle }}
+        <PathIcon :name="playing ? 'song' : 'song'" class="play-ico" v-if="playing" /><span v-else>{{ idle }}</span>
       </p>
     </Transition>
   </div>

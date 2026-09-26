@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import { initTheme, toggleTheme, currentTheme } from "../utils/theme";
-import { hapticTap } from "../utils/haptics";
+import { initTheme, toggleTheme, currentTheme } from "../../utils/theme";
+import { hapticTap } from "../../utils/haptics";
 import { Moon, Sun } from "@lucide/vue";
 
 const mode = ref("light");

@@ -2,10 +2,10 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import WordCard from "./WordCard.vue";
 import Pager from "./Pager.vue";
-import { celebrate, bigCelebrate, sfxCorrect } from "../utils/effects";
-import { useViewport } from "../composables/useViewport";
-import { usePager } from "../composables/usePager";
-import { fitGrid } from "../utils/layout";
+import { celebrate, bigCelebrate, sfxCorrect } from "../../utils/effects";
+import { useViewport } from "../../composables/useViewport";
+import { usePager } from "../../composables/usePager";
+import { fitGrid } from "../../utils/layout";
 import { Check, MousePointerClick } from "@lucide/vue";
 
 /**

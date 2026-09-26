@@ -1,128 +1,32 @@
-<script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
-import { activityKeys, getLesson, lessons } from "../data/lessons";
+<script setup lang="ts">
+/**
+ * 首页壳（阶段 2-2）：按底部导航 mode 路由到 自由练习/游戏闯关 两个子视图。
+ * 保留 KeepAlive 需要的稳定组件名；URL 兼容：#/ 与 #/?mode=game。
+ */
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useProgressStore } from "../stores/progress";
 import { useRewardsStore } from "../stores/rewards";
 import { useStreakStore } from "../stores/streak";
-import { useRoute, useRouter } from "vue-router";
-import { speak } from "../utils/speech";
-import { useViewport } from "../composables/useViewport";
-import { usePager } from "../composables/usePager";
-import { pickColumns } from "../utils/layout";
-import Pager from "./Pager.vue";
-import GamePath from "./GamePath.vue";
-import { buildLevels, levelDone } from "../data/pathLevels";
-import { BookOpenText, Check, Star } from "@lucide/vue";
-import ThemeToggle from "./ThemeToggle.vue";
+import { Star } from "@lucide/vue";
+import ThemeToggle from "./layout/ThemeToggle.vue";
+import PathIcon from "./PathIcon.vue";
+import PracticeView from "../views/practice/PracticeView.vue";
+import GameView from "../views/game/GameView.vue";
 
 defineOptions({ name: "HomePage" }); // KeepAlive include 需要稳定组件名
 
+const route = useRoute();
+const router = useRouter();
 const progress = useProgressStore();
 const rewards = useRewardsStore();
 const streak = useStreakStore();
-const router = useRouter();
-
-/**
- * 首页浏览模式：practice = 自由练习课程网格 / game = 游戏模式关卡路径。
- * 由底部导航驱动：自由 = 无 query，游戏 = ?mode=game（URL 可直达、可分享）。
- */
-const route = useRoute();
 const mode = computed(() => (route.query.mode === "game" ? "game" : "practice"));
-
-const { isNarrow } = useViewport();
-
-const GAP = 14;
-const MIN_CARD_W = 170;
-const MIN_CARD_H = 120;
-
-/* ---------- 测量课时卡片区 ---------- */
-const stageEl = ref(null);
-const area = reactive({ w: 0, h: 0 });
-let ro = null;
-let raf = null;
-
-function measure() {
-  const el = stageEl.value;
-  if (!el) return;
-  const r = el.getBoundingClientRect();
-  area.w = r.width;
-  area.h = r.height;
-}
-function scheduleMeasure() {
-  if (raf) cancelAnimationFrame(raf);
-  raf = requestAnimationFrame(() => {
-    raf = null;
-    measure();
-  });
-}
-onMounted(() => {
-  measure();
-  ro = new ResizeObserver(scheduleMeasure);
-  if (stageEl.value) ro.observe(stageEl.value);
-});
-onBeforeUnmount(() => {
-  if (ro) ro.disconnect();
-  if (raf) cancelAnimationFrame(raf);
-});
-
-/* ---------- 每页课时数与列数 ---------- */
-const fit = computed(() => {
-  if (!area.w || !area.h) return { cols: isNarrow.value ? 2 : 3, rows: 2 };
-  return pickColumns({
-    width: area.w,
-    height: area.h,
-    count: lessons.length,
-    minCardW: MIN_CARD_W,
-    minCardH: MIN_CARD_H,
-    gap: GAP,
-    maxCols: isNarrow.value ? 2 : 4,
-    // 矮屏（手机横屏）两行课时卡放不下会顶破屏幕：强制单行，靠翻页看剩下的课
-    maxRows: area.h < MIN_CARD_H * 2 + GAP ? 1 : 4,
-    // 课时卡偏方形（emoji + 中文 + 英文 + 词数四行），目标略高于 1
-    targetAspect: 1.0
-  });
-});
-
-const perPage = computed(() => fit.value.cols * fit.value.rows);
-
-const {
-  page,
-  total,
-  items,
-  next: gotoNext,
-  prev: gotoPrev,
-  go: gotoPage
-} = usePager(lessons, perPage, {
-  resetOn: [() => lessons.length]
-});
-
-const cardsStyle = computed(() => ({
-  "--cols": fit.value.cols,
-  "--grid-gap": `${GAP}px`
-}));
-
-function enter(l) {
-  speak(l.words[0].en, { lessonId: l.id, wordId: l.words[0].id }); // 进课时先读一个单词，暖场
-  router.push(`/lesson/${l.id}`);
-}
-
-/* ---------- 快捷引导：复习入口 + 继续上次课程 ---------- */
-/** 待复习弱词数（答错过且正确 ≤ 错误）——有则显示"复习"入口 */
-const weakCount = computed(() => progress.getWeakWords().length);
-/** 最近进入过的课时（继续学习入口） */
-const lastLessonObj = computed(() => {
-  const id = progress.lastLesson;
-  return id ? getLesson(id) : null;
-});
-
-/** 游戏模式通关关卡数（顶部 header 进度，与 GamePath 关卡节点口径一致：关卡 = 课程玩法） */
-const pathLevels = buildLevels();
-const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, progress.progress)).length);
 </script>
 
 <template>
   <div class="home view">
-    <!-- 顶部 header bar（一行）：自由 = mascot+徽章 / 游戏 = 标题+通关进度；主题切换并入 bar 右侧 -->
+    <!-- 顶部 header bar（一行）：自由 = mascot+徽章 / 游戏 = 标题+连击；主题切换并入 bar 右侧 -->
     <header class="hero anim-fade-up">
       <div class="hdr-row">
         <div class="hdr-left">
@@ -149,16 +53,16 @@ const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, pro
             v-if="mode === 'game'"
             class="hdr-streak"
             :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天' : '完成一个玩法点亮今天的火焰'"
-          >🔥 {{ streak.streak }}</span>
+          ><PathIcon name="flame" class="k-ico flame-ico" />{{ streak.streak }}</span>
           <div v-else class="badges">
             <div class="star-badge" title="我的星星总数">
               <Star class="k-ico star-fill" />{{ progress.totalStars }}
             </div>
             <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐：贝壳余额" @click="router.push('/treasure')">
-              🐚 {{ rewards.shells }}
+              <PathIcon name="shell" class="k-ico shell-ico" />{{ rewards.shells }}
             </button>
             <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天' : '完成一个玩法点亮今天的火焰'">
-              🔥 {{ streak.streak }}
+              <PathIcon name="flame" class="k-ico flame-ico" />{{ streak.streak }}
             </div>
           </div>
           <ThemeToggle />
@@ -166,43 +70,10 @@ const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, pro
       </div>
     </header>
 
-    <!-- 快捷引导：有弱词显示"复习"，有最近课程显示"继续学习"（自由练习模式） -->
-    <div v-if="mode === 'practice' && (weakCount > 0 || lastLessonObj)" class="quick-links anim-fade-up">
-      <button v-if="weakCount > 0" class="q-link review" @click="router.push('/review')">
-        <BookOpenText class="k-ico" />复习 {{ weakCount }} 个词
-      </button>
-      <button v-if="lastLessonObj" class="q-link" @click="enter(lastLessonObj)">
-        ⏩ 继续：{{ lastLessonObj.emoji }} {{ lastLessonObj.titleZh }}
-      </button>
-    </div>
+    <PracticeView v-if="mode === 'practice'" />
+    <GameView v-else />
 
-    <template v-if="mode === 'practice'">
-      <div class="stage view-body" ref="stageEl">
-        <div class="cards" :style="cardsStyle">
-          <button
-            v-for="(l, i) in items"
-            :key="l.id"
-            class="lesson-card anim-pop"
-            :class="'tone-' + l.tone"
-            :style="{ animationDelay: Math.min(i, 8) * 0.08 + 's' }"
-            @click="enter(l)"
-          >
-            <span class="big-emoji anim-float">{{ l.emoji }}</span>
-            <span class="lt">{{ l.title }}</span>
-            <span class="card-done" v-if="progress.isCompleted(l.id, activityKeys(l))">
-              <Check class="k-ico" />全部通关
-            </span>
-            <span class="cnt">{{ l.words.length }} 个单词</span>
-          </button>
-        </div>
-      </div>
-
-      <Pager :page="page" :total="total" @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
-    </template>
-
-    <GamePath v-else class="gp-slot" />
-
-    <p class="foot">👨‍👩‍👧 建议家长陪同，每次 10~15 分钟</p>
+    <p class="foot">建议家长陪同，每次 10~15 分钟</p>
   </div>
 </template>
 
@@ -210,8 +81,6 @@ const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, pro
 .home {
   position: relative;
 }
-/* 顶部 header bar：一行，左右分栏（不再占两行的大标题/副标题）；
-   吸顶：滚动路径图时标题保持置顶，背景遮挡下方内容（多邻国式） */
 .hero {
   position: sticky;
   top: 0;
@@ -236,7 +105,7 @@ const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, pro
   min-width: 0;
 }
 .hdr-right {
-  flex: 1; /* 撑满 header 剩余空间：徽章+主题按钮不再被压缩溢出 */
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-wrap: wrap;
@@ -250,7 +119,6 @@ const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, pro
   color: var(--ink);
   white-space: nowrap;
 }
-/* 多邻国式连击徽章：火焰 + 天数，金色胶囊 */
 .hdr-streak {
   display: inline-flex;
   align-items: center;
@@ -266,7 +134,6 @@ const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, pro
   white-space: nowrap;
   flex: none;
 }
-/* 吉祥物：小 logo，轻轻浮动，偶尔眨眼 */
 .mascot {
   width: 1.4em;
   height: 1.4em;
@@ -281,34 +148,12 @@ const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, pro
   0%, 92%, 100% { transform: scaleY(1); }
   95%, 97% { transform: scaleY(0.12); }
 }
-
-/* 游戏模式：占满剩余高度，路径图超高时可上下滚动（#app overflow hidden 下必须内部滚）；
-   滚动条贴到视口最右缘：slot 宽度向右多伸一个 --pad-x，右缘直达视口边缘；
-   地图内容自带留白（节点列 0.24/0.76 外侧留白），无需右 padding。
-   注意不用负 margin（flex stretch 下负 margin 不生效），用宽度扩展。
-   .home 前缀保证特异性压过 GamePath 根样式 */
-.home .gp-slot {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  margin-top: var(--gap-s);
-  width: calc(100% + var(--pad-x));
-  max-width: none;
-  margin-left: 0;
-  margin-right: 0;
-  padding-right: 0;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* 星星 + 宝藏 + 连击火焰并排：inline-flex 内容宽（不参与父容器 grow/shrink），
-   三项一行固定排布，hdr-right 的 flex-end 负责右对齐 */
 .badges {
   display: inline-flex;
   flex-wrap: nowrap;
   align-items: center;
   gap: var(--gap-s);
 }
-/* header 徽章紧凑化：图标+数字，避免三项+主题按钮超宽互相遮挡 */
 .hdr-right .star-badge,
 .hdr-right .treasure-badge,
 .hdr-right .streak-badge {
@@ -331,14 +176,10 @@ const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, pro
   transition: background 0.3s, color 0.3s;
 }
 .streak-badge.done {
-  position: static; /* 防御：角标 .done 曾污染导致 absolute 遮挡，显式恢复静态布局 */
+  position: static;
   background: linear-gradient(160deg, #ff9f43, #ff6b3d);
   color: #fff;
   box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18), 0 0 14px rgba(255, 122, 61, 0.4);
-}
-.sb-cap {
-  font-size: var(--fs-small);
-  opacity: 0.9;
 }
 .treasure-badge {
   display: inline-flex;
@@ -356,108 +197,6 @@ const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, pro
 .treasure-badge:active {
   transform: translateY(calc(var(--press) - 1px));
 }
-.tb-cap {
-  font-size: var(--fs-small);
-  opacity: 0.85;
-}
-
-/* 快捷引导（复习 / 继续学习）：给"练完就走"的孩子一个明确的下一步 */
-.quick-links {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--gap-s);
-  margin-top: var(--gap-s);
-}
-.q-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: clamp(7px, 1.4vh, 10px) clamp(12px, 1.8vw, 18px);
-  border-radius: var(--radius-pill);
-  font-weight: 800;
-  font-size: var(--fs-small);
-  color: var(--ink);
-  background: var(--card-bg);
-  box-shadow: var(--shadow-hard);
-  transition: transform 0.1s, background 0.2s;
-}
-.q-link.review {
-  background: linear-gradient(160deg, #ffd6a5, #ffb26b);
-  color: #5c3a00;
-}
-.q-link:active {
-  transform: translateY(calc(var(--press) - 1px));
-}
-
-/* 卡片区只负责"占满剩余高度"并可被测量 */
-.stage {
-  display: flex;
-}
-.cards {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
-  grid-auto-rows: minmax(0, 1fr);
-  gap: var(--grid-gap, 14px);
-}
-/* 底色 / 立体投影 / 文字色由 .tone-* 统一注入（见 base.css），这里只管排布 */
-.lesson-card {
-  border-radius: var(--radius);
-  padding: var(--gap-s);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  position: relative;
-  transition: transform 0.1s;
-  min-height: 0;
-  min-width: 0;
-  overflow: hidden;
-}
-.lesson-card:active {
-  transform: translateY(calc(var(--press) - 1px)) scale(0.98);
-}
-.big-emoji {
-  font-size: var(--fs-emoji-xl);
-  line-height: 1;
-}
-.lt {
-  font-size: clamp(16px, min(3vh, 2.4vw), 24px);
-  font-weight: 800;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
-  /* 英文标题较长，允许最多换两行，避免省略号截断 */
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  line-height: 1.2;
-  max-width: 100%;
-}
-.cnt {
-  font-size: clamp(10px, min(1.6vh, 1.3vw), 13px);
-  opacity: 0.85;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.card-done {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: var(--overlay);
-  color: var(--green-dark);
-  font-size: clamp(10px, min(1.6vh, 1.3vw), 12px);
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
 .foot {
   text-align: center;
   color: var(--ink-faint);
@@ -466,8 +205,6 @@ const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, pro
   margin: 0;
   flex: none;
 }
-
-/* 手机横屏：标题和页脚都让位，把高度留给卡片 */
 @media (max-height: 480px) {
   .hero h1 {
     font-size: 22px;
@@ -476,20 +213,8 @@ const gameDoneCount = computed(() => pathLevels.filter((lv) => levelDone(lv, pro
   .foot {
     display: none;
   }
-  .cnt {
-    display: none;
-  }
-  /* 横屏时吉祥物离顶边只剩几个像素，浮动动画会瞬间探出屏幕，矮屏下关掉 */
   .mascot {
     animation: none;
-  }
-}
-
-/* 卡片很矮时收紧行高，避免长英文标题换行溢出 */
-@media (max-height: 620px) and (max-width: 600px) {
-  .lt {
-    -webkit-line-clamp: 1;
-    font-size: 15px;
   }
 }
 </style>

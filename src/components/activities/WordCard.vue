@@ -1,8 +1,8 @@
 <script setup>
 import { computed, ref } from "vue";
-import { speak } from "../utils/speech";
-import { sfxTap } from "../utils/effects";
-import { useProgressStore } from "../stores/progress";
+import { speak } from "../../utils/speech";
+import { sfxTap } from "../../utils/effects";
+import { useProgressStore } from "../../stores/progress";
 import { Volume2 } from "@lucide/vue";
 
 const props = defineProps({

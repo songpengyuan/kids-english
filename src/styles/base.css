@@ -7,7 +7,7 @@
 /* ---------- 圆体字（可爱化的地基） ----------
  * Baloo 2：Google Fonts 的开源圆体（OFL 许可），本地打包 latin 子集只有 ~32KB，
  * 离线可用、跨设备渲染一致。可变字重 400-800，粗体不再是系统字体的"假加粗"。
- * 中文回落到苹方/雅黑（圆润中文字体动辄几 MB，不划算）。
+ * 中文用站酷快乐体子集（ZCOOL KuaiLe，scripts/subset-font.py 生成，116KB）。
  * 相对路径引用：Vite 会把它带 hash 打进 /assets/，Service Worker 按 hash 资源永久缓存。
  */
 @font-face {
@@ -16,6 +16,17 @@
   font-weight: 400 800;
   font-display: swap;
   src: url("../assets/fonts/baloo2-latin.woff2") format("woff2");
+}
+
+/* 中文儿童圆体：站酷快乐体（ZCOOL KuaiLe，免费商用）。
+ * 全量 ~700KB，项目只用到 ~1090 个汉字，用 scripts/subset-font.py 子集化为 116KB，
+ * 离线打包。新增文案后重跑该脚本，否则新字回退系统字体。 */
+@font-face {
+  font-family: "ZCOOL KuaiLe";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/zcool-kuaile-subset.woff2") format("woff2");
 }
 
 /* ---------- reset ---------- */
@@ -263,7 +274,7 @@ img {
   padding: clamp(10px, 1.8vh, 14px) clamp(20px, 3vw, 32px);
   border-radius: var(--radius-s);
   box-shadow: 0 var(--press) 0 var(--green-dark);
-  transition: transform 0.08s, box-shadow 0.08s;
+  transition: transform var(--dur-fast), box-shadow var(--dur-fast);
   min-height: var(--tap-min);
   display: inline-flex;
   align-items: center;
@@ -329,7 +340,7 @@ img {
   height: 100%;
   background: linear-gradient(90deg, var(--progress-hi), var(--yellow));
   border-radius: var(--radius-pill);
-  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: width var(--dur-slow) var(--ease-pop);
   position: relative;
 }
 .progress .fill::after {

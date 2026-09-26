@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onBeforeUnmount } from "vue";
-import { speak } from "../utils/speech";
+import { speak } from "../../utils/speech";
 import {
   asrSupported,
   createWordRecognizer,
@@ -8,9 +8,9 @@ import {
   gradeScore,
   recorderSupported,
   createRecorder
-} from "../utils/speechScore";
-import { celebrate, sfxCorrect, sfxWrong, sfxTap } from "../utils/effects";
-import { useProgressStore } from "../stores/progress";
+} from "../../utils/speechScore";
+import { celebrate, sfxCorrect, sfxWrong, sfxTap } from "../../utils/effects";
+import { useProgressStore } from "../../stores/progress";
 import { ChevronRight, Mic, RotateCcw, Square, ThumbsUp, Volume2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
@@ -271,7 +271,7 @@ onBeforeUnmount(() => {
       </template>
       <template v-else-if="mode === 'record'">
         <p class="verdict" :class="grade">
-          <span v-if="grade === 'perfect'">🌟 太棒了！</span>
+          <span v-if="grade === 'perfect'">太棒了！</span>
           <span v-else class="retry-hint"><RotateCcw class="k-ico" />再试一次吧，先听一遍示范</span>
         </p>
         <div class="btn-row">
@@ -288,8 +288,8 @@ onBeforeUnmount(() => {
       </template>
       <template v-else>
         <p class="verdict" :class="grade">
-          <span v-if="grade === 'perfect'">🌟 太棒了！发音很标准</span>
-          <span v-else-if="grade === 'good'">😊 很不错，再响亮一点就更棒啦</span>
+          <span v-if="grade === 'perfect'">太棒了！发音很标准</span>
+          <span v-else-if="grade === 'good'">很不错，再响亮一点就更棒啦</span>
           <span v-else class="retry-hint"><RotateCcw class="k-ico" />再试一次吧，先听一遍示范</span>
         </p>
         <p v-if="heard" class="heard">小耳朵听到的是："{{ heard }}"</p>

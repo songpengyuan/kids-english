@@ -16,7 +16,9 @@ import { useProgressStore } from "../stores/progress";
 import { useRewardsStore } from "../stores/rewards";
 import { useStreakStore } from "../stores/streak";
 import { useRouter } from "vue-router";
-import { ChevronLeft, Flame, Star } from "@lucide/vue";
+import { Flame, Star } from "@lucide/vue";
+import HeaderBar from "../components/layout/HeaderBar.vue";
+import PathIcon from "../components/PathIcon.vue";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();
@@ -107,13 +109,10 @@ const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stick
 
 <template>
   <div class="report view">
-    <div class="topbar">
-      <button class="back" aria-label="返回首页" title="返回首页" @click="router.push('/')">
-        <ChevronLeft class="k-ico" />
-      </button>
-      <div class="title">📊 家长报告</div>
-      <div class="hint">{{ todayStr() }}</div>
-    </div>
+    <HeaderBar show-back back-label="返回首页" @back="router.push('/')">
+      <template #title><PathIcon name="chart" class="title-ico" /> 家长报告</template>
+      <template #right><span class="hint">{{ todayStr() }}</span></template>
+    </HeaderBar>
 
     <div class="body">
       <!-- 今日概览 -->
@@ -131,7 +130,7 @@ const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stick
           <div class="item">
             <span class="k">今日目标</span>
             <span class="v" :class="{ ok: streak.todayDone }">
-              {{ streak.todayDone ? "已达成 🔥" : "未达成" }}
+              {{ streak.todayDone ? "已达成" : "未达成" }}<Flame v-if="streak.todayDone" class="k-ico flame-ico" />
             </span>
           </div>
           <div class="item">
@@ -189,15 +188,15 @@ const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stick
         <div class="kv">
           <div class="item">
             <span class="k">贝壳</span>
-            <span class="v">🐚 {{ rewards.shells }}</span>
+            <span class="v"><PathIcon name="shell" class="mini-ico" /> {{ rewards.shells }}</span>
           </div>
           <div class="item">
             <span class="k">贴纸图鉴</span>
-            <span class="v">🎨 {{ stickerDone }}</span>
+            <span class="v"><PathIcon name="sticker" class="mini-ico" /> {{ stickerDone }}</span>
           </div>
           <div class="item">
             <span class="k">开箱次数</span>
-            <span class="v">📦 {{ rewards.chestsOpened }}</span>
+            <span class="v"><PathIcon name="gift" class="mini-ico" /> {{ rewards.chestsOpened }}</span>
           </div>
         </div>
       </section>
@@ -210,30 +209,6 @@ const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stick
 <style scoped>
 .report {
   gap: var(--gap-s);
-}
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-s);
-  flex: none;
-}
-.back {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: clamp(44px, 7vh, 52px);
-  height: clamp(44px, 7vh, 52px);
-  border-radius: var(--radius-pill);
-  background: var(--card-bg);
-  box-shadow: var(--shadow-hard);
-  flex: none;
-}
-.topbar .title {
-  font-weight: 800;
-  font-size: var(--fs-title);
-  color: var(--ink);
-  flex: 1;
-  min-width: 0;
 }
 .hint {
   font-weight: 700;

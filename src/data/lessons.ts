@@ -33,8 +33,8 @@
  */
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-function asset(path) {
-  if (!path) return path;
+function asset(path: string | null | undefined): string | null {
+  if (!path) return null;
   if (/^(https?:)?\/\//.test(path)) return path; // 外链原样返回
   return BASE + (path.startsWith("/") ? path : `/${path}`);
 }
@@ -42,7 +42,74 @@ function asset(path) {
 /* 逐行歌词的时间轴（scripts/gen-songs.py 生成），用于 KTV 式精确高亮 */
 import songTimings from "./song-timings.json";
 
-const rawLessons = [
+/* ===== 类型（阶段 2-4：lessons.js → TS 迁移，数据本体未改） ===== */
+export type Tone = "blue" | "green" | "orange" | "purple" | "pink" | "teal";
+
+export interface RawLessonSong {
+  audio?: string | null;
+  video?: string | null;
+  scene?: string;
+  lyrics?: string[];
+}
+export interface RawLessonWord {
+  id: string;
+  en: string;
+  zh: string;
+  emoji: string;
+  image?: string;
+  audio?: string;
+}
+export interface RawLesson {
+  id: string;
+  title: string;
+  titleZh: string;
+  emoji: string;
+  tone?: Tone;
+  date?: string;
+  song: RawLessonSong;
+  words: RawLessonWord[];
+  phrases?: { en: string; zh: string }[];
+}
+
+/** 单词（映射后：补课时归属 + 资源路径化） */
+export interface Word {
+  id: string;
+  en: string;
+  zh: string;
+  emoji: string;
+  image?: string | null;
+  audio?: string | null;
+  /** 词归属的课时 id：发音注册表按 (lessonId, wordId) 精确定位 */
+  lessonId: string;
+}
+export interface Phrase {
+  en: string;
+  zh: string;
+  audio: string;
+}
+export interface LessonSong {
+  audio: string | null;
+  video: string | null;
+  scene: string;
+  lyrics: string[];
+  /** 该课节奏（gen-songs.py 生成；手工换过 mp3 时自动没有 → 回退比例映射） */
+  timings: SongTiming | null;
+}
+/** 课时（映射后：tone 兜底 + 资源路径化 + 词/句补全） */
+export interface Lesson {
+  id: string;
+  title: string;
+  titleZh: string;
+  emoji: string;
+  tone: Tone;
+  date?: string;
+  song: LessonSong;
+  words: Word[];
+  phrases: Phrase[];
+}
+
+
+const rawLessons: RawLesson[] = [
   {
     id: "l4",
     title: "A Sailor Went to Sea",
@@ -367,7 +434,17 @@ const rawLessons = [
   }
 ];
 
-export const lessons = rawLessons.map((lesson) => ({
+// 逐行时间轴索引化（json 字面量类型无 index signature，转 Record 再取）
+/** song-timings.json 的课时节奏结构（gen-songs.py 生成） */
+export interface SongTiming {
+  bpm: number;
+  beatsPerBar: number;
+  duration: number;
+  timeline: number[];
+}
+const songTimingsMap = songTimings as unknown as Record<string, SongTiming | null>;
+
+export const lessons: Lesson[] = rawLessons.map((lesson) => ({
   ...lesson,
   // 缺失时兜底成蓝色，避免 class 变成 tone-undefined 导致卡片没有底色
   tone: lesson.tone || "blue",
@@ -377,12 +454,12 @@ export const lessons = rawLessons.map((lesson) => ({
     scene: lesson.song.scene || "stage",
     lyrics: lesson.song.lyrics || [],
     // 该课的节奏与逐行时间轴（gen-songs.py 生成；手工换过 mp3 时会自动没有 → 回退比例映射）
-    timings: songTimings[lesson.id] || null
+    timings: songTimingsMap[lesson.id] || null
   },
   // 亲子对话口语句（TalkView 用），发音文件为 ph-<序号>.mp3，缺失时回退 TTS
   phrases: (lesson.phrases || []).map((p, i) => ({
     ...p,
-    audio: asset(`/lessons/${lesson.id}/audio/ph-${i + 1}.mp3`)
+    audio: asset(`/lessons/${lesson.id}/audio/ph-${i + 1}.mp3`) ?? ""
   })),
   words: lesson.words.map((word) => ({
     ...word,
@@ -392,7 +469,7 @@ export const lessons = rawLessons.map((lesson) => ({
     image: asset(word.image),
     // 预生成的神经网络童声发音（public/lessons/<id>/audio/<wordId>.mp3），
     // 文件不存在时 speech.js 会自动回退到浏览器 TTS
-    audio: asset(`/lessons/${lesson.id}/audio/${word.id}.mp3`)
+    audio: asset(`/lessons/${lesson.id}/audio/${word.id}.mp3`) ?? undefined
   }))
 }));
 
@@ -401,13 +478,13 @@ export const lessons = rawLessons.map((lesson) => ({
  * 「通关」判定与家长报告都需要它——progress store 不感知玩法编排，
  * 由数据层给出统一口径，避免 HomePage / GamePath / LessonView 各写一份。
  */
-export function activityKeys(lesson) {
+export function activityKeys(lesson: Pick<Lesson, "phrases">): string[] {
   const base = ["learn", "quiz", "match", "speak"];
   if (lesson.phrases?.length) base.push("talk");
   base.push("song");
   return base;
 }
 
-export function getLesson(id) {
+export function getLesson(id: string): Lesson | null {
   return lessons.find((l) => l.id === id) || null;
 }

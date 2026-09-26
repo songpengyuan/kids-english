@@ -7,7 +7,9 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useRewardsStore, stickerPool, stickerPrice, stickerTotal } from "../stores/rewards";
 import { sfxCoin, sfxTap, sfxWrong } from "../utils/effects";
-import { ChevronLeft, Star } from "@lucide/vue";
+import { Star } from "@lucide/vue";
+import HeaderBar from "../components/layout/HeaderBar.vue";
+import PathIcon from "../components/PathIcon.vue";
 
 defineOptions({ name: "TreasureView" }); // KeepAlive include 需要稳定组件名
 
@@ -38,20 +40,17 @@ function buy(emoji) {
 
 <template>
   <div class="treasure view">
-    <div class="topbar">
-      <button class="back" aria-label="返回首页" title="返回首页" @click="router.push('/')">
-        <ChevronLeft class="k-ico" />
-      </button>
-      <div class="title">🎁 宝藏罐</div>
-      <div class="star-badge">
-        <Star class="k-ico star-fill" />{{ rewards.chestsOpened }} 次开箱
-      </div>
-    </div>
+    <HeaderBar show-back back-label="返回首页" @back="router.push('/')">
+      <template #title><PathIcon name="gift" class="title-ico" /> 宝藏罐</template>
+      <template #right>
+        <div class="star-badge"><Star class="k-ico star-fill" />{{ rewards.chestsOpened }} 次开箱</div>
+      </template>
+    </HeaderBar>
 
     <div class="view-body treasure-body">
       <!-- 贝壳余额 -->
       <div class="shells-card anim-pop">
-        <span class="shell-ico">🐚</span>
+        <span class="shell-ico"><PathIcon name="shell" class="shell-ico-in" /></span>
         <div>
           <p class="label">攒了这么多贝壳</p>
           <p class="num">{{ rewards.shells }}</p>
@@ -81,8 +80,8 @@ function buy(emoji) {
       <!-- 贴纸商店：贝壳定向购买未收集贴纸（消耗出口，避免贝壳只进不出） -->
       <div class="album anim-fade-up">
         <div class="album-head">
-          <span class="album-title">🛍️ 贴纸商店</span>
-          <span class="album-progress">🐚 {{ rewards.shells }}</span>
+          <span class="album-title"><PathIcon name="sticker" class="mini-ico" /> 贴纸商店</span>
+          <span class="album-progress"><PathIcon name="shell" class="mini-ico" /> {{ rewards.shells }}</span>
         </div>
         <p class="shop-tip">贝壳攒着也是攒着，买下还没集到的贴纸吧！一张 {{ stickerPrice }} 贝壳</p>
         <div class="grid">
@@ -100,7 +99,7 @@ function buy(emoji) {
               :aria-label="'购买' + s.emoji + '贴纸'"
               @click="buy(s.emoji)"
             >
-              🐚 {{ stickerPrice }}
+              <PathIcon name="shell" class="mini-ico" /> {{ stickerPrice }}
             </button>
             <span v-else class="cell-cap">已收集</span>
           </div>

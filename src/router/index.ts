@@ -10,11 +10,11 @@
  */
 import { createRouter, createWebHashHistory } from "vue-router";
 import HomePage from "../components/HomePage.vue";
-import MyView from "../components/MyView.vue";
-import TreasureView from "../components/TreasureView.vue";
-import ReportView from "../components/ReportView.vue";
-import ReviewView from "../components/ReviewView.vue";
-import LessonView from "../components/LessonView.vue";
+import MyView from "../views/MyView.vue";
+import TreasureView from "../views/TreasureView.vue";
+import ReportView from "../views/ReportView.vue";
+import ReviewView from "../views/ReviewView.vue";
+import LessonView from "../views/LessonView.vue";
 
 export const router = createRouter({
   history: createWebHashHistory(),

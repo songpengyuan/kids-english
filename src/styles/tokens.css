@@ -131,7 +131,7 @@
   --z-banner: 9;
 
   font-family:
-    "Baloo 2", "Chalkboard SE", "Comic Sans MS", "PingFang SC",
+    "Baloo 2", "ZCOOL KuaiLe", "Chalkboard SE", "Comic Sans MS", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
 }
 
@@ -228,3 +228,17 @@
  * 这些分档在 JS 侧由 src/composables/useViewport.js 提供同名判断，
  * 组件内需要「按档位改变结构」时用它，纯样式微调用 @media。
  */
+
+/* ===== 动效 tokens（阶段 3-1：统一节奏，新增动效先查这里再写值） ===== */
+:root {
+  /* 时长 */
+  --dur-fast: 0.12s;   /* 触觉/按压反馈、点按弹缩 */
+  --dur-base: 0.22s;   /* 普通 UI 过渡（hover/位移/显隐） */
+  --dur-slow: 0.45s;   /* 弹入、结算、大元素位移 */
+  --dur-fly: 0.9s;     /* 抛物线飞行（开宝箱收取） */
+  /* 缓动 */
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);   /* 弹性弹入（落地有回弹） */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);      /* 标准减速（滑入/收起） */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);   /* 对称过渡 */
+  --ease-bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6); /* 强回弹（宝箱/徽章） */
+}

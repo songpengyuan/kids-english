@@ -1,10 +1,10 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, reactive, nextTick, watch } from "vue";
-import { speak } from "../utils/speech";
-import { sfxMatch, sfxWrong, celebrate } from "../utils/effects";
-import { useProgressStore } from "../stores/progress";
-import { useViewport } from "../composables/useViewport";
-import { splitBalanced } from "../utils/layout";
+import { speak } from "../../utils/speech";
+import { sfxMatch, sfxWrong, celebrate } from "../../utils/effects";
+import { useProgressStore } from "../../stores/progress";
+import { useViewport } from "../../composables/useViewport";
+import { splitBalanced } from "../../utils/layout";
 import { Link2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
@@ -444,7 +444,7 @@ onBeforeUnmount(() => {
 
       <!-- 组间过场横幅：盖住整块棋盘（含连线），用 banner-in 入场 -->
       <div v-if="transitioning" class="banner">
-        <span>{{ groupIdx + 1 >= groupCount ? "全部连完啦 🎉" : "这组连完啦！下一组 →" }}</span>
+        <span>{{ groupIdx + 1 >= groupCount ? "全部连完啦！" : "这组连完啦！下一组 →" }}</span>
       </div>
     </div>
   </div>

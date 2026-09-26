@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from "vue";
-import { bigCelebrate } from "../utils/effects";
-import { hapticTap } from "../utils/haptics";
-import { useProgressStore } from "../stores/progress";
+import { bigCelebrate } from "../../utils/effects";
+import { hapticTap } from "../../utils/haptics";
+import { useProgressStore } from "../../stores/progress";
 import { Clapperboard, Headphones, Music, Pause, Play, Repeat, Sparkles } from "@lucide/vue";
 import SongStage from "./SongStage.vue";
 

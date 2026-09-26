@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { speak } from "../utils/speech";
-import { sfxCorrect, sfxWrong, celebrate } from "../utils/effects";
-import { useProgressStore } from "../stores/progress";
+import { speak } from "../../utils/speech";
+import { sfxCorrect, sfxWrong, celebrate } from "../../utils/effects";
+import { useProgressStore } from "../../stores/progress";
 import { Volume2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
@@ -119,7 +119,7 @@ const scoreStars = computed(() => {
       </div>
     </div>
 
-    <p v-if="locked" class="praise anim-pop">太棒了！🎉</p>
+    <p v-if="locked" class="praise anim-pop">太棒了！</p>
     <p v-else-if="wrongPicks.size" class="oh anim-pop">再听一次哦～</p>
     <!-- 占位：忙时用透明文本撑住高度，避免答题后整页上下跳动 -->
     <p v-else class="praise placeholder" aria-hidden="true">占位</p>
