@@ -701,3 +701,15 @@ pnpm test   # vitest run，覆盖：
 - **宝箱关卡**：金色礼物节点（PathIcon chest，lucide Gift path）；点击直接在地图弹 ChestReward overlay；收取完成 markChest（progress store 新增）→ 宝箱关变 done（一次性奖励）。
 - **LessonResult quest 分支移除自动宝箱**：宝箱只在地图宝箱关卡触发（每关完成不再弹）。
 - 几何自动适应 7 关/课（snakeNodes 等弧长，首末居中），pathGeometry 测试更新为 7 关口径。
+### 13.9 关卡地图改文档流布局（2026-09-26）
+
+**需求**：关卡地图应使用文档流、居中对齐，再通过左右相对位移形成 S 形；非必要避免脱离文档流。
+
+**实现**：
+- **布局方式**：`.gp-unit`（课横幅）与 `.lv-wrap`（关卡）全部改为文档流块（不再 absolute left/top 定位）。
+  - 课横幅：全宽块（margin 20px 0 38px），按 buildPathGeometry 顺序与关卡**交替渲染**（单一 v-for over layout，保证 unit → levels → unit → levels 真实阅读顺序）。
+  - 关卡：`.lv-wrap` 默认 `margin: 0 auto` 水平居中，`transform: translateX(var(--dx))` 左右摆动成 S 形；`--dx = x - width/2`（snakeNodes 等弧长 x 相对容器中心）。
+  - 垂直间距：`.lv-wrap + .lv-wrap { margin-top: 28px }`（圆心距 = 28+56 = ROW_H=84，节点间等距）；首关距横幅底 38px（= BAR_GAP-28）。
+- **状态类迁移**：done/active/locked/chest/flash 等类从 `.gp-level` 移到 `.lv-wrap`（CSS 选择器同步更新）。
+- **滚动**：容器高度由文档流自然撑开（35 关 + 5 横幅 scrollHeight≈3390），不再手动 pathH 撑高；滚动记忆/ResizeObserver 逻辑不变。
+- 实测：交替顺序 U→7L、无 absolute 节点（absCount=0）、S 形位移 [0,+91,+91,0,-91,-91,0]、垂直等距、滚动与点击（进关/锁关提示）均正常。

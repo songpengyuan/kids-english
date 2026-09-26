@@ -32,7 +32,7 @@ import { useProgressStore } from "../stores/progress";
 import { hapticTap, hapticWrong } from "../utils/haptics";
 import PathIcon from "./PathIcon.vue";
 import ChestReward from "./ChestReward.vue";
-import { buildPathGeometry, snakeNodes, R, ROW_H, BAR_H, BOTTOM, type PathGeoItem } from "../utils/pathGeometry";
+import { buildPathGeometry, snakeNodes, R, ROW_H, type PathGeoItem } from "../utils/pathGeometry";
 
 const router = useRouter();
 const progress = useProgressStore();
@@ -74,38 +74,33 @@ const geo = computed<GeoItem[]>(() => {
   });
 });
 
-/** 地图总高（滚动容器内容高 = 末节点圆心 + 节点半径 + 底部留白） */
-const pathH = computed(() => {
-  const last = geo.value[geo.value.length - 1];
-  return last ? last.y + R + BOTTOM : 400;
-});
-
 /* ---------- 宽度响应式布局（ResizeObserver：容器宽变化才重算 S 形 x） ---------- */
 const stageEl = ref<HTMLDivElement | null>(null);
 const w = ref(320);
 let ro: ResizeObserver | null = null;
 
-/** 按课预计算 S 形等距节点（纯函数 snakeNodes，TDD 基线） */
+/** 按课预计算 S 形等距节点 x（纯函数 snakeNodes，TDD 基线）；
+ *  文档流布局下垂直间距由 CSS margin 控制（ROW_H），y 仅作曲线采样参数 */
 const layout = computed<GeoItem[]>(() => {
   const width = w.value;
   const lessonIds = [...new Set(levels.map((lv) => lv.lessonId))];
   const nodesByLesson = new Map<string, ReturnType<typeof snakeNodes>>();
   for (const lid of lessonIds) {
     const lvs = levels.filter((lv) => lv.lessonId === lid);
-    const first = geo.value.find((g) => g.type === "level" && g.level!.lessonId === lid)!;
-    nodesByLesson.set(lid, snakeNodes(width, lvs.length, first.y, first.y + (lvs.length - 1) * ROW_H));
+    nodesByLesson.set(lid, snakeNodes(width, lvs.length, 0, 100));
   }
   return geo.value.map((it) => {
-    if (it.type === "unit") return { ...it, x: width / 2 };
+    if (it.type === "unit") return { ...it, x: width / 2, y: 0 };
     const arr = nodesByLesson.get(it.level!.lessonId)!;
     const idx = levels.filter((lv) => lv.lessonId === it.level!.lessonId).findIndex((lv) => lv.id === it.level!.id);
-    return { ...it, x: arr[idx].x, y: arr[idx].y };
+    return { ...it, x: arr[idx].x, y: 0 };
   });
 });
 
-/** 课程横幅（unit）与关卡节点（level）分组 */
-const units = computed(() => layout.value.filter((it) => it.type === "unit") as GeoItem[]);
-const levelItems = computed(() => layout.value.filter((it) => it.type === "level") as GeoItem[]);
+/** 关卡相对居中的横向位移（文档流：节点默认居中，translateX 左右摆动成 S 形） */
+function dxOf(lv: GeoItem): number {
+  return Math.round((lv.x ?? 0) - w.value / 2);
+}
 
 function measure() {
   const el = stageEl.value;
@@ -260,69 +255,73 @@ function unitLesson(id: string) {
 
 <template>
   <div ref="stageEl" class="game-path anim-fade-up">
-    <!-- 蛇形路径（DOM：课名横幅 + 圆节点按钮蜿蜒，原生滚动/点击/聚焦） -->
-    <div class="gp-canvas" :style="{ height: pathH + 'px' }">
-      <!-- 课程横幅 -->
-      <div
-        v-for="u in units"
-        :key="'u-' + u.lessonId"
-        class="gp-unit"
-        role="button"
-        tabindex="0"
-        :class="'tone-' + (unitLesson(u.lessonId)?.tone || 'blue')"
-        :style="{ top: u.y - BAR_H / 2 + 'px' }"
-        :aria-label="`${unitLesson(u.lessonId)?.titleZh || ''}，已完成 ${u.done || 0} 关，共 ${u.total || 1} 关`"
-        @click="enterUnit(u)"
-        @keydown.enter="enterUnit(u)"
-        @keydown.space.prevent="enterUnit(u)"
-      >
-        <PathIcon :name="u.lessonId" class="u-ico" />
-        <span class="u-name">{{ unitLesson(u.lessonId)?.titleZh }}</span>
-        <span class="u-count">{{ u.done || 0 }}/{{ u.total || 1 }}</span>
-        <span class="u-bar"><span class="u-bar-fill" :style="{ width: Math.min(100, Math.round(((u.done || 0) / (u.total || 1)) * 100)) + '%' }"></span></span>
-      </div>
+    <!-- 蛇形路径（文档流：课名横幅全宽；关卡节点默认居中，translateX 左右摆动成 S 形） -->
+    <div class="gp-canvas">
+      <!-- 按几何顺序交替渲染：课横幅 → 关卡 → 课横幅 → 关卡（文档流保持真实阅读顺序） -->
+      <template v-for="it in layout" :key="it.type === 'unit' ? 'u-' + it.lessonId : 'l-' + (it as GeoItem).level!.id">
+        <!-- 课程横幅（文档流全宽块） -->
+        <div
+          v-if="it.type === 'unit'"
+          class="gp-unit"
+          role="button"
+          tabindex="0"
+          :class="'tone-' + (unitLesson((it as GeoItem).lessonId)?.tone || 'blue')"
+          :aria-label="`${unitLesson((it as GeoItem).lessonId)?.titleZh || ''}，已完成 ${(it as GeoItem).done || 0} 关，共 ${(it as GeoItem).total || 1} 关`"
+          @click="enterUnit(it as GeoItem)"
+          @keydown.enter="enterUnit(it as GeoItem)"
+          @keydown.space.prevent="enterUnit(it as GeoItem)"
+        >
+          <PathIcon :name="(it as GeoItem).lessonId" class="u-ico" />
+          <span class="u-name">{{ unitLesson((it as GeoItem).lessonId)?.titleZh }}</span>
+          <span class="u-count">{{ (it as GeoItem).done || 0 }}/{{ (it as GeoItem).total || 1 }}</span>
+          <span class="u-bar"><span class="u-bar-fill" :style="{ width: Math.min(100, Math.round((((it as GeoItem).done || 0) / ((it as GeoItem).total || 1)) * 100)) + '%' }"></span></span>
+        </div>
 
-      <!-- 关卡节点（圆形按钮 + 进度圆环，S 形蜿蜒） -->
-      <button
-        v-for="lv in levelItems"
-        :key="'l-' + lv.level!.id"
-        class="gp-level"
-        :class="[states[lv.level!.id], { flash: flashIds.has(lv.level!.id), chest: lv.level!.actKey === 'chest' }]"
-        :style="{ left: lv.x - R + 'px', top: lv.y - R + 'px' }"
-        :aria-label="levelLabel(lv.level!)"
-        @click="enterLevel(lv.level!)"
-        @keydown.enter.prevent="enterLevel(lv.level!)"
-        @keydown.space.prevent="enterLevel(lv.level!)"
-      >
-        <!-- 进度圆环：3 段弧，学一部分亮一部分 -->
-        <svg class="lv-ring" viewBox="0 0 72 72" aria-hidden="true">
-          <circle class="ring-bg" cx="36" cy="36" r="30" pathLength="100" />
-          <circle
-            v-for="seg in 3"
-            :key="seg"
-            class="ring-seg"
-            :class="{ on: ringOf(lv) >= seg }"
-            cx="36"
-            cy="36"
-            r="30"
-            pathLength="100"
-            stroke-dasharray="33.34 66.66"
-            :style="{ transform: 'rotate(' + ((seg - 1) * 120 - 90) + 'deg)' }"
-          />
-        </svg>
-        <span class="lv-pulse" aria-hidden="true"></span>
-        <!-- 未学习只显示锁；宝箱关显示礼物；其余显示玩法图标 -->
-        <PathIcon v-if="lv.state === 'locked'" name="lock" class="lv-ico lv-ico-lock" />
-        <PathIcon v-else-if="lv.level!.actKey === 'chest'" name="chest" class="lv-ico lv-ico-chest" />
-        <PathIcon v-else :name="lv.level!.actKey" class="lv-ico" />
-        <span class="lv-tag" aria-hidden="true">
-          <PathIcon v-if="tagOf(lv.level!) === 'lock'" name="lock" />
-          <span v-else-if="tagOf(lv.level!) === 'done'" class="tick">✓</span>
-          <PathIcon v-else name="play" />
-        </span>
-        <span v-if="lv.stars && lv.level!.actKey !== 'chest'" class="lv-star" aria-hidden="true">★{{ lv.stars }}</span>
-        <span class="lv-name">{{ lv.level!.name }}</span>
-      </button>
+        <!-- 关卡节点（文档流：默认居中，--dx 左右位移；圆按钮 + 进度圆环） -->
+        <div
+          v-else
+          class="lv-wrap"
+          :class="[states[(it as GeoItem).level!.id], { flash: flashIds.has((it as GeoItem).level!.id), chest: (it as GeoItem).level!.actKey === 'chest' }]"
+          :style="{ '--dx': dxOf(it as GeoItem) + 'px' }"
+        >
+          <button
+            class="gp-level"
+            :aria-label="levelLabel((it as GeoItem).level!)"
+            @click="enterLevel((it as GeoItem).level!)"
+            @keydown.enter.prevent="enterLevel((it as GeoItem).level!)"
+            @keydown.space.prevent="enterLevel((it as GeoItem).level!)"
+          >
+            <!-- 进度圆环：3 段弧，学一部分亮一部分 -->
+            <svg class="lv-ring" viewBox="0 0 72 72" aria-hidden="true">
+              <circle class="ring-bg" cx="36" cy="36" r="30" pathLength="100" />
+              <circle
+                v-for="seg in 3"
+                :key="seg"
+                class="ring-seg"
+                :class="{ on: ringOf(it as GeoItem) >= seg }"
+                cx="36"
+                cy="36"
+                r="30"
+                pathLength="100"
+                stroke-dasharray="33.34 66.66"
+                :style="{ transform: 'rotate(' + ((seg - 1) * 120 - 90) + 'deg)' }"
+              />
+            </svg>
+            <span class="lv-pulse" aria-hidden="true"></span>
+            <!-- 未学习只显示锁；宝箱关显示礼物；其余显示玩法图标 -->
+            <PathIcon v-if="(it as GeoItem).state === 'locked'" name="lock" class="lv-ico lv-ico-lock" />
+            <PathIcon v-else-if="(it as GeoItem).level!.actKey === 'chest'" name="chest" class="lv-ico lv-ico-chest" />
+            <PathIcon v-else :name="(it as GeoItem).level!.actKey" class="lv-ico" />
+            <span class="lv-tag" aria-hidden="true">
+              <PathIcon v-if="tagOf((it as GeoItem).level!) === 'lock'" name="lock" />
+              <span v-else-if="tagOf((it as GeoItem).level!) === 'done'" class="tick">✓</span>
+              <PathIcon v-else name="play" />
+            </span>
+            <span v-if="(it as GeoItem).stars && (it as GeoItem).level!.actKey !== 'chest'" class="lv-star" aria-hidden="true">★{{ (it as GeoItem).stars }}</span>
+          </button>
+          <span class="lv-name">{{ (it as GeoItem).level!.name }}</span>
+        </div>
+      </template>
     </div>
 
     <!-- 开宝箱独立关卡：地图上直接弹奖励层 -->
@@ -344,8 +343,8 @@ function unitLesson(id: string) {
   margin-inline: auto; /* 内容区居中 */
 }
 .gp-canvas {
-  position: relative;
   width: 100%;
+  padding-top: 16px; /* TOP：首横幅上方留白 */
 }
 .locked-tip {
   margin: var(--gap-s) auto 0;
@@ -360,10 +359,8 @@ function unitLesson(id: string) {
 
 /* ---------- 课程横幅 ---------- */
 .gp-unit {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 56px;
+  height: 56px; /* BAR_H */
+  margin: 20px 0 38px; /* 下节留白 / 横幅底 → 首节点圆心(66-28) */
   border-radius: 14px;
   display: flex;
   align-items: center;
@@ -376,6 +373,10 @@ function unitLesson(id: string) {
 }
 .gp-unit:active {
   transform: scale(0.985);
+}
+/* 首个横幅不额外上留白（gp-canvas 已有 TOP） */
+.gp-canvas > .gp-unit:first-child {
+  margin-top: 0;
 }
 .u-ico {
   width: 30px;
@@ -425,9 +426,19 @@ function unitLesson(id: string) {
 .gp-unit.tone-green { background: linear-gradient(180deg, var(--c-green), color-mix(in srgb, var(--c-green) 70%, #000)); }
 .gp-unit.tone-teal { background: linear-gradient(180deg, var(--c-teal), color-mix(in srgb, var(--c-teal) 70%, #000)); }
 
-/* ---------- 关卡节点 ---------- */
+/* ---------- 关卡节点（文档流：wrap 居中 + --dx 左右位移；按钮为圆） ---------- */
+.lv-wrap {
+  position: relative;
+  width: max-content;
+  margin: 0 auto; /* 默认水平居中 */
+  transform: translateX(var(--dx, 0px)); /* 相对居中的左右摆动 */
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.lv-wrap + .lv-wrap {
+  margin-top: 28px; /* 圆心距 = 28 + 56 = 84 = ROW_H（节点间等距） */
+}
 .gp-level {
-  position: absolute;
+  position: relative; /* 圆环/角标/星/光圈锚点 */
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -509,12 +520,12 @@ function unitLesson(id: string) {
   pointer-events: none;
 }
 
-/* 状态样式 */
-.gp-level.done .lv-ico { color: #c8860b; }
-.gp-level.done .lv-tag { border-color: var(--gold); }
-.gp-level.active { border: 4px solid var(--c-blue, #1cb0f6); }
-.gp-level.active .lv-ico { color: var(--c-blue, #1cb0f6); }
-.gp-level.locked { filter: grayscale(1) opacity(0.85); }
+/* 状态样式（状态类挂在 lv-wrap 上） */
+.lv-wrap.done .lv-ico { color: #c8860b; }
+.lv-wrap.done .lv-tag { border-color: var(--gold); }
+.lv-wrap.active .gp-level { border: 4px solid var(--c-blue, #1cb0f6); }
+.lv-wrap.active .lv-ico { color: var(--c-blue, #1cb0f6); }
+.lv-wrap.locked .gp-level { filter: grayscale(1) opacity(0.85); }
 
 /* active 光圈脉动（替代 canvas 逐帧绘制） */
 .lv-pulse {
@@ -525,7 +536,7 @@ function unitLesson(id: string) {
   pointer-events: none;
   opacity: 0;
 }
-.gp-level.active .lv-pulse {
+.lv-wrap.active .lv-pulse {
   opacity: 1;
   animation: lv-pulse 1.6s ease-in-out infinite;
 }
@@ -535,7 +546,7 @@ function unitLesson(id: string) {
 }
 
 /* 解锁闪光（金色圆环扩散一次） */
-.gp-level.flash::after {
+.lv-wrap.flash .gp-level::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -570,33 +581,33 @@ function unitLesson(id: string) {
   transform-origin: 36px 36px;
   transition: stroke var(--dur-base) var(--ease-out);
 }
-.gp-level.done .ring-seg.on { stroke: var(--gold, #f0b429); }
-.gp-level.active .ring-seg.on { stroke: var(--c-blue, #1cb0f6); }
-.gp-level.chest .ring-seg.on { stroke: #d98e04; }
-.gp-level.locked .ring-seg.on { stroke: #c9c2b8; }
+.lv-wrap.done .ring-seg.on { stroke: var(--gold, #f0b429); }
+.lv-wrap.active .ring-seg.on { stroke: var(--c-blue, #1cb0f6); }
+.lv-wrap.chest .ring-seg.on { stroke: #d98e04; }
+.lv-wrap.locked .ring-seg.on { stroke: #c9c2b8; }
 
 /* 未学习关卡：主体只显示大锁（玩法图标不展示） */
-.gp-level.locked .lv-ico-lock {
+.lv-wrap.locked .lv-ico-lock {
   width: 30px;
   height: 30px;
   color: #b8b0a4;
 }
 
 /* 宝箱独立关卡：金色礼物节点 */
-.gp-level.chest {
+.lv-wrap.chest .gp-level {
   background: linear-gradient(160deg, #ffe9a8, #ffd87a);
   box-shadow: 0 3px 0 rgba(176, 120, 0, 0.32);
 }
-.gp-level.chest .lv-ico-chest {
+.lv-wrap.chest .lv-ico-chest {
   width: 30px;
   height: 30px;
   color: #8a5a00;
 }
 /* 已领取：稍褪色示意"开过了" */
-.gp-level.chest.done {
+.lv-wrap.chest.done .gp-level {
   filter: grayscale(0.35) opacity(0.82);
 }
-.gp-level.chest .lv-tag {
+.lv-wrap.chest .lv-tag {
   border-color: rgba(176, 120, 0, 0.4);
 }
 </style>
