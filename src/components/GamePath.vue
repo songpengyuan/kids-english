@@ -47,8 +47,11 @@ const ROW_H = 104; // 行距：圆(64px) + 标题两行 + 进度条，留足呼�
 const TOP = 58; // 首节点中心 y
 const pathH = computed(() => TOP + (nodes.value.length - 1) * ROW_H + 52);
 
-/** 通关关卡数（头部进度展示） */
-const doneCount = computed(() => nodes.value.filter((n) => n.state === "done").length);
+/** 当前关卡编号（1 起，引导卡"第 N 关"） */
+const activeNodeNo = computed(() => {
+  const i = nodes.value.findIndex((n) => n.id === activeNode.value?.id);
+  return i >= 0 ? i + 1 : 0;
+});
 const lessonIds = lessons.map((l) => l.id);
 
 const nodes = computed<PathNode[]>(() => {
@@ -388,21 +391,14 @@ const pathLabel = computed(() => {
 
 <template>
   <div class="game-path anim-fade-up">
-    <!-- 头部：模式名 + 通关进度 -->
-    <div class="gp-head">
-      <span class="gp-title">🎮 游戏闯关</span>
-      <span class="gp-progress">{{ doneCount }} / {{ nodes.length }} 关通关</span>
-    </div>
-    <p class="gp-tip">从起点出发，玩过一关才能解锁下一关</p>
-
-    <!-- 当前关卡引导卡：告诉孩子这关是什么、玩到哪了 -->
+    <!-- 当前关卡引导卡（多邻国式关卡卡）：第N关 · 本关N步 · 出发 -->
     <div v-if="activeNode" class="guide-card anim-pop">
       <div class="gc-info">
-        <p class="gc-label">🎯 当前关卡</p>
+        <p class="gc-label">🎯 第 {{ activeNodeNo }} 关</p>
         <p class="gc-title">{{ activeNode.emoji }} {{ activeNode.titleZh }}</p>
-        <p class="gc-sub">{{ activeNode.title }} · 已玩 {{ activeNode.done }}/{{ activeNode.total }} 种玩法</p>
+        <p class="gc-sub">本关 {{ activeNode.total }} 步 · 已玩 {{ activeNode.done }} 步</p>
       </div>
-      <button class="k-btn small" @click="enterCurrent">开始</button>
+      <button class="k-btn small" @click="enterCurrent">出发</button>
     </div>
 
     <!-- 蛇形路径（Canvas 整绘） -->
@@ -426,32 +422,7 @@ const pathLabel = computed(() => {
   gap: var(--gap-s);
   width: 100%;
   max-width: 440px;
-}
-.gp-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.gp-title {
-  font-weight: 800;
-  color: var(--ink);
-  font-size: var(--fs-title);
-}
-.gp-progress {
-  font-weight: 800;
-  color: var(--ink-soft);
-  font-size: var(--fs-small);
-  background: var(--card-bg);
-  border-radius: var(--radius-pill);
-  padding: 4px var(--gap-m);
-  box-shadow: var(--shadow-hard);
-}
-.gp-tip {
-  margin: 0;
-  font-weight: 700;
-  color: var(--ink-faint);
-  font-size: var(--fs-small);
-  text-align: center;
+  margin-inline: auto; /* 内容区居中，不再左偏 */
 }
 
 /* ---------- 当前关卡引导卡 ---------- */

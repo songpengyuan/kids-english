@@ -113,6 +113,11 @@ const lastLessonObj = computed(() => {
   const id = progress.lastLesson;
   return id ? getLesson(id) : null;
 });
+
+/** 游戏模式通关数（顶部 header 进度，与 GamePath 节点口径一致） */
+const gameDoneCount = computed(() =>
+  lessons.filter((l) => progress.isCompleted(l.id, activityKeys(l))).length
+);
 </script>
 
 <template>
@@ -120,37 +125,39 @@ const lastLessonObj = computed(() => {
     <div class="theme-slot">
       <ThemeToggle />
     </div>
+    <!-- 顶部 header bar（一行）：自由 = mascot+徽章 / 游戏 = 标题+通关进度 -->
     <header class="hero anim-fade-up">
-      <h1>
-        <!-- 小吉祥物：会眨眼的星星，给标题加一点"有人陪你学"的感觉 -->
-        <svg class="mascot" viewBox="0 0 64 64" aria-hidden="true">
-          <path
-            d="M32 4l7.6 15.6 17.2 2.4-12.5 12 3 17L32 43.2 16.7 51l3-17-12.5-12 17.2-2.4z"
-            fill="var(--yellow)"
-            stroke="var(--gold)"
-            stroke-width="2.5"
-            stroke-linejoin="round"
-          />
-          <g class="face">
-            <circle cx="26" cy="30" r="2.6" fill="#4a3f35" />
-            <circle cx="38" cy="30" r="2.6" fill="#4a3f35" />
-            <path d="M27 36q5 4.5 10 0" stroke="#4a3f35" stroke-width="2.4" fill="none" stroke-linecap="round" />
-            <circle cx="22.5" cy="34.5" r="2.6" fill="#ff9f9f" opacity=".65" />
-            <circle cx="41.5" cy="34.5" r="2.6" fill="#ff9f9f" opacity=".65" />
-          </g>
-        </svg>
-        丞丞英语乐园
-      </h1>
-      <p class="sub">点一课，学童谣里的单词吧！</p>
-      <div class="badges">
-        <div class="star-badge">
-          <Star class="k-ico star-fill" />我的星星：{{ progress.totalStars }}
+      <div class="hdr-row">
+        <div class="hdr-left">
+          <svg v-if="mode === 'practice'" class="mascot" viewBox="0 0 64 64" aria-hidden="true">
+            <path
+              d="M32 4l7.6 15.6 17.2 2.4-12.5 12 3 17L32 43.2 16.7 51l3-17-12.5-12 17.2-2.4z"
+              fill="var(--yellow)"
+              stroke="var(--gold)"
+              stroke-width="2.5"
+              stroke-linejoin="round"
+            />
+            <g class="face">
+              <circle cx="26" cy="30" r="2.6" fill="#4a3f35" />
+              <circle cx="38" cy="30" r="2.6" fill="#4a3f35" />
+              <path d="M27 36q5 4.5 10 0" stroke="#4a3f35" stroke-width="2.4" fill="none" stroke-linecap="round" />
+              <circle cx="22.5" cy="34.5" r="2.6" fill="#ff9f9f" opacity=".65" />
+              <circle cx="41.5" cy="34.5" r="2.6" fill="#ff9f9f" opacity=".65" />
+            </g>
+          </svg>
+          <span v-else class="hdr-title">🎮 游戏闯关</span>
         </div>
-        <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐" @click="router.push('/treasure')">
-          🐚 {{ rewards.shells }}<span class="tb-cap">宝藏</span>
-        </button>
-        <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今天已达成目标' : '完成一个玩法点亮今天的火焰'">
-          🔥 {{ streak.streak }}<span class="sb-cap">连击</span>
+        <span v-if="mode === 'game'" class="hdr-prog">{{ gameDoneCount }} / {{ lessons.length }} 关通关</span>
+        <div v-else class="badges">
+          <div class="star-badge">
+            <Star class="k-ico star-fill" />我的星星：{{ progress.totalStars }}
+          </div>
+          <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐" @click="router.push('/treasure')">
+            🐚 {{ rewards.shells }}<span class="tb-cap">宝藏</span>
+          </button>
+          <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今天已达成目标' : '完成一个玩法点亮今天的火焰'">
+            🔥 {{ streak.streak }}<span class="sb-cap">连击</span>
+          </div>
         </div>
       </div>
     </header>
@@ -206,28 +213,47 @@ const lastLessonObj = computed(() => {
 .home {
   position: relative;
 }
+/* 顶部 header bar：一行，左右分栏（不再占两行的大标题/副标题） */
 .hero {
-  text-align: center;
   flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  width: 100%;
 }
-.hero h1 {
-  margin: 0;
-  font-size: var(--fs-hero);
-  color: var(--ink);
-  line-height: 1.15;
+.hdr-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-s);
+  width: 100%;
+}
+.hdr-left {
   display: inline-flex;
   align-items: center;
-  gap: 0.32em;
+  gap: var(--gap-xs);
+  min-width: 0;
 }
-/* 吉祥物：轻轻浮动，偶尔眨眼 */
+.hdr-title {
+  font-size: var(--fs-title);
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.hdr-prog {
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+  background: var(--card-bg);
+  border-radius: var(--radius-pill);
+  padding: 4px var(--gap-m);
+  box-shadow: var(--shadow-hard);
+  white-space: nowrap;
+  flex: none;
+}
+/* 吉祥物：小 logo，轻轻浮动，偶尔眨眼 */
 .mascot {
-  width: 1.5em;
-  height: 1.5em;
+  width: 1.4em;
+  height: 1.4em;
   animation: float-y 2.8s ease-in-out infinite;
+  flex: none;
 }
 .mascot .face {
   transform-origin: 32px 30px;
@@ -237,26 +263,23 @@ const lastLessonObj = computed(() => {
   0%, 92%, 100% { transform: scaleY(1); }
   95%, 97% { transform: scaleY(0.12); }
 }
-.sub {
-  margin: 0;
-  color: var(--ink-soft);
-  font-weight: 700;
-  font-size: var(--fs-small);
-}
 
-/* 底部导航承接模式切换（自由/游戏），此处不再有顶部 tab */
+/* 游戏模式：占满剩余高度，路径图超高时可上下滚动（#app overflow hidden 下必须内部滚） */
 .gp-slot {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   margin-top: var(--gap-s);
+  -webkit-overflow-scrolling: touch;
 }
 
-/* 星星 + 宝藏 + 连击火焰并排（窄屏自动换行） */
+/* 星星 + 宝藏 + 连击火焰并排（header 右侧，窄屏自动换行） */
 .badges {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: var(--gap-s);
-  margin-top: 4px;
 }
 .streak-badge {
   display: inline-flex;
