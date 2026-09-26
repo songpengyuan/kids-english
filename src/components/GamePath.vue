@@ -32,7 +32,7 @@ import {
 import { iconEl, ICON_TEXT } from "../data/pathIcons";
 import { useProgressStore } from "../stores/progress";
 import { hapticTap, hapticWrong } from "../utils/haptics";
-import { buildPathGeometry, hitTestPath, R, ROW_H, BAR_H, BAR_GAP, UNIT_BREAK, TOP, BOTTOM } from "../utils/pathGeometry";
+import { buildPathGeometry, hitTestPath, snakeNodes, R, ROW_H, BAR_H, BAR_GAP, UNIT_BREAK, TOP, BOTTOM } from "../utils/pathGeometry";
 
 const router = useRouter();
 const progress = useProgressStore();
@@ -43,7 +43,7 @@ const states = computed(() => computeStates(levels, progress.progress));
 /** 当前关卡（第一个 active）——键盘 Enter 直达 */
 const activeLevel = computed(() => currentLevel(levels, states.value));
 
-/* ---------- 画布几何（多邻国式：每课渐变横幅 + 蛇形蜿蜒圆节点 + 细路径线） ---------- */
+/* ---------- 画布几何（多邻国式：每课渐变横幅 + 蛇形蜿蜒圆节点，无连线） ---------- */
 
 interface GeoItem {
   type: "unit" | "level";
@@ -155,15 +155,27 @@ function loop() {
   raf = requestAnimationFrame(loop);
 }
 
-/** 节点在整条关卡序列中的下标（左右交替列） */
-function altIndex(it: GeoItem): number {
-  return levels.findIndex((lv) => lv.id === it.level!.id);
-}
-
+/** 关卡在该课内的序号（0 起） */
+/** 按课预计算 S 形等距节点（缓存：w 不变不重算，滚动 draw 不抖动） */
+let layoutCacheW = -1;
+let layoutCache: GeoItem[] = [];
 function layoutItems(w: number): GeoItem[] {
-  return geo.value.map((it) =>
-    it.type === "level" ? { ...it, x: (altIndex(it) % 2 === 0 ? 0.24 : 0.76) * w } : { ...it, x: w / 2 }
-  );
+  if (w === layoutCacheW) return layoutCache;
+  const lessonIds = [...new Set(levels.map((lv) => lv.lessonId))];
+  const nodesByLesson = new Map<string, ReturnType<typeof snakeNodes>>();
+  for (const lid of lessonIds) {
+    const lvs = levels.filter((lv) => lv.lessonId === lid);
+    const first = geo.value.find((g) => g.type === "level" && g.level!.lessonId === lid)!;
+    nodesByLesson.set(lid, snakeNodes(w, lvs.length, first.y, first.y + (lvs.length - 1) * ROW_H));
+  }
+  layoutCache = geo.value.map((it) => {
+    if (it.type === "unit") return { ...it, x: w / 2 };
+    const arr = nodesByLesson.get(it.level!.lessonId)!;
+    const idx = levels.filter((lv) => lv.lessonId === it.level!.lessonId).findIndex((lv) => lv.id === it.level!.id);
+    return { ...it, x: arr[idx].x, y: arr[idx].y };
+  });
+  layoutCacheW = w;
+  return layoutCache;
 }
 
 /* ---------- 绘制 ---------- */
@@ -184,30 +196,7 @@ function draw() {
   const items = layoutItems(w);
   const now = performance.now();
 
-  // 1) 细路径线（多邻国式）：解锁段淡金实线、锁定段浅灰虚线，细且不抢节点
-  const lvItems = items.filter((it) => it.type === "level") as GeoItem[];
-  for (let i = 0; i < lvItems.length - 1; i++) {
-    const a = lvItems[i];
-    const b = lvItems[i + 1];
-    const mid = (a.y + b.y) / 2;
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y + R);
-    ctx.quadraticCurveTo((a.x + b.x) / 2, mid, b.x, b.y - R);
-    const on = a.state !== "locked" && b.state !== "locked";
-    if (on) {
-      ctx.strokeStyle = "rgba(240,180,41,0.45)";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([]);
-    } else {
-      ctx.strokeStyle = "rgba(168,162,150,0.55)";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 6]);
-    }
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  // 2) 课程横幅 + 关卡节点
+  // 1) 课程横幅 + 关卡节点
   for (const it of items) {
     if (it.type === "unit") drawUnit(ctx, it, w);
     else drawLevel(ctx, it, now);
