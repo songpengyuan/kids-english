@@ -125,27 +125,29 @@ export function appIconPaths(key: string): string[] {
   return APP_ICON_PATHS[key] || [];
 }
 
-/* ---------- Canvas 用：SVG data-URL → HTMLImageElement ---------- */
+/* ---------- Canvas 用：SVG data-URL → HTMLImageElement（支持描边色） ---------- */
 
 let iconCache: Map<string, HTMLImageElement> | undefined;
 
-function iconSrc(key: string): string {
+function iconSrc(key: string, stroke: string): string {
   const d = ICON_PATHS[key].join(" ");
   return `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`
   )}`;
 }
 
-/** 取图标 Image（异步加载；canvas rAF 循环每帧重绘，加载完成后自动出现） */
-export function iconEl(key: string): HTMLImageElement | undefined {
+/** 取图标 Image（异步加载；canvas rAF 循环每帧重绘，加载完成后自动出现）。
+ *  stroke：描边色（默认白色），缓存 key 含颜色，同一 icon 多色不互相污染。 */
+export function iconEl(key: string, stroke = "white"): HTMLImageElement | undefined {
   if (!ICON_PATHS[key]) return undefined;
   if (typeof window === "undefined" || typeof Image === "undefined") return undefined;
   if (!iconCache) iconCache = new Map();
-  let im = iconCache.get(key);
+  const cacheKey = `${key}:${stroke}`;
+  let im = iconCache.get(cacheKey);
   if (!im) {
     im = new Image();
-    im.src = iconSrc(key);
-    iconCache.set(key, im);
+    im.src = iconSrc(key, stroke);
+    iconCache.set(cacheKey, im);
   }
   return im;
 }
