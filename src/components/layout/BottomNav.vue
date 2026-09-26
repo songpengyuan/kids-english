@@ -23,15 +23,15 @@ const isMe = computed(
 
 function goPractice() {
   if (isHome.value && !isGame.value) return;
-  router.push({ path: "/", query: {} });
+  void router.push({ path: "/", query: {} }).catch(() => {});
 }
 function goGame() {
   if (isGame.value) return;
-  router.push({ path: "/", query: { mode: "game" } });
+  void router.push({ path: "/", query: { mode: "game" } }).catch(() => {});
 }
 function goMe() {
   if (route.name === "me") return;
-  router.push("/me");
+  void router.push("/me").catch(() => {});
 }
 </script>
 

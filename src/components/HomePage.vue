@@ -70,8 +70,10 @@ const mode = computed(() => (route.query.mode === "game" ? "game" : "practice"))
       </div>
     </header>
 
-    <PracticeView v-if="mode === 'practice'" />
-    <GameView v-else />
+    <KeepAlive>
+      <PracticeView v-if="mode === 'practice'" />
+      <GameView v-else />
+    </KeepAlive>
 
     <p class="foot">建议家长陪同，每次 10~15 分钟</p>
   </div>

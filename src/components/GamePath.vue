@@ -398,6 +398,18 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 }
 
 /* ---------- 交互：点关卡直接开玩 ---------- */
+const lockedMsg = ref(false);
+let lockedTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** 锁关点击：可见提示（震动之外，给孩子明确的"先解锁"反馈） */
+function showLockedTip() {
+  lockedMsg.value = true;
+  if (lockedTimer) clearTimeout(lockedTimer);
+  lockedTimer = setTimeout(() => {
+    lockedMsg.value = false;
+  }, 1600);
+}
+
 function onCanvasClick(e: MouseEvent) {
   const cv = canvasEl.value;
   if (!cv) return;
@@ -411,6 +423,7 @@ function onCanvasClick(e: MouseEvent) {
   if (hit.type === "level") {
     if (hit.state === "locked") {
       hapticWrong();
+      showLockedTip();
     } else {
       hapticTap();
       router.push(`/lesson/${hit.level!.lessonId}?mode=quest&step=${hit.level!.actKey}`);
@@ -423,6 +436,7 @@ function onCanvasClick(e: MouseEvent) {
   const st = states.value[first.id];
   if (st === "locked") {
     hapticWrong();
+    showLockedTip();
   } else {
     hapticTap();
     router.push(`/lesson/${first.lessonId}?mode=quest&step=${first.actKey}`);
@@ -462,6 +476,9 @@ const pathLabel = computed(() => {
         @keydown.enter="enterCurrent"
       ></canvas>
     </div>
+    <Transition name="tip">
+      <p v-if="lockedMsg" class="locked-tip anim-pop" role="status">先完成前面的关卡就能解锁啦</p>
+    </Transition>
   </div>
 </template>
 
@@ -477,6 +494,16 @@ const pathLabel = computed(() => {
 .path {
   position: relative;
   width: 100%;
+}
+.locked-tip {
+  margin: var(--gap-s) auto 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-soft);
+  font-size: 14px;
+  text-align: center;
+  box-shadow: var(--shadow-soft);
 }
 .path canvas {
   display: block;

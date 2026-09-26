@@ -663,3 +663,9 @@ pnpm test   # vitest run，覆盖：
 4. **高内聚低耦合**：逻辑进 composables（useQuest/useLessonFlow），页面瘦身；数据进 data/，几何进 utils/，样式进 tokens/。
 5. **TS 渐进**：新代码必须 TS；核心数据/工具逐步迁移，测试保护下进行。
 6. **儿童向**：字体（站酷快乐体 + Baloo 2）、点击区 ≥ 52px、音效温柔（正弦波、不刺耳）、错误不打击（只标红不揭示答案）。
+### 13.5 交互问题修复（2026-09-26 部署后反馈）
+
+| 问题 | 根因 | 修复 |
+| --- | --- | --- |
+| 底部切换反应慢/失败 | HomePage v-if 切换时 GameView 每次全量重建 canvas（1862×5668 重绘 ~500ms）；重复导航 NavigationDuplicated 未捕获 | HomePage 双视图包 `<KeepAlive>`（切回秒开 ~80ms，保留 canvas 状态与滚动位置）；BottomNav 全部 `router.push().catch(()=>{})` 静默容错 |
+| 游戏关卡点不进去 | 可玩关卡滚动后点击实测正常；真正原因是 **locked 关卡点击只有震动（桌面/无震动设备无反馈）**，误以为失效 | GamePath 加锁关可见提示条「先完成前面的关卡就能解锁啦」（1.6s 自动消失，role=status） |
