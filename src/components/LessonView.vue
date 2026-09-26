@@ -1,15 +1,17 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import LearnView from "./LearnView.vue";
 import QuizView from "./QuizView.vue";
 import MatchView from "./MatchView.vue";
 import SongView from "./SongView.vue";
+import PathIcon from "./PathIcon.vue";
 import ChestReward from "./ChestReward.vue";
 import SpeakView from "./SpeakView.vue";
 import TalkView from "./TalkView.vue";
 import ThemeToggle from "./ThemeToggle.vue";
 import { bigCelebrate, celebrate } from "../utils/effects";
 import { getLesson, lessons } from "../data/lessons";
+import { buildLevels, nextLevelAfter } from "../data/pathLevels";
 import { useProgressStore } from "../stores/progress";
 import { useStreakStore } from "../stores/streak";
 import { useRoute, useRouter } from "vue-router";
@@ -46,44 +48,53 @@ const lastStars = ref(0);
 /** 当前玩法会话的开始时间戳（0 = 未开始），结算时累计进今日学情（家长报告） */
 let actStart = 0;
 
-/* ---------- 游戏模式：关卡内闯关（Quest） ---------- */
-/** 是否闯关模式：游戏模式路径图进入时带 ?mode=quest，自由练习入口不带 */
+/* ---------- 游戏模式：关卡内闯关（Quest，多邻国式单关） ---------- */
+/** 是否闯关模式：游戏模式路径图进入时带 ?mode=quest&step=<玩法> */
 const questMode = computed(() => route.query.mode === "quest");
-/** 闯关玩法序列（按 activities 顺序逐个完成，不做 menu） */
+/** 闯关玩法序列（按 activities 顺序，点地图关卡只玩对应那一关） */
 const questSeq = computed(() => activities.value);
-const questTotal = computed(() => questSeq.value.length);
-/** 当前正在玩的玩法在序列中的下标（0 起） */
+/** 当前正在玩的玩法在序列中的下标（0 起）——由地图 ?step= 定位 */
 const questIdx = ref(0);
-/** 已完成的玩法数 */
-const questDoneCount = ref(0);
-/** 全部玩法完成 → 关卡通关大画面 */
+/** 关卡完成 → 关卡完成大画面 */
 const questDone = ref(false);
-/** 刚完成的玩法名（结算页"xx 完成！"） */
-const currentActName = computed(() => questSeq.value[questDoneCount.value - 1]?.name || "");
+/** 当前玩法名（关卡完成画面"xx 完成！"） */
+const currentActName = computed(() => questSeq.value[questIdx.value]?.name || "");
 
 /** 调试深链：?lesson=l4&stage=learn，直接进入某个玩法页 */
 const STAGES = ["learn", "quiz", "match", "speak", "song", "talk"];
-/** 关卡序号（第几关，从 1 起，按课时出场顺序）——多邻国式编号 */
+/** 全关卡序列（pathLevels 共享数据：GamePath 地图与这里同一份） */
+const pathLevels = buildLevels();
+/** 当前关卡在整条路径中的序号（1 起，多邻国式） */
 const questLevel = computed(() => {
-  const i = lessons.findIndex((l) => l.id === lesson.value?.id);
-  return i >= 0 ? i + 1 : 1;
+  const cur = questSeq.value[questIdx.value];
+  if (!cur || !lesson.value) return 1;
+  return pathLevels.find((l) => l.id === `${lesson.value.id}-${cur.key}`)?.no || 1;
+});
+/** 下一关（单关完成画面"下一关"按钮）；地图最后一关为 null */
+const nextLevel = computed(() => {
+  const cur = questSeq.value[questIdx.value];
+  if (!cur || !lesson.value) return null;
+  return nextLevelAfter(`${lesson.value.id}-${cur.key}`, pathLevels);
 });
 
-/** 闯关模式：点"出发"开始第 1 步 */
-function startQuest() {
-  const a = questSeq.value[0];
-  if (!a) return;
-  hapticTap();
-  actStart = Date.now(); // 玩法会话计时起点
-  stage.value = a.game === "song" ? "song" : a.key;
-}
-onMounted(() => {
+/** 按当前路由初始化进入状态（挂载 + 路由参数变化共用） */
+function bootQuest() {
   // 记录最近进入的课时 → 首页「继续学习」入口
   if (lesson.value) progress.setLastLesson(lesson.value.id);
   const s = typeof route.query.stage === "string" ? route.query.stage : "";
   if (questMode.value) {
-    // 闯关模式：先看"关卡卡"（编号/步数/目标），点出发才开第一个玩法——与自由练习的菜单形成区分
-    stage.value = "questStart";
+    // 单关模式：地图点关卡直接开玩对应玩法（跳过菜单/关卡卡）
+    const step = typeof route.query.step === "string" ? route.query.step : "";
+    const idx = questSeq.value.findIndex((a) => a.key === step);
+    questIdx.value = idx >= 0 ? idx : 0;
+    questDone.value = false;
+    const a = questSeq.value[questIdx.value];
+    if (a) {
+      stage.value = a.game === "song" ? "song" : a.key;
+      actStart = Date.now();
+    } else {
+      stage.value = "menu";
+    }
   } else if (STAGES.includes(s)) {
     stage.value = s;
     actStart = Date.now();
@@ -91,7 +102,17 @@ onMounted(() => {
     // 进入课程时报出主题歌名（英文），给孩子一个"这一课唱什么"的预期
     setTimeout(() => speak(lesson.value?.title || ""), 400);
   }
-});
+}
+
+onMounted(bootQuest);
+// 「下一关」是同一路由组件变参（/lesson/:id?step=），组件复用不重挂载 → watch 重置
+watch(
+  () => [route.params.id, route.query.mode, route.query.step],
+  () => {
+    if (route.query.mode !== "quest" && route.query.step === undefined) return;
+    bootQuest();
+  }
+);
 
 /**
  * 玩法清单。
@@ -190,27 +211,24 @@ function showStars(key) {
   return progress.progress[lesson.value.id]?.[key] || 0;
 }
 
-/** 闯关模式：推进一个玩法完成。全部完成 → 关卡通关；否则停在单步结算等"继续" */
+/** 单关完成：直接进关卡完成大画面（多邻国：一课一节，完成即点亮 + 开宝箱） */
 function finishQuestStep() {
-  questDoneCount.value++;
-  if (questIdx.value >= questTotal.value - 1) {
-    questDone.value = true;
-    bigCelebrate();
-    speakZh("关卡通关，太棒了");
-  } else {
-    questIdx.value++;
-    speakZh("完成一个玩法，继续闯关");
-  }
+  questDone.value = true;
+  bigCelebrate();
+  speakZh("关卡完成，太棒了");
   stage.value = "result";
 }
 
-/** 闯关模式：进入下一个玩法 */
-function nextQuestStep() {
-  const a = questSeq.value[questIdx.value];
-  if (!a) return;
+/** 返回闯关地图（游戏模式首页） */
+function backToMap() {
+  router.push({ path: "/", query: { mode: "game" } });
+}
+
+/** 进入下一关（单关完成画面按钮） */
+function goNextLevel() {
+  if (!nextLevel.value) return;
   hapticTap();
-  actStart = Date.now(); // 玩法会话计时起点
-  stage.value = a.game === "song" ? "song" : a.key;
+  router.push(`/lesson/${nextLevel.value.lessonId}?mode=quest&step=${nextLevel.value.actKey}`);
 }
 
 /** 结算一次玩法会话：累计今日时长与玩法数（家长报告数据源） */
@@ -220,8 +238,10 @@ function settleActivity() {
 }
 
 function afterGame(stars) {
-  lastStars.value = stars;
-  progress.setGameStars(lesson.value.id, stage.value, stars);
+  // learn 玩法完成不传星数（emit("done") 无参数），兜底为 1 星：完成即点亮
+  const s = stars || 1;
+  lastStars.value = s;
+  progress.setGameStars(lesson.value.id, stage.value, s);
   settleActivity();
   // 完成玩法 → 记今日目标；今天第一次达成时结算页亮横幅
   const first = streak.markActivity();
@@ -260,7 +280,8 @@ function back() {
     stage.value = "menu";
     return;
   }
-  router.push("/");
+  // 闯关模式回闯关地图（游戏模式首页），普通模式回首页自由练习
+  router.push(questMode.value ? { path: "/", query: { mode: "game" } } : "/");
 }
 
 function toMenu() {
@@ -319,23 +340,6 @@ const nextLesson = computed(() => {
       </div>
     </div>
 
-    <!-- 闯关：关卡卡（多邻国式开始仪式：编号/步数/目标，点"出发"才开玩） -->
-    <div v-else-if="stage === 'questStart'" class="quest-start view-body view-center">
-      <div class="qs-card anim-pop">
-        <span class="qs-level">🎮 第 {{ questLevel }} 关</span>
-        <span class="qs-emoji">{{ lesson.emoji }}</span>
-        <p class="qs-title">{{ lesson.titleZh }}</p>
-        <p class="qs-sub">{{ lesson.title }}</p>
-        <div class="qs-steps">
-          <span v-for="(a, i) in questSeq" :key="a.key" class="qs-step">
-            <span class="qs-dot" :class="'tone-' + a.tone"></span>{{ i + 1 }}. {{ a.name }}
-          </span>
-        </div>
-        <p class="qs-goal">全部完成 · 拿到 👑 通关</p>
-        <button class="k-btn big" @click="startQuest">出发！</button>
-      </div>
-    </div>
-
     <!-- 各玩法 -->
     <component
       v-else-if="stage === 'learn' || stage === 'quiz' || stage === 'match' || stage === 'speak'"
@@ -348,35 +352,9 @@ const nextLesson = computed(() => {
 
     <!-- 结算 -->
     <div v-else-if="stage === 'result'" class="result view-body view-center">
-      <!-- 闯关：关卡通关大画面（全部玩法完成，👑 成就卡） -->
+      <!-- 闯关：关卡完成大画面（单关完成，多邻国式：点亮 + 开宝箱 + 下一关） -->
       <template v-if="questMode && questDone">
-        <div class="quest-done-badge anim-pop">👑 第 {{ questLevel }} 关通关！</div>
-        <div class="stars">
-          <span v-for="n in 3" :key="n" class="star anim-pop" :style="{ animationDelay: n * 0.2 + 's' }">
-            <Star class="k-ico star-fill" />
-          </span>
-        </div>
-        <h2>
-          完成 {{ questTotal }} 种玩法 · 本关共
-          <span class="total-stars"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</span>
-          颗星
-        </h2>
-        <!-- 今日目标首次达成：连击火焰横幅 -->
-        <div v-if="streakJustHit" class="streak-banner anim-pop">
-          🔥 今日目标达成！已连续 {{ streak.streak }} 天
-        </div>
-        <ChestReward />
-        <div class="btn-row">
-          <button class="k-btn gray" @click="router.push('/')">返回闯关地图</button>
-          <button v-if="nextLesson" class="k-btn" @click="router.push('/lesson/' + nextLesson.id + '?mode=quest')">
-            下一关：{{ nextLesson.emoji }}{{ nextLesson.title }}
-          </button>
-        </div>
-      </template>
-
-      <!-- 闯关：单步结算（一个玩法完成 = 一步，点"继续"进下一步） -->
-      <template v-else-if="questMode">
-        <span class="quest-step-badge">第 {{ questDoneCount }} / {{ questTotal }} 步</span>
+        <div class="quest-done-badge anim-pop">🎉 第 {{ questLevel }} 关完成！</div>
         <div class="stars">
           <span
             v-for="n in 3"
@@ -388,23 +366,17 @@ const nextLesson = computed(() => {
             <Star class="k-ico star-fill" />
           </span>
         </div>
-        <h2>{{ currentActName }} 完成！</h2>
-        <p class="quest-total-stars">
-          本关已得 <Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }} 颗
-          <template v-if="lastStars < 3">· 重玩可拿满 3 星</template>
-        </p>
-        <div class="quest-progress" aria-label="关卡进度">
-          <div class="qp-bar"><div class="qp-fill" :style="{ width: (questDoneCount / questTotal) * 100 + '%' }"></div></div>
-          <span>第 {{ questDoneCount }}/{{ questTotal }} 步</span>
-        </div>
+        <h2>{{ currentActName }} · 获得 {{ lastStars }} 颗星</h2>
+        <p v-if="lastStars < 3" class="quest-total-stars">重玩可拿满 3 星</p>
         <!-- 今日目标首次达成：连击火焰横幅 -->
         <div v-if="streakJustHit" class="streak-banner anim-pop">
           🔥 今日目标达成！已连续 {{ streak.streak }} 天
         </div>
         <ChestReward />
         <div class="btn-row">
-          <button class="k-btn" @click="nextQuestStep">
-            继续：{{ questSeq[questIdx]?.name }} →
+          <button class="k-btn gray" @click="backToMap">返回闯关地图</button>
+          <button v-if="nextLevel" class="k-btn" @click="goNextLevel">
+            下一关：<PathIcon :name="nextLevel.actKey" /> {{ nextLevel.name }} →
           </button>
         </div>
       </template>
@@ -432,7 +404,7 @@ const nextLesson = computed(() => {
         <div class="btn-row">
           <button class="k-btn" @click="toMenu">再选一个玩法</button>
           <button v-if="nextLesson" class="k-btn gray" @click="router.push('/lesson/' + nextLesson.id)">
-            下一课：{{ nextLesson.emoji }}{{ nextLesson.title }}
+            下一课：<PathIcon :name="nextLesson.id" /> {{ nextLesson.title }}
           </button>
         </div>
       </template>

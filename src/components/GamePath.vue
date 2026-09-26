@@ -2,112 +2,112 @@
 /**
  * 游戏模式：多邻国式关卡路径图（Canvas 版）。
  *
- * - 整条路径（连线 + 节点 + 状态角标 + 进度条 + 标题）用 Canvas 绘制：
- *   布局精确可控（节点行距 104px、半径 32px，不再像纯 DOM 那样挤在一起），
- *   也为后续"角色沿路径行走"等游戏化动画铺路。
- * - 节点状态：locked（灰+锁）/ active（当前关卡，金色光圈脉动）/ ready（可玩）/ played（绿勾）/ done（通关，金色+勾）。
- * - 解锁规则（progress store 的 isUnlocked）：第一课总是解锁，其余需前一课玩过任一玩法。
- * - 解锁动效：KeepAlive 缓存下用「离开首页时的快照 vs 返回时状态」对比，
- *   只在回到首页那一刻对新解锁节点播金色闪光扩散。
- * - 交互：canvas 点击 → 命中检测 → emit open；锁定节点点击给错误触感提示。
+ * - 每个课程展开为"多个关卡"（玩法序列 = 关卡序列），地图直接展示所有关卡：
+ *   课程单元卡（渐变横幅：emoji + 课名 + 完成进度 x/y + 进度条）
+ *   + 关卡节点（玩法 emoji + 玩法名 + 状态角标 + 星徽章）。
+ * - 全局线性解锁：第一关总是可玩，前一关完成解锁下一关（跨课连续）。
+ *   状态：done（金渐变+✓）/ active（当前，光圈脉动）/ locked（灰+🔒）。
+ * - 点关卡节点 → 直接开玩该玩法（/lesson/:id?mode=quest&step=<玩法>）。
+ * - 解锁动效：KeepAlive 缓存下对比离开/回来快照，对新解锁关卡播金色闪光。
+ * - 关卡序列与状态逻辑集中在 data/pathLevels.ts（GamePath 与 LessonView 共享）。
  */
 import { computed, onActivated, onDeactivated, onMounted, onBeforeUnmount, ref } from "vue";
-import { activityKeys, lessons } from "../data/lessons";
+import { useRouter } from "vue-router";
+import { lessons } from "../data/lessons";
+import {
+  buildLevels,
+  computeStates,
+  currentLevel,
+  levelDone,
+  lessonDoneCount,
+  type PathLevel,
+  type LevelState,
+} from "../data/pathLevels";
+import { iconEl, ICON_TEXT } from "../data/pathIcons";
 import { useProgressStore } from "../stores/progress";
 import { hapticTap, hapticWrong } from "../utils/haptics";
 
-const emit = defineEmits<{ open: [id: string] }>();
+const router = useRouter();
 const progress = useProgressStore();
 
-interface PathNode {
-  id: string;
-  title: string;
-  titleZh: string;
-  emoji: string;
-  tone: string;
-  /** 关卡序号（第几关，从 1 起）——多邻国式编号 */
-  level: number;
-  state: "locked" | "active" | "ready" | "played" | "done";
-  /** 画布坐标（像素，宽随容器自适应） */
+const levels = buildLevels();
+const states = computed(() => computeStates(levels, progress.progress));
+
+/** 当前关卡（第一个 active）——键盘 Enter 直达 */
+const activeLevel = computed(() => currentLevel(levels, states.value));
+
+/* ---------- 画布几何 ---------- */
+const R = 28; // 关卡节点半径
+const ROW_H = 84; // 节点行距（圆 + 玩法名小字）
+const UNIT_H = 104; // 单元卡顶 → 首个节点圆心：圆顶(卡顶+76) 落在卡底(卡顶+64) 下方 12px，避免节点圆压到卡上
+const TOP = 40;
+const BOTTOM = 36;
+
+interface GeoItem {
+  type: "unit" | "level";
   x: number;
   y: number;
-  stars: number;
-  done: number;
-  total: number;
+  lessonId?: string;
+  level?: PathLevel;
+  state?: LevelState;
+  stars?: number;
+  done?: number;
+  total?: number;
 }
 
-/* ---------- 玩法数口径（与 LessonView activities / activityKeys 一致） ---------- */
-function activityCount(l: { phrases?: unknown[] }): number {
-  return activityKeys(l as unknown as { phrases?: { length: number } }).length;
-}
-
-/* ---------- 画布几何（像素，固定行高与半径，宽松不重叠） ---------- */
-const R = 32; // 节点半径
-const ROW_H = 104; // 行距：圆(64px) + 标题两行 + 进度条，留足呼吸空间
-const TOP = 58; // 首节点中心 y
-const pathH = computed(() => TOP + (nodes.value.length - 1) * ROW_H + 52);
-
-/** 当前关卡编号（1 起，引导卡"第 N 关"） */
-const activeNodeNo = computed(() => {
-  const i = nodes.value.findIndex((n) => n.id === activeNode.value?.id);
-  return i >= 0 ? i + 1 : 0;
-});
-const lessonIds = lessons.map((l) => l.id);
-
-const nodes = computed<PathNode[]>(() => {
-  let activeAssigned = false;
-  return lessons.map((l, i) => {
-    let state: PathNode["state"];
-    if (progress.isCompleted(l.id, activityKeys(l))) state = "done";
-    else if (progress.isPlayed(l.id)) state = "played";
-    else if (progress.isUnlocked(l.id, lessonIds)) {
-      // 只有"第一个未玩且已解锁"的是当前关卡（▶ 引导）；其后解锁未玩的课可点但不再标 ▶
-      state = activeAssigned ? "ready" : "active";
-      activeAssigned = true;
-    } else state = "locked";
-    const total = activityCount(l);
-    const done = Math.min(total, progress.progress[l.id]?.completed?.length || 0);
-    return {
-      id: l.id,
-      title: l.title,
-      titleZh: l.titleZh,
-      emoji: l.emoji,
-      tone: l.tone,
-      level: i + 1,
-      state,
-      x: 0, // 每帧按容器宽重算
-      y: TOP + i * ROW_H,
-      stars: progress.lessonStars(l.id),
-      done,
-      total
-    };
-  });
+/** 整图几何（单元卡 + 关卡节点坐标），宽随容器自适应 */
+const geo = computed<GeoItem[]>(() => {
+  const out: GeoItem[] = [];
+  let y = TOP;
+  for (const l of lessons) {
+    out.push({
+      type: "unit",
+      x: 0,
+      y: y + 32, // 单元卡中心
+      lessonId: l.id,
+      done: lessonDoneCount(l.id, progress.progress),
+      total: levels.filter((lv) => lv.lessonId === l.id).length,
+    });
+    y += UNIT_H;
+    for (const lv of levels) {
+      if (lv.lessonId !== l.id) continue;
+      out.push({
+        type: "level",
+        x: 0,
+        y,
+        level: lv,
+        state: states.value[lv.id],
+        stars: (progress.progress[lv.lessonId] as Record<string, number> | undefined)?.[lv.actKey] || 0,
+      });
+      y += ROW_H;
+    }
+  }
+  return out;
 });
 
-/** 当前关卡（active）节点——引导卡用 */
-const activeNode = computed(() => nodes.value.find((n) => n.state === "active") ?? null);
-
+const pathH = computed(() => {
+  const last = geo.value[geo.value.length - 1];
+  return last ? last.y + R + BOTTOM : 400;
+});
 
 const canvasEl = ref<HTMLCanvasElement | null>(null);
 const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
 
-/* ---------- 主题色读取（暗色模式自动跟随） ---------- */
+/* ---------- 主题色读取（暗色自动跟随） ---------- */
 function css(name: string, fb = ""): string {
   if (typeof document === "undefined") return fb;
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return v || fb;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fb;
 }
 const ink = () => css("--ink", "#4a3f35");
 const inkSoft = () => css("--ink-soft", "#7a7268");
+const inkFaint = () => css("--ink-faint", "#b9b2a6");
 const gold = () => css("--gold", "#f0b429");
 const yellow = () => css("--yellow", "#ffd87a");
 const toneColor = (tone: string) => css(`--c-${tone}`, "#1cb0f6");
 
-/* ---------- 动画时间戳 ---------- */
-/** 解锁闪光起始时刻（performance.now()），绘制时按 900ms 衰减 */
+/* ---------- 解锁闪光 ---------- */
 const unlockT0 = ref<Record<string, number>>({});
-
-let snapshotBefore: PathNode["state"][] = [];
+let snapshotBefore: Record<string, LevelState> = {};
 let raf = 0;
 
 function triggerUnlock(id: string) {
@@ -115,20 +115,16 @@ function triggerUnlock(id: string) {
 }
 
 onDeactivated(() => {
-  snapshotBefore = nodes.value.map((n) => n.state);
+  snapshotBefore = { ...states.value };
   cancelAnimationFrame(raf);
   raf = 0;
 });
-
 onActivated(() => {
-  // 回到首页：离开时还是 locked、现在可玩 → 刚解锁 → 播闪光
-  nodes.value.forEach((n, i) => {
-    const prev = snapshotBefore[i];
-    if (prev === "locked" && n.state !== "locked") triggerUnlock(n.id);
+  levels.forEach((lv) => {
+    if (snapshotBefore[lv.id] === "locked" && states.value[lv.id] !== "locked") triggerUnlock(lv.id);
   });
   startLoop();
 });
-
 onMounted(startLoop);
 onBeforeUnmount(() => cancelAnimationFrame(raf));
 
@@ -139,6 +135,17 @@ function startLoop() {
 function loop() {
   draw();
   raf = requestAnimationFrame(loop);
+}
+
+/** 节点在整条关卡序列中的下标（左右交替列） */
+function altIndex(it: GeoItem): number {
+  return levels.findIndex((lv) => lv.id === it.level!.id);
+}
+
+function layoutItems(w: number): GeoItem[] {
+  return geo.value.map((it) =>
+    it.type === "level" ? { ...it, x: (altIndex(it) % 2 === 0 ? 0.24 : 0.76) * w } : { ...it, x: w / 2 }
+  );
 }
 
 /* ---------- 绘制 ---------- */
@@ -156,21 +163,14 @@ function draw() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
 
-  // 节点坐标随容器宽自适应（左右交替列）
-  const list = nodes.value.map((n, i) => ({
-    ...n,
-    x: (i % 2 === 0 ? 0.27 : 0.73) * w
-  }));
-
+  const items = layoutItems(w);
   const now = performance.now();
-  drawLinks(ctx, list);
-  for (const n of list) drawNode(ctx, n, now);
-}
 
-function drawLinks(ctx: CanvasRenderingContext2D, list: PathNode[]) {
-  for (let i = 0; i < list.length - 1; i++) {
-    const a = list[i];
-    const b = list[i + 1];
+  // 1) 关卡节点间的连线（跨课连续）
+  const lvItems = items.filter((it) => it.type === "level") as GeoItem[];
+  for (let i = 0; i < lvItems.length - 1; i++) {
+    const a = lvItems[i];
+    const b = lvItems[i + 1];
     const mid = (a.y + b.y) / 2;
     ctx.beginPath();
     ctx.moveTo(a.x, a.y + R);
@@ -188,18 +188,85 @@ function drawLinks(ctx: CanvasRenderingContext2D, list: PathNode[]) {
     ctx.stroke();
     ctx.setLineDash([]);
   }
+
+  // 2) 单元卡 + 关卡节点
+  for (const it of items) {
+    if (it.type === "unit") drawUnit(ctx, it, w);
+    else drawLevel(ctx, it, now);
+  }
 }
 
-function drawNode(ctx: CanvasRenderingContext2D, n: PathNode, now: number) {
-  const { x, y } = n;
+function drawUnit(ctx: CanvasRenderingContext2D, it: GeoItem, w: number) {
+  const done = it.done || 0;
+  const total = it.total || 1;
+  const cardW = Math.min(360, w - 40);
+  const h = 64;
+  const x = it.x - cardW / 2;
+  const y = it.y - h / 2;
+  const lesson = lessons.find((l) => l.id === it.lessonId);
+  if (!lesson) return;
+
+  // 渐变横幅（课程色调）
+  const g = ctx.createLinearGradient(x, y, x, y + h);
+  const c = toneColor(lesson.tone);
+  g.addColorStop(0, c);
+  g.addColorStop(1, shade(c, -22));
+  ctx.beginPath();
+  roundRect(ctx, x, y, cardW, h, 16);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.beginPath();
+  roundRect(ctx, x, y, cardW, h, 16);
+  ctx.fillStyle = "rgba(0,0,0,0.10)";
+  ctx.fill();
+
+  // 课程 icon（矢量，替代 emoji）+ 课名（左）
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  const uic = iconEl(lesson.id);
+  if (uic && uic.complete && uic.naturalWidth > 0) {
+    ctx.drawImage(uic, x + 16, y + 8, 26, 26);
+  } else if (ICON_TEXT[lesson.id]) {
+    ctx.font = "800 15px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif";
+    ctx.fillStyle = "#fff";
+    ctx.fillText(ICON_TEXT[lesson.id], x + 16, y + 22);
+  }
+  ctx.font = "800 15px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif";
+  ctx.fillStyle = "#fff";
+  ctx.fillText(lesson.titleZh, x + 56, y + 20);
+
+  // 完成度 x/y（右上）
+  ctx.font = "800 12px 'Baloo 2','PingFang SC',sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.fillText(`${done}/${total}`, x + cardW - 16, y + 20);
+
+  // 进度条（卡底）
+  const barW = cardW - 32;
+  ctx.beginPath();
+  roundRect(ctx, x + 16, y + h - 14, barW, 6, 3);
+  ctx.fillStyle = "rgba(255,255,255,0.35)";
+  ctx.fill();
+  if (total > 0) {
+    ctx.beginPath();
+    roundRect(ctx, x + 16, y + h - 14, barW * Math.min(1, done / total), 6, 3);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+  }
+}
+
+function drawLevel(ctx: CanvasRenderingContext2D, it: GeoItem, now: number) {
+  const { x, y } = it;
+  const lv = it.level!;
+  const state = it.state!;
 
   // 解锁闪光（金色圆环扩散）
-  const t0 = unlockT0.value[n.id];
+  const t0 = unlockT0.value[lv.id];
   if (t0) {
     const p = (now - t0) / 900;
     if (p < 1) {
       ctx.beginPath();
-      ctx.arc(x, y, R * (1 + p * 1.15), 0, Math.PI * 2);
+      ctx.arc(x, y, R * (1 + p * 1.2), 0, Math.PI * 2);
       ctx.strokeStyle = `rgba(255,214,110,${0.85 * (1 - p)})`;
       ctx.lineWidth = 6;
       ctx.stroke();
@@ -207,7 +274,7 @@ function drawNode(ctx: CanvasRenderingContext2D, n: PathNode, now: number) {
   }
 
   // active：金色光圈脉动
-  if (n.state === "active") {
+  if (state === "active") {
     const pulse = 0.5 + 0.5 * Math.sin(now / 320);
     ctx.beginPath();
     ctx.arc(x, y, R + 4 + pulse * 7, 0, Math.PI * 2);
@@ -216,60 +283,53 @@ function drawNode(ctx: CanvasRenderingContext2D, n: PathNode, now: number) {
     ctx.stroke();
   }
 
-  // 节点圆底
+  // 节点圆（渐变）
   ctx.beginPath();
   ctx.arc(x, y, R, 0, Math.PI * 2);
   let g: CanvasGradient;
-  if (n.state === "locked") {
+  if (state === "locked") {
     g = ctx.createLinearGradient(x, y - R, x, y + R);
     g.addColorStop(0, "#e9e5db");
     g.addColorStop(1, "#d4cfc3");
-  } else if (n.state === "done") {
+  } else if (state === "done") {
     g = ctx.createLinearGradient(x, y - R, x, y + R);
     g.addColorStop(0, yellow());
     g.addColorStop(1, gold());
   } else {
-    const c = toneColor(n.tone);
+    const c = toneColor(lv.tone);
     g = ctx.createLinearGradient(x, y - R, x, y + R);
     g.addColorStop(0, c);
     g.addColorStop(1, shade(c, -18));
   }
   ctx.fillStyle = g;
   ctx.fill();
-  // 底部阴影
   ctx.beginPath();
   ctx.arc(x, y + 3, R, 0, Math.PI * 2);
   ctx.fillStyle = "rgba(0,0,0,0.14)";
   ctx.fill();
-  // 主体盖回
   ctx.beginPath();
   ctx.arc(x, y, R, 0, Math.PI * 2);
   ctx.fillStyle = g;
   ctx.fill();
 
-  // 锁定：整体压灰
-  if (n.state === "locked") {
-    ctx.globalAlpha = 0.45;
-  }
+  // 锁定整体压灰
+  if (state === "locked") ctx.globalAlpha = 0.5;
 
-  // emoji 居中
-  ctx.font = "28px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
+  // 玩法 icon 居中（矢量，替代 emoji）
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillStyle = "#fff";
-  ctx.fillText(n.emoji, x, y + 1);
-
+  const ic = iconEl(lv.actKey);
+  if (ic && ic.complete && ic.naturalWidth > 0) {
+    ctx.drawImage(ic, x - 13, y - 13, 26, 26);
+  } else if (ICON_TEXT[lv.actKey]) {
+    ctx.font = "800 13px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif";
+    ctx.fillStyle = "#fff";
+    ctx.fillText(ICON_TEXT[lv.actKey], x, y);
+  }
   ctx.globalAlpha = 1;
 
-  // 关卡序号（圆上方，多邻国式"第 N 关"）
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-  ctx.font = "800 11px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif";
-  ctx.fillStyle = n.state === "locked" ? "rgba(120,120,120,0.55)" : inkSoft();
-  ctx.fillText("第 " + n.level + " 关", x, y - R - 16);
-
-  // 状态角标（右下）
-  const tagR = 12;
+  // 状态角标（右下）：🔒 / ✓ / ▶
+  const tagR = 11;
   const tx = x + R * 0.72;
   const ty = y + R * 0.72;
   ctx.beginPath();
@@ -279,55 +339,41 @@ function drawNode(ctx: CanvasRenderingContext2D, n: PathNode, now: number) {
   ctx.strokeStyle = "rgba(0,0,0,0.14)";
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  ctx.font = "bold 11px sans-serif";
-  ctx.fillStyle = n.state === "locked" ? "#9a938a" : "#6b4e00";
-  if (n.state === "locked") ctx.fillText("🔒", tx, ty + 1);
-  else if (n.state === "done") ctx.fillText("👑", tx, ty + 1); // 通关 = 皇冠（多邻国式成就）
-  else if (n.state === "played") { ctx.fillStyle = "#58cc02"; ctx.fillText("✓", tx, ty); }
-  else if (n.state === "active") ctx.fillText("▶", tx, ty);
-  else ctx.fillText("·", tx, ty);
+  ctx.font = "bold 10px sans-serif";
+  if (state === "locked") {
+    ctx.fillStyle = "#9a938a";
+    ctx.fillText("🔒", tx, ty + 1);
+  } else if (state === "done") {
+    ctx.fillStyle = "#6b4e00";
+    ctx.fillText("✓", tx, ty);
+  } else {
+    ctx.fillStyle = "#6b4e00";
+    ctx.fillText("▶", tx, ty);
+  }
 
   // 星星徽章（右上）
-  if (n.stars > 0) {
+  if (it.stars) {
     const sx = x + R * 0.72;
     const sy = y - R * 0.72;
     ctx.beginPath();
-    ctx.arc(sx, sy, 11, 0, Math.PI * 2);
+    ctx.arc(sx, sy, 10, 0, Math.PI * 2);
     ctx.fillStyle = "#fff";
     ctx.fill();
     ctx.strokeStyle = "rgba(0,0,0,0.12)";
     ctx.stroke();
-    ctx.font = "bold 10px sans-serif";
+    ctx.font = "bold 9px sans-serif";
     ctx.fillStyle = gold();
-    ctx.fillText("★" + n.stars, sx, sy + 0.5);
+    ctx.fillText("★" + it.stars, sx, sy + 0.5);
   }
 
-  // 完成度进度条（圆下方）
-  const barW = 56;
-  const barY = y + R + 8;
-  ctx.fillStyle = "rgba(120,120,120,0.22)";
-  roundRect(ctx, x - barW / 2, barY, barW, 5, 3);
-  ctx.fill();
-  if (n.state !== "locked") {
-    const pct = n.done / n.total;
-    const fillC = n.state === "done" ? gold() : css("--c-green", "#58cc02");
-    ctx.fillStyle = fillC;
-    roundRect(ctx, x - barW / 2, barY, barW * Math.min(1, pct), 5, 3);
-    ctx.fill();
-  }
-
-  // 标题两行（圆下方）
+  // 玩法名小字（节点下方）
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.font = `800 12px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif`;
-  ctx.fillStyle = ink();
-  ctx.fillText(n.titleZh, x, y + R + 26);
-  ctx.font = "700 10px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif";
-  ctx.fillStyle = inkSoft();
-  ctx.fillText(n.title, x, y + R + 40);
+  ctx.font = "700 11px 'Baloo 2','PingFang SC','Hiragino Sans GB',sans-serif";
+  ctx.fillStyle = state === "locked" ? inkFaint() : ink();
+  ctx.fillText(lv.name, x, y + R + 14);
 }
 
-/** 十六进制颜色加深（用于节点渐变深端） */
 function shade(hex: string, amt: number): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex);
   if (!m) return hex;
@@ -348,7 +394,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-/* ---------- 交互：canvas 点击 → 命中检测 ---------- */
+/* ---------- 交互：点关卡直接开玩 ---------- */
 function onCanvasClick(e: MouseEvent) {
   const cv = canvasEl.value;
   if (!cv) return;
@@ -356,17 +402,14 @@ function onCanvasClick(e: MouseEvent) {
   const px = e.clientX - rect.left;
   const py = e.clientY - rect.top;
   const w = cv.clientWidth || rect.width;
-  const list = nodes.value.map((n, i) => ({
-    ...n,
-    x: (i % 2 === 0 ? 0.27 : 0.73) * w
-  }));
-  for (const n of list) {
-    if (Math.hypot(px - n.x, py - n.y) <= R + 8) {
-      if (n.state === "locked") {
+  for (const it of layoutItems(w)) {
+    if (it.type !== "level") continue;
+    if (Math.hypot(px - it.x, py - it.y) <= R + 10) {
+      if (it.state === "locked") {
         hapticWrong();
       } else {
         hapticTap();
-        emit("open", n.id);
+        router.push(`/lesson/${it.level!.lessonId}?mode=quest&step=${it.level!.actKey}`);
       }
       return;
     }
@@ -374,16 +417,20 @@ function onCanvasClick(e: MouseEvent) {
 }
 
 function enterCurrent() {
-  if (activeNode.value) {
+  if (activeLevel.value) {
     hapticTap();
-    emit("open", activeNode.value.id);
+    router.push(`/lesson/${activeLevel.value.lessonId}?mode=quest&step=${activeLevel.value.actKey}`);
   }
 }
 
 /** canvas 无障碍描述 */
 const pathLabel = computed(() => {
-  const s = nodes.value
-    .map((n) => `${n.titleZh}（${n.state === "locked" ? "未解锁" : n.state === "done" ? "已通关" : "可玩"}）`)
+  const s = geo.value
+    .filter((it) => it.type === "level")
+    .map((it) => {
+      const st = it.state === "locked" ? "未解锁" : it.state === "done" ? "已通关" : "可玩";
+      return `第${it.level!.no}关${it.level!.name}（${st}）`;
+    })
     .join("，");
   return `关卡路径：${s}`;
 });
@@ -391,17 +438,7 @@ const pathLabel = computed(() => {
 
 <template>
   <div class="game-path anim-fade-up">
-    <!-- 当前关卡引导卡（多邻国式关卡卡）：第N关 · 本关N步 · 出发 -->
-    <div v-if="activeNode" class="guide-card anim-pop">
-      <div class="gc-info">
-        <p class="gc-label">🎯 第 {{ activeNodeNo }} 关</p>
-        <p class="gc-title">{{ activeNode.emoji }} {{ activeNode.titleZh }}</p>
-        <p class="gc-sub">本关 {{ activeNode.total }} 步 · 已玩 {{ activeNode.done }} 步</p>
-      </div>
-      <button class="k-btn small" @click="enterCurrent">出发</button>
-    </div>
-
-    <!-- 蛇形路径（Canvas 整绘） -->
+    <!-- 蛇形路径（Canvas 整绘：课程单元卡 + 关卡节点，点关卡直接开玩） -->
     <div class="path">
       <canvas
         ref="canvasEl"
@@ -422,44 +459,8 @@ const pathLabel = computed(() => {
   gap: var(--gap-s);
   width: 100%;
   max-width: 440px;
-  margin-inline: auto; /* 内容区居中，不再左偏 */
+  margin-inline: auto; /* 内容区居中 */
 }
-
-/* ---------- 当前关卡引导卡 ---------- */
-.guide-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--gap-s);
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-hard);
-  padding: var(--gap-s) var(--gap-m);
-  border-left: 6px solid var(--gold);
-}
-.gc-label {
-  margin: 0;
-  font-weight: 800;
-  font-size: 12px;
-  color: var(--gold);
-}
-.gc-title {
-  margin: 0;
-  font-weight: 800;
-  color: var(--ink);
-  font-size: var(--fs-body);
-}
-.gc-sub {
-  margin: 0;
-  font-weight: 700;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
-.guide-card .k-btn {
-  flex-shrink: 0;
-}
-
-/* ---------- 路径画布 ---------- */
 .path {
   position: relative;
   width: 100%;
