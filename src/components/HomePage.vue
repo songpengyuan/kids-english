@@ -122,10 +122,7 @@ const gameDoneCount = computed(() =>
 
 <template>
   <div class="home view">
-    <div class="theme-slot">
-      <ThemeToggle />
-    </div>
-    <!-- 顶部 header bar（一行）：自由 = mascot+徽章 / 游戏 = 标题+通关进度 -->
+    <!-- 顶部 header bar（一行）：自由 = mascot+徽章 / 游戏 = 标题+通关进度；主题切换并入 bar 右侧 -->
     <header class="hero anim-fade-up">
       <div class="hdr-row">
         <div class="hdr-left">
@@ -147,17 +144,20 @@ const gameDoneCount = computed(() =>
           </svg>
           <span v-else class="hdr-title">🎮 游戏闯关</span>
         </div>
-        <span v-if="mode === 'game'" class="hdr-prog">{{ gameDoneCount }} / {{ lessons.length }} 关通关</span>
-        <div v-else class="badges">
-          <div class="star-badge">
-            <Star class="k-ico star-fill" />我的星星：{{ progress.totalStars }}
+        <div class="hdr-right">
+          <span v-if="mode === 'game'" class="hdr-prog">{{ gameDoneCount }} / {{ lessons.length }} 关通关</span>
+          <div v-else class="badges">
+            <div class="star-badge">
+              <Star class="k-ico star-fill" />我的星星：{{ progress.totalStars }}
+            </div>
+            <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐" @click="router.push('/treasure')">
+              🐚 {{ rewards.shells }}<span class="tb-cap">宝藏</span>
+            </button>
+            <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今天已达成目标' : '完成一个玩法点亮今天的火焰'">
+              🔥 {{ streak.streak }}<span class="sb-cap">连击</span>
+            </div>
           </div>
-          <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐" @click="router.push('/treasure')">
-            🐚 {{ rewards.shells }}<span class="tb-cap">宝藏</span>
-          </button>
-          <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今天已达成目标' : '完成一个玩法点亮今天的火焰'">
-            🔥 {{ streak.streak }}<span class="sb-cap">连击</span>
-          </div>
+          <ThemeToggle />
         </div>
       </div>
     </header>
@@ -203,13 +203,6 @@ const gameDoneCount = computed(() =>
 </template>
 
 <style scoped>
-/* 主题切换按钮固定在右上角，不挤占标题排版 */
-.theme-slot {
-  position: absolute;
-  top: calc(var(--pad-y) + env(safe-area-inset-top) + 2px);
-  right: calc(var(--pad-x) + env(safe-area-inset-right) + 4px);
-  z-index: var(--z-banner);
-}
 .home {
   position: relative;
 }
@@ -230,6 +223,14 @@ const gameDoneCount = computed(() =>
   align-items: center;
   gap: var(--gap-xs);
   min-width: 0;
+}
+.hdr-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--gap-s);
+  flex: none;
 }
 .hdr-title {
   font-size: var(--fs-title);
@@ -273,12 +274,11 @@ const gameDoneCount = computed(() =>
   -webkit-overflow-scrolling: touch;
 }
 
-/* 星星 + 宝藏 + 连击火焰并排（header 右侧，窄屏自动换行） */
+/* 星星 + 宝藏 + 连击火焰并排（header 右侧容器内，窄屏自动换行） */
 .badges {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--gap-s);
 }
 .streak-badge {
