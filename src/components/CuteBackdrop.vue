@@ -201,6 +201,11 @@ const grainStyle = { "--grain": GRAIN };
   animation: cloud-drift ease-in-out infinite alternate;
 }
 .cloud.c1 { --w: 26px; --h: -12px; top: 7%; left: 8%; animation-duration: 17s; }
+/* 常规页（学习/我的等，非天空场景）：云朵静止——横向漂移会被误读为"页面在左右滚动"；
+   天空草地场景保留慢漂移（空旷背景上更自然） */
+.backdrop:not(.sky) .cloud {
+  animation: none;
+}
 .cloud.c2 { --w: 18px; --h: -9px; top: 17%; left: 58%; animation-duration: 23s; transform: scale(0.7); }
 .cloud.c3 { --w: 14px; --h: -7px; top: 56%; left: 78%; animation-duration: 29s; transform: scale(0.5); opacity: 0.7; }
 @keyframes cloud-drift {
