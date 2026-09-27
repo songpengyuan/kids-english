@@ -104,9 +104,8 @@ onBeforeUnmount(cleanup);
       <!-- 占位：忙时用透明文本撑住高度，避免答题后整页上下跳动 -->
       <p v-else class="praise placeholder" aria-hidden="true">占位</p>
       <button class="continue-btn anim-pop" :disabled="!locked" @click="next">
-        <template v-if="locked">继续</template>
+        <template v-if="locked">继续<ChevronRight class="k-ico" /></template>
         <template v-else>检查</template>
-        <ChevronRight class="k-ico" />
       </button>
     </div>
   </div>
