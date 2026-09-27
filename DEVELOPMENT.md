@@ -40,59 +40,62 @@ pnpm build:ci # 部署构建（强制要求 GH_REPO，防止子路径部署 404�
 kids-english/
 ├── index.html
 ├── src/
-│   ├── main.js                 # 入口：主题 → Pinia → 路由 → 挂载；注册触感与错误上报
+│   ├── main.js                 # 入口：主题 → Pinia → 路由 → 挂载；注册触感/错误上报/页面标题
 │   ├── App.vue                 # 顶层外壳：首页 KeepAlive 缓存（返回不丢模式/页码）
 │   ├── router/
-│   │   └── index.ts            # hash 路由：/ /me /treasure /report /review /lesson/:id
+│   │   └── index.ts            # hash 路由 + meta.title（页面标题）+ 低频页懒加载（见 §14.3）
 │   ├── styles/
 │   │   ├── tokens.css          # ★ 设计 token：颜色/间距/字号/圆角/阴影 + 断点表注释
 │   │   └── base.css            # ★ reset、应用外壳、跨页面共享 UI（.view/.k-btn/.topbar/进度条/动画）
-│   ├── data/
-│   │   └── lessons.js          # ★ 课时数据唯一入口，导出时统一补部署基路径 + activityKeys
-│   ├── stores/
-│   │   ├── progress.ts         # 进度 + 单词掌握度 + 今日学情 + 通关口径（Pinia）
-│   │   ├── streak.ts           # 连击火焰（每日目标 + 连续天数，Pinia）
-│   │   └── rewards.ts          # 贝壳 / 贴纸图鉴 / 贴纸商店（Pinia）
-│   ├── composables/
-│   │   ├── useViewport.js      # ★ 视口状态（模块级单例，尺寸 + 分档）
-│   │   └── usePager.js         # ★ 通用分页逻辑
-│   ├── utils/
-│   │   ├── layout.js           # ★ 纯函数布局算法：fitGrid / pickColumns / splitBalanced
-│   │   ├── speech.js           # 两级发音：按 (lessonId, wordId) 精确查 mp3，缺失回退浏览器 TTS
-│   │   ├── speechScore.js      # 发音评分（ASR + 录音双模式）
-│   │   ├── effects.js          # 彩带与音效
-│   │   └── errors.js           # 未捕获错误本地环形缓冲（控制台 __kidsErrors()）
+│   ├── views/                  # ★ 页面（路由级），只做编排壳，不放可复用件
+│   │   ├── HomeView.vue        # 首页壳：自由（PracticeView）/ 游戏（GameView）双模式 + KeepAlive
+│   │   ├── practice/GameView.vue  # 自由练习页 / 游戏闯关地图页
+│   │   ├── LessonView.vue      # 单课编排层：stage 机（菜单 ↔ 玩法 ↔ 结算，237 行）
+│   │   └── MyView / TreasureView / ReportView / ReviewView / StreakView / HeroDetailView
 │   ├── components/
-│   │   ├── HomePage.vue        # 首页：课时卡（分页）+ 复习/继续，模式由底部导航驱动
-│   │   ├── BottomNav.vue      # 底部导航：自由/游戏/我的（App 常驻，课程内隐藏）
-│   │   ├── MyView.vue         # 我的页（/me）：统计 + 宝藏/报告/复习入口
-│   │   ├── LessonView.vue     # 单课状态机：菜单 ↔ 各玩法 ↔ 结算（含闯关模式）
-│   │   ├── LearnView.vue       # 看图学词（★ 动态分页）
-│   │   ├── QuizView.vue        # 听音选图（单题推进，错词落库）
-│   │   ├── MatchView.vue       # 图词连线（分组 + SVG 连线，连错落库）
-│   │   ├── SpeakView.vue       # 跟我读（ASR 打分 / 录音回放双模式）
-│   │   ├── SongView.vue        # 童谣音频/视频 + 动画舞台
-│   │   ├── TalkView.vue        # 亲子对话（首次引导 + 填词）
-│   │   ├── ReviewView.vue      # 错词复习页（/review）
-│   │   ├── ReportView.vue      # 家长学情页（/report）
-│   │   ├── TreasureView.vue    # 宝藏罐（/treasure）：贝壳 + 图鉴 + 贴纸商店
-│   │   ├── ChestReward.vue     # 开宝箱：三连击开箱 + 抛物线收取飞入顶部贝壳徽标
-│   │   ├── GamePath.vue        # 游戏模式关卡路径图（Canvas，KeepAlive 下离开即停帧）
-│   │   ├── WordCard.vue        # 可复用发音词卡
-│   │   └── Pager.vue           # ★ 通用翻页控件（大箭头 + 圆点）
-│   └── **/__tests__/           # vitest 单测：layout / speechScore / streak / usePager
+│   │   ├── layout/             # 全局框架件：AppHeader / HeaderBar / BottomNav / SoundToggle / ThemeToggle
+│   │   ├── activities/         # 一课内的玩法：LearnView / QuizView / MatchView / SpeakView / SongView / TalkView / WordCard / Pager
+│   │   ├── game/               # 游戏模式专属：GamePath
+│   │   ├── lesson/             # 课内流程件：LessonMenu（菜单视图）/ LessonResult（结算）
+│   │   ├── rewards/            # 奖励反馈：ChestReward（开箱）
+│   │   ├── treasure/           # 宝藏/英雄图鉴：HeroFormCard
+│   │   ├── report/             # 家长报告图表：MasteryTrend
+│   │   └── ui/                 # ★ 跨页面通用件沉淀库：AppDialog / CuteBackdrop（门槛见 §14.4）
+│   ├── composables/            # ★ 有状态逻辑（模块内管理自身生命周期）
+│   │   ├── useLessonFlow.ts    # 单课 stage 机 + 结算（深链解析/写星/今日学情）
+│   │   ├── useQuest.ts         # 闯关身份（模式/关卡序列/当前关/下一关）
+│   │   ├── useViewport.ts      # 视口状态（尺寸 + 分档）
+│   │   └── usePager.ts / useSpeechSession.ts / useQuizSession.ts …
+│   ├── stores/                 # ★ Pinia 全局状态（进度/连击/奖励三域，边界清晰）
+│   │   ├── progress.ts         # 进度 + 单词掌握度 + 今日学情 + 通关口径
+│   │   ├── streak.ts           # 连击火焰（每日目标 + 连续天数）
+│   │   └── rewards.ts          # 贝壳 / 贴纸图鉴 / 贴纸商店
+│   ├── services/               # ★ 全局态服务单例（跨组件共享、有副作用，见 §14.2）
+│   │   ├── speech.ts           # 两级发音（按 lessonId+wordId 查 mp3，回退 TTS；ttsSeq 竞态保护）
+│   │   ├── sound.ts / effects.js  # 音效开关 / 彩带与音效
+│   │   ├── haptics.js / theme.js / pwa.js
+│   ├── utils/                  # ★ 纯函数（无副作用、可单测），见 §14.2
+│   │   ├── layout.ts           # fitGrid / pickColumns / splitBalanced
+│   │   ├── speechScore.ts      # 发音评分（ASR + 录音双模式）
+│   │   └── quizSession / matchBoard / reviewQueue / reviewSchedule / learnSession / stars / flyCurve / pathGeometry / errors
+│   ├── data/                   # 数据唯一入口（lessons.ts / heroes.ts / heroDetails.ts / pathLevels.ts / song-timings.json）
+│   └── **/__tests__/           # vitest 单测（25 文件 / 206 用例）
 ├── scripts/
-│   ├── layout-audit.mjs        # ★ 多视口布局走查脚本（见 §7.2）
-│   ├── verify-pwa.mjs          # PWA 离线/更新 E2E 验证
 │   ├── guard-build.mjs         # 部署构建防护（build:ci 用，强制 GH_REPO）
-│   └── gen-word-audio.py       # ★ 生成单词发音 mp3（edge-tts，见 §5.1）
+│   ├── validate-data.mjs       # ★ 数据层静态校验（结构/引用/去重/song.mp3 硬校验，build:ci 用）
+│   ├── verify-pwa.mjs          # PWA 离线/更新 E2E 验证（14/14）
+│   ├── layout-audit.mjs        # 多视口布局走查（见 §7.2）
+│   └── gen-*.py                # 素材生成（发音/歌词/图标/英雄占位图）
 ├── public/
 │   ├── lessons/                # 课时素材目录（约定见 README）
-│   └── avatars/                # 课时封面占位
+│   └── heroes/ avatars/        # 英雄图 / 封面占位
+├── docs/
+│   ├── ARCHITECTURE-REVIEW.md  # 架构评审（P0–P2 分级与执行顺序）
+│   └── COMPONENT-LIBRARY.md    # 组件库规范（目录契约/清单/沉淀门槛/全局改动走查）
 └── DEVELOPMENT.md              # 本文档
 ```
 
-标 ★ 的是本次响应式重构新增/重点改造的部分。
+> 目录契约的**判定标准**见 §14.2；组件库沉淀门槛见 §14.4 与 `docs/COMPONENT-LIBRARY.md`。
 
 ---
 
@@ -101,9 +104,10 @@ kids-english/
 ### 3.1 页面路由 + 两层状态机
 
 ```
-router (hash)   / 首页(HomePage，KeepAlive 缓存)  /me  /lesson/:id  /treasure  /report  /review
+router (hash)   / 首页(HomeView，KeepAlive 缓存)  /me  /streak  /treasure  /treasure/hero/:id
+                /report  /review  /lesson/:id(/  /lesson/:id/:stage 玩法直达)
                 └── 底部导航 BottomNav（App.vue 全局挂载）：自由 / 游戏 / 我的
-LessonView.vue   stage: menu | questStart | learn | quiz | match | speak | song | talk | result
+LessonView.vue   stage: menu | learn | quiz | match | speak | song | talk | result
 ```
 
 - 页面级用 vue-router（hash 模式）：/me、/treasure、/report、/review、/lesson/:id 都是独立页面，
@@ -111,8 +115,11 @@ LessonView.vue   stage: menu | questStart | learn | quiz | match | speak | song 
 - **底部导航常驻三入口**（App.vue 全局）：自由（/ 不带 query）/ 游戏（/?mode=game）/ 我的（/me）。
   首页的自由/游戏是同一路由的两种浏览模式，用 query 区分，URL 可直达可分享；
   /me、/treasure、/report、/review 高亮"我的"tab；/lesson/:id 沉浸学习不显示导航。
-- 课程内**不逐玩法拆路由**：stage 仍在 LessonView 内部管理，玩法间共享大量状态，
-  拆路由反而增加耦合；需要"直达/分享"某个玩法时再提为独立路由。
+- 课程内**不逐玩法拆路由**：stage 由 useLessonFlow 管理，玩法间共享大量状态，
+  拆路由反而增加耦合；**玩法直达用可选子路径 `/lesson/:id/:stage`**（如 #/lesson/l4/learn，
+  入口解析 params.stage 优先、旧 query `?stage=` 兼容），见 §14.3 路由策略。
+- **加载策略**：首页/课程主链路同步加载（离线首开最稳），我的/宝藏/报告/复习/连击/英雄详情
+  懒加载（在线首屏更小，chunk 进 sw 预缓存清单，离线不降级），见 §14.3。
 - 需要真机直达验收时用调试深链（见 §7.1）。
 
 ### 3.2 组件契约
@@ -1184,3 +1191,93 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 - **暗黑模式**：课程色与深底混合（tone 62% 混 #16181c → 42% 混黑），跟随横幅暗色观感。
 - **克制点（用户确认）**：不做方块背景/标签，只动按钮自身着色 + 图标白色；未通关（active 白 + 蓝边框）与锁定（灰）保持原样。
 - **验证**：Playwright WebKit 注入通关数据——l4 三关 done 背景 `rgb(28,176,246)` 渐变 + 图标白、l5 一关 done 橙色渐变、锁定关背景 none、无 JS 错误；192 测试 + type-check 通过。
+
+---
+
+## 14. 架构经验沉淀（2026-09-28 架构整改，防复发清单）
+
+> 背景：`docs/ARCHITECTURE-REVIEW.md` 全量评审 → P0–P2 分级整改全部落地。
+> 以下是从本次整改中提炼的**长期约定**，改代码前先对照 §14.2–14.6。
+
+### 14.1 分层契约（谁放哪，判定标准）
+
+```
+views/        路由级页面壳（编排模板 + composable 装配），不放可复用件
+components/   按业务域分子目录：layout / activities / game / lesson / rewards / treasure / report / ui
+composables/  有状态、跨组件复用的逻辑（useXxx），模块内自管生命周期
+stores/       Pinia 全局状态（progress / streak / rewards 三域）
+services/     全局态服务单例（有副作用、跨组件共享）
+utils/        纯函数（无副作用、输入→输出可单测）
+data/         数据唯一入口（课时/英雄/关卡/歌词）
+```
+
+- **页面**永远放 `views/`；组件库按业务域归位（2026-09-28 P0-2 已把 HomePage→views/HomeView、
+  GamePath→game/、ChestReward→rewards/、LessonResult→lesson/、HeroFormCard→treasure/、
+  MasteryTrend→report/）。新增组件先问"属于哪个业务域"，而不是堆进根 components/。
+- **页面瘦身基准**：LessonView 已从 711 行 → 237 行（state 机进 useLessonFlow、菜单视图进
+  LessonMenu、结算进 LessonResult）。超过 ~300 行的页面/组件就是拆分的信号。
+
+### 14.2 services（服务单例）vs utils（纯函数）的判定
+
+| 特征 | 放 services/ | 放 utils/ |
+|---|---|---|
+| 有全局状态 / 副作用（DOM、AudioContext、localStorage、单例缓存） | ✅ speech / sound / effects / haptics / theme / pwa | ❌ |
+| 纯计算，输入→输出，无外部依赖 | ❌ | ✅ layout / speechScore / quizSession / matchBoard / reviewQueue / flyCurve / stars |
+| 带副作用但希望按需即用、可 mock 测试 | ✅（测试用 vi.mock("../../services/xxx")） | ❌ |
+
+**批量移动教训（2026-09-28）**：用字符串替换 `utils/speech` → `services/speech` 时，
+把 `utils/speechScore`（纯函数，应留 utils/）也误替换成了 `services/speechScore`，导致 import 断链。
+→ **批量替换模块前缀必须按完整模块名匹配**（`speech/`、`speechScore/` 区分），替换后 grep 残留。
+
+### 14.3 路由与加载策略（懒加载 ⇄ PWA 预缓存联动）
+
+- **hash 路由**（GitHub Pages 静态托管，history 深链 404）。
+- **玩法直达**：`/lesson/:id/:stage?` 可选子路径（入口解析 `params.stage` 优先、旧 `?stage=` 兼容），
+  内部玩法切换仍由 useLessonFlow 状态机完成，不逐玩法拆路由（玩法间共享大量状态）。
+- **加载策略**：
+  - 首页 / 课程（学习主链路）**同步加载** —— 离线首开最稳（装完即可用，不依赖网络）；
+  - 我的 / 宝藏 / 报告 / 复习 / 连击 / 英雄详情 **懒加载** —— 在线首屏更小；
+  - **关键联动**：懒加载 chunk 会进入 sw 预缓存清单（vite.config.js `kidsPwa()` 在 generateBundle
+    里收集 `assets/*.js|css|woff2` 注入 `__PRECACHE_ASSETS__`，sw.js install 时 `addAll`），
+    所以**离线不降级**。新增/改名路由或组件后：`GH_REPO=kids-english pnpm build`，检查
+    `dist/sw.js` 的 `PRECACHE_ASSETS` 是否包含新 chunk（懒加载只生效于生产构建）。
+- **页面标题**：路由 `meta.title` + `router.afterEach` 写 document.title（main.js），
+  新页面路由必须带 meta.title。
+
+### 14.4 组件库沉淀门槛（什么时候进 components/ui/）
+
+见 `docs/COMPONENT-LIBRARY.md`。核心门槛：
+
+1. **≥2 个页面/域在用它**，或它承载了跨页面的交互约定（如 HeaderBar、AppDialog）；
+2. 有明确 props/emits 契约（新组件必须 TS 类型标注）；
+3. 视觉/行为从 tokens 与 base.css 取，不内联魔法值；
+4. **登记**：加入 COMPONENT-LIBRARY.md 目录表；
+5. **全局组件改动走查清单**：改 HeaderBar / BottomNav / LessonResult / HomeView 等全局件时，
+   对照 COMPONENT-LIBRARY.md 的走查项逐页核对（连接日日历 header 曾与其它页面不一致，
+   因为各页手写 topbar —— 教训：**统一组件优先，别各页手写**）。
+
+### 14.5 重构与回归约定（每次改动对照）
+
+1. **git mv 搬文件**：移动组件/测试后必须同步：①所有 import（含测试与 mock 的 specifier）②
+   KeepAlive include 的组件名 ③相对路径层数（`../` → `../../`）④文档目录表。
+   搬完跑 `grep` 残留检查（import 路径、组件名、注释里的旧路径）。
+2. **质量三件套**：`pnpm test`（当前 25 文件 / 206 用例）+ `pnpm type-check` + `GH_REPO=kids-english pnpm build`
+   全绿才算完成；CI 里 test + type-check + build:ci（含数据校验）是部署门禁。
+3. **数据校验**：改 `src/data/*` 后跑 `node scripts/validate-data.mjs`（结构/引用/去重/
+   song.mp3 资源硬校验）——防课时 id 重复、关卡引用不存在玩法、音频误删上线白屏。
+4. **PWA 回归**：动 sw.js / vite.config.js / 路由后跑 `node scripts/verify-pwa.mjs`（基线 14/14）。
+5. **布局走查**：改布局后按 §7 多视口实测（`layout-audit.mjs` 不稳定时可自建 CDP 探测）。
+
+### 14.6 本周期踩坑记录（下次遇到直接对照）
+
+- **模板顶层 ref 自动解包**：composable 返回的 ref 在模板中自动 `.value`，
+  把 ref 对象作为 prop 传给子组件会传成解包后的值（LessonMenu 的 actsEl 就因此 type 报错）。
+  → 要么让子组件自持 ref（测量逻辑内聚到菜单自身），要么用回调 prop。
+- **volar 对模板 `:ref` prop 的类型检查很严**：把 `Ref<HTMLDivElement|null>` 通过 props 传给
+  子组件模板的 `:ref` 会被拒绝；自持 ref + 内部回调最干净。
+- **Vite 8 用 Rolldown，没有 esbuild 包**：需要打包数据模块时用 vite 的 SSR 构建 API
+  （validate-data.mjs 就是这么干的），不要 `require("esbuild")`。
+- **verify-pwa.mjs 的 DOM 选择器会过时**：组件 class 改名（.topbar .back → .hdr-back）后
+  脚本仍用旧选择器导致误报失败——脚本与组件共用同一份 class 约定，改名时同步脚本。
+- **页面内若把死样式留着**（组件化后 scoped 不穿透、模板不再引用），会让人误以为还在生效；
+  拆分组件时顺手清掉（LessonView 的 .qs-*/.quest-* 死样式就是这样删的）。
