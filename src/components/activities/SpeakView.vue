@@ -113,7 +113,12 @@ function next() {
       <template v-if="mode === 'record' && grade === ''">
         <!-- 松手后自动播放回放：不展示进度条（小朋友无需看到），读完可直接复读/判定/再试 -->
         <audio ref="recAudio" :src="recUrl" autoplay class="replay"></audio>
-        <p class="judge-q">听完啦，读得准不准？</p>
+        <!-- 醒目的回放按钮：大圆喇叭，点一下重听自己的录音 -->
+        <button class="replay-btn anim-pop" @click="replayRec" aria-label="回放录音">
+          <Volume2 class="k-ico" />
+          <span class="replay-label">听一听我读的</span>
+        </button>
+        <p class="judge-q">读得准不准？</p>
         <div class="btn-row">
           <button class="k-btn gray" @click="replayRec">
             <Volume2 class="k-ico" />再听一遍
@@ -354,6 +359,32 @@ function next() {
 }
 .replay {
   height: 36px;
+}
+/* 醒目回放按钮：大圆橙色喇叭，孩子一眼看到"点这里听自己读的" */
+.replay-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--gap-s) var(--gap-m);
+  border: none;
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, #ffd87a, #f0b429);
+  color: #6b4e00;
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+.replay-btn .k-ico {
+  width: 36px;
+  height: 36px;
+}
+.replay-btn:active {
+  transform: translateY(calc(var(--press) - 1px));
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+}
+.replay-label {
+  font-weight: 800;
+  font-size: var(--fs-small);
 }
 .replay.big {
   height: 44px;
