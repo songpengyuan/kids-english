@@ -290,7 +290,7 @@ function enterUnit(it: GeoItem) {
     shakeLocked(first.id);
   } else {
     const title = lessons.find((x) => x.id === it.lessonId)?.title;
-    if (title) speak(title);
+    if (title) speak(title, { ttsOnly: true });
     hapticTap();
     router.push(`/lesson/${first.lessonId}?mode=quest&step=${first.actKey}`);
   }

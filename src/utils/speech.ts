@@ -101,13 +101,19 @@ export interface SpeakOptions {
   lang?: string;
   lessonId?: string | null;
   wordId?: string | null;
+  /** 跳过预生成 mp3，直接用系统自带 TTS（适合课程名等整句/短语，避免误命中单词音频） */
+  ttsOnly?: boolean;
 }
 
 export async function speak(
   text: string,
-  { rate = 0.85, lang = "en-US", lessonId = null, wordId = null }: SpeakOptions = {}
+  { rate = 0.85, lang = "en-US", lessonId = null, wordId = null, ttsOnly = false }: SpeakOptions = {}
 ): Promise<void> {
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  if (ttsOnly) {
+    speakWithTTS(text, { rate, lang });
+    return;
+  }
   let src = null;
   if (lessonId && wordId) src = wordAudioByKey[`${lessonId}:${wordId}`];
   if (!src) src = wordAudioByEn[text];

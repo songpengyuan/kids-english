@@ -116,7 +116,7 @@ function openSound(a: (typeof activities.value)[number]) {
 }
 /** 点击顶栏课程名：朗读英文标题 */
 function sayTitle() {
-  if (lesson.value) speak(lesson.value.title);
+  if (lesson.value) speak(lesson.value.title, { ttsOnly: true });
 }
 const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
 /** 玩法页（答题中）：顶部按钮用"关闭"（✕）而非返回箭头（多邻国式） */

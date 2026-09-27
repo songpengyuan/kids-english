@@ -1122,3 +1122,8 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
   - 底部导航 tab（学习/游戏/我的）与玩法卡片（学单词/听音选图…）→ 点击 speakZh()（中文，归音效开关，静音不读）；
   - 单词点读（LearnView/QuizView/ReviewView 等）此前已有，不重复接入。
 - 实现：PracticeView.enter、GamePath.enterUnit、LessonView.sayTitle/openSound、BottomNav goPractice/goGame/goMe。
+### 13.31 标题发音改用系统自带 TTS（2026-09-27）
+
+- 课程名/标题是整句或短语，不应命中单词级预生成 mp3。speak() 新增 `ttsOnly` 选项（跳过 mp3 注册表、直接用浏览器 TTS）。
+- 三处标题发音（学习页课程卡、游戏地图横幅、课程菜单顶栏）统一传 `{ ttsOnly: true }`。
+- 单词发音（LearnView/QuizView 等）保持预生成 mp3 优先不变。
