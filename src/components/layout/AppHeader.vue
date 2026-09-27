@@ -3,7 +3,8 @@
  * 全站统一顶栏（三个主 tab 共用）。
  *
  * 左侧：tab 标题（图标 + 文字），由父组件传入 title / icon。
- * 右侧：固定三个数字徽章（⭐ 星星 / 🐚 贝壳 / 🔥 连击）+ 音效开关 + 主题开关。
+ * 右侧：固定三个数字徽章（⭐ 星星 / 🐚 贝壳 / 🔥 连击）。
+ * 音效开关与主题开关已收敛到「我的」页设置区，顶栏不再显示。
  *
  * 三个 tab（学习 / 游戏 / 我的）切换时顶栏完全一致，只有左侧标题随 tab 变化。
  */
@@ -13,8 +14,6 @@ import { useRewardsStore } from "../../stores/rewards";
 import { useStreakStore } from "../../stores/streak";
 import PathIcon from "../PathIcon.vue";
 import ShellIcon from "../ShellIcon.vue";
-import SoundToggle from "./SoundToggle.vue";
-import ThemeToggle from "./ThemeToggle.vue";
 import { Star } from "@lucide/vue";
 import { speakZh } from "../../utils/speech";
 
@@ -60,8 +59,6 @@ const streak = useStreakStore();
         >
           <PathIcon name="flame" class="k-ico flame-ico" />{{ streak.streak }}
         </div>
-        <SoundToggle />
-        <ThemeToggle />
       </div>
     </div>
   </header>

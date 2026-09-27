@@ -15,6 +15,7 @@ import { FORM_TOTAL } from "../data/heroes";
 import { useStreakStore } from "../stores/streak";
 import { useRouter } from "vue-router";
 import SoundToggle from "../components/layout/SoundToggle.vue";
+import ThemeToggle from "../components/layout/ThemeToggle.vue";
 import { soundOn } from "../utils/sound";
 import { lessons } from "../data/lessons";
 import { dueWords } from "../utils/reviewQueue";
@@ -178,6 +179,8 @@ function sayEntry(name: string, path: string) {
       <section class="settings">
         <span class="set-cap" @click="sayCell('静音设置', '只关音效与提示语，单词发音保留')"><PathIcon name="me" class="set-ico" />静音（只关音效与提示语，单词发音保留）</span>
         <SoundToggle />
+        <span class="set-cap" @click="sayCell('暗黑模式', '切换亮色与暗色主题')">暗黑模式</span>
+        <ThemeToggle />
       </section>
 
       <p class="foot" @click="sayCell('数据说明', '只保存在这台设备上，不会上传')">数据只保存在这台设备上，不会上传。{{ soundOn ? "" : "（已静音）" }}</p>

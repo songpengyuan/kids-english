@@ -16,7 +16,6 @@ import SpeakView from "../components/activities/SpeakView.vue";
 import TalkView from "../components/activities/TalkView.vue";
 import HeaderBar from "../components/layout/HeaderBar.vue";
 import LessonResult from "../components/LessonResult.vue";
-import ThemeToggle from "../components/layout/ThemeToggle.vue";
 import { getLesson } from "../data/lessons";
 import { speak, speakZh } from "../utils/speech";
 import { useProgressStore } from "../stores/progress";
@@ -156,7 +155,6 @@ const playPct = ref(0);
       </template>
       <template #right>
         <div class="star-badge" role="img" aria-label="已获得星星"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</div>
-        <ThemeToggle v-if="!isPlay" />
       </template>
     </HeaderBar>
 

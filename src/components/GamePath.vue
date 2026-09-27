@@ -680,12 +680,12 @@ function unitLesson(id: string) {
 }
 /* 进度环呼吸微动画：最小状态贴住"含底座与落地阴影的完整按钮实体"（阴影也纳入贴合参照），放大只一点点（各关按序号错峰 → 地图上像波浪） */
 @keyframes ring-breathe {
-  0%, 100% { transform: scale(0.92); }
-  50% { transform: scale(0.98); }
+  0%, 100% { transform: scale(0.95); }
+  50% { transform: scale(1.01); }
 }
 .ring-seg {
   fill: none;
-  stroke: rgba(128, 128, 128, 0.18); /* 未点亮的段：浅灰轨道（圆头、段间留缝） */
+  stroke: rgba(128, 128, 128, 0.12); /* 未点亮的段：浅灰轨道（圆头、段间留缝，颜色弱化） */
   stroke-width: 6;
   stroke-linecap: round;
   transform-origin: 50px 50px;
@@ -724,6 +724,6 @@ function unitLesson(id: string) {
   --base: rgba(0, 0, 0, 0.55);
 }
 :root[data-theme="dark"] .ring-seg {
-  stroke: rgba(210, 210, 210, 0.2);
+  stroke: rgba(210, 210, 210, 0.14);
 }
 </style>
