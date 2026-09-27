@@ -64,11 +64,14 @@ const OVERLAY_ATTR = "data-haptic-switch";
 const TARGET_SELECTOR = `button:not([disabled]), [data-haptic]`;
 const OVERLAY_ICON = "input[" + OVERLAY_ATTR + "]";
 /**
- * 不叠加开关的关键导航元素（`.back` 返回按钮）。
- * 透明 switch 覆盖层在 iOS Safari 的真实触摸下会吞掉宿主点击（实测：返回按钮
- * 被覆盖后点击无响应）；返回是全局关键导航，必须保证点击直达，触感收益可牺牲。
+ * 不叠加开关的关键导航元素：
+ * - `.back` 返回按钮（全局关键导航，实测被覆盖后点击无响应）
+ * - `.bottom-nav button` 底部导航（学习/游戏/我的）——与返回同级的关键导航，
+ *   被透明 switch 覆盖后同样会吞掉宿主点击（实测同 `.back`），必须保证点击直达。
+ * - `.lesson-card` / `.q-link` 学习页入口（进课程/复习的主入口）。
+ * 这些元素牺牲触感收益，换点击可靠性。
  */
-const EXCLUDE_SELECTOR = ".back";
+const EXCLUDE_SELECTOR = ".back, .bottom-nav button, .lesson-card, .q-link, .treasure-badge";
 
 let styleReady = false;
 let observer = null;

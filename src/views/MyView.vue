@@ -14,12 +14,11 @@ import { useRewardsStore } from "../stores/rewards";
 import { FORM_TOTAL } from "../data/heroes";
 import { useStreakStore } from "../stores/streak";
 import { useRouter } from "vue-router";
-import ThemeToggle from "../components/layout/ThemeToggle.vue";
 import SoundToggle from "../components/layout/SoundToggle.vue";
 import { soundOn } from "../utils/sound";
 import { lessons } from "../data/lessons";
 import { dueWords } from "../utils/reviewQueue";
-import HeaderBar from "../components/layout/HeaderBar.vue";
+import AppHeader from "../components/layout/AppHeader.vue";
 import { ChevronRight, Flame, Star } from "@lucide/vue";
 import PathIcon from "../components/PathIcon.vue";
 import ShellIcon from "../components/ShellIcon.vue";
@@ -79,10 +78,7 @@ const todayWords = computed(() => {
 
 <template>
   <div class="me view">
-    <HeaderBar>
-      <template #title><PathIcon name="me" /> 我的</template>
-      <template #right><SoundToggle /><ThemeToggle /></template>
-    </HeaderBar>
+    <AppHeader title="我的" icon="me" />
 
     <div class="me-body view-body">
       <!-- 身份卡 -->

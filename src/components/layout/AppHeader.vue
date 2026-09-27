@@ -1,0 +1,156 @@
+<script setup lang="ts">
+/**
+ * 全站统一顶栏（三个主 tab 共用）。
+ *
+ * 左侧：tab 标题（图标 + 文字），由父组件传入 title / icon。
+ * 右侧：固定三个数字徽章（⭐ 星星 / 🐚 贝壳 / 🔥 连击）+ 音效开关 + 主题开关。
+ *
+ * 三个 tab（学习 / 游戏 / 我的）切换时顶栏完全一致，只有左侧标题随 tab 变化。
+ */
+import { useRouter } from "vue-router";
+import { useProgressStore } from "../../stores/progress";
+import { useRewardsStore } from "../../stores/rewards";
+import { useStreakStore } from "../../stores/streak";
+import PathIcon from "../PathIcon.vue";
+import ShellIcon from "../ShellIcon.vue";
+import SoundToggle from "./SoundToggle.vue";
+import ThemeToggle from "./ThemeToggle.vue";
+import { Star } from "@lucide/vue";
+
+defineProps<{ title: string; icon?: string }>();
+
+const router = useRouter();
+const progress = useProgressStore();
+const rewards = useRewardsStore();
+const streak = useStreakStore();
+</script>
+
+<template>
+  <header class="app-hdr anim-fade-up">
+    <div class="hdr-row">
+      <div class="hdr-left">
+        <PathIcon v-if="icon" :name="icon" class="hdr-ico" />
+        <span class="hdr-title">{{ title }}</span>
+      </div>
+      <div class="hdr-right">
+        <!-- ⭐ 总星星 -->
+        <div class="badge star-badge" title="我的星星总数">
+          <Star class="k-ico star-fill" />{{ progress.totalStars }}
+        </div>
+        <!-- 🐚 贝壳（点击进宝藏罐） -->
+        <button
+          class="badge treasure-badge"
+          aria-label="打开宝藏罐"
+          title="宝藏罐：贝壳余额"
+          @click="router.push('/treasure')"
+        >
+          <ShellIcon />{{ rewards.shells }}
+        </button>
+        <!-- 🔥 连击天数 -->
+        <div
+          class="badge streak-badge"
+          :class="{ done: streak.todayDone }"
+          :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天' : '今日目标：复习 ' + streak.reviewed + '/' + streak.reviewGoal + ' 词 + 新学 ' + streak.newLevels + '/1 关'"
+        >
+          <PathIcon name="flame" class="k-ico flame-ico" />{{ streak.streak }}
+        </div>
+        <SoundToggle />
+        <ThemeToggle />
+      </div>
+    </div>
+  </header>
+</template>
+
+<style scoped>
+.app-hdr {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  flex: none;
+  width: 100%;
+  padding: var(--gap-s) 0 var(--gap-xs);
+  background: var(--bar-bg, var(--bg));
+  -webkit-backdrop-filter: blur(var(--bar-blur, 14px));
+  backdrop-filter: blur(var(--bar-blur, 14px));
+  border-bottom: 1px solid var(--line, rgba(128, 128, 128, 0.16));
+}
+.hdr-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-s);
+  width: 100%;
+}
+.hdr-left {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-xs);
+  min-width: 0;
+  flex: none;
+}
+.hdr-ico {
+  font-size: var(--fs-title);
+  color: var(--ink);
+}
+.hdr-title {
+  font-size: var(--fs-title);
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.hdr-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--gap-s);
+}
+
+/* ---------- 三个数字徽章 ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: var(--radius-s);
+  white-space: nowrap;
+}
+.star-badge {
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft);
+}
+.star-badge .star-fill {
+  color: var(--gold);
+}
+.treasure-badge {
+  background: linear-gradient(160deg, #ffd87a, #f0b429);
+  color: #6b4e00;
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18);
+  transition: transform 0.1s;
+}
+.treasure-badge:active {
+  transform: translateY(calc(var(--press) - 1px));
+}
+.streak-badge {
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft);
+  transition: background 0.3s, color 0.3s;
+}
+.streak-badge.done {
+  background: linear-gradient(160deg, #ff9f43, #ff6b3d);
+  color: #fff;
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18), 0 0 14px rgba(255, 122, 61, 0.4);
+}
+.flame-ico {
+  color: #ff6b3d;
+}
+.streak-badge.done .flame-ico {
+  color: #fff;
+}
+</style>

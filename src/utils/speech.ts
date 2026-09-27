@@ -53,12 +53,25 @@ function playAudio(src: string): Promise<boolean> {
     a.onerror = () => done(false);
     a.src = src;
     a.play().catch(() => done(false));
+    // 兜底：被 stopSpeaking 掐断时 onended/onerror 可能都不触发，超时放行避免调用方 await 挂死
+    window.setTimeout(() => done(true), 10000);
   });
 }
 
 /* ---------- 浏览器 TTS（回退通道）---------- */
 /** 当前 utterance（用于 stopSpeaking 掐断 / 结束事件） */
 let curUtter: SpeechSynthesisUtterance | null = null;
+
+/**
+ * TTS 发声版本号（Chrome 竞态修复的核心）：
+ * Chrome 的 speechSynthesis.cancel() 是异步的——cancel 后立刻 speak()，新内容经常被吞，
+ * 或旧内容没停干净继续读，造成"点了 A 却听到 B"。
+ * 做法：每次请求取一个递增 seq；cancel 后延迟 60ms 再真正 speak，且只有 seq 仍最新才发声；
+ * 期间若来了新请求（seq 已变），旧请求直接放弃，绝不发出旧内容。
+ */
+let ttsSeq = 0;
+/** 当前挂起的 TTS Promise 的结算函数（stopSpeaking 掐断时立即结算，不等 12s 超时兜底） */
+let settleTts: ((ok: boolean) => void) | null = null;
 
 /** 按语言匹配系统音色；匹配不到返回 null（交给浏览器按 lang 默认读） */
 function pickVoice(lang: string): SpeechSynthesisVoice | null {
@@ -89,15 +102,19 @@ function speakWithTTS(text: string, { rate = 0.85, lang = "en-US" }: { rate?: nu
       resolve(false);
       return;
     }
-    window.speechSynthesis.cancel(); // 打断上一条，避免连点重叠
+    const seq = ++ttsSeq; // 本请求的版本号：后到的请求会让先到的作废
     let settled = false;
     const done = (ok: boolean) => {
       if (!settled) {
         settled = true;
-        curUtter = null;
+        if (settleTts === doneRef) settleTts = null;
         resolve(ok);
       }
     };
+    const doneRef = done;
+    settleTts = done; // 注册结算：stopSpeaking 掐断时立即 resolve，不用等超时
+
+    window.speechSynthesis.cancel(); // 打断上一条（Chrome 异步，真正生效靠下面的延迟 + seq 校验）
     const u = new SpeechSynthesisUtterance(text);
     curUtter = u;
     const v = pickVoice(lang);
@@ -105,9 +122,20 @@ function speakWithTTS(text: string, { rate = 0.85, lang = "en-US" }: { rate?: nu
     u.lang = lang;
     u.rate = rate; // 放慢一点，适合幼儿
     u.pitch = 1.1;
-    u.onend = () => done(true);
-    u.onerror = () => done(false);
-    window.speechSynthesis.speak(u);
+    u.onend = () => {
+      if (seq === ttsSeq) done(true); // 已被新请求覆盖时，旧回调不结算当前状态
+    };
+    u.onerror = () => {
+      if (seq === ttsSeq) done(false);
+    };
+    // Chrome 竞态规避：cancel 后延迟一拍再 speak；这期间若来了新请求（seq 变了），本请求放弃
+    window.setTimeout(() => {
+      if (seq !== ttsSeq) {
+        done(false);
+        return;
+      }
+      window.speechSynthesis.speak(u);
+    }, 60);
     // 兜底：个别环境（Safari 首次、切后台）onend 可能不来，超时放行避免链条卡死
     window.setTimeout(() => done(true), 12000);
   });
@@ -119,19 +147,19 @@ export function stopSpeaking(): void {
     curAudio.pause();
     curAudio = null;
   }
-  if (curUtter) {
+  curUtter = null;
+  if ("speechSynthesis" in window) {
     try {
       window.speechSynthesis.cancel();
     } catch {
       /* 忽略 */
     }
-    curUtter = null;
-  } else if ("speechSynthesis" in window) {
-    try {
-      window.speechSynthesis.cancel();
-    } catch {
-      /* 忽略 */
-    }
+    ttsSeq++; // 使所有挂起的延迟 speak 作废：停止后绝不再冒出新声音
+  }
+  if (settleTts) {
+    const s = settleTts;
+    settleTts = null;
+    s(false); // 立即结算挂起的朗读 Promise（否则要等 12s 超时）
   }
 }
 
