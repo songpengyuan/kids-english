@@ -17,7 +17,7 @@ const emit = defineEmits<{ back: [] }>();
   <div class="hdr">
     <button
       v-if="showBack"
-      class="hdr-back"
+      class="hdr-back" :class="{ isClose: close }"
       :aria-label="close ? '关闭' : backLabel || '返回'"
       :title="close ? '关闭' : backLabel || '返回'"
       @click="emit('back')"
@@ -63,6 +63,17 @@ const emit = defineEmits<{ back: [] }>();
 }
 .hdr-back:active {
   transform: translateY(2px);
+}
+/* 关闭按钮：弱化——去掉圆圈底和阴影，只留浅灰图标 */
+.hdr-back.isClose {
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink-faint);
+  width: 36px;
+  height: 36px;
+}
+.hdr-back.isClose:hover {
+  color: var(--ink-soft);
 }
 .hdr-title {
   flex: 1;
