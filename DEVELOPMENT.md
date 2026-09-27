@@ -78,7 +78,7 @@ kids-english/
 │   │   ├── layout.ts           # fitGrid / pickColumns / splitBalanced
 │   │   ├── speechScore.ts      # 发音评分（ASR + 录音双模式）
 │   │   └── quizSession / matchBoard / reviewQueue / reviewSchedule / learnSession / stars / flyCurve / pathGeometry / errors
-│   ├── data/                   # 数据唯一入口（lessons.ts / heroes.ts / heroDetails.ts / pathLevels.ts / song-timings.json）
+│   ├── data/                   # 数据唯一入口（lessons.ts / heroes.ts / pathLevels.ts / song-timings.json）
 │   └── **/__tests__/           # vitest 单测（25 文件 / 206 用例）
 ├── scripts/
 │   ├── guard-build.mjs         # 部署构建防护（build:ci 用，强制 GH_REPO）
@@ -1142,7 +1142,7 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 
 - 点击已收集的英雄卡 → 进入详情页 `/treasure/hero/:id?form=<formId>`（未收集仍为发音介绍）。
 - 详情页内容：放大形象图（多形态缩略切换，已收集高亮/未收集剪影）+ 简介 + 招牌技能 + 常用语；角色名 speak 英文、简介/技能/常用语点击 speakZh 中文。
-- 新数据 `src/data/heroDetails.ts`：41 位角色各 3 字段（bio/skills/phrases）；pathIcons 新增 volume/sparkles；底部导航"我的"高亮覆盖 hero-detail。
+- 新数据 `src/data/heroes.ts` ROSTER 条目并入详情（bio/skills/phrases 随角色单源维护，heroDetails.ts 已删除）；pathIcons 新增 volume/sparkles；底部导航“我的”高亮覆盖 hero-detail。
 - 素材提示：ultraman-base.png 内容疑似贝利亚、zero-corona.png 缺失（回退 svg），待素材脚本补正。
 ### 13.34 素材脚本官方兜底 + 初代图修正（2026-09-27）
 
@@ -1281,3 +1281,13 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
   脚本仍用旧选择器导致误报失败——脚本与组件共用同一份 class 约定，改名时同步脚本。
 - **页面内若把死样式留着**（组件化后 scoped 不穿透、模板不再引用），会让人误以为还在生效；
   拆分组件时顺手清掉（LessonView 的 .qs-*/.quest-* 死样式就是这样删的）。
+
+
+### 14.7 数据单源化（第二份手写数据会漂移）
+
+- **问题**：heroDetails.ts 曾与 heroes.ts 的 HEROES 构成两处手写数据、靠 id 字符串对齐——
+  加角色忘写详情本地不报错、只有 CI 的数据校验会挂（开发期无信号）。
+- **解法**：详情字段（bio/skills/phrases）并入 ROSTER 条目（detail 字段），随角色一处写完；
+  HEROES 装配时透传，heroDetails.ts 文件删除，validate-data 只做结构与必填校验。
+- **约定**：同域数据只允许一份字面量来源；派生/关联字段用类型或生成逻辑保证，
+  不让“第二份手写数据”存活（对照：pathLevels 由 lessons 派生、song-timings 由 validate 校验引用）。

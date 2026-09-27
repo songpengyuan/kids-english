@@ -66,7 +66,7 @@
 
 - **P2-1 ESLint/Prettier 缺位**：18k 行增长后一致性靠自觉。建议加 `eslint-plugin-vue + prettier`，进 CI 质量门（与 test/type-check 并列）。
 - **P2-2 JS→TS 渐进**：main.js + 5 个 utils（theme/haptics/effects/pwa/useViewport）仍是 JS。建议按"被引用面从大到小"迁移，先 pwa（PWA 核心逻辑值得类型化）。
-- **P2-3 数据层 schema 化**：lessons.ts / heroes.ts / heroDetails.ts 是手写对象数组，内容扩展后易漂移。建议加 `scripts/validate-data.mjs`（结构/引用/去重校验），纳入 build:ci。
+- **P2-3 数据层 schema 化**：lessons.ts / heroes.ts 是手写对象数组，内容扩展后易漂移。已加 `scripts/validate-data.mjs`（结构/引用/去重校验）纳入 build:ci；heroDetails.ts 已并入 heroes.ts ROSTER 单源化（加角色一处写完，不再靠 id 对齐第二份数据）。
 - **P2-4 组件库落地二选一**：高频 UI（Button/Card/Badge/Progress）目前是全局 CSS 类（`.k-btn/.card/.star-badge/.progress`）。二选一：① 提升为 `components/ui/Button.vue` 等（多形态时值得）；② 在 COMPONENT-LIBRARY.md 明确登记"全局类即组件"，禁止页面内复制样式。短期选 ②，出现第 2 种形态时转 ①。
 - **P2-5 路由 meta 与页面标题**：title 固定"丞丞ABC"。建议 `afterEach` 按路由 meta 设置 document.title（如"第 4 课 · 丞丞ABC"），PWA 书签/分享更友好。
 - **P2-6 iOS 细节**：viewport-fit=cover 已加 ✅；缺 `apple-mobile-web-app-status-bar-style` 显式值可补（可选）。
