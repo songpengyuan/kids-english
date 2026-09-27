@@ -1,88 +1,30 @@
 <script setup lang="ts">
 /**
  * 自由练习首页（阶段 2-2：从 HomePage 拆分）。
- * 快捷引导（复习/继续学习）+ 课时卡片网格（自适应列/行/翻页）。
+ * 快捷引导（复习/继续学习）+ 课时卡片网格（**上下滚动**）。
+ *
+ * 2026-09-28：课程列表从"翻页"改为"上下滚动"——后续课程会越加越多，
+ * 滚动浏览比翻页轻松，也更贴近 App 首页"往下滑看全部课"的惯用节奏。
  */
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed } from "vue";
 import { activityKeys, getLesson, lessons, type Lesson } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { useRouter } from "vue-router";
 import { speak } from "../../utils/speech";
 import { useViewport } from "../../composables/useViewport";
-import { usePager } from "../../composables/usePager";
-import { pickColumns } from "../../utils/layout";
 import { dueWords } from "../../utils/reviewQueue";
-import Pager from "../../components/activities/Pager.vue";
 import { BookOpenText, Check } from "@lucide/vue";
 
 const progress = useProgressStore();
 const router = useRouter();
-const { isNarrow } = useViewport();
+const { isNarrow, width } = useViewport();
 
-const GAP = 14;
-const MIN_CARD_W = 170;
-const MIN_CARD_H = 120;
-
-/* ---------- 测量课时卡片区 ---------- */
-const stageEl = ref<HTMLDivElement | null>(null);
-const area = reactive({ w: 0, h: 0 });
-let ro: ResizeObserver | null = null;
-let raf: number | null = null;
-
-function measure() {
-  const el = stageEl.value;
-  if (!el) return;
-  const r = el.getBoundingClientRect();
-  area.w = r.width;
-  area.h = r.height;
-}
-function scheduleMeasure() {
-  if (raf) cancelAnimationFrame(raf);
-  raf = requestAnimationFrame(() => {
-    raf = null;
-    measure();
-  });
-}
-onMounted(() => {
-  measure();
-  ro = new ResizeObserver(scheduleMeasure);
-  if (stageEl.value) ro.observe(stageEl.value);
-});
-onBeforeUnmount(() => {
-  if (ro) ro.disconnect();
-  if (raf) cancelAnimationFrame(raf);
-});
-
-/* ---------- 每页课时数与列数 ---------- */
-const fit = computed<{ cols: number; rows: number }>(() => {
-  if (!area.w || !area.h) return { cols: isNarrow.value ? 2 : 3, rows: 2 };
-  return pickColumns({
-    width: area.w,
-    height: area.h,
-    count: lessons.length,
-    minCardW: MIN_CARD_W,
-    minCardH: MIN_CARD_H,
-    gap: GAP,
-    maxCols: isNarrow.value ? 2 : 4,
-    maxRows: area.h < MIN_CARD_H * 2 + GAP ? 1 : 4,
-    targetAspect: 1.0
-  });
-});
-
-const perPage = computed(() => fit.value.cols * fit.value.rows);
-
-const {
-  page,
-  total,
-  items,
-  next: gotoNext,
-  prev: gotoPrev,
-  go: gotoPage
-} = usePager<Lesson>(lessons, perPage, { resetOn: [() => lessons.length] });
+/** 卡片列数：手机 2 列，平板 3 列，超宽屏 4 列（别一行摊太散） */
+const cols = computed(() => (isNarrow.value ? 2 : width.value >= 1080 ? 4 : 3));
 
 const cardsStyle = computed(() => ({
-  "--cols": fit.value.cols,
-  "--grid-gap": `${GAP}px`
+  "--cols": cols.value,
+  "--grid-gap": "14px"
 }));
 
 function enter(l: Lesson) {
@@ -113,10 +55,11 @@ const lastLessonObj = computed(() => {
       </button>
     </div>
 
-    <div class="stage view-body" ref="stageEl">
+    <!-- 课程列表：上下滚动，课多了往下滑即可；不再翻页 -->
+    <div class="stage view-body">
       <div class="cards" :style="cardsStyle">
         <button
-          v-for="(l, i) in items"
+          v-for="(l, i) in lessons"
           :key="l.id"
           class="lesson-card anim-pop"
           :class="'tone-' + l.tone"
@@ -132,8 +75,6 @@ const lastLessonObj = computed(() => {
         </button>
       </div>
     </div>
-
-    <Pager :page="page" :total="total" @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
   </div>
 </template>
 
@@ -171,8 +112,15 @@ const lastLessonObj = computed(() => {
 .q-link:active {
   transform: translateY(calc(var(--press) - 1px));
 }
+/* 滚动列表：占满剩余高度，课多了往下滑 */
 .stage {
   display: flex;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: var(--gap-s);
 }
 .cards {
   flex: 1;
@@ -180,7 +128,9 @@ const lastLessonObj = computed(() => {
   width: 100%;
   display: grid;
   grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
-  grid-auto-rows: minmax(0, 1fr);
+  /* 行高 ≈ 之前翻页版"每屏两行"的卡片高度：按视口高换算，课多了整体往下滚 */
+  grid-auto-rows: clamp(150px, calc((100dvh - 170px) / 2), 420px);
+  align-content: start;
   gap: var(--grid-gap, 14px);
 }
 .lesson-card {
