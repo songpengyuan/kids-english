@@ -957,9 +957,15 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 
 用户要求"帮忙把 81 张角色图下载归位"，同时坚持私人使用。交付方式：**给工具、不给素材**。
 
-- **三种取图方式**（可混用，按 id 去重）：
-  1. `--auto`：Fandom MediaWiki API（`list=search` 找页面 → `prop=pageimages&piprop=original` 取主图，
-     主图不合适时用 `action=parse&prop=images` 按形态关键词打分兜底）；
+- **四种图源 + 自动依次尝试**（`--source fandom,bing,baidu,moegirl`，默认按此顺序）：
+  1. `fandom`：MediaWiki API（`list=search` 找页面 → `prop=pageimages&piprop=original` 取主图，
+     主图不合适时用 `action=parse&prop=images` 按形态关键词打分兜底）——形态覆盖最全，但**形态页常不存在**，
+     容易把角色主图套给所有形态；
+  2. `bing`：`cn.bing.com/images/async` 解析 `murl`（.png 优先）——按关键词搜"角色+形态"，形态命中率更高；
+  3. `baidu`：`image.baidu.com/search/acjson`（中文关键词；返回的 JSON 偶尔带尾逗号不合法，代码有正则兜底）；
+  4. `moegirl`：萌娘百科 MediaWiki API（中文条目图；图片站防盗链，下载自动带 Referer）。
+  图源根地址可用环境变量 `HERO_*_BASE` 覆盖 —— 本地用 mock 服务器验证过四种解析路径。
+- **另外两种取图方式**（可与 `--auto` 混用，按 id 去重）：
   2. `--urls urls.txt`：每行 `formId URL`（浏览器复制的直链）；
   3. `--from-dir DIR [--map map.txt]`：本地已下载图片（无映射表时按"文件名含 formId"自动匹配）。
 - **规整**：`sips -s format png --resampleHeightWidthMax 512` —— 转 PNG、保留透明通道、超长边压到 512px
@@ -967,7 +973,10 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 - **避免整批卡死**：显式给了清单（urls/from-dir）时**只处理清单里的 id**，不再顺手联网搜剩下的；
   自动模式连续 3 次网络失败即熔断并提示改用清单方式；单 id 超时 15s。
 - **可复核**：输出 `public/heroes/fetch-report.tsv`（id / 来源 / 尺寸 / 状态），自动匹配会有误命中（logo/剪影），
-  所以报告是给人工过一遍用的。
+  所以报告是给人工过一遍用的；**同一张图被多个形态命中时会在来源列标 `⚠️ 与 xxx 同图`**
+  （自动搜图最容易犯的错就是把角色主图套给它的所有形态，标出来就知道哪些必须手动换）。
+- **下载校验按文件头**（PNG/JPEG/GIF/WebP/SVG）而不是看大小：防盗链或错误页会返回 HTML，
+  按文件头判断才能给出"下载内容不是图片（开头：<html…>）"这样的可用报错。
 - **版权与分发边界**：脚本只做"下载 + 归位"，素材由使用者自行获取与承担；
   `.gitignore` 已加 `public/heroes/*.png` —— 下载的图片默认**不进公开仓库**，
   想让线上也显示，要么删掉那行自行提交，要么把图片放自己的图床、`heroes.ts` 里改 https 绝对地址

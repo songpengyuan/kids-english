@@ -134,12 +134,16 @@ public/lessons/
   ```bash
   python3 scripts/fetch-hero-art.py --auto --limit 5     # 联网自动搜图，先试 5 张看质量
   python3 scripts/fetch-hero-art.py --auto               # 全量（81 个形态）
+  python3 scripts/fetch-hero-art.py --auto --source bing,baidu   # 只走必应/百度（国内更快）
   python3 scripts/fetch-hero-art.py --urls urls.txt      # 用浏览器复制的图片直链
   python3 scripts/fetch-hero-art.py --from-dir ~/Downloads/ultraman --map map.txt
   python3 scripts/fetch-hero-art.py --check              # 只看还缺哪些
   ```
 
-  脚本会转 PNG、保留透明通道、最长边压到 512px，并输出 `public/heroes/fetch-report.tsv` 供逐张复核。
+  可用的图源：**必应图片**（`bing`，优先 .png）、**百度图片**（`baidu`，中文关键词）、
+  **萌娘百科**（`moegirl`，中文条目图）、**Fandom**（`fandom`，形态覆盖最全）；默认四个依次尝试。
+  脚本会转 PNG、保留透明通道、最长边压到 512px，并输出 `public/heroes/fetch-report.tsv` 供逐张复核
+  （**同一张图被多个形态命中会标 ⚠️**，说明那个形态要手动换图）。
   `public/heroes/*.png` **默认已在 .gitignore**（图片只在你本机，不进公开仓库）；要让线上也显示，
   删掉 .gitignore 里那一行并自行 `git add`，或把图片放自己的图床再把 `heroes.ts` 里的路径改成 https 绝对地址。
 
