@@ -118,13 +118,13 @@ const grainStyle = { "--grain": GRAIN };
    * ⚠️ 全部用固定 rgba（不用 color-mix(var(--token))：scoped 样式下会被浏览器解析丢弃，
    *    导致整条 background-image 变 none —— 背景就只剩纯色）。 */
   background-image:
-    radial-gradient(58% 40% at 6% 4%, rgba(28, 176, 246, 0.28), transparent 68%),
-    radial-gradient(46% 36% at 92% 8%, rgba(255, 99, 132, 0.24), transparent 70%),
-    radial-gradient(52% 42% at 88% 46%, rgba(160, 120, 255, 0.24), transparent 72%),
-    radial-gradient(48% 40% at 12% 58%, rgba(88, 214, 141, 0.22), transparent 70%),
-    radial-gradient(42% 34% at 54% 96%, rgba(255, 178, 54, 0.24), transparent 72%),
-    radial-gradient(60% 26% at 50% -6%, rgba(255, 255, 255, 0.55), transparent 70%),
-    linear-gradient(180deg, transparent 0%, rgba(120, 88, 42, 0.10) 100%);
+    radial-gradient(58% 40% at 6% 4%, rgba(28, 176, 246, 0.30), transparent 68%),
+    radial-gradient(46% 36% at 92% 8%, rgba(255, 99, 132, 0.25), transparent 70%),
+    radial-gradient(52% 42% at 88% 46%, rgba(160, 120, 255, 0.25), transparent 72%),
+    radial-gradient(48% 40% at 12% 58%, rgba(88, 214, 141, 0.23), transparent 70%),
+    radial-gradient(42% 34% at 54% 96%, rgba(255, 178, 54, 0.25), transparent 72%),
+    radial-gradient(60% 26% at 50% -6%, rgba(255, 255, 255, 0.5), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.22) 100%);
   background-color: var(--bg); /* 渐变兜底（老浏览器/极端 DPR） */
 }
 /* 细颗粒：在打底之上、云朵/星星之下（负 z-index 子层 = 父背景之上、其余内容之下） */
