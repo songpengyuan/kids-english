@@ -14,6 +14,12 @@ import { initErrorCapture } from './utils/errors'
 // 先应用主题再挂载，避免暗色用户刷新时闪白
 initTheme()
 
+// 页面标题（P2-2）：路由 meta.title 驱动浏览器标签页标题，首页保持品牌名
+router.afterEach((to) => {
+  const t = to.meta.title;
+  document.title = t && t !== "丞丞ABC" ? `${t} · 丞丞ABC` : "丞丞ABC";
+});
+
 createApp(App).use(createPinia()).use(router).mount('#app')
 
 // Safari 没有 Vibration API，挂载后给可点元素叠加透明 switch 以获得原生触感

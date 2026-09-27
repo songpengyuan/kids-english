@@ -21,16 +21,16 @@ import LessonView from "../views/LessonView.vue";
 export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
-    { path: "/", name: "home", component: HomeView },
-    { path: "/me", name: "me", component: () => import("../views/MyView.vue") },
-    { path: "/streak", name: "streak", component: () => import("../views/StreakView.vue") },
-    { path: "/treasure", name: "treasure", component: () => import("../views/TreasureView.vue") },
-    { path: "/treasure/hero/:id", name: "hero-detail", component: () => import("../views/HeroDetailView.vue") },
-    { path: "/report", name: "report", component: () => import("../views/ReportView.vue") },
-    { path: "/review", name: "review", component: () => import("../views/ReviewView.vue") },
+    { path: "/", name: "home", component: HomeView, meta: { title: "丞丞ABC" } },
+    { path: "/me", name: "me", component: () => import("../views/MyView.vue"), meta: { title: "我的" } },
+    { path: "/streak", name: "streak", component: () => import("../views/StreakView.vue"), meta: { title: "连击" } },
+    { path: "/treasure", name: "treasure", component: () => import("../views/TreasureView.vue"), meta: { title: "宝藏罐" } },
+    { path: "/treasure/hero/:id", name: "hero-detail", component: () => import("../views/HeroDetailView.vue"), meta: { title: "英雄图鉴" } },
+    { path: "/report", name: "report", component: () => import("../views/ReportView.vue"), meta: { title: "家长报告" } },
+    { path: "/review", name: "review", component: () => import("../views/ReviewView.vue"), meta: { title: "错词复习" } },
         // 玩法直达：/lesson/:id 或 /lesson/:id/:stage（如 #/lesson/l4/learn），
     // 兼容旧 query 深链（?stage=learn），入口解析在 useLessonFlow.boot */
-    { path: "/lesson/:id/:stage?", name: "lesson", component: LessonView },
+    { path: "/lesson/:id/:stage?", name: "lesson", component: LessonView, meta: { title: "学习" } },
     // 未知路径回首页（含旧 ?lesson= 深链被 replace 掉之前的空 hash 场景）
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],

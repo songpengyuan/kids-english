@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:ci": "node scripts/guard-build.mjs && vite build",
+    "build:ci": "node scripts/guard-build.mjs && node scripts/validate-data.mjs && vite build",
     "preview": "vite preview",
     "ship": "node scripts/ship.mjs",
     "test": "vitest run",
