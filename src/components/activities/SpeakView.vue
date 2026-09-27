@@ -76,28 +76,24 @@ function next() {
       </div>
       <div class="word-text">
         <button class="word" @click="hearExample">{{ cur.en }}</button>
-        <p class="tip" v-if="mode === 'asr'">点图听一遍，再按住大麦克风跟读给小耳朵听</p>
+        <p class="tip" v-if="mode === 'asr'">点图听一遍，再点麦克风跟读给小耳朵听</p>
         <p class="tip" v-else>
           {{
-            recordHint || "按住大麦克风说话，松开手自动播放回放，和爸爸妈妈一起听"
+            recordHint || "点麦克风开始说话，说完再点一下结束"
           }}
         </p>
       </div>
     </div>
 
-    <!-- 麦克风按钮：按住即说话，松开即停止（录音模式松手自动播放回放） -->
+    <!-- 麦克风按钮：点一下开始，再点一下结束 -->
     <div class="mic-zone" v-if="status !== 'feedback' || mode === 'asr'">
       <button
         class="mic"
         :class="{ live: status === 'listening' }"
-        aria-label="按住说话"
-        title="按住说话"
-        @pointerdown.prevent="startMic"
-        @pointerup.prevent="stopMic"
-        @pointercancel="stopMic"
-        @contextmenu.prevent
+        :aria-label="status === 'listening' ? '结束录音' : '开始说话'"
+        @click="status === 'listening' ? stopMic() : startMic()"
       >
-        <Square v-if="status === 'listening' && mode === 'record'" class="k-ico" />
+        <Square v-if="status === 'listening'" class="k-ico" />
         <Mic v-else class="k-ico" />
       </button>
       <div v-if="status === 'listening'" class="waves"><i></i><i></i><i></i></div>
@@ -105,9 +101,9 @@ function next() {
         {{
           status === "listening"
             ? mode === "asr"
-              ? "正在听…松开就打分"
-              : "录音中…松开就回放"
-            : "按住说话"
+              ? "正在听…再点一下结束"
+              : "录音中…再点一下结束"
+            : "点一下开始说话"
         }}
       </p>
     </div>

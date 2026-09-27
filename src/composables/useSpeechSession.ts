@@ -53,6 +53,7 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
   let recognizer: ReturnType<typeof createWordRecognizer> | null = null;
   let recorder: ReturnType<typeof createRecorder> | null = null;
   let asrTimer: ReturnType<typeof setTimeout> | null = null;
+  let recTimer: ReturnType<typeof setTimeout> | null = null;
 
   const cur = computed(() => words.value[idx.value]);
   const total = computed(() => words.value.length);
@@ -141,10 +142,15 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
       status.value = "idle";
       recordHint.value = "无法访问麦克风，请检查权限";
       hooks.onMicError?.();
+      return;
     }
+    // 最大录音 5 秒自动结束
+    if (recTimer) clearTimeout(recTimer);
+    recTimer = setTimeout(() => stopRecord(), 5000);
   }
 
   function stopRecord() {
+    if (recTimer) { clearTimeout(recTimer); recTimer = null; }
     if (!recorder) return;
     recorder.stop().then((url: string | null) => {
       if (!url) return;
@@ -214,6 +220,8 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
   function cleanup() {
     if (asrTimer) clearTimeout(asrTimer);
     asrTimer = null;
+    if (recTimer) clearTimeout(recTimer);
+    recTimer = null;
     if (recognizer) recognizer.abort();
     if (recUrl.value) URL.revokeObjectURL(recUrl.value);
     if (recorder && recorder.release) recorder.release();
