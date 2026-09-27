@@ -28,7 +28,9 @@ export const router = createRouter({
     { path: "/treasure/hero/:id", name: "hero-detail", component: () => import("../views/HeroDetailView.vue") },
     { path: "/report", name: "report", component: () => import("../views/ReportView.vue") },
     { path: "/review", name: "review", component: () => import("../views/ReviewView.vue") },
-    { path: "/lesson/:id", name: "lesson", component: LessonView },
+        // 玩法直达：/lesson/:id 或 /lesson/:id/:stage（如 #/lesson/l4/learn），
+    // 兼容旧 query 深链（?stage=learn），入口解析在 useLessonFlow.boot */
+    { path: "/lesson/:id/:stage?", name: "lesson", component: LessonView },
     // 未知路径回首页（含旧 ?lesson= 深链被 replace 掉之前的空 hash 场景）
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],

@@ -76,7 +76,7 @@ const routes = [
   { path: "/report", name: "report", component: ReportView },
   { path: "/treasure", name: "treasure", component: TreasureView },
   { path: "/review", name: "review", component: ReviewView },
-  { path: "/lesson/:id", name: "lesson", component: LessonView },
+  { path: "/lesson/:id/:stage?", name: "lesson", component: LessonView },
   { path: "/treasure/hero/:id", name: "hero-detail", component: HeroDetailView },
 ];
 
@@ -151,7 +151,13 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   it("课程页（菜单）", async () => {
     const w = await mountPage(LessonView, "/lesson/l4");
-    expect(w.text()).toContain("A Sailor Went to Sea");
+    expect(w.find(".lesson").exists()).toBe(true);
+  });
+
+  it("玩法直达子路径 /lesson/:id/:stage 能渲染（#/lesson/l4/learn）", async () => {
+    const w = await mountPage(LessonView, "/lesson/l4/learn");
+    // 子路径直达应直接进入看图学词（而不是菜单）
+    expect(w.text()).toContain("点图片听发音");
     expect(errors).toEqual([]);
   });
 

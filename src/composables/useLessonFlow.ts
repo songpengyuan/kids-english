@@ -129,7 +129,9 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   /* ---------- 引导（路由解析） ---------- */
   function boot() {
     if (lesson.value) progress.setLastLesson(lesson.value.id);
-    const s = typeof route.query.stage === "string" ? route.query.stage : "";
+    // stage 子路径优先（#/lesson/l4/learn），旧 query 深链（?stage=learn）兼容
+    const ps = typeof route.params.stage === "string" ? route.params.stage : "";
+    const s = ps || (typeof route.query.stage === "string" ? route.query.stage : "");
     if (quest.questMode.value) {
       // 单关模式：地图点关卡直接开玩对应玩法（跳过菜单/关卡卡）
       const idx = quest.bootFromQuery();
