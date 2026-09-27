@@ -350,6 +350,7 @@ function unitLesson(id: string) {
 }
 /* ---------- 课程横幅 ---------- */
 .gp-unit {
+  position: relative; /* u-bar 进度条锚点：absolute 需有定位上下文，否则锚到外层容器错位 */
   height: 56px; /* BAR_H */
   margin: 20px 0 38px; /* 下节留白 / 横幅底 → 首节点圆心(66-28) */
   border-radius: 14px;

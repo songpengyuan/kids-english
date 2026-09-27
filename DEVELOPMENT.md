@@ -741,3 +741,8 @@ pnpm test   # vitest run，覆盖：
 - 现象：关卡名（lv-name，absolute 定位）溢出关卡节点底部约 24px，被下一个课程横幅（gp-unit margin-top 20px）顶边遮挡（如 I Am the Music Man 遮住上方开宝箱文字下半）。
 - 修复：`.lv-name` 改为参与文档流（lv-wrap 改 flex column + gap 8px，name 排在按钮正下方，不再 absolute 溢出）；`.lv-wrap + .lv-wrap` margin-top 32→10px，圆心距保持 ≈96px 不变。
 - 实测：开宝箱文字底部与下一横幅顶间隔 20px 无遮挡；连续节点圆心距 96/96/96 均匀。
+### 13.14 修复课程横幅进度条错位（2026-09-27）
+
+- 现象：`.u-bar`（absolute 进度条）锚到外层容器，三个横幅的进度条叠在页面同一位置，不在横幅内。
+- 根因：`.gp-unit` 未设 position，absolute 子元素向上找定位上下文失败。
+- 修复：`.gp-unit { position: relative }`，进度条回归各自横幅底部（bottom 10px / 左右 16px）。
