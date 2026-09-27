@@ -32,6 +32,7 @@ const firstAttemptOk = ref(0); // 一次通过的词数
 const attempts = ref(0); // 当前词第几次尝试
 const canRecord = recorderSupported();
 const recordHint = ref("");
+const recAudio = ref<HTMLAudioElement | null>(null); // 回放元素（无原生控件，隐藏进度条）
 const recUrl = ref("");
 const imgFailed = ref(false);
 
@@ -154,6 +155,14 @@ function stopRecord() {
     status.value = "feedback";
   });
 }
+/** 复读：重播本词录音回放（读完不满意再听一遍，不必看进度条） */
+function replayRec() {
+  const a = recAudio.value;
+  if (a) {
+    a.currentTime = 0;
+    a.play().catch(() => {});
+  }
+}
 function parentJudge(ok) {
   grade.value = ok ? "perfect" : "retry";
   attempts.value++;
@@ -257,10 +266,13 @@ onBeforeUnmount(() => {
     <!-- 反馈 -->
     <div v-if="status === 'feedback'" class="feedback anim-fade-up">
       <template v-if="mode === 'record' && grade === ''">
-        <!-- 松手后自动播放回放，家长/孩子听完再判定 -->
-        <audio :src="recUrl" controls autoplay class="replay big"></audio>
-        <p class="judge-q">听一听回放，读得准不准？</p>
+        <!-- 松手后自动播放回放：不展示进度条（小朋友无需看到），读完可直接复读/判定/再试 -->
+        <audio ref="recAudio" :src="recUrl" autoplay class="replay"></audio>
+        <p class="judge-q">听完啦，读得准不准？</p>
         <div class="btn-row">
+          <button class="k-btn gray" @click="replayRec">
+            <Volume2 class="k-ico" />再听一遍
+          </button>
           <button class="k-btn green" @click="parentJudge(true)">
             <ThumbsUp class="k-ico" />读得棒
           </button>
