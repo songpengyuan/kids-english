@@ -106,6 +106,15 @@ describe("useLessonFlow 引导（深链解析）", () => {
     expect(flow.stage.value).toBe("learn");
   });
 
+  it("URL 回退到无 stage（#/lesson/l4）：重新 boot 回菜单（防深链后回退卡在玩法）", async () => {
+    const { flow } = await bootHost("/lesson/l4/learn");
+    flow.boot();
+    expect(flow.stage.value).toBe("learn");
+    // 模拟 hash 从玩法回退到 /lesson/:id（无 stage）
+    flow.boot();
+    expect(flow.stage.value).toBe("menu");
+  });
+
   it("子路径优先于 query：/lesson/l4/learn?stage=quiz → learn", async () => {
     const { flow } = await bootHost("/lesson/l4/learn?stage=quiz");
     flow.boot();

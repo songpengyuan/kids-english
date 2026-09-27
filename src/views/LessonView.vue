@@ -81,13 +81,11 @@ const flow = useLessonFlow({
 
 // 首次进入：解析深链（?stage= / ?mode=quest&step=）
 onMounted(flow.boot);
-// 「下一关」是同一路由组件变参（/lesson/:id?step=），组件复用不重挂载 → watch 重置
+// 同一路由组件变参（换课 / 下一关 ?step= / 玩法子路径 :stage / 回退无 stage）不重挂载 → watch 重置
+// boot() 幂等：有 stage 直达玩法、无 stage 回菜单并朗读标题
 watch(
-  () => [route.params.id, route.query.mode, route.query.step],
-  () => {
-    if (route.query.mode !== "quest" && route.query.step === undefined) return;
-    flow.boot();
-  }
+  () => [route.params.id, route.params.stage, route.query.mode, route.query.step],
+  () => flow.boot()
 );
 
 // 模板需要解包后的 refs（composable 返回的 ref 在模板自动解包，这里直出）

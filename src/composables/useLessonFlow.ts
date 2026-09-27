@@ -94,7 +94,9 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
       stage.value = s as LessonStage;
       actStart = Date.now();
     } else {
-      // 进入课程时报出主题歌名（英文），给孩子"这一课唱什么"的预期
+      // 无直达 stage（含 URL 从玩法回退到 /lesson/:id）：回菜单，
+      // 并报出主题歌名（英文），给孩子"这一课唱什么"的预期
+      stage.value = "menu";
       setTimeout(() => speak(lesson.value?.title || ""), 400);
     }
   }
