@@ -1131,3 +1131,9 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 
 - QuizView 底部按钮：未作答"检查"状态不再显示 ChevronRight 箭头（箭头只在答对后的"继续"显示，保持"前进"语义）；实测灰色检查按钮无箭头。
 - 课程菜单页（free 模式 #/lesson/l4）：去掉大封面卡 lesson-cover（顶栏已显示 emoji+课程名，封面冗余）；进度条 + 玩法卡直接呈现，布局更清爽；清理死 CSS。
+### 13.33 宝藏库奥特曼详情页（2026-09-27）
+
+- 点击已收集的英雄卡 → 进入详情页 `/treasure/hero/:id?form=<formId>`（未收集仍为发音介绍）。
+- 详情页内容：放大形象图（多形态缩略切换，已收集高亮/未收集剪影）+ 简介 + 招牌技能 + 常用语；角色名 speak 英文、简介/技能/常用语点击 speakZh 中文。
+- 新数据 `src/data/heroDetails.ts`：41 位角色各 3 字段（bio/skills/phrases）；pathIcons 新增 volume/sparkles；底部导航"我的"高亮覆盖 hero-detail。
+- 素材提示：ultraman-base.png 内容疑似贝利亚、zero-corona.png 缺失（回退 svg），待素材脚本补正。

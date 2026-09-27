@@ -15,6 +15,7 @@ import TreasureView from "../views/TreasureView.vue";
 import ReportView from "../views/ReportView.vue";
 import ReviewView from "../views/ReviewView.vue";
 import LessonView from "../views/LessonView.vue";
+import HeroDetailView from "../views/HeroDetailView.vue";
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -22,6 +23,7 @@ export const router = createRouter({
     { path: "/", name: "home", component: HomePage },
     { path: "/me", name: "me", component: MyView },
     { path: "/treasure", name: "treasure", component: TreasureView },
+    { path: "/treasure/hero/:id", name: "hero-detail", component: HeroDetailView },
     { path: "/report", name: "report", component: ReportView },
     { path: "/review", name: "review", component: ReviewView },
     { path: "/lesson/:id", name: "lesson", component: LessonView },

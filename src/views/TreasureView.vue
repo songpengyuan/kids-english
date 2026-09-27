@@ -17,6 +17,7 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import {
   ALL_FORMS,
+  formById,
   ERA_INFO,
   FORM_TOTAL,
   HERO_TOTAL,
@@ -92,9 +93,16 @@ const album = computed(() =>
   }))
 );
 
-/** 点卡片：发音介绍（英文 + 中文），已收集/未收集都能听 */
+/** 点卡片：已收集 → 进角色详情页；未收集 → 发音介绍（英文 + 中文） */
 function introduce(formId: string) {
   sfxTap();
+  if (rewards.isOwned(formId)) {
+    const h = formById(formId)?.heroId;
+    if (h) {
+      router.push(`/treasure/hero/${h}?form=${formId}`);
+      return;
+    }
+  }
   const intro = introOf(formId);
   if (!intro) return;
   speak(intro.en); // 英文：顺便当英语输入

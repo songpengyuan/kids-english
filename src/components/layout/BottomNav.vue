@@ -19,7 +19,12 @@ const router = useRouter();
 const isHome = computed(() => route.name === "home");
 const isGame = computed(() => isHome.value && route.query.mode === "game");
 const isMe = computed(
-  () => route.name === "me" || route.name === "treasure" || route.name === "report" || route.name === "review"
+  () =>
+    route.name === "me" ||
+    route.name === "treasure" ||
+    route.name === "hero-detail" ||
+    route.name === "report" ||
+    route.name === "review"
 );
 
 function goPractice() {
