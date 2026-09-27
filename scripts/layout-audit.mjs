@@ -58,6 +58,7 @@ const PAGES = [
   { name: "talk", q: "#/lesson/l4?stage=talk" },
   { name: "quest-start", q: "#/lesson/l4?mode=quest" },
   { name: "me", q: "#/me" },
+  { name: "hero-detail", q: "#/treasure/hero/tiga?form=tiga-multi" },
   { name: "treasure", q: "#/treasure" },
   { name: "report", q: "#/report" },
   { name: "review", q: "#/review" }

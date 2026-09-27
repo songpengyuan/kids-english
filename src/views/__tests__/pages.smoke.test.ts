@@ -34,7 +34,11 @@ vi.hoisted(() => {
   w.window.scrollTo = w.window.scrollTo || (() => {});
 });
 
-vi.mock("../../utils/speech", () => ({ speak: vi.fn(), speakZh: vi.fn() }));
+vi.mock("../../utils/speech", () => ({
+  speak: vi.fn(),
+  speakZh: vi.fn(),
+  stopSpeaking: vi.fn(),
+}));
 vi.mock("../../utils/effects", () => ({
   sfxTap: vi.fn(),
   sfxCorrect: vi.fn(),
@@ -54,6 +58,7 @@ import ReportView from "../ReportView.vue";
 import TreasureView from "../TreasureView.vue";
 import ReviewView from "../ReviewView.vue";
 import LessonView from "../LessonView.vue";
+import HeroDetailView from "../HeroDetailView.vue";
 
 /** jsdom 没有 ResizeObserver（LearnView/GamePath 会用到） */
 class RO {
@@ -70,6 +75,7 @@ const routes = [
   { path: "/treasure", name: "treasure", component: TreasureView },
   { path: "/review", name: "review", component: ReviewView },
   { path: "/lesson/:id", name: "lesson", component: LessonView },
+  { path: "/treasure/hero/:id", name: "hero-detail", component: HeroDetailView },
 ];
 
 async function mountPage(component: unknown, path: string, query: Record<string, string> = {}) {
@@ -136,6 +142,14 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   it("课程页（菜单）", async () => {
     const w = await mountPage(LessonView, "/lesson/l4");
     expect(w.text()).toContain("A Sailor Went to Sea");
+    expect(errors).toEqual([]);
+  });
+
+  it("角色详情页（宝藏库奥特曼）", async () => {
+    const w = await mountPage(HeroDetailView, "/treasure/hero/tiga");
+    expect(w.text()).toContain("迪迦");
+    expect(w.text()).toContain("介绍");
+    expect(w.text()).toContain("招牌技能");
     expect(errors).toEqual([]);
   });
 });

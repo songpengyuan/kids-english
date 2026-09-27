@@ -93,8 +93,8 @@ const album = computed(() =>
   }))
 );
 
-/** 点卡片：已收集 → 进角色详情页；未收集 → 发音介绍（英文 + 中文） */
-function introduce(formId: string) {
+/** 点卡片：已收集 → 进角色详情页；未收集 → 发音介绍（英文读完再接中文，不掐断） */
+async function introduce(formId: string) {
   sfxTap();
   if (rewards.isOwned(formId)) {
     const h = formById(formId)?.heroId;
@@ -105,8 +105,8 @@ function introduce(formId: string) {
   }
   const intro = introOf(formId);
   if (!intro) return;
-  speak(intro.en); // 英文：顺便当英语输入
-  setTimeout(() => speakZh(intro.zh), 1400);
+  await speak(intro.en); // 英文：顺便当英语输入
+  await speakZh(intro.zh, 1, { bypassMute: true });
 }
 
 /** 兑换 / 升级 */

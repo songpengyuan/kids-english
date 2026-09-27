@@ -9,6 +9,10 @@
  *   1. 精确键 `lessonId:wordId` —— 同词出现在多课（如 l4/l6 的 blue）时各用各的音频，
  *      不会因"先到先得"串音。
  *   2. 兜底键 `en` —— 只按英文名也能发音（兼容旧调用/未带上下文的场景）。
+ *
+ * TTS 语言选择（2026-09-27 修复）：speakWithTTS 按 lang 匹配对应语言的系统音色
+ * （zh → zh-CN/zh-TW/zh，en → en-US/en），匹配不到就不指定音色、交给浏览器按 lang
+ * 用默认音色读。此前写死英文音色导致中文朗读要么怪音要么无声。
  */
 import { lessons } from "../data/lessons";
 import { soundEnabled } from "./sound";
@@ -53,38 +57,82 @@ function playAudio(src: string): Promise<boolean> {
 }
 
 /* ---------- 浏览器 TTS（回退通道）---------- */
-let cachedVoice: SpeechSynthesisVoice | null = null;
+/** 当前 utterance（用于 stopSpeaking 掐断 / 结束事件） */
+let curUtter: SpeechSynthesisUtterance | null = null;
 
-function pickVoice(): SpeechSynthesisVoice | null {
+/** 按语言匹配系统音色；匹配不到返回 null（交给浏览器按 lang 默认读） */
+function pickVoice(lang: string): SpeechSynthesisVoice | null {
   if (!("speechSynthesis" in window)) return null;
-  if (cachedVoice) return cachedVoice;
   const voices = window.speechSynthesis.getVoices();
-  cachedVoice =
-    voices.find((v) => v.lang === "en-US" && /google|natural|premium|samantha/i.test(v.name)) ||
-    voices.find((v) => v.lang === "en-US") ||
-    voices.find((v) => /^en/i.test(v.lang)) ||
-    null;
-  return cachedVoice;
+  const prefix = lang.split("-")[0].toLowerCase(); // "zh" / "en"
+  const byPrefix = voices.filter((v) => (v.lang || "").toLowerCase().startsWith(prefix));
+  if (!byPrefix.length) return null;
+  // 优先"自然/高级"音色（Google / Neural / Natural / 系统合成），其次任意该语言音色
+  return (
+    byPrefix.find((v) => /google|neural|natural|premium|samantha|tingting|meijia|xiaoxiao|yunxi/i.test(v.name)) ||
+    byPrefix[0]
+  );
 }
 
-// 音色列表是异步加载的，提前触发一次
+// 音色列表是异步加载的，提前触发一次（voice 不缓存：切语言/装语音包后实时匹配）
 if ("speechSynthesis" in window) {
   window.speechSynthesis.onvoiceschanged = () => {
-    cachedVoice = null;
-    pickVoice();
+    /* 触发 getVoices 刷新；pickVoice 不缓存，无需额外动作 */
+    window.speechSynthesis.getVoices();
   };
 }
 
-function speakWithTTS(text: string, { rate = 0.85, lang = "en-US" }: { rate?: number; lang?: string }): void {
-  if (!("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel(); // 打断上一条，避免连点重叠
-  const u = new SpeechSynthesisUtterance(text);
-  const v = pickVoice();
-  if (v) u.voice = v;
-  u.lang = lang;
-  u.rate = rate; // 放慢一点，适合幼儿
-  u.pitch = 1.1;
-  window.speechSynthesis.speak(u);
+/** 朗读一段文本（TTS）；完成返回 true，失败/环境不支持返回 false。同一时刻只读一条，自动打断上一条。 */
+function speakWithTTS(text: string, { rate = 0.85, lang = "en-US" }: { rate?: number; lang?: string }): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (!("speechSynthesis" in window) || typeof window.speechSynthesis.speak !== "function") {
+      resolve(false);
+      return;
+    }
+    window.speechSynthesis.cancel(); // 打断上一条，避免连点重叠
+    let settled = false;
+    const done = (ok: boolean) => {
+      if (!settled) {
+        settled = true;
+        curUtter = null;
+        resolve(ok);
+      }
+    };
+    const u = new SpeechSynthesisUtterance(text);
+    curUtter = u;
+    const v = pickVoice(lang);
+    if (v) u.voice = v;
+    u.lang = lang;
+    u.rate = rate; // 放慢一点，适合幼儿
+    u.pitch = 1.1;
+    u.onend = () => done(true);
+    u.onerror = () => done(false);
+    window.speechSynthesis.speak(u);
+    // 兜底：个别环境（Safari 首次、切后台）onend 可能不来，超时放行避免链条卡死
+    window.setTimeout(() => done(true), 12000);
+  });
+}
+
+/** 立即停止一切朗读（mp3 + TTS），供"再点一下停止"类交互使用 */
+export function stopSpeaking(): void {
+  if (curAudio) {
+    curAudio.pause();
+    curAudio = null;
+  }
+  if (curUtter) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch {
+      /* 忽略 */
+    }
+    curUtter = null;
+  } else if ("speechSynthesis" in window) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch {
+      /* 忽略 */
+    }
+  }
 }
 
 /* ---------- 对外接口 ---------- */
@@ -95,6 +143,7 @@ function speakWithTTS(text: string, { rate = 0.85, lang = "en-US" }: { rate?: nu
  * @param opts.lang      语言（TTS 用）
  * @param opts.lessonId  词所属课时 id（可选；提供后按精确键查预生成发音）
  * @param opts.wordId    词 id（可选；与 lessonId 成对使用）
+ * @param opts.ttsOnly   跳过预生成 mp3，直接用系统自带 TTS（适合课程名等整句/短语）
  */
 export interface SpeakOptions {
   rate?: number;
@@ -109,20 +158,32 @@ export async function speak(
   text: string,
   { rate = 0.85, lang = "en-US", lessonId = null, wordId = null, ttsOnly = false }: SpeakOptions = {}
 ): Promise<void> {
-  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   if (ttsOnly) {
-    speakWithTTS(text, { rate, lang });
+    await speakWithTTS(text, { rate, lang });
     return;
   }
   let src = null;
   if (lessonId && wordId) src = wordAudioByKey[`${lessonId}:${wordId}`];
   if (!src) src = wordAudioByEn[text];
   if (src && (await playAudio(src))) return;
-  speakWithTTS(text, { rate, lang });
+  await speakWithTTS(text, { rate, lang });
 }
 
-export function speakZh(text: string, rate = 1): void {
-  // 中文提示语归"音效"开关管；单词发音（speak）不受影响，静音后仍能练听音选图
-  if (!soundEnabled()) return;
-  speakWithTTS(text, { rate, lang: "zh-CN" });
+export interface SpeakZhOptions {
+  /**
+   * 绕过"音效开关"静音（用于学习内容朗读——简介/技能/常用语/角色名，
+   * 它们是"内容"不是"提示语"，静音开关只管提示音与庆祝语）。
+   */
+  bypassMute?: boolean;
+}
+
+/**
+ * 朗读一段中文。
+ * 默认受音效开关约束（提示语语义：关卡完成/导航标签等，公共场合可一键静音）；
+ * 传 { bypassMute: true } 则始终发声（学习内容语义：详情介绍/技能名/常用语）。
+ * 返回 Promise（播完 resolve），便于"先英文后中文"串联不掐断。
+ */
+export async function speakZh(text: string, rate = 1, opts: SpeakZhOptions = {}): Promise<void> {
+  if (!opts.bypassMute && !soundEnabled()) return;
+  await speakWithTTS(text, { rate, lang: "zh-CN" });
 }
