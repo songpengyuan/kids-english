@@ -344,7 +344,7 @@ function unitLesson(id: string) {
         <div
           v-else
           class="lv-wrap"
-          :class="[states[(it as GeoItem).level!.id], { flash: flashIds.has((it as GeoItem).level!.id), chest: (it as GeoItem).level!.actKey === 'chest', shake: shakeIds.has((it as GeoItem).level!.id) }]"
+          :class="[states[(it as GeoItem).level!.id], { flash: flashIds.has((it as GeoItem).level!.id), chest: (it as GeoItem).level!.actKey === 'chest', shake: shakeIds.has((it as GeoItem).level!.id) }, 'tone-' + (unitLesson((it as GeoItem).level!.lessonId)?.tone || 'blue')]"
           :style="{ '--dx': dxOf(it as GeoItem) + 'px', '--gap-above': ((it as GeoItem).marginTop ?? 0) + 'px' }"
           :data-lv-id="(it as GeoItem).level!.id"
         >
@@ -502,6 +502,28 @@ function unitLesson(id: string) {
 .gp-unit.tone-pink { background: linear-gradient(180deg, var(--c-pink), color-mix(in srgb, var(--c-pink) 70%, #000)); }
 .gp-unit.tone-green { background: linear-gradient(180deg, var(--c-green), color-mix(in srgb, var(--c-green) 70%, #000)); }
 .gp-unit.tone-teal { background: linear-gradient(180deg, var(--c-teal), color-mix(in srgb, var(--c-teal) 70%, #000)); }
+
+/* ---------- 已通关关卡：主色调跟随所属课程横幅（孩子一眼看出这组关卡属于哪门课） ---------- */
+.lv-wrap.tone-blue { --tone: var(--c-blue); }
+.lv-wrap.tone-orange { --tone: var(--c-orange); }
+.lv-wrap.tone-purple { --tone: var(--c-purple); }
+.lv-wrap.tone-pink { --tone: var(--c-pink); }
+.lv-wrap.tone-green { --tone: var(--c-green); }
+.lv-wrap.tone-teal { --tone: var(--c-teal); }
+/* 通关（done）：按钮圆形背景 = 课程主色调渐变（与课程横幅同款），图标白色，圆+阴影保持不变；
+   宝箱关（.chest）保持金色奖励语义不变。 */
+.lv-wrap.done[class*="tone-"]:not(.chest) .gp-level {
+  --face: linear-gradient(180deg, var(--tone), color-mix(in srgb, var(--tone) 70%, #000));
+  --base: color-mix(in srgb, var(--tone) 55%, #000);
+}
+.lv-wrap.done[class*="tone-"]:not(.chest) .lv-ico {
+  color: #fff;
+}
+/* 暗黑模式：课程色与深底混合（跟随横幅在暗色下的观感） */
+:root[data-theme="dark"] .lv-wrap.done[class*="tone-"]:not(.chest) .gp-level {
+  --face: linear-gradient(180deg, color-mix(in srgb, var(--tone) 62%, #16181c), color-mix(in srgb, var(--tone) 42%, #000));
+  --base: color-mix(in srgb, var(--tone) 32%, #000);
+}
 
 /* ---------- 关卡节点（文档流：wrap 居中 + --dx 左右位移；按钮为圆） ---------- */
 .lv-wrap {
