@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 我的（/me）——个人中心，儿童友好的"成就汇总 + 功能入口"页：
  * - 身份/成就：吉祥物 + 总星星 + 连击
@@ -11,6 +11,7 @@
 import { computed } from "vue";
 import { useProgressStore } from "../stores/progress";
 import { useRewardsStore } from "../stores/rewards";
+import { FORM_TOTAL } from "../data/heroes";
 import { useStreakStore } from "../stores/streak";
 import { useRouter } from "vue-router";
 import ThemeToggle from "../components/layout/ThemeToggle.vue";
@@ -31,7 +32,7 @@ const router = useRouter();
 /** 全词库（用于过滤掉课程已删除的残留词） */
 const allWords = lessons.flatMap((l) => l.words);
 
-function fmtDuration(sec) {
+function fmtDuration(sec: number) {
   const s = Math.max(0, Math.round(sec));
   const m = Math.floor(s / 60);
   const rest = s % 60;
@@ -49,7 +50,8 @@ const goalPct = computed(() => {
   return Math.round(((reviewPart + levelPart) / 2) * 100);
 });
 
-const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stickerTotal}`);
+/** 英雄图鉴进度：已收集形态 / 总形态（旧版是"贴纸"，奖励经济改版后换成英雄形态） */
+const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
 
 const todayWords = computed(() => {
   let n = 0;
@@ -125,8 +127,8 @@ const todayWords = computed(() => {
           <span class="k">贝壳</span>
         </div>
         <div class="cell">
-          <span class="v"><PathIcon name="sticker" class="st-ico" />{{ stickerDone }}</span>
-          <span class="k">贴纸图鉴</span>
+          <span class="v"><PathIcon name="sticker" class="st-ico" />{{ heroDone }}</span>
+          <span class="k">英雄图鉴</span>
         </div>
         <div class="cell">
           <span class="v"><PathIcon name="clock" class="st-ico" />{{ fmtDuration(progress.todayStats.durationSec) }}</span>

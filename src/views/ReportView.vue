@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 家长学情页（/report）
  *
@@ -6,7 +6,7 @@
  * - 今日概览：学习时长 / 完成玩法数 / 今日目标 / 连击 / 总星星
  * - 今日单词明细：今天点读/答对/答错的每个单词（对错次数）
  * - 错词清单：尚未掌握的弱词（答错过且正确 ≤ 错误），按课分组
- * - 宝藏概览：贝壳 / 贴纸图鉴 / 开箱次数
+ * - 宝藏概览：贝壳 / 英雄图鉴进度 / 开箱次数
  *
  * 数据全部来自本地存储，无任何网络上报。
  */
@@ -14,6 +14,7 @@ import { computed } from "vue";
 import { lessons } from "../data/lessons";
 import { isLessonKey, useProgressStore } from "../stores/progress";
 import { useRewardsStore } from "../stores/rewards";
+import { FORM_TOTAL } from "../data/heroes";
 import { useStreakStore } from "../stores/streak";
 import { useRouter } from "vue-router";
 import { Flame, Star } from "@lucide/vue";
@@ -31,7 +32,7 @@ const router = useRouter();
 /** 全词库（词 id → 词面信息） */
 const allWords = lessons.flatMap((l) => l.words);
 
-function fmtDuration(sec) {
+function fmtDuration(sec: number) {
   const s = Math.max(0, Math.round(sec));
   const m = Math.floor(s / 60);
   const rest = s % 60;
@@ -48,7 +49,7 @@ function todayStr() {
 }
 
 /** 时间戳是否属于今天 */
-function isToday(ts) {
+function isToday(ts?: number | null) {
   if (!ts) return false;
   const d = new Date(ts);
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -110,7 +111,7 @@ const weakByLesson = computed(() => {
 });
 
 /** 下次到期日文案：今天到期 / 明天 / M 月 D 日 */
-function dueText(dueAt) {
+function dueText(dueAt: number | null | undefined) {
   if (!dueAt) return "已掌握";
   const d = new Date(dueAt);
   const now = new Date();
@@ -131,7 +132,8 @@ const trendDays = computed(() => progress.recentDays(7));
 /** 今天到期数按"能在词库中出题"的口径算，和复习页显示的数字保持一致 */
 const dueCount = computed(() => dueWords(progress.getReviewQueue(), allWords).length);
 
-const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stickerTotal}`);
+/** 英雄图鉴进度（奖励经济改版后由"贴纸"换成"英雄形态"） */
+const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
 </script>
 
 <template>
@@ -248,8 +250,8 @@ const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stick
             <span class="v"><ShellIcon /> {{ rewards.shells }}</span>
           </div>
           <div class="item">
-            <span class="k">贴纸图鉴</span>
-            <span class="v"><PathIcon name="sticker" class="mini-ico" /> {{ stickerDone }}</span>
+            <span class="k">英雄图鉴</span>
+            <span class="v"><PathIcon name="sticker" class="mini-ico" /> {{ heroDone }}</span>
           </div>
           <div class="item">
             <span class="k">开箱次数</span>

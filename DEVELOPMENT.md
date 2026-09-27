@@ -545,6 +545,7 @@ pnpm test   # vitest run，覆盖：
 | `src/stores/__tests__/progress.test.ts` | 单词 SRS 升/降级、老数据迁移、掌握度概览、每日快照（30 天上限） |
 | `src/stores/__tests__/rewards.test.ts` | 贝壳 → 英雄形态：兑换/升级/满级、开箱掉落、全收集后行为、老贴纸折算、持久化 |
 | `src/data/__tests__/heroes.test.ts` | 图鉴数据自检：角色→形态结构、id 唯一、价格与稀有度一致、图片路径、发音介绍文案 |
+| `src/views/__tests__/pages.smoke.test.ts` | **页面冒烟**：7 个页面各挂载一次，断言关键内容渲染且无 Vue 报错（堵"改 store 字段后某页白屏"这类事故） |
 | `src/composables/__tests__/useQuizSession.test.ts` | 会话状态机：答错不推进/标红自动消失、答对锁定、星级、重置、进度上报 |
 | `src/components/**/__tests__/*.test.ts` | 组件：AppDialog 退场流程、Pager 受控翻页、WordCard 点读、MasteryTrend 趋势图、**LearnView 点读覆盖率整关行为** |
 
@@ -927,6 +928,30 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 
 **测试**：`rewards.test.ts`（12 例，含开箱用可控 rng 断言掉落、迁移不重复折算）+ `heroes.test.ts`（7 例，数据护栏）。
 总数 146 → **165**；`type-check` + `build:ci` 通过；无头 Chrome 实测宝藏罐（浅/暗各 2 张）+ 开箱掉形态 1 张。
+
+### 13.36 事故复盘：奖励 store 改字段 →「我的」页白屏（2026-09-27）
+
+**现象**：用户反馈点「我的」路由是空白页。
+
+**根因**：§13.35 把 rewards store 的状态从 `stickers: string[]` 换成 `forms: Record<id, 星级>`，
+删掉了 `stickers / stickerTotal / stickerPrice / buySticker`。但 `MyView.vue` 与 `ReportView.vue`
+仍在读 `rewards.stickers.length` → 渲染期 `Cannot read properties of undefined` → 白屏（两页都白）。
+
+**为什么没被拦住**：
+1. 这两个页面当时还是 **JS 模式的 SFC**（`<script setup>` 没写 `lang="ts"`），
+   `vue-tsc --noEmit` 对它们**不做类型检查**，读已删除字段不会报错；
+2. 组件测试只覆盖了少数组件（Pager/WordCard/…），**没有"每页挂一次"的页面级测试**；
+3. 人类走查也只截了宝藏罐/地图等页面，恰好漏了这两个。
+
+**修复**：
+- `MyView` / `ReportView` 改读 `rewards.ownedCount` + `FORM_TOTAL`（文案同步改为「英雄图鉴」）；
+- 两个页面转成 `<script setup lang="ts">`，顺手补上隐式 any 的类型标注 —— **从此它们受 type-check 保护**；
+- 新增 `src/views/__tests__/pages.smoke.test.ts`：7 个页面（首页两种模式 / 我的 / 报告 / 宝藏罐 / 到期复习 / 课程页）
+  各挂载一次，断言关键文案存在 + 没有 Vue 报错（`console.error` 与 `Unhandled error` 都算失败）。
+  这类"store 改字段 → 某页白屏"的事故以后会在 CI 直接红。
+
+**教训（写进铁律）**：**删改 store 的对外字段时，必须跑一遍页面冒烟**；
+新写的页面组件默认 `lang="ts"`，JS 模式的 SFC 等于游离在类型检查之外。
 ### 13.31 关卡按钮改椭圆（参考图的透视圆柱）+ 进度环呼吸微动画（2026-09-27）
 
 **用户反馈**：参考图里的按钮**并不是正圆**（是俯视透视的圆柱：横向略宽、纵向略扁），另外关卡周围的进度环希望有轻微的大小动画。
