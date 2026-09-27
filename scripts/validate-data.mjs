@@ -33,7 +33,7 @@ writeFileSync(
     `import { HEROES, ALL_FORMS } from ${D("src/data/heroes.ts")};`,
     `import { HERO_DETAILS } from ${D("src/data/heroDetails.ts")};`,
     `import { buildLevels } from ${D("src/data/pathLevels.ts")};`,
-    "export { lessons, activityKeys, getLesson, HEROES, ALL_FORMS, HERO_DETAILS, buildLevels };",
+    "export { lessons, activityKeys, getLesson, HEROES, ALL_FORMS, buildLevels };",
     ""
   ].join("\n"),
   "utf-8"
@@ -105,13 +105,11 @@ try {
     formIds.add(f.id);
   }
 
-  /* ---------- 3. heroDetails ---------- */
+  /* ---------- 3. 英雄详情（已并入 ROSTER，随英雄单源维护） ---------- */
   for (const h of mod.HEROES) {
-    check(mod.HERO_DETAILS[h.id], `英雄 ${h.id} 缺详情（heroDetails.ts）`);
-  }
-  for (const [id, d] of Object.entries(mod.HERO_DETAILS)) {
-    check(heroIds.has(id), `heroDetails 里的 id 不在 HEROES 中：${id}`);
-    check(Array.isArray(d?.skills), `heroDetails ${id} 缺 skills`);
+    check(h.detail?.bio?.trim(), `英雄 ${h.id} 缺简介（ROSTER detail.bio）`);
+    check(Array.isArray(h.detail?.skills) && h.detail.skills.length > 0, `英雄 ${h.id} 缺技能（detail.skills）`);
+    check(Array.isArray(h.detail?.phrases) && h.detail.phrases.length > 0, `英雄 ${h.id} 缺口头禅（detail.phrases）`);
   }
 
   /* ---------- 4. pathLevels ---------- */

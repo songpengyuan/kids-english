@@ -15,7 +15,6 @@
 import { computed, ref, watch, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { HEROES, formById, introOf, type FlatForm } from "../data/heroes";
-import { HERO_DETAILS } from "../data/heroDetails";
 import { useRewardsStore } from "../stores/rewards";
 import { speak, speakZh, stopSpeaking } from "../services/speech";
 import { sfxTap } from "../services/effects";
@@ -46,8 +45,8 @@ const currentForm = computed<FlatForm | null>(() =>
   currentFormId.value ? formById(currentFormId.value) : null
 );
 
-/** 详情资料（缺省时给占位文案） */
-const detail = computed(() => (hero.value ? HERO_DETAILS[hero.value.id] ?? null : null));
+/** 详情资料（随 ROSTER 维护，见 data/heroes.ts；缺省时给占位文案） */
+const detail = computed(() => hero.value?.detail ?? null);
 
 /** 形态缩略（转 FlatForm：带 image/fallback/heroId） */
 const formThumbs = computed<FlatForm[]>(() =>
