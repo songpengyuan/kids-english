@@ -36,9 +36,23 @@ const { q, total, picked, wrongPicks, locked, stars, pick, next: gotoNext, clean
 
 const selectedKey = ref<string | null>(null);
 
+/** 顶部大喇叭正在发音：朗读期间显示声波动效（样式参考宝藏详情页） */
+const speaking = ref(false);
+
+/** 统一读题发音入口：置 speaking 状态 → speak → 结束清除（被打断也走 finally） */
+async function playTarget() {
+  const t = q.value?.target;
+  if (!t) return;
+  speaking.value = true;
+  try {
+    await speak(t.en, { lessonId: t.lessonId, wordId: t.id });
+  } finally {
+    speaking.value = false;
+  }
+}
+
 function replay() {
-  const t = q.value.target;
-  speak(t.en, { lessonId: t.lessonId, wordId: t.id });
+  playTarget();
 }
 
 function onPick(opt: Word) {
@@ -82,18 +96,19 @@ watch(
     selectedKey.value = null;
     const t = q.value?.target;
     if (!t) return;
-    setTimeout(() => speak(t.en, { lessonId: t.lessonId, wordId: t.id }), 350);
+    setTimeout(playTarget, 350);
   },
   { immediate: true }
 );
 
-onBeforeUnmount(cleanup);
+onBeforeUnmount(() => { speaking.value = false; cleanup(); });
 </script>
 
 <template>
   <div class="quiz view">
     <button class="big-speaker anim-float" @click="replay" aria-label="再听一遍" title="再听一遍">
       <Volume2 class="k-ico" />
+      <span v-if="speaking" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
     </button>
     <p class="tip">听一听，选一张正确的图片，然后点检查</p>
 
@@ -150,6 +165,36 @@ onBeforeUnmount(cleanup);
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+}
+/* 朗读声波：图标后面的三根跳动静音条（样式对齐宝藏详情页） */
+.wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+}
+.wave i {
+  width: 4px;
+  height: 6px;
+  border-radius: 2px;
+  background: currentColor;
+  animation: wave-bounce 0.7s ease-in-out infinite;
+}
+.wave i:nth-child(2) {
+  animation-delay: 0.14s;
+}
+.wave i:nth-child(3) {
+  animation-delay: 0.28s;
+}
+@keyframes wave-bounce {
+  0%,
+  100% {
+    height: 6px;
+  }
+  50% {
+    height: 15px;
+  }
 }
 .big-speaker:active {
   transform: translateY(calc(var(--press) - 1px));

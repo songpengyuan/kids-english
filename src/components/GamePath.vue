@@ -678,10 +678,10 @@ function unitLesson(id: string) {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-/* 进度环呼吸微动画：整体轻轻放大再收回（各关按序号错峰 → 地图上像波浪） */
+/* 进度环呼吸微动画：最小状态贴住"含底座与落地阴影的完整按钮实体"（阴影也纳入贴合参照），放大只一点点（各关按序号错峰 → 地图上像波浪） */
 @keyframes ring-breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%, 100% { transform: scale(0.92); }
+  50% { transform: scale(0.98); }
 }
 .ring-seg {
   fill: none;
