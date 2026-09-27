@@ -71,6 +71,15 @@ export const ICON_TEXT: Record<string, string> = {
 /* ---------- 应用级通用图标（底部导航 / 我的页等，替代 emoji） ---------- */
 
 export const APP_ICON_PATHS: Record<string, string[]> = {
+  // 关闭（✕）：玩法页顶栏退出按钮（多邻国式）
+  close: [
+    "M18 6 6 18",
+    "M6 6l12 12",
+  ],
+  // 返回箭头（←）：顶栏返回按钮
+  back: [
+    "m15 18-6-6 6-6",
+  ],
   // 自由：靶心
   free: [
     "M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z",

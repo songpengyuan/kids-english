@@ -7,7 +7,7 @@
  * - 右侧：走 #right 插槽（徽章 / 日期 / 主题切换等），保证布局对齐。
  * 替换各页手写 topbar，视觉与交互保持一致（面向儿童：大点击区、圆角、柔和阴影）。
  */
-import { ChevronLeft, X } from "@lucide/vue";
+import PathIcon from "../PathIcon.vue";
 
 defineProps<{ showBack?: boolean; backLabel?: string; close?: boolean }>();
 const emit = defineEmits<{ back: [] }>();
@@ -22,8 +22,8 @@ const emit = defineEmits<{ back: [] }>();
       :title="close ? '关闭' : backLabel || '返回'"
       @click="emit('back')"
     >
-      <X v-if="close" class="k-ico" />
-      <ChevronLeft v-else class="k-ico" />
+      <PathIcon v-if="close" name="close" />
+      <PathIcon v-else name="back" />
     </button>
     <div class="hdr-title"><slot name="title" /></div>
     <div class="hdr-right"><slot name="right" /></div>
@@ -56,6 +56,7 @@ const emit = defineEmits<{ back: [] }>();
   color: var(--ink);
   box-shadow: var(--shadow-hard);
   transition: transform 0.1s;
+  font-size: 22px;
 }
 .hdr-back:active {
   transform: translateY(2px);

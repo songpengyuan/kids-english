@@ -803,3 +803,7 @@ pnpm test   # vitest run，覆盖：
 - 玩法页顶栏隐藏暗黑模式切换按钮（ThemeToggle 仅课程菜单/总结页显示）；星数徽章保留。
 - 修复：QuizView 新增 watch 调用漏 import（ReferenceError: watch is not defined → setup 崩溃白屏）。
 - 实测：顶栏 ✕ + 进度条（0% → 答对 1 题后 25px 增长）+ 星数；无标题、无暗黑切换。
+### 13.27 顶栏关闭/返回图标统一走项目图标库（PathIcon）（2026-09-27）
+
+- 关闭（✕）与返回（←）图标加入 pathIcons.ts（APP_ICON_PATHS.close / back），HeaderBar 由 lucide X/ChevronLeft 改为 PathIcon 渲染，与玩法/课程/底部导航图标同源。
+- 实测：关闭按钮 svg.path-icon 22px、stroke-width 2.2 渲染正常。
