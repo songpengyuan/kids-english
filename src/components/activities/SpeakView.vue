@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { speak } from "../../utils/speech";
-import { sfxCorrect, sfxWrong } from "../../utils/effects";
+import { speak } from "../../services/speech";
+import { sfxCorrect, sfxWrong } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import { useSpeechSession } from "../../composables/useSpeechSession";
 import type { Word } from "../../data/lessons";

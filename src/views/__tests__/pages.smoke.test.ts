@@ -34,12 +34,12 @@ vi.hoisted(() => {
   w.window.scrollTo = w.window.scrollTo || (() => {});
 });
 
-vi.mock("../../utils/speech", () => ({
+vi.mock("../../services/speech", () => ({
   speak: vi.fn(),
   speakZh: vi.fn(),
   stopSpeaking: vi.fn(),
 }));
-vi.mock("../../utils/effects", () => ({
+vi.mock("../../services/effects", () => ({
   sfxTap: vi.fn(),
   sfxCorrect: vi.fn(),
   sfxWrong: vi.fn(),

@@ -12,7 +12,7 @@ import { useStreakStore } from "../stores/streak";
 import HeaderBar from "../components/layout/HeaderBar.vue";
 import PathIcon from "../components/PathIcon.vue";
 import { CheckCircle2 } from "@lucide/vue";
-import { speakZh } from "../utils/speech";
+import { speakZh } from "../services/speech";
 
 const streak = useStreakStore();
 const router = useRouter();

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * 静音开关：一键关/开"音效 + 中文提示语"（单词与童谣发音不受影响，见 utils/sound.ts）。
+ * 静音开关：一键关/开"音效 + 中文提示语"（单词与童谣发音不受影响，见 services/sound.ts）。
  * 公共场合/睡前刚需；家长也能在"我的"页切换。
  */
-import { soundOn, toggleSound } from "../../utils/sound";
-import { hapticTap } from "../../utils/haptics";
+import { soundOn, toggleSound } from "../../services/sound";
+import { hapticTap } from "../../services/haptics";
 import { Volume2, VolumeX } from "@lucide/vue";
 
 function onToggle() {

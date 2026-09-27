@@ -7,8 +7,8 @@ import './styles/base.css'
 // 都定义 animation，后引入者生效，点击时 tada 才不会被 pop-in 覆盖
 import 'animate.css'
 import App from './App.vue'
-import { initHaptics, hapticsInfo } from './utils/haptics'
-import { initTheme } from './utils/theme'
+import { initHaptics, hapticsInfo } from './services/haptics'
+import { initTheme } from './services/theme'
 import { initErrorCapture } from './utils/errors'
 
 // 先应用主题再挂载，避免暗色用户刷新时闪白

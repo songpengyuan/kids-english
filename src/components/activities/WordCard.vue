@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { speak } from "../../utils/speech";
-import { sfxTap } from "../../utils/effects";
+import { speak } from "../../services/speech";
+import { sfxTap } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import type { Word } from "../../data/lessons";
 import { Check, Volume2 } from "@lucide/vue";

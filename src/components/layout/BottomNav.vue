@@ -11,7 +11,7 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import PathIcon from "../PathIcon.vue";
-import { speakZh } from "../../utils/speech";
+import { speakZh } from "../../services/speech";
 
 const route = useRoute();
 const router = useRouter();

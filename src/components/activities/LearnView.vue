@@ -2,7 +2,7 @@
 import { computed, watch } from "vue";
 import WordCard from "./WordCard.vue";
 import Pager from "./Pager.vue";
-import { celebrate, bigCelebrate, sfxCorrect } from "../../utils/effects";
+import { celebrate, bigCelebrate, sfxCorrect } from "../../services/effects";
 import { useLearnSession } from "../../composables/useLearnSession";
 import type { Word } from "../../data/lessons";
 import { Check, MousePointerClick } from "@lucide/vue";

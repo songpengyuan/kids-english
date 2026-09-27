@@ -21,7 +21,7 @@ import {
   sfxCollect,
   sfxSticker,
   sfxTap
-} from "../../utils/effects";
+} from "../../services/effects";
 import { useRewardsStore } from "../../stores/rewards";
 import { parabola } from "../../utils/flyCurve";
 import { formById } from "../../data/heroes";

@@ -16,13 +16,13 @@ import { useStreakStore } from "../stores/streak";
 import { useRouter } from "vue-router";
 import SoundToggle from "../components/layout/SoundToggle.vue";
 import ThemeToggle from "../components/layout/ThemeToggle.vue";
-import { soundOn } from "../utils/sound";
+import { soundOn } from "../services/sound";
 import { lessons } from "../data/lessons";
 import { dueWords } from "../utils/reviewQueue";
 import AppHeader from "../components/layout/AppHeader.vue";
 import { ChevronRight, Flame, Star } from "@lucide/vue";
 import PathIcon from "../components/PathIcon.vue";
-import { speakZh } from "../utils/speech";
+import { speakZh } from "../services/speech";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();

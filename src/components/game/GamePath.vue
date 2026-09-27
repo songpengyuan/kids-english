@@ -31,9 +31,9 @@ import {
   type LevelState,
 } from "../../data/pathLevels";
 import { useProgressStore } from "../../stores/progress";
-import { speak } from "../../utils/speech";
-import { hapticTap } from "../../utils/haptics";
-import { sfxWrong } from "../../utils/effects";
+import { speak } from "../../services/speech";
+import { hapticTap } from "../../services/haptics";
+import { sfxWrong } from "../../services/effects";
 import PathIcon from "../PathIcon.vue";
 import ChestReward from "../rewards/ChestReward.vue";
 import { buildPathGeometry, snakeNodes, R, ROW_H, type PathGeoItem } from "../../utils/pathGeometry";

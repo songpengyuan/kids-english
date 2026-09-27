@@ -57,7 +57,7 @@ function audioCtx() {
 }
 
 function tone(freq, start, dur, type = "sine", gain = 0.15) {
-  // 静音开关只关"音效"：单词/童谣等教学内容发音不受影响（见 utils/sound.ts）
+  // 静音开关只关"音效"：单词/童谣等教学内容发音不受影响（见 services/sound.ts）
   if (!soundEnabled()) return;
   const c = audioCtx();
   if (!c) return;

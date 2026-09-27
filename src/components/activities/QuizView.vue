@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from "vue";
-import { speak } from "../../utils/speech";
-import { sfxCorrect, sfxTap, sfxWrong } from "../../utils/effects";
+import { speak } from "../../services/speech";
+import { sfxCorrect, sfxTap, sfxWrong } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import { useQuizSession } from "../../composables/useQuizSession";
 import type { Word } from "../../data/lessons";

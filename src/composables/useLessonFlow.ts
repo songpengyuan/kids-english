@@ -17,9 +17,9 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, type Comput
 import type { Router, RouteLocationNormalizedLoadedGeneric } from "vue-router";
 import { lessons, type Lesson } from "../data/lessons";
 import type { QuestAct, UseQuest } from "./useQuest";
-import { bigCelebrate, celebrate } from "../utils/effects";
-import { speak, speakZh } from "../utils/speech";
-import { hapticTap } from "../utils/haptics";
+import { bigCelebrate, celebrate } from "../services/effects";
+import { speak, speakZh } from "../services/speech";
+import { hapticTap } from "../services/haptics";
 import { pickColumns } from "../utils/layout";
 
 export type LessonStage = "menu" | "learn" | "quiz" | "match" | "speak" | "song" | "talk" | "result";

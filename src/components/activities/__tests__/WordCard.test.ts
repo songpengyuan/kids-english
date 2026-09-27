@@ -7,11 +7,11 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 
-vi.mock("../../../utils/speech", () => ({ speak: vi.fn() }));
-vi.mock("../../../utils/effects", () => ({ sfxTap: vi.fn() }));
+vi.mock("../../../services/speech", () => ({ speak: vi.fn() }));
+vi.mock("../../../services/effects", () => ({ sfxTap: vi.fn() }));
 
 import WordCard from "../WordCard.vue";
-import { speak } from "../../../utils/speech";
+import { speak } from "../../../services/speech";
 import { useProgressStore } from "../../../stores/progress";
 
 const word = {

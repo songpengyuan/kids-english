@@ -5,7 +5,7 @@ import CuteBackdrop from "./components/CuteBackdrop.vue";
 import BottomNav from "./components/layout/BottomNav.vue";
 import { getLesson } from "./data/lessons";
 import { useStreakStore } from "./stores/streak";
-import { initPWA, applyUpdateIfIdle } from "./utils/pwa";
+import { initPWA, applyUpdateIfIdle } from "./services/pwa";
 
 const router = useRouter();
 const route = useRoute();

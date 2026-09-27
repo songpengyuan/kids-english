@@ -26,8 +26,8 @@ import {
   introOf,
 } from "../data/heroes";
 import { MAX_FORM_STARS, useRewardsStore } from "../stores/rewards";
-import { sfxCoin, sfxCorrect, sfxTap, sfxWrong } from "../utils/effects";
-import { speak, speakZh } from "../utils/speech";
+import { sfxCoin, sfxCorrect, sfxTap, sfxWrong } from "../services/effects";
+import { speak, speakZh } from "../services/speech";
 import { Star } from "@lucide/vue";
 import HeaderBar from "../components/layout/HeaderBar.vue";
 import HeroFormCard from "../components/treasure/HeroFormCard.vue";

@@ -10,7 +10,7 @@ import { computed } from "vue";
 import { activityKeys, getLesson, lessons, type Lesson } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { useRouter } from "vue-router";
-import { speak } from "../../utils/speech";
+import { speak } from "../../services/speech";
 import { useViewport } from "../../composables/useViewport";
 import { dueWords } from "../../utils/reviewQueue";
 import { BookOpenText, Check } from "@lucide/vue";

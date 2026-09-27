@@ -9,8 +9,8 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 
-vi.mock("../../../utils/speech", () => ({ speak: vi.fn() }));
-vi.mock("../../../utils/effects", () => ({
+vi.mock("../../../services/speech", () => ({ speak: vi.fn() }));
+vi.mock("../../../services/effects", () => ({
   sfxTap: vi.fn(),
   sfxCorrect: vi.fn(),
   celebrate: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock("../../../utils/effects", () => ({
 }));
 
 import LearnView from "../LearnView.vue";
-import { speak } from "../../../utils/speech";
+import { speak } from "../../../services/speech";
 
 /** jsdom 没有 ResizeObserver / 真实布局尺寸，桩掉后组件走保守兜底（每页 4 张） */
 class RO {

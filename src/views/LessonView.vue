@@ -17,7 +17,7 @@ import TalkView from "../components/activities/TalkView.vue";
 import HeaderBar from "../components/layout/HeaderBar.vue";
 import LessonResult from "../components/lesson/LessonResult.vue";
 import { getLesson } from "../data/lessons";
-import { speak, speakZh } from "../utils/speech";
+import { speak, speakZh } from "../services/speech";
 import { useProgressStore } from "../stores/progress";
 import { useStreakStore } from "../stores/streak";
 import { useRoute, useRouter } from "vue-router";

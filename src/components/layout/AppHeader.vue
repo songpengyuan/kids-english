@@ -15,7 +15,7 @@ import { useStreakStore } from "../../stores/streak";
 import PathIcon from "../PathIcon.vue";
 import ShellIcon from "../ShellIcon.vue";
 import { Star } from "@lucide/vue";
-import { speakZh } from "../../utils/speech";
+import { speakZh } from "../../services/speech";
 
 const props = defineProps<{ title: string; icon?: string }>();
 

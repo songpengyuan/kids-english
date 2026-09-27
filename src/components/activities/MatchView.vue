@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, reactive, nextTick, watch } from "vue";
-import { speak } from "../../utils/speech";
-import { sfxMatch, sfxWrong } from "../../utils/effects";
+import { speak } from "../../services/speech";
+import { sfxMatch, sfxWrong } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import { useViewport } from "../../composables/useViewport";
 import { buildMatchGroups, matchGroupRange, matchStars } from "../../utils/matchBoard";

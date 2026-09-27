@@ -9,7 +9,7 @@
  * 便于单测与复用。
  */
 import { computed, onBeforeUnmount, ref, type Ref } from "vue";
-import { speak } from "../utils/speech";
+import { speak } from "../services/speech";
 import {
   asrSupported,
   createRecorder,

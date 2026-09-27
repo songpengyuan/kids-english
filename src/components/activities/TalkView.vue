@@ -1,8 +1,8 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from "vue";
-import { speak } from "../../utils/speech";
-import { hapticTap } from "../../utils/haptics";
-import { sfxCorrect } from "../../utils/effects";
+import { speak } from "../../services/speech";
+import { hapticTap } from "../../services/haptics";
+import { sfxCorrect } from "../../services/effects";
 import { Check, Star, Volume2 } from "@lucide/vue";
 import AppDialog from "../ui/AppDialog.vue";
 import LessonFooter from "./LessonFooter.vue";

@@ -19,6 +19,7 @@
 | `src/components/treasure/` | 宝藏/英雄图鉴 | `HeroFormCard` |
 | `src/components/report/` | 家长报告图表 | `MasteryTrend` |
 | `src/components/ui/` | 跨页面复用的通用件（按钮、卡片、徽章等） | `AppDialog`、`CuteBackdrop`（逐步把高复用件收进来） |
+| `src/services/` | 带全局状态的**服务单例**（语音/音效/震动/主题/PWA），非纯函数 | `speech`、`sound`、`effects`、`haptics`、`theme`、`pwa` |
 | `src/views/` | 页面（路由级），**不放可复用件** | `HomeView`、`MyView`、`HeroDetailView`… |
 
 ## 2. 现有组件清单（先查这里，再决定造不造）
