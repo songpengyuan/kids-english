@@ -2,7 +2,7 @@
 
 > 面向 **5 岁孩子** 的儿童英语学习应用设计总纲。
 > 阅读对象：**AI 生成者**（新增/修改页面、组件、交互前先读）、**开发者**、**走查者**。
-> 配套文档：[DEVELOPMENT.md](../DEVELOPMENT.md)（架构/响应式/部署）、[README.md](../README.md)（使用）、`src/styles/tokens.css`（视觉 token 唯一事实源）。
+> 配套文档：[DEVELOPMENT.md](../DEVELOPMENT.md)（架构/响应式/部署）、[README.md](../README.md)（使用）、[COMPONENT-LIBRARY.md](./COMPONENT-LIBRARY.md)（组件库与复用规范）、`src/styles/tokens.css`（视觉 token 唯一事实源）。
 >
 > **一句话总纲**：多邻国的即时反馈与激励节奏 + 儿童圆体大触控 + 一切可点即发声 + 一屏装下不滚动。
 

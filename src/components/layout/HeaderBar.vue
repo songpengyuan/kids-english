@@ -49,6 +49,8 @@ const emit = defineEmits<{ back: [] }>();
 }
 .hdr-back {
   flex: none;
+  position: relative;
+  z-index: 2; /* 盖住绝对定位的标题，保证返回按钮始终可点 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -76,10 +78,14 @@ const emit = defineEmits<{ back: [] }>();
   color: var(--ink-soft);
 }
 .hdr-title {
-  flex: 1;
-  min-width: 0;
+  /* 标题绝对居中：不管右侧有没有徽章，所有子页面标题位置一致 */
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 62%;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   font-weight: 800;
   font-size: var(--fs-title);
@@ -97,5 +103,6 @@ const emit = defineEmits<{ back: [] }>();
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
 }
 </style>
