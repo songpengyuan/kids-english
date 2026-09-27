@@ -7,20 +7,19 @@
  *
  * 职责：
  *  - stage 迁移与深链解析（?lesson=&stage= / ?mode=quest&step=）；
- *  - 玩法菜单测量与自适应排布（pickColumns）；
  *  - 结算（星数、今日学情、连击横幅、庆祝）。
+ * 玩法菜单的测量/排布已内聚到 lesson/LessonMenu.vue（pickColumns 由菜单组件持有）。
  *
  * 闯关身份（questMode/关卡序号/下一关）在 useQuest 中，本模块通过
  * quest 对象协作：quest.finish() 在结算时被调用，驱动关卡完成大画面。
  */
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, type ComputedRef, type Ref } from "vue";
+import { computed, ref, watch, type ComputedRef, type Ref } from "vue";
 import type { Router, RouteLocationNormalizedLoadedGeneric } from "vue-router";
 import { lessons, type Lesson } from "../data/lessons";
 import type { QuestAct, UseQuest } from "./useQuest";
 import { bigCelebrate, celebrate } from "../services/effects";
 import { speak, speakZh } from "../services/speech";
 import { hapticTap } from "../services/haptics";
-import { pickColumns } from "../utils/layout";
 
 export type LessonStage = "menu" | "learn" | "quiz" | "match" | "speak" | "song" | "talk" | "result";
 
@@ -53,8 +52,6 @@ export interface UseLessonFlow {
   streakJustHit: Ref<boolean>;
   lessonProgress: ComputedRef<number>;
   nextLesson: ComputedRef<Lesson | null>;
-  actsEl: Ref<HTMLDivElement | null>;
-  actsStyle: ComputedRef<Record<string, string>>;
   boot: () => void;
   open: (a: QuestAct) => void;
   showStars: (key: string) => number;
@@ -76,55 +73,6 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   const streakJustHit = ref(false);
   /** 当前玩法会话开始时间戳（0 = 未开始），结算时累计进今日学情 */
   let actStart = 0;
-
-  /* ---------- 玩法卡片排布测量 ---------- */
-  const GAP = 12;
-  const MIN_W = 130;
-  const MIN_H = 96;
-  const actsEl = ref<HTMLDivElement | null>(null);
-  const area = reactive({ w: 0, h: 0 });
-  let ro: ResizeObserver | null = null;
-  let raf: number | null = null;
-
-  function measure() {
-    const el = actsEl.value;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    area.w = r.width;
-    area.h = r.height;
-  }
-  function scheduleMeasure() {
-    if (raf) cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => {
-      raf = null;
-      measure();
-    });
-  }
-  onMounted(() => {
-    measure();
-    ro = new ResizeObserver(scheduleMeasure);
-    if (actsEl.value) ro.observe(actsEl.value);
-  });
-  onBeforeUnmount(() => {
-    if (ro) ro.disconnect();
-    if (raf) cancelAnimationFrame(raf);
-  });
-
-  const actsStyle = computed(() => {
-    const cols = !area.w || !area.h
-      ? isNarrow.value ? 2 : 3
-      : pickColumns({
-          width: area.w,
-          height: area.h,
-          count: activities.value.length,
-          minCardW: MIN_W,
-          minCardH: MIN_H,
-          gap: GAP,
-          maxCols: isNarrow.value ? 2 : 5,
-          targetAspect: 1.25
-        }).cols;
-    return { "--cols": String(cols), "--grid-gap": `${GAP}px` };
-  });
 
   /* ---------- 引导（路由解析） ---------- */
   function boot() {
@@ -252,8 +200,6 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     streakJustHit,
     lessonProgress,
     nextLesson,
-    actsEl,
-    actsStyle,
     boot,
     open,
     showStars,

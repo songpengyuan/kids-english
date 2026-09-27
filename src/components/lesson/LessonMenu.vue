@@ -6,27 +6,78 @@
  * 数据与测量都在 useLessonFlow（actsStyle 按可用空间算列数，actsEl 是网格 DOM 引用），
  * 这里只负责渲染与点击上报，不持有任何课程状态。
  */
-import type { Ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { Star } from "@lucide/vue";
 import type { QuestAct } from "../../composables/useQuest";
+import { useViewport } from "../../composables/useViewport";
+import { pickColumns } from "../../utils/layout";
 
 const props = defineProps<{
   /** 玩法清单（含图标/tone/名称/描述，由课时页组装） */
   activities: (QuestAct & { stars?: number })[];
-  /** 网格排布（--cols/--grid-gap），由 useLessonFlow 按可用空间计算 */
-  actsStyle: Record<string, string | number>;
-  /** 网格 DOM 引用（供 useLessonFlow 测量列数） */
-  actsEl?: Ref<HTMLElement | null>;
   /** 课程进度 0-100（顶栏课程进度条） */
   progress: number;
 }>();
 const emit = defineEmits<{ open: [a: QuestAct] }>();
+
+/* ---------- 玩法卡网格排布测量（原 useLessonFlow，内聚到菜单自身） ---------- */
+const GAP = 12;
+const MIN_W = 130;
+const MIN_H = 96;
+const { isNarrow } = useViewport();
+const actsEl = ref<HTMLDivElement | null>(null);
+const area = reactive({ w: 0, h: 0 });
+let ro: ResizeObserver | null = null;
+let raf: number | null = null;
+
+function measure() {
+  const el = actsEl.value;
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  area.w = r.width;
+  area.h = r.height;
+}
+function scheduleMeasure() {
+  if (raf) cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(() => {
+    raf = null;
+    measure();
+  });
+}
+onMounted(() => {
+  measure();
+  ro = new ResizeObserver(scheduleMeasure);
+  if (actsEl.value) ro.observe(actsEl.value);
+});
+onBeforeUnmount(() => {
+  if (ro) ro.disconnect();
+  if (raf) cancelAnimationFrame(raf);
+});
+
+const actsStyle = computed(() => {
+  const cols =
+    !area.w || !area.h
+      ? isNarrow.value
+        ? 2
+        : 3
+      : pickColumns({
+          width: area.w,
+          height: area.h,
+          count: props.activities.length,
+          minCardW: MIN_W,
+          minCardH: MIN_H,
+          gap: GAP,
+          maxCols: isNarrow.value ? 2 : 5,
+          targetAspect: 1.25
+        }).cols;
+  return { "--cols": String(cols), "--grid-gap": `${GAP}px` };
+});
 </script>
 
 <template>
   <div class="menu view-body">
     <div class="bar"><div class="bar-fill" :style="{ width: props.progress + '%' }"></div></div>
-    <div class="acts" :ref="actsEl" :style="props.actsStyle">
+    <div class="acts" ref="actsEl" :style="actsStyle">
       <button
         v-for="(a, i) in props.activities"
         :key="a.key"

@@ -97,8 +97,6 @@ const {
   streakJustHit,
   lessonProgress,
   nextLesson,
-  actsEl,
-  actsStyle,
   open,
   showStars,
   back,
@@ -169,8 +167,6 @@ const playPct = ref(0);
     <LessonMenu
       v-if="stage === 'menu' && !questMode"
       :activities="menuActs"
-      :acts-style="actsStyle"
-      :acts-el="actsEl"
       :progress="lessonProgress"
       @open="openSound"
     />
