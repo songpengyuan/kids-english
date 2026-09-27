@@ -134,8 +134,10 @@ const scoreStars = computed(() => {
       <p v-else-if="wrongPicks.size" class="oh anim-pop">再听一次哦～</p>
       <!-- 占位：忙时用透明文本撑住高度，避免答题后整页上下跳动 -->
       <p v-else class="praise placeholder" aria-hidden="true">占位</p>
-      <button v-if="locked" class="continue-btn anim-pop" @click="next">
-        继续<ChevronRight class="k-ico" />
+      <button class="continue-btn anim-pop" :disabled="!locked" @click="next">
+        <template v-if="locked">继续</template>
+        <template v-else>听一听再选</template>
+        <ChevronRight class="k-ico" />
       </button>
     </div>
   </div>
@@ -303,9 +305,16 @@ const scoreStars = computed(() => {
   gap: 8px;
   transition: transform var(--dur-fast), box-shadow var(--dur-fast);
 }
-.continue-btn:active {
+.continue-btn:active:not(:disabled) {
   transform: translateY(calc(var(--press) - 1px)) scale(0.98);
   box-shadow: 0 1px 0 var(--green-dark);
+}
+/* 未答对：灰色禁用（多邻国式底部按钮常驻，答对才激活） */
+.continue-btn:disabled {
+  background: var(--ink-faint);
+  box-shadow: 0 var(--press) 0 var(--ink-faint);
+  cursor: default;
+  opacity: 0.85;
 }
 
 /**
