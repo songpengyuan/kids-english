@@ -4,7 +4,7 @@ import { speak } from "../../utils/speech";
 import { sfxTap } from "../../utils/effects";
 import { useProgressStore } from "../../stores/progress";
 import type { Word } from "../../data/lessons";
-import { Volume2 } from "@lucide/vue";
+import { Check, Volume2 } from "@lucide/vue";
 
 const props = withDefaults(
   defineProps<{
@@ -14,8 +14,10 @@ const props = withDefaults(
     speakZhHint?: boolean;
     /** 在页内的序号，用于入场动画的阶梯延迟；-1 表示不做入场动画 */
     enterIndex?: number;
+    /** 本次会话已点读过发音（显示"已听过"角标，仍可再点听发音） */
+    marked?: boolean;
   }>(),
-  { size: "md", speakZhHint: false, enterIndex: -1 }
+  { size: "md", speakZhHint: false, enterIndex: -1, marked: false }
 );
 
 /** 点读过（图或词）—— LearnView 用它统计点读覆盖率（星级依据） */
@@ -87,6 +89,8 @@ function onWord() {
       <!-- 图片缺失时的 emoji 占位 -->
       <span v-else class="placeholder">{{ word.emoji }}</span>
       <span class="speaker"><Volume2 class="k-ico" /></span>
+      <!-- 已点过发音：小角标（不挡点读，孩子还能再点听一遍） -->
+      <span v-if="marked" class="marked" aria-label="已听过"><Check class="k-ico" /></span>
     </div>
     <div class="word" data-haptic @click="onWord">{{ word.en }}</div>
   </div>
@@ -144,6 +148,23 @@ function onWord() {
   color: var(--blue);
   opacity: 0.9;
   animation: float-y 2.4s ease-in-out infinite;
+}
+/* "已听过"角标：右上角小圆章，不遮挡图片主体，也保留可再点 */
+.marked {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(20px, 3.4vh, 26px);
+  height: clamp(20px, 3.4vh, 26px);
+  border-radius: 50%;
+  background: var(--green, #2eaf5a);
+  color: #fff;
+  font-size: clamp(12px, 2vh, 15px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+  pointer-events: none; /* 角标本身不拦截点击，点卡片照样能再听 */
 }
 .word {
   font-size: clamp(15px, min(2.9vh, 2.3vw), 27px);

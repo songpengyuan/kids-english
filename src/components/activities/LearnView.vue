@@ -27,12 +27,20 @@ const {
   gotoPrev,
   gotoPage,
   markTapped,
+  tapped,
   tappedCount,
   stars,
 } = useLearnSession(computed(() => props.words));
 
+/** 本课全部词都点过发音（完成前置条件） */
+const allTapped = computed(() => props.words.length > 0 && tappedCount.value >= props.words.length);
+/** 还差几个词没点（提示用） */
+const remaining = computed(() => Math.max(0, props.words.length - tappedCount.value));
+/** 完成按钮可点 = 最后一页 && 全部点过 */
+const canFinish = computed(() => isLast.value && allTapped.value);
+
 function finish() {
-  if (!isLast.value) return;
+  if (!isLast.value || !allTapped.value) return;
   sfxCorrect();
   bigCelebrate();
   celebrate();
@@ -56,6 +64,7 @@ function finish() {
           :key="w.id"
           :word="w"
           :enter-index="i"
+          :marked="tapped.has(w.id)"
           @tap="markTapped"
         />
       </div>
@@ -63,9 +72,10 @@ function finish() {
 
     <Pager :page="page" :total="total" @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
 
-    <button class="k-btn next" :disabled="!isLast" @click="finish">
-      <template v-if="isLast"><Check class="k-ico" />我都会啦</template>
-      <template v-else>看完所有图才能完成哦</template>
+    <button class="k-btn next" :disabled="!canFinish" @click="finish">
+      <template v-if="canFinish"><Check class="k-ico" />我都会啦</template>
+      <template v-else-if="!isLast">看完所有图才能完成哦</template>
+      <template v-else>还有 {{ remaining }} 个词没点过哦</template>
     </button>
   </div>
 </template>

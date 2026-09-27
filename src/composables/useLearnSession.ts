@@ -131,6 +131,8 @@ export function useLearnSession(
     gotoPrev,
     gotoPage,
     markTapped,
+    /** 本次会话点读过的词 id 集合（供组件渲染"已听过"角标） */
+    tapped,
     tappedCount,
     stars,
   };

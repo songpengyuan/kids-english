@@ -11,8 +11,9 @@ const router = useRouter();
 const route = useRoute();
 const streak = useStreakStore();
 
-/** 底部导航常驻（App 风格）：首页/我的/宝藏/报告/复习显示，课程内隐藏（沉浸学习） */
-const showNav = computed(() => !route.path.startsWith("/lesson"));
+/** 底部导航只在两个主 tab 显示：首页（学习/游戏）和"我的"；
+ *  宝藏罐/报告/复习/课程等子页面都隐藏，沉浸进入 */
+const showNav = computed(() => route.path === "/" || route.path === "/me");
 
 /** 答题页无底部导航：去掉 #app 预留的 nav-h 底部 padding，让 footer 真正贴底 */
 watch(showNav, (v) => {
