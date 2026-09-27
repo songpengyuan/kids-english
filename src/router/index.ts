@@ -7,27 +7,27 @@
  *   课程内的玩法 stage（menu/learn/quiz/…）仍由 LessonView 组件内部管理，
  *   不逐玩法拆路由——玩法间共享大量状态，拆路由反而增加耦合；
  *   后续若某玩法需要"直达/分享"，再把它提为独立路由即可。
+ *
+ * - 加载策略（配合 sw 预缓存清单，见 vite.config.js kids-pwa 插件）：
+ *   · 学习主链路（首页/课程）**同步加载**——离线首开最稳，装完即有；
+ *   · 低频页（我的/宝藏/报告/复习/连击/英雄详情）**路由懒加载**——
+ *     在线首屏更小；离线也不降级：懒加载 chunk 会进入 sw 预缓存清单，
+ *     首次安装即全部就位。
  */
 import { createRouter, createWebHashHistory } from "vue-router";
 import HomeView from "../views/HomeView.vue";
-import MyView from "../views/MyView.vue";
-import TreasureView from "../views/TreasureView.vue";
-import ReportView from "../views/ReportView.vue";
-import ReviewView from "../views/ReviewView.vue";
 import LessonView from "../views/LessonView.vue";
-import HeroDetailView from "../views/HeroDetailView.vue";
-import StreakView from "../views/StreakView.vue";
 
 export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     { path: "/", name: "home", component: HomeView },
-    { path: "/me", name: "me", component: MyView },
-    { path: "/streak", name: "streak", component: StreakView },
-    { path: "/treasure", name: "treasure", component: TreasureView },
-    { path: "/treasure/hero/:id", name: "hero-detail", component: HeroDetailView },
-    { path: "/report", name: "report", component: ReportView },
-    { path: "/review", name: "review", component: ReviewView },
+    { path: "/me", name: "me", component: () => import("../views/MyView.vue") },
+    { path: "/streak", name: "streak", component: () => import("../views/StreakView.vue") },
+    { path: "/treasure", name: "treasure", component: () => import("../views/TreasureView.vue") },
+    { path: "/treasure/hero/:id", name: "hero-detail", component: () => import("../views/HeroDetailView.vue") },
+    { path: "/report", name: "report", component: () => import("../views/ReportView.vue") },
+    { path: "/review", name: "review", component: () => import("../views/ReviewView.vue") },
     { path: "/lesson/:id", name: "lesson", component: LessonView },
     // 未知路径回首页（含旧 ?lesson= 深链被 replace 掉之前的空 hash 场景）
     { path: "/:pathMatch(.*)*", redirect: "/" },
