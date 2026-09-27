@@ -287,6 +287,14 @@ const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
   gap: 2px;
 }
 
+/* 桌面鼠标 hover：玩法卡轻微上浮 */
+@media (hover: hover) and (pointer: fine) {
+  .act:hover {
+    transform: translateY(-2px) scale(1.02);
+    filter: brightness(1.04);
+  }
+}
+
 /* 卡片太矮时，副标题会成为负担，藏掉换取主标题和图标的空间 */
 @media (max-height: 620px) {
   .act .ds {
@@ -328,6 +336,12 @@ const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
   padding: var(--gap-l) var(--gap-m);
   max-width: min(420px, 100%);
   border-top: 6px solid var(--gold);
+}
+/* 宽屏档：闯关开始卡更宽 */
+@media (min-width: 768px) {
+  .qs-card {
+    max-width: min(560px, 100%);
+  }
 }
 .qs-level {
   font-weight: 800;

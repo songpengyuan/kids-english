@@ -713,3 +713,16 @@ pnpm test   # vitest run，覆盖：
 - **状态类迁移**：done/active/locked/chest/flash 等类从 `.gp-level` 移到 `.lv-wrap`（CSS 选择器同步更新）。
 - **滚动**：容器高度由文档流自然撑开（35 关 + 5 横幅 scrollHeight≈3390），不再手动 pathH 撑高；滚动记忆/ResizeObserver 逻辑不变。
 - 实测：交替顺序 U→7L、无 absolute 节点（absCount=0）、S 形位移 [0,+91,+91,0,-91,-91,0]、垂直等距、滚动与点击（进关/锁关提示）均正常。
+### 13.10 多端适配 + 关卡按钮放大/圆环对齐（2026-09-27）
+
+**需求**：iPhone/iPad/Mac 三端都良好展示；手机/iPad 按儿童使用尺寸设计；关卡按钮放大；进度圆环与按钮对齐（active 关圆环偏移）。
+
+**多端适配**：
+- **tokens.css 新增宽屏档** `@media (min-width: 768px)`（iPad 竖屏起 / Mac 桌面）：字号（body 14-19→16-26、title/hero/btn/emoji 同步）、间距 gap、圆角、press、`--tap-min 52→64`、`--nav-h 76→92` 整体放大一档，儿童友好大尺寸；手机（narrow）保持原流体值。
+- **GamePath 地图**宽屏 max-width 440→600（实际地图宽度由 GameView 的 gp-slot 全宽接管，S 形摆动随容器宽自动放大）；LessonView 闯关开始卡 420→560；BottomNav 宽屏图标/文字放大。
+- **桌面 hover（Mac）**：`@media (hover:hover) and (pointer:fine)` 给 k-btn、彩色卡片、课时卡、玩法卡加轻微上浮/增亮反馈；触屏（iPad/iPhone）不触发。
+- 实测：iPhone 390 窄档（tap 52/nav 76）、iPad/Mac 宽屏档（tap 64/nav 92、底栏 13px、bodyFs 新 clamp）均正确。
+
+**关卡按钮放大 + 圆环对齐**：
+- `.gp-level` 56→64px；`.lv-ring` 72→80px（viewBox 80、r 34、stroke 6）；图标/大锁/礼物 30→34、角标/星徽章/关卡名放大；节点间距 84→96。
+- **圆环从 button 移到 lv-wrap 层**：button active 时 4px border 会使 absolute 子元素（基于 padding box）偏移 4px——实测 active 关 dx=-4/dy=-4；移到无边框的 lv-wrap 后所有状态恒定同心（dx=0/dy=0）。

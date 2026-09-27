@@ -406,6 +406,36 @@ img {
 .anim-float { animation: float-y 2.4s ease-in-out infinite; }
 .anim-fade-up { animation: fade-up 0.4s ease-out both; }
 
+/* ---------- 桌面鼠标（Mac）hover 反馈 ----------
+ * 仅 `hover:hover and pointer:fine`（鼠标）触发；iPad/iPhone 触屏不匹配，
+ * 不会出现"点了还悬着"的悬浮态。hover 上浮、:active 下压互不冲突。
+ */
+@media (hover: hover) and (pointer: fine) {
+  .k-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 calc(var(--press) + 2px) 0 var(--green-dark);
+  }
+  .k-btn.blue:hover { box-shadow: 0 calc(var(--press) + 2px) 0 var(--blue-dark); }
+  .k-btn.orange:hover { box-shadow: 0 calc(var(--press) + 2px) 0 var(--orange-dark); }
+  .k-btn.gray:hover { box-shadow: 0 calc(var(--press) + 2px) 0 var(--btn-plain-deep); }
+  .k-btn:disabled:hover {
+    transform: none;
+    box-shadow: 0 var(--press) 0 var(--btn-off-deep);
+  }
+  .tone-blue:hover,
+  .tone-green:hover,
+  .tone-orange:hover,
+  .tone-purple:hover,
+  .tone-pink:hover,
+  .tone-teal:hover {
+    transform: translateY(-2px) scale(1.01);
+    filter: brightness(1.03);
+  }
+  .topbar .back:hover {
+    transform: translateY(-1px);
+  }
+}
+
 /* 尊重系统的"减少动态效果"，同时保证内容仍然可见（动画终态是可读的） */
 @media (prefers-reduced-motion: reduce) {
   .anim-float,

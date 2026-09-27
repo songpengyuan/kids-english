@@ -102,4 +102,16 @@ function goMe() {
   font-size: 11px;
   font-weight: 800;
 }
+/* 宽屏档：图标/文字更大（iPad/Mac） */
+@media (min-width: 768px) {
+  .bottom-nav button {
+    font-size: 14px;
+  }
+  .bn-ico {
+    font-size: clamp(24px, min(4vh, 3.2vw), 34px);
+  }
+  .bn-cap {
+    font-size: 13px;
+  }
+}
 </style>

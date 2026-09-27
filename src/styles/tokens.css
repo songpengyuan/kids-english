@@ -245,3 +245,38 @@
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);   /* 对称过渡 */
   --ease-bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6); /* 强回弹（宝箱/徽章） */
 }
+
+/* ===== 宽屏档（iPad 竖屏起 / Mac 桌面，儿童友好大尺寸） =====
+ * 手机（narrow）按现有流体值即可；iPad/Mac 空间充裕，整体放大一档：
+ * 字号、间距、触控目标、圆角同步上调，保证"手机 iPad 按小朋友用的大小设计"，
+ * Mac 端也更舒展（#app max-width 1180 已限制阅读行长）。
+ * 列数/分页等结构由 useViewport/JS 自适应，无需在此处理。
+ */
+@media (min-width: 768px) {
+  :root {
+    --gap-xs: clamp(6px, min(0.8vh, 0.7vw), 12px);
+    --gap-s: clamp(8px, min(1.3vh, 1.2vw), 18px);
+    --gap-m: clamp(10px, min(1.9vh, 1.7vw), 26px);
+    --gap-l: clamp(12px, min(2.6vh, 2.4vw), 36px);
+
+    --pad-x: clamp(16px, 2.6vw, 48px);
+    --pad-y: clamp(8px, 1.4vh, 24px);
+
+    --nav-h: 92px; /* 底栏更高：宽屏下按钮/图标更大 */
+
+    --radius: clamp(20px, 3vh, 36px);
+    --radius-s: clamp(14px, 2vh, 26px);
+    --press: clamp(4px, 0.8vh, 7px);
+
+    --fs-hero: clamp(28px, min(6vh, 4.6vw), 52px);
+    --fs-title: clamp(20px, min(3.6vh, 3vw), 36px);
+    --fs-body: clamp(16px, min(2.6vh, 2.2vw), 26px);
+    --fs-small: clamp(13px, min(2vh, 1.7vw), 20px);
+    --fs-btn: clamp(18px, min(3vh, 2.5vw), 30px);
+
+    --fs-emoji-xl: clamp(44px, min(10vh, 8vw), 96px);
+    --fs-emoji-l: clamp(32px, min(7vh, 6vw), 62px);
+
+    --tap-min: 64px; /* 儿童手指定位精度低，宽屏给更大目标 */
+  }
+}
