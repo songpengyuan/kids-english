@@ -25,7 +25,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useViewport } from "../composables/useViewport";
 import { useQuest, type QuestAct } from "../composables/useQuest";
 import { useLessonFlow } from "../composables/useLessonFlow";
-import { BookOpen, Headphones, Link2, MessageCircle, Mic, Music, Star } from "@lucide/vue";
+import { BookOpen, CheckCircle2, ChevronRight, Headphones, Link2, MessageCircle, Mic, Music, Star } from "@lucide/vue";
 
 const progress = useProgressStore();
 const streak = useStreakStore();
@@ -106,7 +106,9 @@ const {
   afterGame,
   afterSong,
   backToMap,
-  goNextLevel
+  goNextLevel,
+  donePending,
+  continueAfter
 } = flow;
 const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
 </script>
@@ -161,6 +163,24 @@ const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
     />
     <SongView v-else-if="stage === 'song'" :lesson="lesson" @song-done="afterSong" @back="toMenu" />
     <TalkView v-else-if="stage === 'talk'" :lesson="lesson" @done="afterGame" />
+
+    <!-- 玩法完成反馈（多邻国式）：小朋友点"继续"，自行决定是否进入下一关 -->
+    <div v-if="donePending" class="done-zone anim-fade-up">
+      <div v-if="streakJustHit" class="done-streak anim-pop">
+        <PathIcon name="flame" class="k-ico" />今日目标达成！已连续 {{ streak.streak }} 天
+      </div>
+      <div class="done-banner anim-pop">
+        <CheckCircle2 class="k-ico" />
+        {{
+          questMode && questDone
+            ? `第 ${questLevel} 关完成，获得 ${lastStars} 颗星！`
+            : `你太棒了！获得 ${lastStars} 颗星`
+        }}
+      </div>
+      <button class="done-btn" @click="continueAfter">
+        继续<ChevronRight class="k-ico" />
+      </button>
+    </div>
 
     <!-- 结算（闯关/自由统一组件） -->
     <LessonResult
@@ -442,4 +462,64 @@ const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
   border-radius: var(--radius-pill);
   transition: width 0.5s;
 }
+
+/* 玩法完成反馈（多邻国式底部条：绿色反馈条 + 绿色继续按钮） */
+.done-zone {
+  flex: none;
+  width: 100%;
+  max-width: 560px;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-s);
+  padding: 0 var(--gap-m) max(12px, env(safe-area-inset-bottom));
+}
+.done-streak {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--on-tone);
+  background: var(--orange);
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 var(--press) 0 var(--orange-dark);
+}
+.done-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: var(--fs-btn);
+  color: var(--on-tone);
+  background: var(--green);
+  padding: clamp(12px, 2.2vh, 18px);
+  border-radius: var(--radius-s);
+  box-shadow: 0 3px 0 var(--green-dark);
+}
+.done-btn {
+  width: 100%;
+  min-height: calc(var(--tap-min) + 12px);
+  font-size: var(--fs-btn);
+  font-weight: 800;
+  color: var(--on-tone);
+  background: var(--green);
+  border: none;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 var(--press) 0 var(--green-dark);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform var(--dur-fast), box-shadow var(--dur-fast);
+}
+.done-btn:active {
+  transform: translateY(calc(var(--press) - 1px)) scale(0.98);
+  box-shadow: 0 1px 0 var(--green-dark);
+}
+
 </style>

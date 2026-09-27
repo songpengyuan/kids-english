@@ -64,6 +64,8 @@ export interface UseLessonFlow {
   backToMap: () => void;
   goNextLevel: () => void;
   settleActivity: () => void;
+  donePending: Ref<boolean>;
+  continueAfter: () => void;
 }
 
 export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
@@ -75,6 +77,8 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   const streakJustHit = ref(false);
   /** 当前玩法会话开始时间戳（0 = 未开始），结算时累计进今日学情 */
   let actStart = 0;
+  /** 玩法已完成待"继续"（多邻国式：底部反馈条 + 继续按钮，小朋友自行决定是否进下一关） */
+  const donePending = ref(false);
 
   /* ---------- 玩法卡片排布测量 ---------- */
   const GAP = 12;
@@ -164,12 +168,23 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     quest.finish();
     bigCelebrate();
     speakZh("关卡完成，太棒了");
-    stage.value = "result";
+    donePending.value = true;
   }
 
   /** 返回闯关地图（游戏模式首页） */
   function backToMap() {
     router.push({ path: "/", query: { mode: "game" } });
+  }
+
+  /** 点"继续"：小朋友自行决定——闯关进下一关/回地图，自由练习进结算页 */
+  function continueAfter() {
+    donePending.value = false;
+    if (quest.questMode.value) {
+      if (quest.nextLevel.value) goNextLevel();
+      else backToMap();
+    } else {
+      stage.value = "result";
+    }
   }
 
   /** 进入下一关（单关完成画面按钮） */
@@ -186,12 +201,13 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   }
 
   function afterGame(stars?: number) {
+    if (donePending.value) return; // 已完成待继续，防止玩法残留点击重复结算
     // learn 玩法完成不传星数（emit("done") 无参数），兜底为 1 星：完成即点亮
     const s = stars || 1;
     lastStars.value = s;
     progress.setGameStars(lesson.value?.id ?? "", stage.value, s);
     settleActivity();
-    // 完成玩法 → 记今日目标；今天第一次达成时结算页亮横幅
+    // 完成玩法 → 记今日目标；今天第一次达成时反馈条上方亮横幅
     const first = streak.markActivity();
     streakJustHit.value = first && streak.todayDone;
     if (quest.questMode.value) {
@@ -201,18 +217,23 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
       if (s >= 3) bigCelebrate();
       else celebrate();
       speakZh(s >= 3 ? "太厉害了，满分三颗星" : "做得好，继续加油");
-      stage.value = "result";
     }
+    donePending.value = true;
   }
 
   function afterSong() {
-    stage.value = "result";
     lastStars.value = 1;
     // 童谣星数由 SongView 内部记（markSong 幂等），这里只累计今日学情
     settleActivity();
     const first = streak.markActivity();
     streakJustHit.value = first && streak.todayDone;
-    if (quest.questMode.value) finishQuestStep();
+    celebrate();
+    if (quest.questMode.value) {
+      finishQuestStep();
+    } else {
+      speakZh("唱得真好听，继续加油");
+    }
+    donePending.value = true;
   }
 
   const lessonProgress = computed(() => {
@@ -256,6 +277,8 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     afterSong,
     backToMap,
     goNextLevel,
-    settleActivity
+    settleActivity,
+    donePending,
+    continueAfter
   };
 }
