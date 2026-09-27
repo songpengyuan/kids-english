@@ -297,7 +297,13 @@ function next() {
   box-shadow: 0 2px 0 var(--orange-dark);
 }
 .mic.live {
-  animation: pulse 1s infinite;
+  animation: mic-start 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), pulse 1s 0.35s infinite;
+}
+/* 录音开始：按钮弹一下 */
+@keyframes mic-start {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: translateY(6px) scale(1); }
 }
 @keyframes pulse {
   0%,
@@ -313,6 +319,11 @@ function next() {
   gap: 5px;
   height: 22px;
   align-items: flex-end;
+  animation: waves-in 0.25s ease-out;
+}
+@keyframes waves-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .waves i {
   width: 6px;
