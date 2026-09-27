@@ -265,21 +265,17 @@ const scoreStars = computed(() => {
   padding: 0 var(--gap-m) max(12px, env(safe-area-inset-bottom));
   flex: none;
 }
-/* 答对反馈条（多邻国式绿色条） */
+/* 答对反馈：轻量文字（不抢戏），把视觉重点留给"继续"按钮 */
 .praise {
   margin: 0;
   flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   font-weight: 800;
-  font-size: var(--fs-btn);
-  color: var(--on-tone);
-  background: var(--green);
-  padding: clamp(12px, 2.2vh, 18px);
-  border-radius: var(--radius-s);
-  box-shadow: 0 3px 0 var(--green-dark);
+  font-size: var(--fs-small);
+  color: var(--green);
   text-align: center;
 }
 /* 继续按钮（多邻国式绿色大按钮） */
