@@ -100,6 +100,8 @@ _warned_network = False
 
 
 def http_bytes(url, timeout=15, referer=None):
+    # URL 里常带日文/中文文件名（官方站、必应都有），urllib 只吃 ASCII → 先做百分号编码
+    url = urllib.parse.quote(url, safe=":/?&=#%+@!$'()*,;[]~")
     headers = {"User-Agent": UA, "Accept": "image/*,*/*;q=0.8"}
     if referer:
         headers["Referer"] = referer
@@ -423,24 +425,24 @@ def rank_candidates(urls):
     return sorted(out, key=lambda u: (host_rank(u), 0 if u.split("?")[0].lower().endswith(".png") else 1))
 
 
-def png_corner_alpha(path):
-    """PNG 四角是否透明 → (有透明通道?, 透明角数)。非 PNG 直接判否。
+def png_transparency(path):
+    """PNG 透明情况 → (有透明通道?, 透明像素占比, 透明角数)。非 PNG 直接判否。
 
-    用来挡掉商品照/壁纸/黑底图：角色立绘通常四角是透明的，
-    实拍图/海报四角几乎都是不透明的背景。
+    用来挡掉商品照/壁纸/黑底图。**以透明像素占比为主判据**（>10% 基本就是去背立绘），
+    四角透明数作辅助 —— 只卡四角会误杀"裁得很紧、图形占满四角"的立绘。
     """
     data = open(path, "rb").read()
     if not data.startswith(b"\x89PNG") or data[12:16] != b"IHDR":
-        return False, 0
+        return False, 0.0, 0
     width, height = struct.unpack(">II", data[16:24])
     bit_depth, color_type = data[24], data[25]
     if color_type not in (4, 6):  # 无透明通道
-        return False, 0
+        return False, 0.0, 0
     if bit_depth != 8:
-        return True, 0
+        return True, 0.0, 0
     interlace = data[28]
     if interlace != 0:
-        return True, 0
+        return True, 0.0, 0
 
     idat = bytearray()
     pos = 8
@@ -455,7 +457,7 @@ def png_corner_alpha(path):
     try:
         raw = zlib.decompress(bytes(idat))
     except zlib.error:
-        return True, 0
+        return True, 0.0, 0
 
     bpp = 4 if color_type == 6 else 2
     stride = width * bpp
@@ -496,14 +498,45 @@ def png_corner_alpha(path):
         prev = line
 
     if not first_row or not last_row:
-        return True, 0
+        return True, 0.0, 0
 
     def alpha(row, x):
         return row[x * bpp + (bpp - 1)]
 
     corners = [alpha(first_row, 0), alpha(first_row, width - 1),
                alpha(last_row, 0), alpha(last_row, width - 1)]
-    return True, sum(1 for a in corners if a < 40)
+    transparent_px = 0
+    total_px = 0
+    # 再扫一遍统计透明占比（图像 ≤512px，开销可接受）
+    offset = 0
+    for _ in range(height):
+        if offset + 1 + stride > len(raw):
+            break
+        ft = raw[offset]
+        line = bytearray(raw[offset + 1: offset + 1 + stride])
+        offset += 1 + stride
+        if ft == 1:
+            for i in range(bpp, stride):
+                line[i] = (line[i] + line[i - bpp]) & 0xFF
+        elif ft == 2:
+            for i in range(stride):
+                line[i] = (line[i] + prev[i]) & 0xFF
+        elif ft == 3:
+            for i in range(stride):
+                left = line[i - bpp] if i >= bpp else 0
+                line[i] = (line[i] + ((left + prev[i]) >> 1)) & 0xFF
+        elif ft == 4:
+            for i in range(stride):
+                left = line[i - bpp] if i >= bpp else 0
+                up_left = prev[i - bpp] if i >= bpp else 0
+                line[i] = (line[i] + paeth(left, prev[i], up_left)) & 0xFF
+        total_px += width
+        for x in range(width):
+            if line[x * bpp + bpp - 1] < 40:
+                transparent_px += 1
+        prev = line
+    ratio = (transparent_px / total_px) if total_px else 0.0
+    return True, ratio, sum(1 for a in corners if a < 40)
 
 def normalize(src_path, out_path):
     """转 PNG、保留透明、最长边压到 MAX_EDGE（macOS 自带 sips）"""
@@ -666,15 +699,25 @@ def main():
                             break
                         download(url, tmp, referer)
                         size = normalize(tmp, out_path)
-                        has_alpha, transparent_corners = png_corner_alpha(out_path)
-                        if not has_alpha or transparent_corners < 2:
-                            rejects.append(f"{note}: 非透明底（角 {transparent_corners}/4）")
+                        has_alpha, ratio, corners = png_transparency(out_path)
+                        # 透明占比 >10%（去背立绘）或有 3 个以上透明角 → 收
+                        if not has_alpha or (ratio < 0.10 and corners < 3):
+                            rejects.append(f"{note}: 非透明底（透明占比 {ratio:.0%}，角 {corners}/4）")
                             os.remove(out_path)
                             continue
                         source_note, picked_url = note, url
                         break
                     except Exception as e:
                         rejects.append(f"{note}: {e}")
+                        if any(k in str(e) for k in ("timed out", "reset", "Errno", "URLError")):
+                            consecutive_net_failures += 1
+                            if consecutive_net_failures >= 6:
+                                print(
+                                    "\n连续 6 次网络失败 —— 停下（避免每个形态都逐个等超时）。\n"
+                                    "用 --source 换可达的图源，或改用 --urls / --from-dir。",
+                                    file=sys.stderr,
+                                )
+                                raise SystemExit(0)
                 if not picked_url:
                     reason = "；".join(rejects[-3:]) or "所有图源都没找到候选"
                     print(f"  {fid:<18} ✗ {reason}")
