@@ -16,12 +16,14 @@ import ReportView from "../views/ReportView.vue";
 import ReviewView from "../views/ReviewView.vue";
 import LessonView from "../views/LessonView.vue";
 import HeroDetailView from "../views/HeroDetailView.vue";
+import StreakView from "../views/StreakView.vue";
 
 export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     { path: "/", name: "home", component: HomePage },
     { path: "/me", name: "me", component: MyView },
+    { path: "/streak", name: "streak", component: StreakView },
     { path: "/treasure", name: "treasure", component: TreasureView },
     { path: "/treasure/hero/:id", name: "hero-detail", component: HeroDetailView },
     { path: "/report", name: "report", component: ReportView },

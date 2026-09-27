@@ -59,6 +59,7 @@ import TreasureView from "../TreasureView.vue";
 import ReviewView from "../ReviewView.vue";
 import LessonView from "../LessonView.vue";
 import HeroDetailView from "../HeroDetailView.vue";
+import StreakView from "../StreakView.vue";
 
 /** jsdom 没有 ResizeObserver（LearnView/GamePath 会用到） */
 class RO {
@@ -71,6 +72,7 @@ class RO {
 const routes = [
   { path: "/", name: "home", component: HomePage },
   { path: "/me", name: "me", component: MyView },
+  { path: "/streak", name: "streak", component: StreakView },
   { path: "/report", name: "report", component: ReportView },
   { path: "/treasure", name: "treasure", component: TreasureView },
   { path: "/review", name: "review", component: ReviewView },
@@ -116,6 +118,14 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     const w = await mountPage(MyView, "/me");
     expect(w.text()).toContain("今日目标");
     expect(w.text()).toContain("英雄图鉴");
+    expect(errors).toEqual([]);
+  });
+
+  it("打卡日历（火焰详情页）", async () => {
+    const w = await mountPage(StreakView, "/streak");
+    expect(w.text()).toContain("打卡日历");
+    expect(w.text()).toContain("天连击");
+    expect(w.text()).toContain("本月已打卡");
     expect(errors).toEqual([]);
   });
 

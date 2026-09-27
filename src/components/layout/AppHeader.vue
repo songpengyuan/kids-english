@@ -51,14 +51,16 @@ const streak = useStreakStore();
         >
           <ShellIcon />{{ rewards.shells }}
         </button>
-        <!-- 🔥 连击天数 -->
-        <div
+        <!-- 🔥 连击天数（点击进打卡日历） -->
+        <button
           class="badge streak-badge"
           :class="{ done: streak.todayDone }"
-          :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天' : '今日目标：复习 ' + streak.reviewed + '/' + streak.reviewGoal + ' 词 + 新学 ' + streak.newLevels + '/1 关'"
+          aria-label="打开打卡日历"
+          :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天，点击看打卡日历' : '今日目标：复习 ' + streak.reviewed + '/' + streak.reviewGoal + ' 词 + 新学 ' + streak.newLevels + '/1 关，点击看打卡日历'"
+          @click="router.push('/streak')"
         >
           <PathIcon name="flame" class="k-ico flame-ico" />{{ streak.streak }}
-        </div>
+        </button>
       </div>
     </div>
   </header>
@@ -147,7 +149,10 @@ const streak = useStreakStore();
   background: var(--card-bg);
   color: var(--ink-soft);
   box-shadow: var(--shadow-soft);
-  transition: background 0.3s, color 0.3s;
+  transition: background 0.3s, color 0.3s, transform 0.1s;
+}
+.streak-badge:active {
+  transform: translateY(calc(var(--press) - 1px));
 }
 .streak-badge.done {
   background: linear-gradient(160deg, #ff9f43, #ff6b3d);

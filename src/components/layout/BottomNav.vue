@@ -21,6 +21,7 @@ const isGame = computed(() => isHome.value && route.query.mode === "game");
 const isMe = computed(
   () =>
     route.name === "me" ||
+    route.name === "streak" ||
     route.name === "treasure" ||
     route.name === "hero-detail" ||
     route.name === "report" ||

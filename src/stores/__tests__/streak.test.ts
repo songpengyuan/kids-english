@@ -130,4 +130,64 @@ describe("streak store", () => {
     expect(s.streak).toBe(0);
     expect(s.reviewed).toBe(0);
   });
+
+  /* ---------- 逐日打卡历史（日历数据源） ---------- */
+
+  it("达标当天写入历史：done=true + 当天明细", () => {
+    const s = useStreakStore();
+    s.syncReviewGoal(2);
+    s.markReview(2);
+    s.markNewLevel(true);
+    const h = s.history["2026-09-27"];
+    expect(h).toBeDefined();
+    expect(h.done).toBe(true);
+    expect(h.reviewed).toBe(2);
+    expect(h.newLevels).toBe(1);
+  });
+
+  it("未达标只记进度、done=false（今天进行中可见）", () => {
+    const s = useStreakStore();
+    s.syncReviewGoal(5);
+    s.markReview(2); // 只复习了一半
+    const h = s.history["2026-09-27"];
+    expect(h).toBeDefined();
+    expect(h.done).toBe(false);
+    expect(h.reviewed).toBe(2);
+    expect(h.newLevels).toBe(0);
+  });
+
+  it("跨天后：历史保留，新的一天重新记录", () => {
+    const s = useStreakStore();
+    completeGoal(s);
+    vi.setSystemTime(new Date("2026-09-28T09:00:00"));
+    s.refreshDay();
+    expect(s.history["2026-09-27"].done).toBe(true); // 昨天保留
+    s.syncReviewGoal(0);
+    s.markNewLevel(true); // 今天达标
+    expect(s.history["2026-09-28"].done).toBe(true);
+    expect(Object.keys(s.history)).toEqual(["2026-09-27", "2026-09-28"]);
+  });
+
+  it("历史随 localStorage 持久化：重启后读回", () => {
+    const s = useStreakStore();
+    completeGoal(s);
+    setActivePinia(createPinia());
+    const s2 = useStreakStore();
+    expect(s2.history["2026-09-27"]).toEqual({
+      date: "2026-09-27",
+      reviewed: REVIEW_GOAL_DEFAULT,
+      newLevels: 1,
+      done: true,
+    });
+  });
+
+  it("旧版本数据没有 history → 兼容为空对象，不崩溃", () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({ last: "2026-09-26", streak: 3, day: { date: "2026-09-27", reviewed: 0, newLevels: 0, reviewGoal: 5, goalSynced: false } })
+    );
+    const s = useStreakStore();
+    expect(s.history).toEqual({});
+    expect(s.streak).toBe(3);
+  });
 });

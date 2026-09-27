@@ -173,7 +173,7 @@ export const useStreakStore = defineStore("streak", () => {
     try {
       localStorage.setItem(
         KEY,
-        JSON.stringify({ last: last.value, streak: streak.value, day: day.value })
+        JSON.stringify({ last: last.value, streak: streak.value, day: day.value, history: history.value })
       );
     } catch {
       /* 无痕模式写入失败，忽略 */
@@ -214,7 +214,7 @@ export const useStreakStore = defineStore("streak", () => {
   function markReview(n = 1): boolean {
     rollOver();
     day.value.reviewed += Math.max(0, n);
-    save();
+    syncToday();
     return settle();
   }
 
@@ -226,7 +226,7 @@ export const useStreakStore = defineStore("streak", () => {
   function markNewLevel(firstTime = true): boolean {
     rollOver();
     if (firstTime) day.value.newLevels += 1;
-    save();
+    syncToday();
     return settle();
   }
 
@@ -239,6 +239,7 @@ export const useStreakStore = defineStore("streak", () => {
     last.value = null;
     streak.value = 0;
     day.value = emptyDay(localDate());
+    history.value = {};
     localStorage.removeItem(KEY);
   }
 
@@ -246,6 +247,7 @@ export const useStreakStore = defineStore("streak", () => {
     last,
     streak,
     day,
+    history,
     reviewGoal,
     reviewed,
     newLevels,

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
  * 我的（/me）——个人中心，儿童友好的"成就汇总 + 功能入口"页：
- * - 身份/成就：吉祥物 + 总星星 + 连击
- * - 统计：星星 / 连击 / 贝壳 / 贴纸图鉴 / 今日时长 / 今日玩法
+ * - 身份卡：吉祥物 + 总星星 + 连击（火焰可点击进打卡日历）
  * - 今日目标：复习 N 个到期词 + 新学 1 关（进度条 + 明细）
- * - 入口：宝藏罐 / 家长报告 / 到期复习（子页高亮"我的"tab，见 BottomNav）
- * - 设置：静音开关（音效与提示语）
+ * - 统计（去重后只留顶栏/身份卡没有的信息）：英雄图鉴 / 今日时长 / 今日玩法
+ * - 入口：宝藏罐（带贝壳+图鉴数）/ 家长报告 / 到期复习（子页高亮"我的"tab，见 BottomNav）
+ * - 设置：静音开关（音效与提示语）+ 暗黑模式
  * 数据全部来自本地存储，不上传。
  */
 import { computed } from "vue";
@@ -22,7 +22,6 @@ import { dueWords } from "../utils/reviewQueue";
 import AppHeader from "../components/layout/AppHeader.vue";
 import { ChevronRight, Flame, Star } from "@lucide/vue";
 import PathIcon from "../components/PathIcon.vue";
-import ShellIcon from "../components/ShellIcon.vue";
 import { speakZh } from "../utils/speech";
 
 const progress = useProgressStore();
@@ -98,14 +97,16 @@ function sayEntry(name: string, path: string) {
     <AppHeader title="我的" icon="me" />
 
     <div class="me-body view-body">
-      <!-- 身份卡 -->
+      <!-- 身份卡：⭐ 总星星展示；🔥 连击可点击 → 打卡日历（子页，见 BottomNav） -->
       <section class="profile card anim-pop" @click="sayProfile">
         <span class="pf-emoji">🦊</span>
         <div class="pf-info">
           <p class="pf-name">丞丞的学习小屋</p>
           <p class="pf-sub">
             <span class="pf-star"><Star class="k-ico star-fill" />{{ progress.totalStars }} 颗星</span>
-            <span class="pf-flame"><Flame class="k-ico flame" />{{ streak.streak }} 天连击</span>
+            <button class="pf-flame" aria-label="打开打卡日历" @click.stop="sayEntry('打卡日历', '/streak')">
+              <Flame class="k-ico flame" />{{ streak.streak }} 天连击
+            </button>
           </p>
         </div>
       </section>
@@ -125,20 +126,8 @@ function sayEntry(name: string, path: string) {
         <p class="goal-hint" v-else>今天没有到期的词，直接去闯新关吧</p>
       </section>
 
-      <!-- 成就统计 -->
+      <!-- 成就统计（去重：星星/连击在身份卡，贝壳在宝藏罐入口；只留顶栏没有的信息） -->
       <section class="stats anim-fade-up">
-        <div class="cell" @click="sayCell('总星星', `${progress.totalStars} 颗`)" role="button" tabindex="0" @keydown.enter="sayCell('总星星', `${progress.totalStars} 颗`)">
-          <span class="v gold"><Star class="k-ico star-fill" />{{ progress.totalStars }}</span>
-          <span class="k">总星星</span>
-        </div>
-        <div class="cell" @click="sayCell('连击天数', `${streak.streak} 天`)" role="button" tabindex="0" @keydown.enter="sayCell('连击天数', `${streak.streak} 天`)">
-          <span class="v"><Flame class="k-ico flame" />{{ streak.streak }}</span>
-          <span class="k">连击天数</span>
-        </div>
-        <div class="cell" @click="sayCell('贝壳', `${rewards.shells} 个`)" role="button" tabindex="0" @keydown.enter="sayCell('贝壳', `${rewards.shells} 个`)">
-          <span class="v"><ShellIcon />{{ rewards.shells }}</span>
-          <span class="k">贝壳</span>
-        </div>
         <div class="cell" @click="sayCell('英雄图鉴', `${rewards.ownedCount} 个`)" role="button" tabindex="0" @keydown.enter="sayCell('英雄图鉴', `${rewards.ownedCount} 个`)">
           <span class="v"><PathIcon name="sticker" class="st-ico" />{{ heroDone }}</span>
           <span class="k">英雄图鉴</span>
@@ -158,7 +147,7 @@ function sayEntry(name: string, path: string) {
         <button class="entry" @click="sayEntry('宝藏罐', '/treasure')">
           <span class="en-ico"><PathIcon name="gift" /></span>
           <span class="en-cap">宝藏罐</span>
-          <span class="en-desc">贝壳 · 贴纸图鉴</span>
+          <span class="en-desc">🐚 {{ rewards.shells }} · 图鉴 {{ heroDone }}</span>
           <ChevronRight class="k-ico en-arrow" />
         </button>
         <button class="entry" @click="sayEntry('家长报告', '/report')">
@@ -322,15 +311,29 @@ function sayEntry(name: string, path: string) {
   font-size: var(--fs-small);
   color: var(--ink-soft);
 }
-.pf-star .k-ico,
-.stats .gold .k-ico {
+.pf-star .k-ico {
   color: var(--gold);
 }
-.pf-flame .k-ico,
-.stats .flame {
-  color: #ff6b3d;
+.pf-flame {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: inherit;
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: transform 0.08s, opacity 0.08s;
 }
-.flame {
+.pf-flame:active {
+  transform: translateY(1px);
+  opacity: 0.75;
+}
+.pf-flame .k-ico {
   color: #ff6b3d;
 }
 
