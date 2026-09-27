@@ -11,6 +11,9 @@
  * compact = 单形态角色用的紧凑卡（只有图 + 角色名）。
  */
 import { computed, ref } from "vue";
+
+/** 未解锁卡点的时候摇晃一下 */
+const shakeTick = ref(0);
 import ShellIcon from "./ShellIcon.vue";
 
 export interface AlbumForm {
@@ -38,6 +41,11 @@ const emit = defineEmits<{ introduce: [id: string]; buy: [id: string] }>();
 /** png 加载失败 → 回退内置原创占位图 */
 const imgFailed = ref(false);
 const src = computed(() => (imgFailed.value ? props.form.fallback : props.form.image));
+
+function onTap() {
+  if (!props.form.owned) shakeTick.value++;
+  emit("introduce", props.form.id);
+}
 </script>
 
 <template>
@@ -48,8 +56,10 @@ const src = computed(() => (imgFailed.value ? props.form.fallback : props.form.i
   >
     <button
       class="form-tap"
+      :class="{ shaking: !form.owned }"
+      :key="'shake-' + shakeTick"
       :aria-label="`${heroName} ${form.name}，点击听介绍`"
-      @click="emit('introduce', form.id)"
+      @click="onTap"
     >
       <img
         class="form-img"
@@ -122,6 +132,17 @@ const src = computed(() => (imgFailed.value ? props.form.fallback : props.form.i
 }
 .form-tap:active {
   transform: scale(0.94);
+}
+/* 未解锁卡点一下：左右摇晃，表示"锁住了" */
+.form-tap.shaking {
+  animation: card-shake 0.4s ease;
+}
+@keyframes card-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
 }
 .form-img {
   width: clamp(56px, 13vw, 88px);

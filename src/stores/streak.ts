@@ -40,6 +40,19 @@ export interface StreakState {
   streak: number;
   /** 今日目标进度 */
   day: DayGoal;
+  /** 逐日打卡历史：date -> 当天进度与是否达标（日历数据源；从本版本开始积累） */
+  history: Record<string, StreakDay>;
+}
+
+/** 日历/打卡历史里的一天（达标 = 打卡） */
+export interface StreakDay {
+  date: string;
+  /** 当天已复习（答对）的到期词数 */
+  reviewed: number;
+  /** 当天首次通关的关卡数 */
+  newLevels: number;
+  /** 当天是否达标（达标即打卡） */
+  done: boolean;
 }
 
 const KEY = "kids-english-streak-v1";
@@ -69,12 +82,15 @@ function load(today: string): StreakState {
         last: typeof raw.last === "string" ? raw.last : null,
         streak: Number(raw.streak) || 0,
         day,
+        // 旧版本没有 history（只有连续天数+当天进度），兼容为空对象，从当前版本开始积累
+        history:
+          raw.history && typeof raw.history === "object" ? (raw.history as Record<string, StreakDay>) : {},
       };
     }
   } catch {
     /* 数据损坏按新号处理 */
   }
-  return { last: null, streak: 0, day: emptyDay(today) };
+  return { last: null, streak: 0, day: emptyDay(today), history: {} };
 }
 
 /** 本地日期字符串（不用 toISOString：UTC 会跨时区错一天） */
@@ -99,6 +115,8 @@ export const useStreakStore = defineStore("streak", () => {
   const streak = ref<number>(saved.streak);
   /** 今日目标进度 */
   const day = ref<DayGoal>(saved.day);
+  /** 逐日打卡历史（date -> 当天进度与达标状态；日历数据源） */
+  const history = ref<Record<string, StreakDay>>(saved.history);
 
   /**
    * 跨天检查：日期变了就把今天的计数清零。
@@ -118,6 +136,21 @@ export const useStreakStore = defineStore("streak", () => {
   function goalMet(): boolean {
     const d = day.value;
     return d.date === localDate() && d.reviewed >= d.reviewGoal && d.newLevels >= NEW_LEVEL_GOAL;
+  }
+
+  /** 把"今天"的进度与达标状态同步进逐日历史（打卡日历数据源；含保存） */
+  function syncToday(): void {
+    const today = localDate();
+    history.value = {
+      ...history.value,
+      [today]: {
+        date: today,
+        reviewed: day.value.reviewed,
+        newLevels: day.value.newLevels,
+        done: goalMet(),
+      },
+    };
+    save();
   }
 
   const reviewGoal = computed(() => day.value.reviewGoal);
