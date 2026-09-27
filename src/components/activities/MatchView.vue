@@ -118,6 +118,9 @@ const line = reactive({ x1: 0, y1: 0, x2: 0, y2: 0 });
 const imgWrong = ref(null);
 const wordWrong = ref(null);
 const wrongCount = ref(0); // 跨组累计，用于评分
+/** 听音模式：当前正在播放声波动画的卡片 id */
+const playingId = ref(null);
+let playTimer = 0;
 let wrongTimer = 0;
 
 /**
@@ -186,6 +189,10 @@ function onCardDown(word, side, e) {
   // （孩子想"逐个听一遍再连"，不能把听一下当成连错）
   if (mode.value === "sound" && side === "word") {
     speak(word.en, { lessonId: word.lessonId, wordId: word.id });
+    // 触发声波动画
+    playingId.value = word.id;
+    clearTimeout(playTimer);
+    playTimer = setTimeout(() => (playingId.value = null), 900);
     if (startWord.value && startSide.value === "word" && startWord.value.id === word.id) {
       downInfo = { word, side, act: "cancel" };
       return;
@@ -466,7 +473,12 @@ onBeforeUnmount(() => {
         >
           <template v-if="mode === 'word'">{{ w.en }}</template>
           <!-- 听音模式：只显示喇叭，不显示单词（点一下先听发音） -->
-          <Volume2 v-else class="sound-ico" :aria-label="w.en" />
+          <span v-else class="sound-wrap" :class="{ playing: playingId === w.id }">
+            <Volume2 class="sound-ico" :aria-label="w.en" />
+            <span class="wave w1"></span>
+            <span class="wave w2"></span>
+            <span class="wave w3"></span>
+          </span>
         </div>
       </div>
 
@@ -636,10 +648,41 @@ onBeforeUnmount(() => {
   line-height: 1.1;
 }
 /* 听音模式的大喇叭 */
+.sound-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .sound-ico {
   width: clamp(28px, 6vh, 46px);
   height: clamp(28px, 6vh, 46px);
   color: var(--blue-dark);
+}
+/* 声波扩散动画：三层圆弧从喇叭向外扩散 */
+.wave {
+  position: absolute;
+  border: 3px solid var(--blue);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+.sound-wrap.playing .wave {
+  animation: wave-out 0.9s ease-out infinite;
+}
+.sound-wrap.playing .w2 { animation-delay: 0.15s; }
+.sound-wrap.playing .w3 { animation-delay: 0.3s; }
+@keyframes wave-out {
+  0% {
+    width: 20px;
+    height: 20px;
+    opacity: 0.8;
+  }
+  100% {
+    width: 64px;
+    height: 64px;
+    opacity: 0;
+  }
 }
 /* 练习方式切换（看词 / 听音） */
 .mode-switch {
