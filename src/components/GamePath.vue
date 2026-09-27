@@ -328,7 +328,8 @@ function unitLesson(id: string) {
           @keydown.enter="enterUnit(it as GeoItem)"
           @keydown.space.prevent="enterUnit(it as GeoItem)"
         >
-          <PathIcon :name="(it as GeoItem).lessonId" class="u-ico" />
+          <!-- 课程图标用课程 emoji，与「自由练习」页的课程卡保持一致 -->
+          <span class="u-emoji" aria-hidden="true">{{ unitLesson((it as GeoItem).lessonId)?.emoji }}</span>
           <span class="u-name">{{ unitLesson((it as GeoItem).lessonId)?.title }}</span>
           <span class="u-count">{{ (it as GeoItem).done || 0 }}/{{ (it as GeoItem).total || 1 }}</span>
           <!-- 右侧固定图标：每课都是同一本"课本"，作为课程横幅的固定标记（不随课程变化） -->
@@ -443,6 +444,12 @@ function unitLesson(id: string) {
   height: 30px;
   color: #fff;
   flex: none;
+}
+.u-emoji {
+  font-size: 26px;
+  line-height: 1;
+  flex: none;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.18));
 }
 .u-name {
   font-weight: 800;

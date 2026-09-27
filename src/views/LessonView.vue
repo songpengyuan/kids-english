@@ -148,8 +148,8 @@ const playPct = ref(0);
     <!-- 课时菜单（闯关模式无菜单，直接开玩） -->
     <div v-if="stage === 'menu' && !questMode" class="menu view-body">
       <div class="lesson-cover anim-pop" :class="'tone-' + lesson.tone">
+        <!-- 课程名只在顶栏显示一次；封面只留大 emoji，避免同一个名字出现两遍 -->
         <span class="cover-emoji">{{ lesson.emoji }}</span>
-        <p>{{ lesson.title }}</p>
       </div>
       <div class="bar"><div class="bar-fill" :style="{ width: lessonProgress + '%' }"></div></div>
       <div class="acts" ref="actsEl" :style="actsStyle">
@@ -224,19 +224,10 @@ const playPct = ref(0);
   position: relative;
 }
 .cover-emoji {
+  /* 封面只剩 emoji，当"课程徽章"用（比正文图标大，但不占太多高度） */
   font-size: var(--fs-emoji-l);
   line-height: 1;
-}
-.lesson-cover p {
-  margin: 0;
-  color: var(--on-tone);
-  font-weight: 800;
-  font-size: clamp(15px, min(2.8vh, 2.2vw), 22px);
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.14));
 }
 
 .bar {

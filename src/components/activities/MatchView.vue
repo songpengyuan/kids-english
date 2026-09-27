@@ -6,7 +6,7 @@ import { useProgressStore } from "../../stores/progress";
 import { useViewport } from "../../composables/useViewport";
 import { buildMatchGroups, matchGroupRange, matchStars } from "../../utils/matchBoard";
 import { shuffleWith } from "../../utils/quizSession";
-import { Link2 } from "@lucide/vue";
+import { BookOpenText, Link2, Volume2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
 const emit = defineEmits(["done"]);
@@ -14,6 +14,30 @@ const emit = defineEmits(["done"]);
 const progress = useProgressStore();
 
 const { sizeTier, isNarrow } = useViewport();
+
+/**
+ * 两种练习方式（用户要求：不显示单词的形式也要有，两种切换着来）：
+ *   word  —— 图片 ↔ 单词（默认，认字）
+ *   sound —— 图片 ↔ 声音：中间列只显示🔊，点一下先听发音，再连到对应的图（练听力）
+ * 选择记在 localStorage，家长选一次就固定下来。
+ */
+const MODE_KEY = "kids-english-match-mode";
+const mode = ref(readMode());
+function readMode() {
+  try {
+    return localStorage.getItem(MODE_KEY) === "sound" ? "sound" : "word";
+  } catch {
+    return "word";
+  }
+}
+function setMode(m) {
+  mode.value = m;
+  try {
+    localStorage.setItem(MODE_KEY, m);
+  } catch {
+    /* 隐私模式忽略 */
+  }
+}
 
 /** 分组与星级口径见 utils/matchBoard（分组随屏幕大小变化，规则可单测） */
 const groups = computed(() =>
@@ -158,6 +182,27 @@ function findWord(id) {
  */
 function onCardDown(word, side, e) {
   if (matched.has(word.id) || transitioning.value) return;
+  // 听音模式：点声音卡只做"播放 + 选中"，不直接判定配对
+  // （孩子想"逐个听一遍再连"，不能把听一下当成连错）
+  if (mode.value === "sound" && side === "word") {
+    speak(word.en, { lessonId: word.lessonId, wordId: word.id });
+    if (startWord.value && startSide.value === "word" && startWord.value.id === word.id) {
+      downInfo = { word, side, act: "cancel" };
+      return;
+    }
+    dragging.value = true;
+    startWord.value = word;
+    startSide.value = "word";
+    const c = centerOf(word.id, side) || localPoint(e);
+    line.x1 = c.x;
+    line.y1 = c.y;
+    const p = localPoint(e);
+    line.x2 = p.x;
+    line.y2 = p.y;
+    downInfo = { word, side, act: "drag" };
+    e.preventDefault();
+    return;
+  }
   const sel = startWord.value;
   if (sel && startSide.value !== side) {
     downInfo = { word, side, act: "pair" };
@@ -321,8 +366,31 @@ onBeforeUnmount(() => {
   <div class="match view">
     <div class="head">
       <p class="tip">
-        <Link2 class="k-ico tip-ico" />图片和单词连起来，从哪边开始都行
+        <Link2 class="k-ico tip-ico" />
+        <template v-if="mode === 'word'">图片和单词连起来，从哪边开始都行</template>
+        <template v-else>点声音听一听，再连到对应的图片</template>
       </p>
+      <!-- 练习方式切换：认字（显示单词）/ 听力（只显示声音） -->
+      <div class="mode-switch" role="group" aria-label="练习方式">
+        <button
+          class="mode-btn"
+          :class="{ on: mode === 'word' }"
+          :aria-pressed="mode === 'word'"
+          aria-label="看图连线（显示单词）"
+          @click="setMode('word')"
+        >
+          <BookOpenText class="k-ico" />看词
+        </button>
+        <button
+          class="mode-btn"
+          :class="{ on: mode === 'sound' }"
+          :aria-pressed="mode === 'sound'"
+          aria-label="听音连线（只显示声音图标）"
+          @click="setMode('sound')"
+        >
+          <Volume2 class="k-ico" />听音
+        </button>
+      </div>
       <span class="counter" v-if="groupCount > 1">
         第 {{ groupIdx + 1 }} / {{ groupCount }} 组 · {{ doneCount }}/{{ totalPairs }}
       </span>
@@ -396,7 +464,9 @@ onBeforeUnmount(() => {
           }"
           @pointerdown="onCardDown(w, 'word', $event)"
         >
-          {{ w.en }}
+          <template v-if="mode === 'word'">{{ w.en }}</template>
+          <!-- 听音模式：只显示喇叭，不显示单词（点一下先听发音） -->
+          <Volume2 v-else class="sound-ico" :aria-label="w.en" />
         </div>
       </div>
 
@@ -444,6 +514,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: var(--gap-s);
   flex: none;
+  flex-wrap: wrap; /* 窄屏时"练习方式"换行，不挤掉提示语 */
 }
 .tip {
   margin: 0;
@@ -563,6 +634,44 @@ onBeforeUnmount(() => {
   text-align: center;
   word-break: break-word;
   line-height: 1.1;
+}
+/* 听音模式的大喇叭 */
+.sound-ico {
+  width: clamp(28px, 6vh, 46px);
+  height: clamp(28px, 6vh, 46px);
+  color: var(--blue-dark);
+}
+/* 练习方式切换（看词 / 听音） */
+.mode-switch {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--card-bg);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  box-shadow: var(--shadow-hard);
+  flex: none;
+}
+.mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  padding: 6px 12px;
+  min-height: clamp(34px, 5.4vh, 44px);
+  cursor: pointer;
+}
+.mode-btn.on {
+  background: var(--blue);
+  color: var(--on-tone);
+}
+.mode-btn .k-ico {
+  width: 1em;
+  height: 1em;
 }
 .cell.word:active {
   cursor: grabbing;

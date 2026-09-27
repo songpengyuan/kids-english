@@ -42,12 +42,14 @@ import json
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HEROES_TS = os.path.join(ROOT, "src", "data", "heroes.ts")
@@ -179,40 +181,36 @@ def fandom_file_url(file_name):
     return None
 
 
-def fandom_find(query):
-    """Fandom：搜索 → 页面主图（→ 页面图片按关键词打分兜底）"""
+def fandom_candidates(query, limit=6):
+    """Fandom：页面主图 +（主图不合适时）页面图片按关键词打分兜底"""
     try:
         titles = fandom_search(query)
         if not titles:
-            return None, "搜索无结果", None
+            return []
         title = titles[0]
-        url = fandom_page_image(title)
-        note = f"pageimages: {title}"
-        if not url:
-            for cand in fandom_image_candidates(title, query):
-                url = fandom_file_url(cand)
-                note = f"页面图片: {cand}"
-                if url:
-                    break
-        if not url:
-            return None, f"页面 {title} 没有可用图片", None
-        return url, note, FANDOM
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError) as e:
-        return None, f"网络错误: {e}", None
+        out = []
+        main = fandom_page_image(title)
+        if main:
+            out.append((main, f"[fandom] pageimages: {title}"))
+        for name in fandom_image_candidates(title, query):
+            url = fandom_file_url(name)
+            if url:
+                out.append((url, f"[fandom] 页面图片: {name}"))
+        return [(u, n) for u, n in out[:limit]]
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError):
+        return []
 
 
 # ---------------------------------------------------------------- 必应图片
 
 def bing_find(query):
-    """必应图片：解析 async 结果里的 murl（.png 优先 = 多半透明底）"""
+    """必应图片：解析 async 结果里的 murl，按域名可信度 + .png 排序"""
     url = f"{BING}/images/async?q={urllib.parse.quote(query)}&first=1&count=35&mmasync=1&FORM=HDRSC2"
     html = http_text(url, referer=f"{BING}/images/")
     urls = re.findall(r"murl&quot;:&quot;(.*?)&quot;", html) or re.findall(r'"murl":"(.*?)"', html)
     if not urls:
-        return None, "解析不到 murl（页面结构可能变了）", None
-    pngs = [u for u in urls if u.split("?")[0].lower().endswith(".png")]
-    pick = (pngs or urls)[0]
-    return pick, f"必应图片（{len(pngs)} 张 png / 共 {len(urls)} 条）", f"{BING}/"
+        return []
+    return [(u, f"[bing] 必应图片") for u in rank_candidates(urls)]
 
 
 # ---------------------------------------------------------------- 百度图片
@@ -234,10 +232,8 @@ def baidu_find(query):
         urls = re.findall(r'"(?:middleURL|thumbURL|hoverURL)":"(.*?)"', raw)
     urls = [u.replace("\\/", "/") for u in urls]
     if not urls:
-        return None, "解析不到图片直链", None
-    pngs = [u for u in urls if u.split("?")[0].lower().endswith(".png")]
-    pick = (pngs or urls)[0]
-    return pick, f"百度图片（{len(pngs)} 张 png / 共 {len(urls)} 条）", f"{BAIDU}/"
+        return []
+    return [(u, f"[baidu] 百度图片") for u in rank_candidates(urls)]
 
 
 # ---------------------------------------------------------------- 萌娘百科
@@ -247,7 +243,7 @@ def moegirl_find(query):
     api = f"{MOEGIRL}/api.php?action=query&list=search&srlimit=5&format=json&srsearch=" + urllib.parse.quote(query)
     hits = http_json(api, referer=f"{MOEGIRL}/").get("query", {}).get("search", [])
     if not hits:
-        return None, "搜索无结果", None
+        return []
     title = hits[0]["title"]
     info = (
         f"{MOEGIRL}/api.php?action=query&prop=pageimages&piprop=original&format=json&titles="
@@ -257,37 +253,147 @@ def moegirl_find(query):
     for _, page in pages.items():
         src = (page.get("original") or {}).get("source")
         if src:
-            return src, f"萌娘百科: {title}", f"{MOEGIRL}/"
-    return None, f"条目 {title} 没有主图", None
+            return [(src, f"[moegirl] 萌娘百科: {title}")]
+    return []
 
 
 SOURCES = {
-    "fandom": (fandom_find, "en"),
-    "bing": (bing_find, "en"),
-    "baidu": (baidu_find, "zh"),
-    "moegirl": (moegirl_find, "zh"),
+    "fandom": (fandom_candidates, "en", FANDOM + "/"),
+    "bing": (bing_find, "en", BING + "/"),
+    "baidu": (baidu_find, "zh", BAIDU + "/"),
+    "moegirl": (moegirl_find, "zh", MOEGIRL + "/"),
 }
 
 
-def auto_find(form, order):
-    """按图源顺序依次尝试 → (url, 说明, referer) 或 (None, 失败原因, None)"""
+def candidate_stream(form, order, per_source=6, total=10):
+    """按图源顺序产出候选图：(url, 说明, referer)。调用方逐张下载质检，不合格再取下一张。"""
     fid, zh_form, en_form, zh_hero, en_hero = form
-    reasons = []
+    yielded = 0
     for name in order:
-        finder, lang = SOURCES[name]
+        finder, lang, referer = SOURCES[name]
         query = f"{zh_hero} {zh_form}" if lang == "zh" else f"{en_hero} {en_form}".strip()
         try:
-            url, note, referer = finder(query)
+            found = finder(query)
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError) as e:
-            url, note, referer = None, f"网络错误: {e}", None
             network_hint(e)
-        if url:
-            return url, f"[{name}] {note}", referer
-        reasons.append(f"{name}: {note}")
-    return None, "；".join(reasons), None
+            continue
+        for url, note in found[:per_source]:
+            yield url, note, referer
+            yielded += 1
+            if yielded >= total:
+                return
 
 
 # ---------------------------------------------------------------- 图片规整
+
+# 官方 / 百科类域名优先（多为干净的角色立绘），电商与壁纸站降权（多为商品照/黑底图）
+HOST_GOOD = ("tsuburaya-prod.com", "m-78.jp", "fandom.com", "wikia", "shoutwiki", "moegirl", "wikipedia")
+HOST_BAD = ("amazon", "aliexpress", "ebay", "taobao", "tmall", "jd.com", "gundampros",
+            "alphacoders", "wallpaper", "wallhere", "pinterest", "zhimg", "sohu", "bilibili")
+
+
+def host_rank(url):
+    host = (urllib.parse.urlparse(url).hostname or "").lower()
+    if any(g in host for g in HOST_GOOD):
+        return 0
+    if any(b in host for b in HOST_BAD):
+        return 2
+    return 1
+
+
+def rank_candidates(urls):
+    """去重 + 按"域名可信度、是否 .png"排序"""
+    seen = set()
+    out = []
+    for u in urls:
+        if not u or u in seen:
+            continue
+        seen.add(u)
+        out.append(u)
+    return sorted(out, key=lambda u: (host_rank(u), 0 if u.split("?")[0].lower().endswith(".png") else 1))
+
+
+def png_corner_alpha(path):
+    """PNG 四角是否透明 → (有透明通道?, 透明角数)。非 PNG 直接判否。
+
+    用来挡掉商品照/壁纸/黑底图：角色立绘通常四角是透明的，
+    实拍图/海报四角几乎都是不透明的背景。
+    """
+    data = open(path, "rb").read()
+    if not data.startswith(b"\x89PNG") or data[12:16] != b"IHDR":
+        return False, 0
+    width, height = struct.unpack(">II", data[16:24])
+    bit_depth, color_type = data[24], data[25]
+    if color_type not in (4, 6):  # 无透明通道
+        return False, 0
+    if bit_depth != 8:
+        return True, 0
+    interlace = data[28]
+    if interlace != 0:
+        return True, 0
+
+    idat = bytearray()
+    pos = 8
+    while pos + 8 <= len(data):
+        length = struct.unpack(">I", data[pos:pos + 4])[0]
+        chunk_type = data[pos + 4:pos + 8]
+        if chunk_type == b"IDAT":
+            idat += data[pos + 8:pos + 8 + length]
+        elif chunk_type == b"IEND":
+            break
+        pos += 12 + length
+    try:
+        raw = zlib.decompress(bytes(idat))
+    except zlib.error:
+        return True, 0
+
+    bpp = 4 if color_type == 6 else 2
+    stride = width * bpp
+    prev = bytearray(stride)
+    first_row = None
+    last_row = None
+
+    def paeth(a, b, c):
+        p = a + b - c
+        pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+        return a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
+
+    offset = 0
+    for y in range(height):
+        if offset + 1 + stride > len(raw):
+            break
+        ft = raw[offset]
+        line = bytearray(raw[offset + 1: offset + 1 + stride])
+        offset += 1 + stride
+        if ft == 1:
+            for i in range(bpp, stride):
+                line[i] = (line[i] + line[i - bpp]) & 0xFF
+        elif ft == 2:
+            for i in range(stride):
+                line[i] = (line[i] + prev[i]) & 0xFF
+        elif ft == 3:
+            for i in range(stride):
+                left = line[i - bpp] if i >= bpp else 0
+                line[i] = (line[i] + ((left + prev[i]) >> 1)) & 0xFF
+        elif ft == 4:
+            for i in range(stride):
+                left = line[i - bpp] if i >= bpp else 0
+                up_left = prev[i - bpp] if i >= bpp else 0
+                line[i] = (line[i] + paeth(left, prev[i], up_left)) & 0xFF
+        if y == 0:
+            first_row = bytes(line)
+        last_row = bytes(line)
+        prev = line
+
+    if not first_row or not last_row:
+        return True, 0
+
+    def alpha(row, x):
+        return row[x * bpp + (bpp - 1)]
+
+    corners = [alpha(first_row, 0), alpha(first_row, width - 1),
+               alpha(last_row, 0), alpha(last_row, width - 1)]
+    return True, sum(1 for a in corners if a < 40)
 
 def normalize(src_path, out_path):
     """转 PNG、保留透明、最长边压到 MAX_EDGE（macOS 自带 sips）"""
@@ -437,32 +543,52 @@ def main():
                     continue
                 size = normalize(src, out_path)
             else:
-                url, note, referer = auto_find(form, order)
-                if not url:
-                    print(f"  {fid:<18} ✗ {note}")
-                    report.append((fid, "-", "-", f"失败: {note}"))
+                # 逐张候选：下载 → 规整 → 质检（要透明底、四角透明），不合格换下一张
+                rejects = []
+                size = None
+                source_note = ""
+                picked_url = None
+                for url, note, referer in candidate_stream(form, order):
+                    try:
+                        if args.dry_run:
+                            print(f"  {fid:<18} ← {note}\n      {url}")
+                            source_note, picked_url, size = note, url, "dry-run"
+                            break
+                        download(url, tmp, referer)
+                        size = normalize(tmp, out_path)
+                        has_alpha, transparent_corners = png_corner_alpha(out_path)
+                        if not has_alpha or transparent_corners < 2:
+                            rejects.append(f"{note}: 非透明底（角 {transparent_corners}/4）")
+                            os.remove(out_path)
+                            continue
+                        source_note, picked_url = note, url
+                        break
+                    except Exception as e:
+                        rejects.append(f"{note}: {e}")
+                if not picked_url:
+                    reason = "；".join(rejects[-3:]) or "所有图源都没找到候选"
+                    print(f"  {fid:<18} ✗ {reason}")
+                    report.append((fid, "-", "-", f"失败: {reason}"))
                     fail += 1
-                    if "网络错误" in note:
+                    if rejects and all("网络" in r or "timed out" in r or "reset" in r for r in rejects):
                         consecutive_net_failures += 1
                         if consecutive_net_failures >= 3:
                             print(
-                                "\n连续 3 次网络失败 —— 停下，不再逐个等超时。\n"
-                                "请改用 --urls（浏览器复制图片地址）或 --from-dir（手动下载后归位）。",
+                                "\n连续多次网络失败 —— 停下。\n"
+                                "可改用 --urls / --from-dir，或稍后重试（网络限速时容易中断）。",
                                 file=sys.stderr,
                             )
                             break
                     continue
                 consecutive_net_failures = 0
-                source_note = note
-                if url in used_urls:
-                    source_note += f" ⚠️ 与 {used_urls[url]} 同图"
-                used_urls[url] = fid
+                if picked_url in used_urls:
+                    source_note += f" ⚠️ 与 {used_urls[picked_url]} 同图"
+                used_urls[picked_url] = fid
                 if args.dry_run:
-                    print(f"  {fid:<18} ← {note}\n      {url}")
                     skipped += 1
                     continue
-                download(url, tmp, referer)
-                size = normalize(tmp, out_path)
+                if rejects:
+                    source_note += f"（换过 {len(rejects)} 张：{'、'.join(r.split(': ')[-1] for r in rejects[:2])}）"
             if not args.dry_run:
                 print(f"  {fid:<18} ✓ {size}  ← {source_note}")
                 report.append((fid, source_note, size, "ok"))

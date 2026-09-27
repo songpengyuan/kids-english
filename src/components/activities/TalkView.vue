@@ -228,7 +228,12 @@ function finish() {
   display: flex;
   flex-direction: column;
   gap: var(--gap-s);
-  justify-content: center;
+  /* 一屏装下为主：内容放得下时垂直居中；放不下时（矮屏/横屏）改为从顶部开始，
+   * 并允许列表内部滚动 —— 否则居中会让内容向上下两端溢出，
+   * 实测小屏（360×640）会压住标题、iPad 上会压住下方词库。 */
+  justify-content: safe center;
+  overflow-y: auto;
+  padding-block: 2px; /* 给卡片阴影留一点余地，避免贴边被裁 */
 }
 
 .phrase {

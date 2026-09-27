@@ -96,6 +96,18 @@ function skip() {
   openChest();
 }
 
+/**
+ * 关闭 · 无论动画进行到哪一步都能一键退出：
+ * 还没开箱（closed）→ 奖励照常入账（与"跳过"一致）；已开箱 → 直接收起。
+ */
+function closeOverlay() {
+  if (phase.value === "closed") {
+    rewards.grant(rewards.rollChest());
+  }
+  phase.value = "collected";
+  emit("done");
+}
+
 /** 逐个抛物线飞入顶部贝壳徽标 */
 async function collect() {
   if (phase.value !== "reward" || !reward.value) return;
@@ -167,6 +179,11 @@ const cap = computed(() => {
 
 <template>
   <div class="chest-wrap">
+    <!-- 关闭：固定右上角，任何阶段都能点（开箱动画/奖励面板都不拦路） -->
+    <button v-if="phase !== 'collected'" class="chest-close" aria-label="关闭" title="关闭" @click="closeOverlay">
+      <PathIcon name="close" class="close-ico" />
+    </button>
+
     <!-- 顶部贝壳徽标：收取动画的目标（fixed 右上，接收时脉冲 + 数字递增） -->
     <div ref="badgeEl" class="shell-badge" :class="{ pulsing: phase === 'flying' }" :key="'pulse-' + pulseTick">
       <span class="shell-emoji b-ico"><ShellIcon /></span>
@@ -265,6 +282,30 @@ const cap = computed(() => {
 }
 
 /* ---------- 顶部贝壳徽标（收取目标） ---------- */
+.chest-close {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 70;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border: none;
+  border-radius: 50%;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-hard);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.chest-close .close-ico {
+  width: 22px;
+  height: 22px;
+}
+.chest-close:active {
+  transform: scale(0.94);
+}
 .shell-badge {
   position: fixed;
   top: 72px;
