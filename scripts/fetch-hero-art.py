@@ -691,6 +691,7 @@ def main():
                 size = None
                 source_note = ""
                 picked_url = None
+                official_fb = None  # 官方源首个候选（内容可靠）：透明质检全失败时兜底，宁要对的非透明
                 for url, note, referer in candidate_stream(form, order):
                     try:
                         if args.dry_run:
@@ -702,6 +703,8 @@ def main():
                         has_alpha, ratio, corners = png_transparency(out_path)
                         # 透明占比 >10%（去背立绘）或有 3 个以上透明角 → 收
                         if not has_alpha or (ratio < 0.10 and corners < 3):
+                            if "official" in note and official_fb is None:
+                                official_fb = (url, note, referer)
                             rejects.append(f"{note}: 非透明底（透明占比 {ratio:.0%}，角 {corners}/4）")
                             os.remove(out_path)
                             continue
@@ -718,6 +721,15 @@ def main():
                                     file=sys.stderr,
                                 )
                                 raise SystemExit(0)
+                if not picked_url and official_fb and not args.dry_run:
+                    # 官方源兜底：内容可靠，即使非透明也收（白底在卡片上可接受，远好过张冠李戴）
+                    url, note, referer = official_fb
+                    try:
+                        download(url, tmp, referer)
+                        size = normalize(tmp, out_path)
+                        source_note, picked_url = f"{note}（官方兜底，非透明）", url
+                    except Exception as e:
+                        rejects.append(f"官方兜底: {e}")
                 if not picked_url:
                     reason = "；".join(rejects[-3:]) or "所有图源都没找到候选"
                     print(f"  {fid:<18} ✗ {reason}")

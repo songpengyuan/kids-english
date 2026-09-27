@@ -1137,3 +1137,9 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 - 详情页内容：放大形象图（多形态缩略切换，已收集高亮/未收集剪影）+ 简介 + 招牌技能 + 常用语；角色名 speak 英文、简介/技能/常用语点击 speakZh 中文。
 - 新数据 `src/data/heroDetails.ts`：41 位角色各 3 字段（bio/skills/phrases）；pathIcons 新增 volume/sparkles；底部导航"我的"高亮覆盖 hero-detail。
 - 素材提示：ultraman-base.png 内容疑似贝利亚、zero-corona.png 缺失（回退 svg），待素材脚本补正。
+### 13.34 素材脚本官方兜底 + 初代图修正（2026-09-27）
+
+- 用户提供圆谷官方站图源（tsuburaya-prod.com/heroeslist，点击进 /heroes/<slug> 详情页），脚本 official 源已完整接入（列表页 + 详情页立绘）。
+- 问题：官方立绘多为 jpg/非透明底，被"透明占比"质检误杀 → 透明候选全失败后 bing 会抓到张冠李戴的图（ultraman-base 抓到贝利亚）。
+- 修复：脚本新增"官方源透明兜底"——全部透明候选失败时收官方源首个候选（宁要对的非透明，不要错的透明）。
+- 实测：ultraman-base 已修正为官方初代立绘（斯派修姆光线姿势，364×512）；15 个非基础形态（zero-corona 等）官方站无图，继续用内置 SVG 占位，不显示错图。
