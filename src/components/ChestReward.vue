@@ -89,6 +89,15 @@ function tapChest() {
   }
 }
 
+/** 点遮罩层任意空白处也算敲一下（按钮/奖励卡除外） */
+function onWrapClick(e) {
+  if (phase.value !== "closed") return; // 已开箱后空白处不触发
+  // 点到按钮或交互元素上不触发（close/skip/take/奖励卡）
+  const t = e.target.closest("button, .reward, .fly");
+  if (t) return;
+  tapChest();
+}
+
 /** 跳过开箱动画（奖励照常入账）：直接完成三连击 → 展示奖励 */
 function skip() {
   if (phase.value !== "closed") return;
@@ -183,7 +192,7 @@ const cap = computed(() => {
 </script>
 
 <template>
-  <div class="chest-wrap">
+  <div class="chest-wrap" @click="onWrapClick">
     <!-- 关闭：固定右上角，任何阶段都能点（开箱动画/奖励面板都不拦路） -->
     <button class="chest-close" aria-label="关闭" title="关闭" @click="closeOverlay">
       <PathIcon name="close" class="close-ico" />
@@ -208,7 +217,6 @@ const cap = computed(() => {
       ref="chestEl"
       class="chest"
       data-haptic="true"
-      @click="tapChest"
       :class="{ opened: opened }"
       :key="'shake-' + shakeTick"
       :aria-label="taps < 3 ? '敲宝箱' : '宝箱'"
@@ -313,9 +321,9 @@ const cap = computed(() => {
 }
 .shell-badge {
   position: fixed;
-  top: 72px;
+  top: calc(64px + env(safe-area-inset-top));
   right: 14px;
-  z-index: 40;
+  z-index: 80;
   display: flex;
   align-items: center;
   gap: 4px;
