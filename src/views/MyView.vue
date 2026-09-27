@@ -22,6 +22,7 @@ import AppHeader from "../components/layout/AppHeader.vue";
 import { ChevronRight, Flame, Star } from "@lucide/vue";
 import PathIcon from "../components/PathIcon.vue";
 import ShellIcon from "../components/ShellIcon.vue";
+import { speakZh } from "../utils/speech";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();
@@ -74,6 +75,21 @@ const todayWords = computed(() => {
   }
   return n;
 });
+/** 我的页点击即发音：认字 + 认数（中文朗读，归音效开关） */
+function sayProfile() {
+  speakZh(`丞丞的学习小屋，${progress.totalStars} 颗星，${streak.streak} 天连击`);
+}
+function sayGoal() {
+  const state = streak.todayDone ? "已达成" : "进行中";
+  speakZh(`今日目标，${state}，复习到期词 ${streak.reviewed} 个，新学关卡 ${streak.newLevels} 个`);
+}
+function sayCell(label: string, text: string) {
+  speakZh(`${label}，${text}`);
+}
+function sayEntry(name: string, path: string) {
+  speakZh(name); // 先读名（TTS 全局继续），再进子页
+  router.push(path);
+}
 </script>
 
 <template>
@@ -82,7 +98,7 @@ const todayWords = computed(() => {
 
     <div class="me-body view-body">
       <!-- 身份卡 -->
-      <section class="profile card anim-pop">
+      <section class="profile card anim-pop" @click="sayProfile">
         <span class="pf-emoji">🦊</span>
         <div class="pf-info">
           <p class="pf-name">丞丞的学习小屋</p>
@@ -94,7 +110,7 @@ const todayWords = computed(() => {
       </section>
 
       <!-- 今日目标：复习到期词 + 新学一关（家长/孩子都能看懂的两件事） -->
-      <section class="goal card anim-fade-up" :class="{ done: streak.todayDone }">
+      <section class="goal card anim-fade-up" :class="{ done: streak.todayDone }" @click="sayGoal">
         <div class="goal-head">
           <h3>今日目标</h3>
           <span class="goal-state">{{ streak.todayDone ? "已达成" : "进行中" }}</span>
@@ -110,27 +126,27 @@ const todayWords = computed(() => {
 
       <!-- 成就统计 -->
       <section class="stats anim-fade-up">
-        <div class="cell">
+        <div class="cell" @click="sayCell('总星星', `${progress.totalStars} 颗`)" role="button" tabindex="0" @keydown.enter="sayCell('总星星', `${progress.totalStars} 颗`)">
           <span class="v gold"><Star class="k-ico star-fill" />{{ progress.totalStars }}</span>
           <span class="k">总星星</span>
         </div>
-        <div class="cell">
+        <div class="cell" @click="sayCell('连击天数', `${streak.streak} 天`)" role="button" tabindex="0" @keydown.enter="sayCell('连击天数', `${streak.streak} 天`)">
           <span class="v"><Flame class="k-ico flame" />{{ streak.streak }}</span>
           <span class="k">连击天数</span>
         </div>
-        <div class="cell">
+        <div class="cell" @click="sayCell('贝壳', `${rewards.shells} 个`)" role="button" tabindex="0" @keydown.enter="sayCell('贝壳', `${rewards.shells} 个`)">
           <span class="v"><ShellIcon />{{ rewards.shells }}</span>
           <span class="k">贝壳</span>
         </div>
-        <div class="cell">
+        <div class="cell" @click="sayCell('英雄图鉴', `${rewards.ownedCount} 个`)" role="button" tabindex="0" @keydown.enter="sayCell('英雄图鉴', `${rewards.ownedCount} 个`)">
           <span class="v"><PathIcon name="sticker" class="st-ico" />{{ heroDone }}</span>
           <span class="k">英雄图鉴</span>
         </div>
-        <div class="cell">
+        <div class="cell" @click="sayCell('今日时长', fmtDuration(progress.todayStats.durationSec))" role="button" tabindex="0" @keydown.enter="sayCell('今日时长', fmtDuration(progress.todayStats.durationSec))">
           <span class="v"><PathIcon name="clock" class="st-ico" />{{ fmtDuration(progress.todayStats.durationSec) }}</span>
           <span class="k">今日时长</span>
         </div>
-        <div class="cell">
+        <div class="cell" @click="sayCell('今日玩法', `${progress.todayStats.activities} 次`)" role="button" tabindex="0" @keydown.enter="sayCell('今日玩法', `${progress.todayStats.activities} 次`)">
           <span class="v"><PathIcon name="activity" class="st-ico" />{{ progress.todayStats.activities }} 次</span>
           <span class="k">今日玩法</span>
         </div>
@@ -138,19 +154,19 @@ const todayWords = computed(() => {
 
       <!-- 功能入口 -->
       <section class="entries anim-fade-up">
-        <button class="entry" @click="router.push('/treasure')">
+        <button class="entry" @click="sayEntry('宝藏罐', '/treasure')">
           <span class="en-ico"><PathIcon name="gift" /></span>
           <span class="en-cap">宝藏罐</span>
           <span class="en-desc">贝壳 · 贴纸图鉴</span>
           <ChevronRight class="k-ico en-arrow" />
         </button>
-        <button class="entry" @click="router.push('/report')">
+        <button class="entry" @click="sayEntry('家长报告', '/report')">
           <span class="en-ico"><PathIcon name="chart" /></span>
           <span class="en-cap">家长报告</span>
           <span class="en-desc">掌握度趋势 · 待巩固词</span>
           <ChevronRight class="k-ico en-arrow" />
         </button>
-        <button class="entry" @click="router.push('/review')">
+        <button class="entry" @click="sayEntry('到期复习', '/review')">
           <span class="en-ico"><PathIcon name="review" /></span>
           <span class="en-cap">到期复习</span>
           <span class="en-desc" v-if="weakCount">今天有 {{ weakCount }} 个词到期</span>
@@ -160,11 +176,11 @@ const todayWords = computed(() => {
       </section>
 
       <section class="settings">
-        <span class="set-cap"><PathIcon name="me" class="set-ico" />静音（只关音效与提示语，单词发音保留）</span>
+        <span class="set-cap" @click="sayCell('静音设置', '只关音效与提示语，单词发音保留')"><PathIcon name="me" class="set-ico" />静音（只关音效与提示语，单词发音保留）</span>
         <SoundToggle />
       </section>
 
-      <p class="foot">数据只保存在这台设备上，不会上传。{{ soundOn ? "" : "（已静音）" }}</p>
+      <p class="foot" @click="sayCell('数据说明', '只保存在这台设备上，不会上传')">数据只保存在这台设备上，不会上传。{{ soundOn ? "" : "（已静音）" }}</p>
     </div>
   </div>
 </template>
@@ -363,6 +379,14 @@ const todayWords = computed(() => {
 }
 .entry:active {
   transform: translateY(calc(var(--press) - 1px));
+}
+.profile:active,
+.goal:active,
+.stats .cell:active,
+.set-cap:active,
+.foot:active {
+  transform: translateY(1px);
+  transition: transform 0.08s;
 }
 .en-ico {
   font-size: var(--fs-emoji-l);

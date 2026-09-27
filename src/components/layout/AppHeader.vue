@@ -16,8 +16,14 @@ import ShellIcon from "../ShellIcon.vue";
 import SoundToggle from "./SoundToggle.vue";
 import ThemeToggle from "./ThemeToggle.vue";
 import { Star } from "@lucide/vue";
+import { speakZh } from "../../utils/speech";
 
-defineProps<{ title: string; icon?: string }>();
+const props = defineProps<{ title: string; icon?: string }>();
+
+/** 顶栏标题点击即发音（认字）：学习/游戏闯关/我的 等 tab 名（中文，归音效开关） */
+function sayTitle() {
+  speakZh(props.title);
+}
 
 const router = useRouter();
 const progress = useProgressStore();
@@ -30,7 +36,7 @@ const streak = useStreakStore();
     <div class="hdr-row">
       <div class="hdr-left">
         <PathIcon v-if="icon" :name="icon" class="hdr-ico" />
-        <span class="hdr-title">{{ title }}</span>
+        <span class="hdr-title" @click="sayTitle">{{ title }}</span>
       </div>
       <div class="hdr-right">
         <!-- ⭐ 总星星 -->
@@ -97,6 +103,10 @@ const streak = useStreakStore();
   font-weight: 800;
   color: var(--ink);
   white-space: nowrap;
+  cursor: pointer;
+}
+.hdr-title:active {
+  opacity: 0.6;
 }
 .hdr-right {
   flex: 1;
