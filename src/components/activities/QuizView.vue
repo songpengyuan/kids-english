@@ -136,7 +136,7 @@ const scoreStars = computed(() => {
       <p v-else class="praise placeholder" aria-hidden="true">占位</p>
       <button class="continue-btn anim-pop" :disabled="!locked" @click="next">
         <template v-if="locked">继续</template>
-        <template v-else>听一听再选</template>
+        <template v-else>检查</template>
         <ChevronRight class="k-ico" />
       </button>
     </div>
