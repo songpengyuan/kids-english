@@ -746,3 +746,7 @@ pnpm test   # vitest run，覆盖：
 - 现象：`.u-bar`（absolute 进度条）锚到外层容器，三个横幅的进度条叠在页面同一位置，不在横幅内。
 - 根因：`.gp-unit` 未设 position，absolute 子元素向上找定位上下文失败。
 - 修复：`.gp-unit { position: relative }`，进度条回归各自横幅底部（bottom 10px / 左右 16px）。
+### 13.15 进度环留空隙 + 课程横幅滚动吸顶（2026-09-27）
+
+- **进度环与按钮留空隙**：环 circle r 34→30（viewBox 80），环内缘距按钮外缘 5px，不再贴边。
+- **课程横幅滚动吸顶**：`.gp-unit` 由 relative 改 `position: sticky; top: 8px; z-index: 5`——滚动到下一课时上一课横幅固定留在滚动区顶部（多邻国式替换）；同时仍为 u-bar 提供绝对定位上下文。实测：滚动后横幅吸在滚动区顶部（top = slotTop+8），后续课程横幅依序顶替。

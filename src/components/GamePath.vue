@@ -287,7 +287,7 @@ function unitLesson(id: string) {
         >
           <!-- 进度圆环：3 段弧，学一部分亮一部分（挂 lv-wrap 层，避免按钮 active 边框干扰绝对定位 → 永远与按钮同心） -->
           <svg class="lv-ring" viewBox="0 0 80 80" aria-hidden="true">
-              <circle class="ring-bg" cx="40" cy="40" r="34" pathLength="100" />
+              <circle class="ring-bg" cx="40" cy="40" r="30" pathLength="100" />
               <circle
                 v-for="seg in 3"
                 :key="seg"
@@ -295,7 +295,7 @@ function unitLesson(id: string) {
                 :class="{ on: ringOf(it as GeoItem) >= seg }"
                 cx="40"
                 cy="40"
-                r="34"
+                r="30"
                 pathLength="100"
                 stroke-dasharray="33.34 66.66"
                 :style="{ transform: 'rotate(' + ((seg - 1) * 120 - 90) + 'deg)' }"
@@ -350,7 +350,10 @@ function unitLesson(id: string) {
 }
 /* ---------- 课程横幅 ---------- */
 .gp-unit {
-  position: relative; /* u-bar 进度条锚点：absolute 需有定位上下文，否则锚到外层容器错位 */
+  /* sticky 吸顶：滚动到下一课时上一课横幅固定留在滚动区顶部（多邻国式）；同时为 u-bar 提供绝对定位上下文 */
+  position: sticky;
+  top: 8px;
+  z-index: 5;
   height: 56px; /* BAR_H */
   margin: 20px 0 38px; /* 下节留白 / 横幅底 → 首节点圆心(66-28) */
   border-radius: 14px;
