@@ -267,20 +267,24 @@ onBeforeUnmount(cleanup);
   display: flex;
   flex-direction: column;
   gap: var(--gap-s);
-  padding: 0 var(--gap-m) max(12px, env(safe-area-inset-bottom));
+  padding: var(--gap-l) var(--gap-m) max(28px, env(safe-area-inset-bottom));
   flex: none;
 }
 .praise {
   margin: 0;
   flex: none;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
+  align-self: center;
   font-weight: 800;
-  font-size: var(--fs-small);
-  color: var(--green);
-  text-align: center;
+  font-size: var(--fs-title);
+  color: var(--green-dark);
+  background: var(--state-ok-bg);
+  border: 2px solid var(--green);
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
 }
 .continue-btn {
   width: 100%;
