@@ -726,3 +726,9 @@ pnpm test   # vitest run，覆盖：
 **关卡按钮放大 + 圆环对齐**：
 - `.gp-level` 56→64px；`.lv-ring` 72→80px（viewBox 80、r 34、stroke 6）；图标/大锁/礼物 30→34、角标/星徽章/关卡名放大；节点间距 84→96。
 - **圆环从 button 移到 lv-wrap 层**：button active 时 4px border 会使 absolute 子元素（基于 padding box）偏移 4px——实测 active 关 dx=-4/dy=-4；移到无边框的 lv-wrap 后所有状态恒定同心（dx=0/dy=0）。
+### 13.11 关卡地图细节优化（2026-09-27）
+
+- **角标精简**：关卡旁不再显示小锁 / 播放角标，仅已完成（done）关卡显示 ✓ 对勾；未解锁直接看大锁主体，进行中无角标。
+- **课程横幅英文**：地图课程横幅由中文（titleZh）改为英文课程名（title，如 "A Sailor Went to Sea"）；aria-label 双语（英文＋中文）。
+- **地图背景纹理**：`.game` 背景加多邻国式彩色圆点（radial-gradient 6 层，固定位置不随内容滚动）；浅色主题半透明彩色点、暗色主题提亮一档（`:root[data-theme="dark"] .game`）。
+- 说明：地图顶部横条为**课程横幅**（显示课程名＋进度 x/y＋已完成数，点击进入课程），非多余 UI。

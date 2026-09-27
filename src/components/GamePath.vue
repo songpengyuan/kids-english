@@ -266,13 +266,13 @@ function unitLesson(id: string) {
           role="button"
           tabindex="0"
           :class="'tone-' + (unitLesson((it as GeoItem).lessonId)?.tone || 'blue')"
-          :aria-label="`${unitLesson((it as GeoItem).lessonId)?.titleZh || ''}，已完成 ${(it as GeoItem).done || 0} 关，共 ${(it as GeoItem).total || 1} 关`"
+          :aria-label="`${unitLesson((it as GeoItem).lessonId)?.title || ''}（${unitLesson((it as GeoItem).lessonId)?.titleZh || ''}），已完成 ${(it as GeoItem).done || 0} 关，共 ${(it as GeoItem).total || 1} 关`"
           @click="enterUnit(it as GeoItem)"
           @keydown.enter="enterUnit(it as GeoItem)"
           @keydown.space.prevent="enterUnit(it as GeoItem)"
         >
           <PathIcon :name="(it as GeoItem).lessonId" class="u-ico" />
-          <span class="u-name">{{ unitLesson((it as GeoItem).lessonId)?.titleZh }}</span>
+          <span class="u-name">{{ unitLesson((it as GeoItem).lessonId)?.title }}</span>
           <span class="u-count">{{ (it as GeoItem).done || 0 }}/{{ (it as GeoItem).total || 1 }}</span>
           <span class="u-bar"><span class="u-bar-fill" :style="{ width: Math.min(100, Math.round((((it as GeoItem).done || 0) / ((it as GeoItem).total || 1)) * 100)) + '%' }"></span></span>
         </div>
@@ -312,10 +312,8 @@ function unitLesson(id: string) {
               <PathIcon v-if="(it as GeoItem).state === 'locked'" name="lock" class="lv-ico lv-ico-lock" />
               <PathIcon v-else-if="(it as GeoItem).level!.actKey === 'chest'" name="chest" class="lv-ico lv-ico-chest" />
               <PathIcon v-else :name="(it as GeoItem).level!.actKey" class="lv-ico" />
-              <span class="lv-tag" aria-hidden="true">
-                <PathIcon v-if="tagOf((it as GeoItem).level!) === 'lock'" name="lock" />
-                <span v-else-if="tagOf((it as GeoItem).level!) === 'done'" class="tick">✓</span>
-                <PathIcon v-else name="play" />
+              <span v-if="tagOf((it as GeoItem).level!) === 'done'" class="lv-tag" aria-hidden="true">
+                <span class="tick">✓</span>
               </span>
               <span v-if="(it as GeoItem).stars && (it as GeoItem).level!.actKey !== 'chest'" class="lv-star" aria-hidden="true">★{{ (it as GeoItem).stars }}</span>
             </button>

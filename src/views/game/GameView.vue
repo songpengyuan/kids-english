@@ -18,6 +18,25 @@ import GamePath from "../../components/GamePath.vue";
   flex-direction: column;
   min-height: 0;
   flex: 1;
+  /* 关卡地图背景纹理：多邻国式彩色圆点（浅色主题），不随内容滚动 */
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 16% 18%, rgba(28, 176, 246, 0.12) 0 8px, transparent 9px),
+    radial-gradient(circle at 78% 8%, rgba(255, 178, 54, 0.13) 0 6px, transparent 7px),
+    radial-gradient(circle at 88% 42%, rgba(255, 99, 132, 0.10) 0 7px, transparent 8px),
+    radial-gradient(circle at 10% 60%, rgba(88, 214, 141, 0.11) 0 5px, transparent 6px),
+    radial-gradient(circle at 55% 92%, rgba(160, 120, 255, 0.12) 0 7px, transparent 8px),
+    radial-gradient(circle at 30% 78%, rgba(28, 176, 246, 0.08) 0 5px, transparent 6px);
+}
+/* 暗色主题：圆点提亮一点，保持童趣但不刺眼 */
+:root[data-theme="dark"] .game {
+  background-image:
+    radial-gradient(circle at 16% 18%, rgba(84, 200, 255, 0.16) 0 8px, transparent 9px),
+    radial-gradient(circle at 78% 8%, rgba(255, 196, 90, 0.16) 0 6px, transparent 7px),
+    radial-gradient(circle at 88% 42%, rgba(255, 128, 156, 0.13) 0 7px, transparent 8px),
+    radial-gradient(circle at 10% 60%, rgba(104, 224, 168, 0.13) 0 5px, transparent 6px),
+    radial-gradient(circle at 55% 92%, rgba(180, 146, 255, 0.16) 0 7px, transparent 8px),
+    radial-gradient(circle at 30% 78%, rgba(84, 200, 255, 0.10) 0 5px, transparent 6px);
 }
 /* 游戏模式：占满剩余高度，路径图超高时可上下滚动；
    滚动条贴到视口最右缘：slot 宽度向右多伸一个 --pad-x，右缘直达视口边缘；
