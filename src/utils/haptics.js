@@ -2,23 +2,37 @@
  * ===== 触觉反馈 =====
  *
  * 两条通路：
- *
  * 1) **Android（Chrome / Edge / Samsung Internet）** — 直接用 `navigator.vibrate()`。
  *
- * 2) **Safari（iOS / iPadOS / macOS）** — Safari 从未实现 Vibration API，
- *    网页里唯一能触发原生触感的机制是 WebKit 的 `<input type="checkbox" switch>`：
- *    当**用户的手指真的点在这个开关上**时，系统会给出原生触感（iOS 17.4+）。
- *    所以这里的做法是把一个完全透明的 switch 叠在每个可点元素上面，
+ * 2) **Safari（iOS / iPadOS / macOS）** — Safari 从未实现 Vibration API（WebKit
+ *    官方立场是反对该标准，Apple 平台不可能落地），网页里唯一能触发原生触感的
+ *    机制是 WebKit 的 `<input type="checkbox" switch>`：当**用户的手指真的点在这个
+ *    开关上**时，系统会给出原生触感（iOS 17.4+）。
+ *    所以做法是：给**显式标注 `data-haptic` 的元素**叠一个完全透明的 switch，
  *    手指落在开关上 → 系统震一下 → 点击事件继续冒泡给宿主元素，业务逻辑照常。
  *
- *    限制（Apple 侧的行为，非本实现问题）：
+ * 【为什么是白名单（2026-09-27 决策）】
+ *    早期版本对所有按钮默认叠加、靠 EXCLUDE 黑名单逐个排除关键导航。但实测
+ *    透明 switch 在 iOS 真实触摸下会**吞掉宿主点击**（返回按钮、底部导航
+ *    "学习/游戏/我的"均中招：按钮有按压动画但路由不跳转）。黑名单是"事后
+ *    打补丁"——每个新按钮默认危险，漏排一个就出一个 bug。
+ *    反转为**白名单**后：新元素默认安全，只有显式 `data-haptic` 的元素承担
+ *    风险；触感是增强体验，宁可少震一处、不可吞一次点击。
+ *
+ * 【标注规则】只有"反馈型交互"标注 `data-haptic`：
+ *    ✓ 点图/点词听发音、连线卡片、答题选项、宝箱、唱歌按钮等
+ *      ——点不中只是少个反馈、可重试，触感收益 > 点击风险；
+ *    ✗ 导航（返回/底部 tab/课程卡入口）、状态开关（音效/主题）、
+ *      "提交/继续/完成"类功能按钮——承载核心功能，点击被吞 = 功能故障，绝不标注。
+ *
+ * 【限制（Apple 侧行为，非本实现问题）】
  *    - 必须由真实手指点中开关才会震，脚本模拟点击无效（iOS 26.5 起彻底封掉）；
  *    - 每次点击只给一下震动（我们的交互本来就是"点一下震一下"，正合适）；
  *    - 需在系统设置里打开"触感反馈 / System Haptics"。
  *
  * 3) 其余环境（桌面浏览器、旧版系统）静默跳过，不影响任何功能。
  *
- * 调试：控制台执行 `__kidsHaptics()` 可查看当前走的是哪条通路。
+ * 调试：控制台执行 `__kidsHaptics()` 可查看当前走的是哪条通路、叠了几个开关。
  */
 
 const NAV = typeof navigator !== "undefined" ? navigator : null;
@@ -60,16 +74,12 @@ function vibrate(pattern) {
 /* ---------- Safari 开关叠加层 ---------- */
 
 const OVERLAY_ATTR = "data-haptic-switch";
-/** 需要叠加开关的元素：所有按钮，以及显式标注 data-haptic 的自定义可点元素 */
-const TARGET_SELECTOR = `button:not([disabled]), [data-haptic]`;
+/** 白名单：只有显式标注 data-haptic 的元素才叠 switch（其余按钮/元素默认安全） */
+const TARGET_SELECTOR = "[data-haptic]";
 const OVERLAY_ICON = "input[" + OVERLAY_ATTR + "]";
 /**
- * 不叠加开关的关键导航元素：
- * - `.back` 返回按钮（全局关键导航，实测被覆盖后点击无响应）
- * - `.bottom-nav button` 底部导航（学习/游戏/我的）——与返回同级的关键导航，
- *   被透明 switch 覆盖后同样会吞掉宿主点击（实测同 `.back`），必须保证点击直达。
- * - `.lesson-card` / `.q-link` 学习页入口（进课程/复习的主入口）。
- * 这些元素牺牲触感收益，换点击可靠性。
+ * 兜底豁免（白名单模式下极少用到）：万一某元素被标了 data-haptic 但属于关键
+ * 导航/功能按钮，在这里豁免并清理残留，保证点击直达。
  */
 const EXCLUDE_SELECTOR = ".back, .bottom-nav button, .lesson-card, .q-link, .treasure-badge";
 
@@ -130,10 +140,17 @@ function attach(el) {
   el.appendChild(input);
 }
 
-/** 全量扫描并补齐叠加层（元素由 Vue 动态创建，需要反复补） */
+/** 全量扫描：清理残留（宿主不在白名单上的旧开关）→ 给白名单元素补齐叠加层 */
 function scan() {
   if (!switchHaptics || !DOC) return;
   injectStyle();
+  // 白名单模式：清掉所有"宿主不在名单上"的残留开关——历史版本默认全叠
+  // 留下的、以及 Vue 重渲染后宿主已失去 data-haptic 的，一律移除，保证
+  // 未标注元素永远不受影响（"增强默认安全"的最后一道保险）。
+  DOC.querySelectorAll(OVERLAY_ICON).forEach((input) => {
+    const host = input.parentElement;
+    if (host && !host.matches(TARGET_SELECTOR)) input.remove();
+  });
   DOC.querySelectorAll(TARGET_SELECTOR).forEach(attach);
 }
 
@@ -145,7 +162,7 @@ function scheduleScan() {
   });
 }
 
-/** 启动（幂等）：启动后 SPA 里新出现的按钮也会自动被覆盖 */
+/** 启动（幂等）：启动后 SPA 里新出现的 data-haptic 元素也会自动被覆盖 */
 export function initHaptics() {
   if (!switchHaptics || observer || !DOC) return;
   scan();
@@ -204,7 +221,7 @@ export function hapticsInfo() {
     说明: hasNativeVibrate
       ? "安卓原生震动通路"
       : switchHaptics
-        ? "Safari：透明 switch 通路（需系统触感反馈已开启）"
+        ? "Safari：白名单透明 switch 通路（需系统触感反馈已开启）"
         : "当前浏览器没有可用的触觉反馈，功能不受影响"
   };
 }

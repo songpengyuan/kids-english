@@ -19,15 +19,12 @@ const session = useQuizSession<Word>(() => props.words, {
   onCorrect: (w) => {
     sfxCorrect();
     speak(w.en, { lessonId: w.lessonId, wordId: w.id });
-    // 撒花只在关卡完成时（useLessonFlow）触发，单题答对只用音效+触感反馈。
-    // 单词掌握度：答对记一次正确（此前在该题答错已各记一次错误）→ SRS 进一级
     progress.recordWord(w.lessonId, w.id, { correct: 1 });
   },
   onWrong: (picked) => {
     sfxWrong();
-    progress.recordWord(picked.lessonId, picked.id, { wrong: 1 }); // 错词落库 → 复习队列
+    progress.recordWord(picked.lessonId, picked.id, { wrong: 1 });
   },
-  // 答对后其他选项仍可点：只朗读 + 记一次"点读"，不改判定也不计错
   onExplore: (w) => {
     sfxTap();
     speak(w.en, { lessonId: w.lessonId, wordId: w.id });
@@ -37,27 +34,55 @@ const session = useQuizSession<Word>(() => props.words, {
 
 const { q, total, picked, wrongPicks, locked, stars, pick, next: gotoNext, cleanup } = session;
 
+/** 当前已选中但还没"检查"的选项 id（选了不立即判，点检查才判对错） */
+const selectedKey = ref<string | null>(null);
+
 function replay() {
   const t = q.value.target;
   speak(t.en, { lessonId: t.lessonId, wordId: t.id });
+}
+
+/** 点选项：未锁定时只选中/取消选中（蓝色高亮），不判对错；已锁定后交给 explore */
+function onPick(opt: Word) {
+  if (locked.value) {
+    pick(opt); // 已答对，其他选项 = 点读探索
+    return;
+  }
+  if (wrongPicks.value.has(opt.id)) return; // 已标红的错项不可再选
+  selectedKey.value = selectedKey.value === opt.id ? null : opt.id;
+}
+
+/** 点"检查"按钮：才真正判当前选中的选项 */
+function check() {
+  if (!selectedKey.value || locked.value) return;
+  const opt = q.value.options.find((o) => o.id === selectedKey.value);
+  if (!opt) return;
+  const result = pick(opt);
+  if (result === "wrong") {
+    // 选错：清空选中，孩子重新选（错项已在 composable 里标红短暂闪现）
+    selectedKey.value = null;
+  }
+  // correct：composable 已 locked，selectedKey 在 next() 进下一题时清空
+}
+
+/** 继续：最后一题 → 上报星级，否则进下一题 */
+function next() {
+  selectedKey.value = null;
+  const r = gotoNext();
+  if (r.done) emit("done", r.stars);
 }
 
 /** 每题进来先听一遍（首题与每次翻页都读）*/
 watch(
   () => session.idx.value,
   () => {
+    selectedKey.value = null;
     const t = q.value?.target;
     if (!t) return;
     setTimeout(() => speak(t.en, { lessonId: t.lessonId, wordId: t.id }), 350);
   },
   { immediate: true }
 );
-
-/** 继续：最后一题 → 上报星级（首次答对率），否则进下一题 */
-function next() {
-  const r = gotoNext();
-  if (r.done) emit("done", r.stars);
-}
 
 onBeforeUnmount(cleanup);
 </script>
@@ -67,7 +92,7 @@ onBeforeUnmount(cleanup);
     <button class="big-speaker anim-float" @click="replay" aria-label="再听一遍" title="再听一遍">
       <Volume2 class="k-ico" />
     </button>
-    <p class="tip">听一听，点一点正确的图片</p>
+    <p class="tip">听一听，选一张正确的图片，然后点检查</p>
 
     <div class="options view-body">
       <div
@@ -77,9 +102,10 @@ onBeforeUnmount(cleanup);
         data-haptic
         :class="{
           right: locked && opt.id === q.target.id,
-          wrong: wrongPicks.has(opt.id)
+          wrong: wrongPicks.has(opt.id),
+          selected: !locked && selectedKey === opt.id
         }"
-        @click="pick(opt)"
+        @click="onPick(opt)"
       >
         <div class="pic">
           <img
@@ -90,20 +116,22 @@ onBeforeUnmount(cleanup);
           />
           <span v-else class="ph">{{ opt.emoji }}</span>
         </div>
-        <!-- 图片下方常驻英文单词，边听边认字 -->
         <div class="w">{{ opt.en }}</div>
       </div>
     </div>
 
-    <!-- 判定反馈区（多邻国式：答对 → 绿色反馈条 + 继续按钮；答错 → 仅提示重听，无继续） -->
+    <!-- 判定反馈区：选答案不判，点检查才给对错反馈 -->
     <div class="judge-zone">
       <p v-if="locked" class="praise anim-pop">
         <CheckCircle2 class="k-ico" />太棒了！
       </p>
       <p v-else-if="wrongPicks.size" class="oh anim-pop">再听一次哦～</p>
-      <!-- 占位：忙时用透明文本撑住高度，避免答题后整页上下跳动 -->
       <p v-else class="praise placeholder" aria-hidden="true">占位</p>
-      <button class="continue-btn anim-pop" :disabled="!locked" @click="next">
+      <button
+        class="continue-btn anim-pop"
+        :disabled="locked ? false : !selectedKey"
+        @click="locked ? next() : check()"
+      >
         <template v-if="locked">继续<ChevronRight class="k-ico" /></template>
         <template v-else>检查</template>
       </button>
@@ -179,7 +207,6 @@ onBeforeUnmount(cleanup);
   font-size: var(--fs-emoji-xl);
   line-height: 1;
 }
-/* 选项下方的英文单词标签 */
 .w {
   flex: none;
   width: 100%;
@@ -195,6 +222,11 @@ onBeforeUnmount(cleanup);
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 选中态（未检查）：蓝色边框，让孩子知道"我选了这个" */
+.opt.selected {
+  border-color: var(--blue);
+  background: rgba(28, 176, 246, 0.08);
+}
 .opt.right {
   border-color: var(--green);
   background: var(--state-ok-bg);
@@ -204,11 +236,9 @@ onBeforeUnmount(cleanup);
   background: var(--state-bad-bg);
   animation: shake-x 0.45s ease;
 }
-/* 注：答对后不再把其他选项调暗（原来 opacity .45）——
- * 孩子答对后仍可以点其他图听发音，调暗会让"能点"看起来像"不能点"。 */
-/* 判定后整张卡是统一底色的，标签条不要留一块"补丁" */
 .opt.right .w,
-.opt.wrong .w {
+.opt.wrong .w,
+.opt.selected .w {
   background: transparent;
 }
 
@@ -230,7 +260,6 @@ onBeforeUnmount(cleanup);
 .placeholder {
   visibility: hidden;
 }
-/* 判定反馈区：推到底部（小朋友拇指区域），内含反馈条 + 继续按钮 */
 .judge-zone {
   margin-top: auto;
   width: 100%;
@@ -241,7 +270,6 @@ onBeforeUnmount(cleanup);
   padding: 0 var(--gap-m) max(12px, env(safe-area-inset-bottom));
   flex: none;
 }
-/* 答对反馈：轻量文字（不抢戏），把视觉重点留给"继续"按钮 */
 .praise {
   margin: 0;
   flex: none;
@@ -254,7 +282,6 @@ onBeforeUnmount(cleanup);
   color: var(--green);
   text-align: center;
 }
-/* 继续按钮（多邻国式绿色大按钮） */
 .continue-btn {
   width: 100%;
   min-height: calc(var(--tap-min) + 12px);
@@ -276,7 +303,6 @@ onBeforeUnmount(cleanup);
   transform: translateY(calc(var(--press) - 1px)) scale(0.98);
   box-shadow: 0 1px 0 var(--green-dark);
 }
-/* 未答对：灰色禁用（多邻国式底部按钮常驻，答对才激活） */
 .continue-btn:disabled {
   background: var(--ink-faint);
   box-shadow: 0 var(--press) 0 var(--ink-faint);
@@ -284,10 +310,6 @@ onBeforeUnmount(cleanup);
   opacity: 0.85;
 }
 
-/**
- * 手机横屏：高度只有 300~400px，2×2 会让每张图太扁，
- * 改成 1×4 横向排开，把有限的高度全留给图片。
- */
 @media (max-height: 480px) {
   .options {
     grid-template-columns: repeat(4, 1fr);
@@ -299,11 +321,9 @@ onBeforeUnmount(cleanup);
     height: 52px;
     font-size: 24px;
   }
-  /* 横屏时反馈语与提示挤占高度，收敛成一行 */
   .tip {
     display: none;
   }
-  /* 横屏时单词标签更紧凑，把高度留给图片 */
   .w {
     font-size: 12px;
     padding: 1px 2px;
