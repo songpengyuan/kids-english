@@ -30,8 +30,8 @@ import { sfxCoin, sfxCorrect, sfxTap, sfxWrong } from "../utils/effects";
 import { speak, speakZh } from "../utils/speech";
 import { Star } from "@lucide/vue";
 import HeaderBar from "../components/layout/HeaderBar.vue";
-import HeroFormCard from "../components/HeroFormCard.vue";
-import type { AlbumForm } from "../components/HeroFormCard.vue";
+import HeroFormCard from "../components/treasure/HeroFormCard.vue";
+import type { AlbumForm } from "../components/treasure/HeroFormCard.vue";
 import PathIcon from "../components/PathIcon.vue";
 import ShellIcon from "../components/ShellIcon.vue";
 
@@ -328,7 +328,7 @@ function buy(formId: string) {
   color: var(--ink-soft);
 }
 
-/* 形态卡网格（卡片本体样式在 components/HeroFormCard.vue 里） */
+/* 形态卡网格（卡片本体样式在 components/treasure/HeroFormCard.vue 里） */
 .forms {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));

@@ -19,7 +19,7 @@ import { useStreakStore } from "../stores/streak";
 import { useRouter } from "vue-router";
 import { Flame, Star } from "@lucide/vue";
 import HeaderBar from "../components/layout/HeaderBar.vue";
-import MasteryTrend from "../components/MasteryTrend.vue";
+import MasteryTrend from "../components/report/MasteryTrend.vue";
 import { dueWords } from "../utils/reviewQueue";
 import PathIcon from "../components/PathIcon.vue";
 import ShellIcon from "../components/ShellIcon.vue";

@@ -21,7 +21,7 @@ export let lastSeenLevelId = "";
  */
 import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { lessons } from "../data/lessons";
+import { lessons } from "../../data/lessons";
 import {
   buildLevels,
   computeStates,
@@ -29,15 +29,15 @@ import {
   lessonDoneCount,
   type PathLevel,
   type LevelState,
-} from "../data/pathLevels";
-import { useProgressStore } from "../stores/progress";
-import { speak } from "../utils/speech";
-import { hapticTap } from "../utils/haptics";
-import { sfxWrong } from "../utils/effects";
-import PathIcon from "./PathIcon.vue";
-import ChestReward from "./ChestReward.vue";
-import { buildPathGeometry, snakeNodes, R, ROW_H, type PathGeoItem } from "../utils/pathGeometry";
-import { marginBefore, overhangOf } from "../utils/pathGeometry";
+} from "../../data/pathLevels";
+import { useProgressStore } from "../../stores/progress";
+import { speak } from "../../utils/speech";
+import { hapticTap } from "../../utils/haptics";
+import { sfxWrong } from "../../utils/effects";
+import PathIcon from "../PathIcon.vue";
+import ChestReward from "../rewards/ChestReward.vue";
+import { buildPathGeometry, snakeNodes, R, ROW_H, type PathGeoItem } from "../../utils/pathGeometry";
+import { marginBefore, overhangOf } from "../../utils/pathGeometry";
 
 const router = useRouter();
 const progress = useProgressStore();

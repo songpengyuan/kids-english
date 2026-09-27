@@ -3,7 +3,7 @@
  * 游戏闯关首页（阶段 2-2：从 HomePage 拆分）。
  * 多邻国式关卡路径图；滚动条贴最右缘（slot 宽度向右扩展一个 --pad-x）。
  */
-import GamePath from "../../components/GamePath.vue";
+import GamePath from "../../components/game/GamePath.vue";
 </script>
 
 <template>

@@ -9,7 +9,7 @@
  *   后续若某玩法需要"直达/分享"，再把它提为独立路由即可。
  */
 import { createRouter, createWebHashHistory } from "vue-router";
-import HomePage from "../components/HomePage.vue";
+import HomeView from "../views/HomeView.vue";
 import MyView from "../views/MyView.vue";
 import TreasureView from "../views/TreasureView.vue";
 import ReportView from "../views/ReportView.vue";
@@ -21,7 +21,7 @@ import StreakView from "../views/StreakView.vue";
 export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
-    { path: "/", name: "home", component: HomePage },
+    { path: "/", name: "home", component: HomeView },
     { path: "/me", name: "me", component: MyView },
     { path: "/streak", name: "streak", component: StreakView },
     { path: "/treasure", name: "treasure", component: TreasureView },

@@ -59,7 +59,7 @@ onMounted(() => {
   <CuteBackdrop />
   <!-- 只缓存首页：游戏模式 KeepAlive 缓存下，返回首页时 onActivated 对比关卡状态触发解锁动效 -->
   <router-view v-slot="{ Component }">
-    <KeepAlive include="HomePage">
+    <KeepAlive include="HomeView">
       <component :is="Component" />
     </KeepAlive>
   </router-view>

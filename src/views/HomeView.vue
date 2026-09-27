@@ -8,11 +8,11 @@
  */
 import { computed } from "vue";
 import { useRoute } from "vue-router";
-import AppHeader from "./layout/AppHeader.vue";
-import PracticeView from "../views/practice/PracticeView.vue";
-import GameView from "../views/game/GameView.vue";
+import AppHeader from "../components/layout/AppHeader.vue";
+import PracticeView from "./practice/PracticeView.vue";
+import GameView from "./game/GameView.vue";
 
-defineOptions({ name: "HomePage" }); // KeepAlive include 需要稳定组件名
+defineOptions({ name: "HomeView" }); // KeepAlive include 需要稳定组件名
 
 const route = useRoute();
 const mode = computed(() => (route.query.mode === "game" ? "game" : "practice"));

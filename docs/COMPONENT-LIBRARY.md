@@ -13,8 +13,13 @@
 |---|---|---|
 | `src/components/layout/` | 全局框架件：顶栏、底栏、全局开关 | `AppHeader`、`HeaderBar`、`BottomNav`、`SoundToggle`、`ThemeToggle` |
 | `src/components/activities/` | 学习玩法（一课内的子玩法/环节） | `LearnView`、`QuizView`、`MatchView`、`SpeakView`、`SongView`、`WordCard`、`Pager`、`LessonFooter` |
-| `src/components/ui/` | 跨页面复用的通用件（按钮、卡片、徽章等） | 见目录现状（`ChestReward`、`CuteBackdrop` 等，逐步把高复用件收进来） |
-| `src/views/` | 页面（路由级），**不放可复用件** | `PracticeView`、`MyView`、`HeroDetailView`… |
+| `src/components/game/` | 游戏闯关模式专属 | `GamePath` |
+| `src/components/lesson/` | 课内流程件（菜单/结算等） | `LessonResult` |
+| `src/components/rewards/` | 奖励反馈（开箱/庆祝） | `ChestReward` |
+| `src/components/treasure/` | 宝藏/英雄图鉴 | `HeroFormCard` |
+| `src/components/report/` | 家长报告图表 | `MasteryTrend` |
+| `src/components/ui/` | 跨页面复用的通用件（按钮、卡片、徽章等） | `AppDialog`、`CuteBackdrop`（逐步把高复用件收进来） |
+| `src/views/` | 页面（路由级），**不放可复用件** | `HomeView`、`MyView`、`HeroDetailView`… |
 
 ## 2. 现有组件清单（先查这里，再决定造不造）
 
@@ -29,7 +34,8 @@
 
 **活动组件（activities）**：`LearnView`(看图学词)、`QuizView`(听音选图)、`MatchView`(图词连线)、`SpeakView`(跟我读)、`SongView`/`SongStage`(童谣)、`TalkView`(亲子对话)、`WordCard`(词卡)、`Pager`(翻页控件)、`LessonFooter`(课内底部栏)。
 
-**其它通用件**：`PathIcon`(路径图标集)、`ShellIcon`(贝壳图标)、`HomePage`(首页)、`GamePath`(闯关地图)、`HeroFormCard`(英雄形态卡)、`ChestReward`(开箱奖励)、`LessonResult`(闯关结算)、`MasteryTrend`(掌握度趋势)、`CuteBackdrop`(背景)。
+**其它通用件**：`PathIcon`(路径图标集)、`ShellIcon`(贝壳图标)、`CuteBackdrop`(背景)。
+**业务域组件**（按目录归位）：`HomeView`(首页壳，views/)、`GamePath`(闯关地图，game/)、`HeroFormCard`(英雄形态卡，treasure/)、`ChestReward`(开箱奖励，rewards/)、`LessonResult`(闯关结算，lesson/)、`MasteryTrend`(掌握度趋势，report/)。
 
 ## 3. 沉淀规则（新组件进库的门槛）
 

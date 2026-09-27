@@ -10,8 +10,8 @@
  */
 import { Star } from "@lucide/vue";
 import { ref } from "vue";
-import PathIcon from "./PathIcon.vue";
-import ChestReward from "./ChestReward.vue";
+import PathIcon from "../PathIcon.vue";
+import ChestReward from "../rewards/ChestReward.vue";
 
 defineProps<{
   mode: "quest" | "free";

@@ -13,7 +13,7 @@
  * - 反馈齐备：CSS 动画 + WebAudio 音效 + 触感震动；不引入额外动画库。
  */
 import { computed, nextTick, onBeforeUnmount, ref } from "vue";
-import PathIcon from "./PathIcon.vue";
+import PathIcon from "../PathIcon.vue";
 import {
   bigCelebrate,
   sfxChestOpen,
@@ -21,11 +21,11 @@ import {
   sfxCollect,
   sfxSticker,
   sfxTap
-} from "../utils/effects";
-import { useRewardsStore } from "../stores/rewards";
-import { parabola } from "../utils/flyCurve";
-import { formById } from "../data/heroes";
-import ShellIcon from "./ShellIcon.vue";
+} from "../../utils/effects";
+import { useRewardsStore } from "../../stores/rewards";
+import { parabola } from "../../utils/flyCurve";
+import { formById } from "../../data/heroes";
+import ShellIcon from "../ShellIcon.vue";
 
 const rewards = useRewardsStore();
 

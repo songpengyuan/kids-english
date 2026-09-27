@@ -15,7 +15,7 @@ import SongView from "../components/activities/SongView.vue";
 import SpeakView from "../components/activities/SpeakView.vue";
 import TalkView from "../components/activities/TalkView.vue";
 import HeaderBar from "../components/layout/HeaderBar.vue";
-import LessonResult from "../components/LessonResult.vue";
+import LessonResult from "../components/lesson/LessonResult.vue";
 import { getLesson } from "../data/lessons";
 import { speak, speakZh } from "../utils/speech";
 import { useProgressStore } from "../stores/progress";

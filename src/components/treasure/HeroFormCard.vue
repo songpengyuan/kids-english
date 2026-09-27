@@ -14,7 +14,7 @@ import { computed, ref } from "vue";
 
 /** 未解锁卡点的时候摇晃一下 */
 const shakeTick = ref(0);
-import ShellIcon from "./ShellIcon.vue";
+import ShellIcon from "../ShellIcon.vue";
 
 export interface AlbumForm {
   id: string;
