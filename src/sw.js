@@ -27,6 +27,9 @@
 
 /* eslint-disable no-restricted-globals */
 const BUILD_ID = "__BUILD_ID__";
+/** 构建时由 vite 插件注入的壳资源清单（assets/*.js|css|woff2，文件名带内容哈希）。
+ *  首次安装即预缓存全部应用代码：装完断网也能打开，不再"必须先在线开一次"。 */
+const PRECACHE_ASSETS = __PRECACHE_ASSETS__;
 const SHELL_CACHE = `kids-app-${BUILD_ID}`;
 const MEDIA_CACHE = "kids-media-v1";
 const NAV_TIMEOUT = 4000;
@@ -55,6 +58,8 @@ self.addEventListener("install", (event) => {
       const cache = await caches.open(SHELL_CACHE);
       await cache.addAll([
         SHELL_URL,
+        // 哈希资源全部预缓存（install 一次性拉完壳：JS/CSS/字体）
+        ...PRECACHE_ASSETS.map((p) => new URL(p, self.registration.scope).href),
         new URL("manifest.webmanifest", self.registration.scope).href,
         new URL("icon-192.png", self.registration.scope).href,
         new URL("icon-512.png", self.registration.scope).href,

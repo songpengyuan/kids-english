@@ -20,11 +20,18 @@ function kidsPwa() {
     config() {
       return { define: { __BUILD_ID__: JSON.stringify(BUILD_ID) } }
     },
-    generateBundle() {
+    generateBundle(_out, bundle) {
+      // 收集构建产出的壳资源（JS/CSS/字体，文件名带内容哈希）：
+      // 注入 sw 预缓存清单 → 首次安装即缓存全部应用代码，断网首开不再白屏。
+      const shellAssets = Object.keys(bundle)
+        .filter((n) => /^assets\/.*\.(js|css|woff2)$/.test(n))
+        .sort()
       this.emitFile({
         type: 'asset',
         fileName: 'sw.js',
-        source: swSource().replaceAll('__BUILD_ID__', BUILD_ID),
+        source: swSource()
+          .replaceAll('__BUILD_ID__', BUILD_ID)
+          .replaceAll('__PRECACHE_ASSETS__', JSON.stringify(shellAssets)),
       })
     },
     configureServer(server) {
@@ -32,7 +39,10 @@ function kidsPwa() {
         if (req.url && req.url.split('?')[0] === '/sw.js') {
           res.setHeader('Content-Type', 'text/javascript')
           res.setHeader('Cache-Control', 'no-store')
-          res.end(swSource().replace('__BUILD_ID__', 'dev-' + BUILD_ID))
+          // dev 下不预缓存任何模块（HMR 资源永远直连）
+          res.end(swSource()
+            .replace('__BUILD_ID__', 'dev-' + BUILD_ID)
+            .replace('__PRECACHE_ASSETS__', '[]'))
           return
         }
         next()

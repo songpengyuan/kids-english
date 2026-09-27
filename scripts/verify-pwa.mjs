@@ -262,7 +262,7 @@ try {
   const stillHeld = await evalJs(`window.__held`);
   check("玩法中不被强制刷新(更新挂起)", stillHeld === "in-lesson", "标记仍在 = 页面没被刷掉");
 
-  await evalJs(`document.querySelector(".topbar .back")?.click()`);
+  await evalJs(`document.querySelector(".hdr-back")?.click()`);
   await sleep(2500);
   await evalJs(PING_FN); // 刷新后上下文已重置，重新注入再 PING
   const afterBack = await evalJs(`(async () => ({ held: window.__held, ping: await window.__swPing() }))()`);
