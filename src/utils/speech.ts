@@ -186,6 +186,7 @@ export async function speak(
   text: string,
   { rate = 0.85, lang = "en-US", lessonId = null, wordId = null, ttsOnly = false }: SpeakOptions = {}
 ): Promise<void> {
+  stopSpeaking(); // 统一打断上一条（mp3/TTS/挂起的延迟发声），保证"点哪读哪"
   if (ttsOnly) {
     await speakWithTTS(text, { rate, lang });
     return;

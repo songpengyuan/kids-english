@@ -101,3 +101,38 @@ describe("speech: speakZh 静音语义", () => {
     expect(cancel).toHaveBeenCalled();
   });
 });
+
+describe("speech: Chrome 竞态（点了 A 却听到 B）回归", () => {
+  beforeEach(() => {
+    cap().length = 0;
+    setSoundOn(true);
+  });
+  afterEach(() => setSoundOn(true));
+
+  it("快速连点：先到的请求作废，最终只有后到的发声", async () => {
+    const pA = speakZh("旧内容");
+    const pB = speakZh("新内容");
+    await Promise.all([pA, pB]);
+    // 等两个 60ms 延迟发声窗口都走完
+    await new Promise((r) => setTimeout(r, 140));
+    expect(cap().filter((x) => x.u.text === "旧内容")).toHaveLength(0);
+    expect(cap().filter((x) => x.u.text === "新内容")).toHaveLength(1);
+  });
+
+  it("stopSpeaking 立即结算挂起的朗读 Promise（不等 12s 超时兜底）", async () => {
+    const p = speakZh("内容");
+    stopSpeaking();
+    const result = await Promise.race([
+      p.then(() => "resolved"),
+      new Promise((r) => setTimeout(() => r("timeout"), 300)),
+    ]);
+    expect(result).toBe("resolved");
+  });
+
+  it("停止后再点：旧内容绝不再补发（延迟窗口被作废）", async () => {
+    speakZh("旧内容");
+    stopSpeaking();
+    await new Promise((r) => setTimeout(r, 100)); // 越过 60ms 延迟窗口
+    expect(cap().filter((x) => x.u.text === "旧内容")).toHaveLength(0);
+  });
+});
