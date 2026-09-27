@@ -20,6 +20,11 @@ export interface QuizSessionHooks<T> {
   onProgress?: (percent: number) => void;
   /** 选错标红停留时长（毫秒） */
   wrongFlashMs?: number;
+  /**
+   * 已答对后再点"其他选项"。
+   * 5 岁孩子答对后常想再点点别的图听发音 —— 只朗读，不改判定、不计错、不推进。
+   */
+  onExplore?: (word: T) => void;
   /** 干扰项来源（默认同 words；复习页传全词库） */
   distractors?: () => T[];
   /** 词的唯一键（默认 id；复习页用 "lessonId:id"，跨课同 id 不串） */
@@ -66,9 +71,17 @@ export function useQuizSession<T extends QuizWord>(
 
   watch(percent, (p) => hooks.onProgress?.(p), { immediate: true });
 
-  function pick(opt: T): "correct" | "wrong" | "ignored" {
+  function pick(opt: T): "correct" | "wrong" | "explore" | "ignored" {
+    if (!q.value) return "ignored";
     const key = keyOf(opt);
-    if (locked.value || wrongPicks.value.has(key) || !q.value) return "ignored";
+    // 已答对：其他选项仍可点 —— 只朗读该词（孩子想再听听别的词），
+    // 不改判定、不计错、不影响星级，也不推进题目
+    if (locked.value) {
+      if (key === keyOf(q.value.target)) return "ignored";
+      hooks.onExplore?.(opt);
+      return "explore";
+    }
+    if (wrongPicks.value.has(key)) return "ignored";
     if (key === keyOf(q.value.target)) {
       picked.value = key;
       const firstTry = !missedThisQuestion.value;

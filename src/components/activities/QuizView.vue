@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from "vue";
 import { speak } from "../../utils/speech";
-import { sfxCorrect, sfxWrong } from "../../utils/effects";
+import { sfxCorrect, sfxTap, sfxWrong } from "../../utils/effects";
 import { useProgressStore } from "../../stores/progress";
 import { useQuizSession } from "../../composables/useQuizSession";
 import type { Word } from "../../data/lessons";
@@ -26,6 +26,12 @@ const session = useQuizSession<Word>(() => props.words, {
   onWrong: (picked) => {
     sfxWrong();
     progress.recordWord(picked.lessonId, picked.id, { wrong: 1 }); // 错词落库 → 复习队列
+  },
+  // 答对后其他选项仍可点：只朗读 + 记一次"点读"，不改判定也不计错
+  onExplore: (w) => {
+    sfxTap();
+    speak(w.en, { lessonId: w.lessonId, wordId: w.id });
+    progress.recordWord(w.lessonId, w.id, { seen: 1 });
   },
 });
 
@@ -71,8 +77,7 @@ onBeforeUnmount(cleanup);
         data-haptic
         :class="{
           right: locked && opt.id === q.target.id,
-          wrong: wrongPicks.has(opt.id),
-          dim: locked && opt.id !== q.target.id
+          wrong: wrongPicks.has(opt.id)
         }"
         @click="pick(opt)"
       >
@@ -200,9 +205,8 @@ onBeforeUnmount(cleanup);
   background: var(--state-bad-bg);
   animation: shake-x 0.45s ease;
 }
-.opt.dim {
-  opacity: 0.45;
-}
+/* 注：答对后不再把其他选项调暗（原来 opacity .45）——
+ * 孩子答对后仍可以点其他图听发音，调暗会让"能点"看起来像"不能点"。 */
 /* 判定后整张卡是统一底色的，标签条不要留一块"补丁" */
 .opt.right .w,
 .opt.wrong .w {

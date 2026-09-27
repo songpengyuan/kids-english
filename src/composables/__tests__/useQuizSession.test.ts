@@ -41,15 +41,30 @@ describe("useQuizSession", () => {
     expect(onWrong).toHaveBeenCalledTimes(1);
   });
 
-  it("答对：锁定并进入反馈态，第二下点其他选项无效", () => {
+  it("答对：锁定并进入反馈态；再点同一个正确项无效", () => {
     const onCorrect = vi.fn();
     const s = useQuizSession(() => words, { onCorrect });
     const target = s.q.value.target;
     expect(s.pick(target)).toBe("correct");
     expect(s.locked.value).toBe(true);
     expect(onCorrect).toHaveBeenCalledWith(target, true);
+    expect(s.pick(target)).toBe("ignored");
+  });
+
+  it("答对后点其他选项：只朗读（onExplore），不改判定、不计错、不推进", () => {
+    const onExplore = vi.fn();
+    const onWrong = vi.fn();
+    const s = useQuizSession(() => words, { onExplore, onWrong });
+    const target = s.q.value.target;
+    s.pick(target);
+    const idxBefore = s.idx.value;
     const other = s.q.value.options.find((o) => o.id !== target.id)!;
-    expect(s.pick(other)).toBe("ignored");
+    expect(s.pick(other)).toBe("explore");
+    expect(onExplore).toHaveBeenCalledWith(other);
+    expect(onWrong).not.toHaveBeenCalled(); // 答对之后的探索不算错
+    expect(s.idx.value).toBe(idxBefore); // 不推进
+    expect(s.firstTryRight.value).toBe(1); // 星级不受影响
+    expect(s.wrongPicks.value.has(other.id)).toBe(false); // 不会标红
   });
 
   it("先错后对：本题不计入首次答对（星级据此打折）", () => {
