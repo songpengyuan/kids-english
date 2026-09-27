@@ -51,12 +51,12 @@ const streak = useStreakStore();
         >
           <ShellIcon />{{ rewards.shells }}
         </button>
-        <!-- 🔥 连击天数（点击进打卡日历） -->
+        <!-- 🔥 连击天数（点击进连击日历） -->
         <button
           class="badge streak-badge"
           :class="{ done: streak.todayDone }"
-          aria-label="打开打卡日历"
-          :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天，点击看打卡日历' : '今日目标：复习 ' + streak.reviewed + '/' + streak.reviewGoal + ' 词 + 新学 ' + streak.newLevels + '/1 关，点击看打卡日历'"
+          aria-label="打开连击日历"
+          :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天，点击看连击日历' : '今日目标：复习 ' + streak.reviewed + '/' + streak.reviewGoal + ' 词 + 新学 ' + streak.newLevels + '/1 关，点击看连击日历'"
           @click="router.push('/streak')"
         >
           <PathIcon name="flame" class="k-ico flame-ico" />{{ streak.streak }}

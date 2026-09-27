@@ -121,9 +121,9 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(errors).toEqual([]);
   });
 
-  it("打卡日历（火焰详情页）", async () => {
+  it("连击日历（火焰详情页）", async () => {
     const w = await mountPage(StreakView, "/streak");
-    expect(w.text()).toContain("打卡日历");
+    expect(w.text()).toContain("连击日历");
     expect(w.text()).toContain("天连击");
     expect(w.text()).toContain("本月已打卡");
     expect(errors).toEqual([]);

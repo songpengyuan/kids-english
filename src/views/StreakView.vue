@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 火焰详情页（/streak）——打卡日历：
+ * 火焰详情页（/streak）——连击日历：
  * - 顶部状态卡：当前连击天数 + 今日目标达成情况
  * - 日历：按月展示，已打卡（达标）橙底 ✓、今天进行中半色、无记录留空
  * - 打卡口径与火焰徽章一致：完成今日目标（复习够到期词 + 新学 1 关）就算打卡
@@ -11,6 +11,7 @@ import { useRouter } from "vue-router";
 import { useStreakStore } from "../stores/streak";
 import HeaderBar from "../components/layout/HeaderBar.vue";
 import PathIcon from "../components/PathIcon.vue";
+import { CheckCircle2 } from "@lucide/vue";
 import { speakZh } from "../utils/speech";
 
 const streak = useStreakStore();
@@ -127,7 +128,14 @@ function dayNum(date: string | null): string {
     <HeaderBar show-back back-label="返回" @back="goBack">
       <template #title>
         <PathIcon name="flame" class="hdr-flame" />
-        <span>打卡日历</span>
+        <span>连击日历</span>
+      </template>
+      <template #right>
+        <span class="today-badge" :class="{ done: streak.todayDone }">
+          <CheckCircle2 v-if="streak.todayDone" class="k-ico tb-ico" />
+          <span v-else class="tb-dot" aria-hidden="true"></span>
+          {{ todayDoneText }}
+        </span>
       </template>
     </HeaderBar>
 
@@ -201,6 +209,34 @@ function dayNum(date: string | null): string {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: var(--pad-y);
+}
+.today-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: var(--radius-s);
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft);
+  white-space: nowrap;
+}
+.today-badge.done {
+  background: linear-gradient(160deg, #ff9f43, #ff6b3d);
+  color: #fff;
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18);
+}
+.tb-ico {
+  color: #fff;
+}
+.tb-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 0 3px rgba(28, 176, 246, 0.25);
 }
 .hdr-flame {
   color: #ff6b3d;
