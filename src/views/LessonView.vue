@@ -16,6 +16,7 @@ import SpeakView from "../components/activities/SpeakView.vue";
 import TalkView from "../components/activities/TalkView.vue";
 import HeaderBar from "../components/layout/HeaderBar.vue";
 import LessonResult from "../components/lesson/LessonResult.vue";
+import LessonMenu from "../components/lesson/LessonMenu.vue";
 import { getLesson } from "../data/lessons";
 import { speak, speakZh } from "../services/speech";
 import { useProgressStore } from "../stores/progress";
@@ -108,6 +109,11 @@ const {
   goNextLevel
 } = flow;
 
+/** 菜单数据：玩法 + 已获星徽章（星数来自进度，注入后交给 LessonMenu 纯渲染） */
+const menuActs = computed(() =>
+  activities.value.map((a) => ({ ...a, stars: showStars(a.key) }))
+);
+
 /** 点击玩法卡片：读中文玩法名 + 进入玩法 */
 function openSound(a: (typeof activities.value)[number]) {
   speakZh(a.name);
@@ -159,28 +165,15 @@ const playPct = ref(0);
       </template>
     </HeaderBar>
 
-    <!-- 课时菜单（闯关模式无菜单，直接开玩） -->
-    <div v-if="stage === 'menu' && !questMode" class="menu view-body">
-      <!-- 顶栏已显示课程名（emoji+标题），不再放大封面卡；进度条 + 玩法卡直接呈现 -->
-      <div class="bar"><div class="bar-fill" :style="{ width: lessonProgress + '%' }"></div></div>
-      <div class="acts" ref="actsEl" :style="actsStyle">
-        <button
-          v-for="(a, i) in activities"
-          :key="a.key"
-          class="act anim-fade-up"
-          :class="'tone-' + a.tone"
-          :style="{ animationDelay: i * 0.08 + 's' }"
-          @click="openSound(a)"
-        >
-          <component :is="a.icon" class="k-ico ico" />
-          <span class="nm">{{ a.name }}</span>
-          <span class="ds">{{ a.desc }}</span>
-          <span v-if="showStars(a.key)" class="mini-stars">
-            <Star class="k-ico star-fill" />{{ showStars(a.key) }}
-          </span>
-        </button>
-      </div>
-    </div>
+    <!-- 课时菜单（闯关模式无菜单，直接开玩；渲染在 LessonMenu） -->
+    <LessonMenu
+      v-if="stage === 'menu' && !questMode"
+      :activities="menuActs"
+      :acts-style="actsStyle"
+      :acts-el="actsEl"
+      :progress="lessonProgress"
+      @open="openSound"
+    />
 
     <!-- 各玩法 -->
     <component
@@ -224,239 +217,6 @@ const playPct = ref(0);
 .hdr-title-tap:active {
   background: rgba(127, 127, 127, 0.14);
 }
-.menu {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--gap-s);
-}
-
-.bar {
-  width: 100%;
-  height: clamp(6px, 1.2vh, 14px);
-  background: var(--line);
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-  flex: none;
-}
-.bar-fill {
-  height: 100%;
-  background: var(--green);
-  transition: width 0.5s;
-}
-
-/* 剩余空间全部给卡片网格，列数由 JS 按可用尺寸算出 */
-.acts {
-  display: grid;
-  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
-  gap: var(--grid-gap, 12px);
-  width: 100%;
-  flex: 1;
-  min-height: 0;
-}
-/* 底色 / 立体投影 / 文字色由 .tone-* 统一注入（见 base.css），这里只管排布 */
-.act {
-  position: relative;
-  border-radius: var(--radius);
-  padding: var(--gap-xs) 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  transition: transform 0.08s;
-  min-height: 0;
-  min-width: 0;
-  overflow: hidden;
-}
-.act .ico {
-  font-size: var(--fs-emoji-l);
-}
-.act .nm {
-  font-size: clamp(14px, min(2.5vh, 2vw), 22px);
-  font-weight: 800;
-  white-space: nowrap;
-}
-.act .ds {
-  font-size: clamp(10px, min(1.6vh, 1.3vw), 14px);
-  opacity: 0.92;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-.mini-stars {
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  background: var(--overlay);
-  color: var(--gold);
-  border-radius: var(--radius-pill);
-  padding: 2px 8px;
-  font-size: clamp(10px, 1.7vh, 14px);
-  font-weight: 800;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-
-/* 桌面鼠标 hover：玩法卡轻微上浮 */
-@media (hover: hover) and (pointer: fine) {
-  .act:hover {
-    transform: translateY(-2px) scale(1.02);
-    filter: brightness(1.04);
-  }
-}
-
-/* 卡片太矮时，副标题会成为负担，藏掉换取主标题和图标的空间 */
-@media (max-height: 620px) {
-  .act .ds {
-    display: none;
-  }
-}
-
-.result {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--gap-m);
-  overflow-y: auto; /* 加入宝箱后内容变多：矮屏/横屏时可滚动，不压破布局 */
-  -webkit-overflow-scrolling: touch;
-}
-.result h2 {
-  margin: 0;
-  font-size: var(--fs-title);
-  text-align: center;
-}
-
-/* ---------- 闯关模式 ---------- */
-/* 关卡卡（多邻国式开始仪式） */
-.quest-start {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-.qs-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--gap-s);
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-hard);
-  padding: var(--gap-l) var(--gap-m);
-  max-width: min(420px, 100%);
-  border-top: 6px solid var(--gold);
-}
-/* 宽屏档：闯关开始卡更宽 */
-@media (min-width: 768px) {
-  .qs-card {
-    max-width: min(560px, 100%);
-  }
-}
-.qs-level {
-  font-weight: 800;
-  font-size: var(--fs-small);
-  color: var(--gold);
-  background: #fff3cd;
-  border-radius: var(--radius-pill);
-  padding: 4px var(--gap-m);
-}
-.qs-emoji {
-  font-size: var(--fs-emoji-xl);
-  line-height: 1;
-}
-.qs-title {
-  margin: 0;
-  font-weight: 800;
-  font-size: var(--fs-title);
-  color: var(--ink);
-}
-.qs-sub {
-  margin: 0;
-  font-weight: 700;
-  font-size: var(--fs-small);
-  color: var(--ink-soft);
-}
-.qs-steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 6px;
-  width: 100%;
-  margin: var(--gap-s) 0;
-}
-.qs-step {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 800;
-  font-size: 13px;
-  color: var(--ink);
-  background: var(--bg);
-  border-radius: var(--radius-pill);
-  padding: 5px 10px;
-}
-.qs-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex: none;
-}
-.qs-goal {
-  margin: 0;
-  font-weight: 800;
-  font-size: var(--fs-small);
-  color: var(--green-dark);
-}
-.qs-card .k-btn.big {
-  padding: clamp(10px, 2vh, 14px) clamp(28px, 4vw, 44px);
-  font-size: var(--fs-body);
-  border-radius: var(--radius-pill);
-}
-
-/* 单步结算：步数徽章 + 本关累计星 */
-.quest-step-badge {
-  font-weight: 800;
-  font-size: var(--fs-small);
-  color: var(--gold);
-  background: var(--card-bg);
-  border-radius: var(--radius-pill);
-  padding: 4px var(--gap-m);
-  box-shadow: var(--shadow-hard);
-}
-.result h2 .total-stars {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--gold);
-  vertical-align: baseline;
-}
-.quest-progress {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-s);
-  width: min(300px, 80%);
-  font-weight: 800;
-  font-size: var(--fs-small);
-  color: var(--ink-soft);
-}
-.qp-bar {
-  flex: 1;
-  height: 10px;
-  background: var(--line);
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-}
-.qp-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--gold), var(--yellow));
-  border-radius: var(--radius-pill);
-  transition: width 0.5s;
-}
-
 /* 顶栏进度条（听音选词）：细条紧跟 ✕（多邻国式） */
 .hdr-progress {
   flex: 1;
