@@ -111,15 +111,17 @@ const grainStyle = { "--grain": GRAIN };
   pointer-events: none;
   overflow: hidden;
   /* 水彩晕染：5 团品牌色斑（蓝/粉/紫/绿/橙）+ 顶部白光 + 暖纸底（向下微微加深）。
-   * 色斑位置错落、半径不均，像水彩在纸上晕开。顺序：先写的在上层 */
+   * 色斑位置错落、半径不均，像水彩在纸上晕开。顺序：先写的在上层。
+   * ⚠️ 全部用固定 rgba（不用 color-mix(var(--token))：scoped 样式下会被浏览器解析丢弃，
+   *    导致整条 background-image 变 none —— 背景就只剩纯色）。 */
   background-image:
-    radial-gradient(58% 40% at 6% 4%, color-mix(in srgb, var(--blue) 16%, transparent), transparent 68%),
-    radial-gradient(46% 36% at 92% 8%, color-mix(in srgb, var(--pink) 13%, transparent), transparent 70%),
-    radial-gradient(52% 42% at 88% 46%, color-mix(in srgb, var(--purple) 11%, transparent), transparent 72%),
-    radial-gradient(48% 40% at 12% 58%, color-mix(in srgb, var(--green) 12%, transparent), transparent 70%),
-    radial-gradient(42% 34% at 54% 96%, color-mix(in srgb, var(--orange) 10%, transparent), transparent 72%),
-    radial-gradient(60% 26% at 50% -6%, color-mix(in srgb, #fff 40%, transparent), transparent 70%),
-    linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 92%, #6a5a3a) 100%);
+    radial-gradient(58% 40% at 6% 4%, rgba(28, 176, 246, 0.16), transparent 68%),
+    radial-gradient(46% 36% at 92% 8%, rgba(255, 99, 132, 0.13), transparent 70%),
+    radial-gradient(52% 42% at 88% 46%, rgba(160, 120, 255, 0.13), transparent 72%),
+    radial-gradient(48% 40% at 12% 58%, rgba(88, 214, 141, 0.12), transparent 70%),
+    radial-gradient(42% 34% at 54% 96%, rgba(255, 178, 54, 0.13), transparent 72%),
+    radial-gradient(60% 26% at 50% -6%, rgba(255, 255, 255, 0.45), transparent 70%),
+    linear-gradient(180deg, transparent 0%, rgba(120, 88, 42, 0.07) 100%);
   background-color: var(--bg); /* 渐变兜底（老浏览器/极端 DPR） */
 }
 /* 细颗粒：在打底之上、云朵/星星之下（负 z-index 子层 = 父背景之上、其余内容之下） */
@@ -190,9 +192,9 @@ const grainStyle = { "--grain": GRAIN };
   width: clamp(70px, 16vw, 150px);
   height: clamp(24px, 5.4vw, 48px);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--card-bg) 72%, transparent);
+  background: rgba(255, 255, 255, 0.62);
   box-shadow:
-    calc(var(--w, 26px)) calc(var(--h, -12px)) 0 -4px color-mix(in srgb, var(--card-bg) 72%, transparent);
+    calc(var(--w, 26px)) calc(var(--h, -12px)) 0 -4px rgba(255, 255, 255, 0.62);
   animation: cloud-drift ease-in-out infinite alternate;
 }
 .cloud.c1 { --w: 26px; --h: -12px; top: 7%; left: 8%; animation-duration: 17s; }
@@ -206,7 +208,7 @@ const grainStyle = { "--grain": GRAIN };
   position: absolute;
   width: clamp(13px, 2.2vw, 22px);
   height: clamp(13px, 2.2vw, 22px);
-  color: var(--progress-hi);
+  color: rgba(255, 214, 110, 0.9);
   opacity: 0.5;
   scale: var(--s, 1);
   animation: twinkle 3.6s ease-in-out infinite;
@@ -221,7 +223,7 @@ const grainStyle = { "--grain": GRAIN };
   width: var(--s, 9px);
   height: var(--s, 9px);
   border-radius: 50%;
-  background: color-mix(in srgb, var(--purple) 26%, transparent);
+  background: rgba(160, 120, 255, 0.28);
   animation: bob 5.2s ease-in-out infinite;
   animation-delay: var(--d, 0s);
 }
@@ -238,13 +240,13 @@ const grainStyle = { "--grain": GRAIN };
 /* 水彩版：底色更沉、色斑降饱和压深（深底上低不透明度看不见）、颗粒略强（深色更容易显脏） */
 :root[data-theme="dark"] .backdrop {
   background-image:
-    radial-gradient(58% 40% at 6% 4%, color-mix(in srgb, var(--blue) 13%, transparent), transparent 68%),
-    radial-gradient(46% 36% at 92% 8%, color-mix(in srgb, var(--pink) 10%, transparent), transparent 70%),
-    radial-gradient(52% 42% at 88% 46%, color-mix(in srgb, var(--purple) 13%, transparent), transparent 72%),
-    radial-gradient(48% 40% at 12% 58%, color-mix(in srgb, var(--green) 10%, transparent), transparent 70%),
-    radial-gradient(42% 34% at 54% 96%, color-mix(in srgb, var(--orange) 9%, transparent), transparent 72%),
-    radial-gradient(60% 26% at 50% -6%, color-mix(in srgb, var(--blue) 12%, transparent), transparent 70%),
-    linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 86%, #000) 100%);
+    radial-gradient(58% 40% at 6% 4%, rgba(28, 176, 246, 0.13), transparent 68%),
+    radial-gradient(46% 36% at 92% 8%, rgba(255, 99, 132, 0.10), transparent 70%),
+    radial-gradient(52% 42% at 88% 46%, rgba(160, 120, 255, 0.14), transparent 72%),
+    radial-gradient(48% 40% at 12% 58%, rgba(88, 214, 141, 0.10), transparent 70%),
+    radial-gradient(42% 34% at 54% 96%, rgba(255, 178, 54, 0.10), transparent 72%),
+    radial-gradient(60% 26% at 50% -6%, rgba(28, 176, 246, 0.10), transparent 70%),
+    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.12) 100%);
 }
 :root[data-theme="dark"] .backdrop::after {
   opacity: 0.07;
@@ -262,9 +264,14 @@ const grainStyle = { "--grain": GRAIN };
   box-shadow: 0 0 30px 10px rgba(190, 210, 255, 0.4);
 }
 :root[data-theme="dark"] .backdrop.sky .cloud {
-  background: rgba(206, 219, 246, 0.22);
+  background: rgba(206, 219, 246, 0.24);
   box-shadow:
-    calc(var(--w, 26px)) calc(var(--h, -12px)) 0 -4px rgba(206, 219, 246, 0.22);
+    calc(var(--w, 26px)) calc(var(--h, -12px)) 0 -4px rgba(206, 219, 246, 0.24);
+}
+:root[data-theme="dark"] .backdrop .cloud {
+  background: rgba(150, 160, 190, 0.20);
+  box-shadow:
+    calc(var(--w, 26px)) calc(var(--h, -12px)) 0 -4px rgba(150, 160, 190, 0.20);
 }
 :root[data-theme="dark"] .backdrop.sky .deco-star {
   color: rgba(255, 255, 255, 0.95);
