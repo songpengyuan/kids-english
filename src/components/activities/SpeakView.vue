@@ -348,8 +348,8 @@ onBeforeUnmount(() => {
 }
 .pic {
   /* 同时受高和宽约束：iPad 横屏不至于过大，手机竖屏也不会占满整屏 */
-  width: clamp(72px, min(23vh, 17vw), 170px);
-  height: clamp(72px, min(23vh, 17vw), 170px);
+  width: clamp(88px, min(32vh, 24vw), 240px);
+  height: clamp(88px, min(32vh, 24vw), 240px);
   flex: none;
   background: var(--card-bg);
   border-radius: var(--radius);
@@ -382,7 +382,7 @@ onBeforeUnmount(() => {
   max-width: 100%;
 }
 .word {
-  font-size: clamp(20px, min(4.4vh, 3.6vw), 34px);
+  font-size: clamp(24px, min(5vh, 4.2vw), 42px);
   background: none;
   font-weight: 800;
   color: var(--ink);
@@ -407,10 +407,13 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: var(--gap-xs);
   flex: none;
+  /* 录音按钮靠下：贴近屏幕底部，孩子拇指好按（图片/单词在上部可更大） */
+  margin-top: auto;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 .mic {
-  width: clamp(64px, min(15vh, 11vw), 110px);
-  height: clamp(64px, min(15vh, 11vw), 110px);
+  width: clamp(72px, min(17vh, 12vw), 124px);
+  height: clamp(72px, min(17vh, 12vw), 124px);
   flex: none;
   border-radius: 50%;
   font-size: clamp(26px, min(6vh, 4.6vw), 46px);
@@ -489,6 +492,7 @@ onBeforeUnmount(() => {
 }
 
 .feedback {
+  margin-top: auto;
   width: 100%;
   max-width: 500px;
   flex: none;
