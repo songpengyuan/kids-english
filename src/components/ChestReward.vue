@@ -38,6 +38,9 @@ const phase = ref("closed");
 const reward = ref(null); // { shells, formId, isNew }
 /** 本次掉落的形态（角色名 + 图片）；没掉到形态就是 null */
 const wonForm = computed(() => (reward.value?.formId ? formById(reward.value.formId) : null));
+/** 定制 png 加载失败 → 回退内置原创占位图 */
+const wonImgFailed = ref(false);
+const wonImg = computed(() => (wonImgFailed.value ? wonForm.value?.fallback : wonForm.value?.image));
 /** 顶部徽标当前显示数（收取动画前 = 入账前旧值，收取时逐个 +1 到新值） */
 const shown = ref(0);
 /** 徽标脉冲重触发计数 */
@@ -246,7 +249,7 @@ const cap = computed(() => {
       <!-- 掉到形态：新形态单独高光展示（图片 + 角色·形态名） -->
       <div v-if="wonForm" class="won anim-pop" :style="{ '--tone': wonForm.color }">
         <span class="won-tag">{{ reward.isNew ? "新形态！" : "升星！" }}</span>
-        <img class="won-img" :src="wonForm.fallback" :alt="wonForm.heroName + wonForm.name" />
+        <img class="won-img" :src="wonImg" :alt="wonForm.heroName + wonForm.name" @error="wonImgFailed = true" />
         <p class="won-name">{{ wonForm.heroName }} · {{ wonForm.name }}</p>
         <p class="won-en">{{ wonForm.heroEn }}, {{ wonForm.en }}</p>
       </div>

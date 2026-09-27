@@ -56,7 +56,7 @@ function toCard(f: (typeof ALL_FORMS)[number]): AlbumForm {
     rarityLabel: RARITY_INFO[f.rarity].label,
     color: f.color,
     price,
-    image: `/heroes/${f.id}.png`,
+    image: f.image,
     fallback: f.fallback,
     owned: rewards.isOwned(f.id),
     stars: rewards.starsOf(f.id),

@@ -1,10 +1,10 @@
 <script setup>
 /**
  * 底部导航（App 风格常驻三入口）：
- *   🎯 自由（自由练习课程列表） / 🎮 游戏（闯关路径图） / 👤 我的（个人中心）
+ *   📖 学习（学习练习课程列表） / 🗺️ 游戏（闯关路径图） / 👤 我的（个人中心）
  *
- * - 自由/游戏是首页（/）内的两种浏览模式，用 query ?mode=game 区分：
- *   自由 = 不带 query，游戏 = ?mode=game。URL 保持干净（#/）。
+ * - 学习/游戏是首页（/）内的两种浏览模式，用 query ?mode=game 区分：
+ *   学习 = 不带 query，游戏 = ?mode=game。URL 保持干净（#/）。
  * - 我的 tab 高亮覆盖其子页：/me、/treasure、/report、/review。
  * - 玩法页（/lesson/:id）不渲染本组件（沉浸学习，见 App.vue）。
  */
@@ -39,13 +39,13 @@ function goMe() {
   <nav class="bottom-nav" role="tablist" aria-label="主导航">
     <button
       role="tab"
-      aria-label="自由练习"
+      aria-label="学习"
       :aria-selected="isHome && !isGame"
       :class="{ on: isHome && !isGame }"
       @click="goPractice"
     >
       <span class="bn-ico"><PathIcon name="free" /></span>
-      <span class="bn-cap">自由</span>
+      <span class="bn-cap">学习</span>
     </button>
     <button role="tab" aria-label="游戏闯关" :aria-selected="isGame" :class="{ on: isGame }" @click="goGame">
       <span class="bn-ico"><PathIcon name="game" /></span>
@@ -89,6 +89,11 @@ function goMe() {
   font-size: 12px;
   color: var(--ink-faint);
   transition: background 0.2s, color 0.2s, transform 0.1s;
+  /* 移动端：消除轻滑误判成滚动/双击缩放导致的 click 丢失（"有时点不过去"） */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .bottom-nav button:active {
   transform: translateY(1px);

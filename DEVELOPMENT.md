@@ -1109,3 +1109,8 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
   2. `ChestReward` 的 ✕ **所有阶段都显示**（含 collected）—— 即便父级没接 `@done`，用户也永远有出口。
 - 验收：无头 Chrome 走「自由练习 → 学单词 → 结算页 → 开箱 → 收取」，收取后 `chestStillMounted=false`、结算页仍在；
   修复前该状态会一直停在"宝石飞向宝藏罐/已收进宝藏罐"。
+### 13.29 底部导航"自由"改"学习"+ 书本图标 + 移动端点击加固（2026-09-27）
+
+- 底部导航第一个 tab：标签"自由"→"学习"（aria-label 同步），图标由靶心改为书本（闭合，lucide Book 语义，与学单词玩法"打开的书"区分）。
+- 移动端点击加固：BottomNav 按钮加 touch-action: manipulation / tap-highlight 透明 / user-select none，消除轻滑被当成滚动、双击缩放导致 click 丢失（"手机上有时点不过去"）。
+- 确认：开宝箱关闭按钮已在 805323b 提供（chest-close 左上角 ✕，z70 > 遮罩 z60；未开箱关闭＝奖励照常入账，已开箱直接收起）。
