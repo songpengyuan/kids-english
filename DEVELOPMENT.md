@@ -952,6 +952,29 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 
 **教训（写进铁律）**：**删改 store 的对外字段时，必须跑一遍页面冒烟**；
 新写的页面组件默认 `lang="ts"`，JS 模式的 SFC 等于游离在类型检查之外。
+
+### 13.37 英雄素材获取脚本 `scripts/fetch-hero-art.py`（2026-09-27）
+
+用户要求"帮忙把 81 张角色图下载归位"，同时坚持私人使用。交付方式：**给工具、不给素材**。
+
+- **三种取图方式**（可混用，按 id 去重）：
+  1. `--auto`：Fandom MediaWiki API（`list=search` 找页面 → `prop=pageimages&piprop=original` 取主图，
+     主图不合适时用 `action=parse&prop=images` 按形态关键词打分兜底）；
+  2. `--urls urls.txt`：每行 `formId URL`（浏览器复制的直链）；
+  3. `--from-dir DIR [--map map.txt]`：本地已下载图片（无映射表时按"文件名含 formId"自动匹配）。
+- **规整**：`sips -s format png --resampleHeightWidthMax 512` —— 转 PNG、保留透明通道、超长边压到 512px
+  （卡片最大显示 ~88px，512 足够；保持长宽比，卡片本身就是 `object-fit: contain`）。
+- **避免整批卡死**：显式给了清单（urls/from-dir）时**只处理清单里的 id**，不再顺手联网搜剩下的；
+  自动模式连续 3 次网络失败即熔断并提示改用清单方式；单 id 超时 15s。
+- **可复核**：输出 `public/heroes/fetch-report.tsv`（id / 来源 / 尺寸 / 状态），自动匹配会有误命中（logo/剪影），
+  所以报告是给人工过一遍用的。
+- **版权与分发边界**：脚本只做"下载 + 归位"，素材由使用者自行获取与承担；
+  `.gitignore` 已加 `public/heroes/*.png` —— 下载的图片默认**不进公开仓库**，
+  想让线上也显示，要么删掉那行自行提交，要么把图片放自己的图床、`heroes.ts` 里改 https 绝对地址
+  （`asset()` 对 http(s) 链接原样返回）。
+- **实测**（本机网络当前拦截 fandom/wikimedia，只有 github/npm 通）：
+  本地归位链路跑通（同一张测试图 → `tiga-multi.png` 439×512 PNG + 报告）；
+  自动模式按预期降级：打印"连不上图片源"提示 + 三种替代方案，不静默失败。
 ### 13.31 关卡按钮改椭圆（参考图的透视圆柱）+ 进度环呼吸微动画（2026-09-27）
 
 **用户反馈**：参考图里的按钮**并不是正圆**（是俯视透视的圆柱：横向略宽、纵向略扁），另外关卡周围的进度环希望有轻微的大小动画。

@@ -129,6 +129,19 @@ public/lessons/
   （缺图时用项目自带的**原创**占位形象 `public/heroes/<形态id>.svg`，不用改代码）。
   形态 id 与角色名/英文名都在 `src/data/heroes.ts`。
   ⚠️ 仓库内的形象全部是原创占位图；真实角色图片由使用者自行放入并仅供家庭内部使用。
+  取图/归位可以用现成脚本（自己跑，脚本不会替你分发素材）：
+
+  ```bash
+  python3 scripts/fetch-hero-art.py --auto --limit 5     # 联网自动搜图，先试 5 张看质量
+  python3 scripts/fetch-hero-art.py --auto               # 全量（81 个形态）
+  python3 scripts/fetch-hero-art.py --urls urls.txt      # 用浏览器复制的图片直链
+  python3 scripts/fetch-hero-art.py --from-dir ~/Downloads/ultraman --map map.txt
+  python3 scripts/fetch-hero-art.py --check              # 只看还缺哪些
+  ```
+
+  脚本会转 PNG、保留透明通道、最长边压到 512px，并输出 `public/heroes/fetch-report.tsv` 供逐张复核。
+  `public/heroes/*.png` **默认已在 .gitignore**（图片只在你本机，不进公开仓库）；要让线上也显示，
+  删掉 .gitignore 里那一行并自行 `git add`，或把图片放自己的图床再把 `heroes.ts` 里的路径改成 https 绝对地址。
 
 ## 离线与更新（PWA）
 

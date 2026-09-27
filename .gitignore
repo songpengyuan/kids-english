@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 _tmp_*
+
+# 英雄图鉴的真实角色图片：本地私有素材，默认不进公开仓库（见 scripts/fetch-hero-art.py）。
+# 若你确认要随仓库分发，删掉下面这行再 git add。
+public/heroes/*.png
