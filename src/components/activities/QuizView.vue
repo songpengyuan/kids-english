@@ -47,7 +47,15 @@ function onPick(opt: Word) {
     return;
   }
   if (wrongPicks.value.has(opt.id)) return;
-  selectedKey.value = selectedKey.value === opt.id ? null : opt.id;
+  // 再次点同一个 = 取消选中，不发音
+  if (selectedKey.value === opt.id) {
+    selectedKey.value = null;
+    return;
+  }
+  // 选中新选项：蓝色高亮 + 朗读这个单词
+  selectedKey.value = opt.id;
+  sfxTap();
+  speak(opt.en, { lessonId: opt.lessonId, wordId: opt.id });
 }
 
 function check() {
