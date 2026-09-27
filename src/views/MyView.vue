@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 我的（/me）——个人中心，儿童友好的"成就汇总 + 功能入口"页：
- * - 身份卡：吉祥物 + 总星星 + 连击（火焰可点击进打卡日历）
+ * - 身份卡：吉祥物 + 总星星 + 连击（火焰可点击进连击日历）
  * - 今日目标：复习 N 个到期词 + 新学 1 关（进度条 + 明细）
  * - 统计（去重后只留顶栏/身份卡没有的信息）：英雄图鉴 / 今日时长 / 今日玩法
  * - 入口：宝藏罐（带贝壳+图鉴数）/ 家长报告 / 到期复习（子页高亮"我的"tab，见 BottomNav）
@@ -99,21 +99,25 @@ function sayEntry(name: string, path: string) {
     <div class="me-body view-body">
       <!-- 设置（顶部一行）：声音 + 暗黑模式，随时可切 -->
       <section class="settings anim-fade-up">
-        <span class="set-cap" @click="sayCell('声音', '静音只关音效与提示语，单词发音保留')"><PathIcon name="me" class="set-ico" />声音</span>
-        <SoundToggle />
+        <div class="set-group">
+          <span class="set-cap" @click="sayCell('声音', '静音只关音效与提示语，单词发音保留')"><PathIcon name="me" class="set-ico" />声音</span>
+          <SoundToggle />
+        </div>
         <span class="sep"></span>
-        <span class="set-cap" @click="sayCell('暗黑模式', '切换亮色与暗色主题')">暗黑模式</span>
-        <ThemeToggle />
+        <div class="set-group">
+          <span class="set-cap" @click="sayCell('暗黑模式', '切换亮色与暗色主题')">暗黑模式</span>
+          <ThemeToggle />
+        </div>
       </section>
 
-      <!-- 身份卡：⭐ 总星星展示；🔥 连击可点击 → 打卡日历（子页，见 BottomNav） -->
+      <!-- 身份卡：⭐ 总星星展示；🔥 连击可点击 → 连击日历（子页，见 BottomNav） -->
       <section class="profile card anim-pop" @click="sayProfile">
         <span class="pf-emoji">🦊</span>
         <div class="pf-info">
           <p class="pf-name">丞丞的学习小屋</p>
           <p class="pf-sub">
             <span class="pf-star"><Star class="k-ico star-fill" />{{ progress.totalStars }} 颗星</span>
-            <button class="pf-flame" aria-label="打开打卡日历" @click.stop="sayEntry('打卡日历', '/streak')">
+            <button class="pf-flame" aria-label="打开连击日历" @click.stop="sayEntry('连击日历', '/streak')">
               <Flame class="k-ico flame" />{{ streak.streak }} 天连击
             </button>
           </p>
@@ -172,13 +176,6 @@ function sayEntry(name: string, path: string) {
           <span class="en-desc" v-else>今天没有到期的词</span>
           <ChevronRight class="k-ico en-arrow" />
         </button>
-      </section>
-
-      <section class="settings">
-        <span class="set-cap" @click="sayCell('静音设置', '只关音效与提示语，单词发音保留')"><PathIcon name="me" class="set-ico" />静音（只关音效与提示语，单词发音保留）</span>
-        <SoundToggle />
-        <span class="set-cap" @click="sayCell('暗黑模式', '切换亮色与暗色主题')">暗黑模式</span>
-        <ThemeToggle />
       </section>
 
       <p class="foot" @click="sayCell('数据说明', '只保存在这台设备上，不会上传')">数据只保存在这台设备上，不会上传。{{ soundOn ? "" : "（已静音）" }}</p>
@@ -244,7 +241,7 @@ function sayEntry(name: string, path: string) {
   color: var(--ink-faint);
 }
 
-/* 设置行 */
+/* 设置行（顶部）：左"声音"右"暗黑模式"，中间竖线分隔 */
 .settings {
   width: 100%;
   display: flex;
@@ -255,6 +252,19 @@ function sayEntry(name: string, path: string) {
   border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
   padding: var(--gap-s) var(--gap-m);
+}
+.set-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.sep {
+  width: 2px;
+  align-self: stretch;
+  background: var(--line);
+  border-radius: 2px;
+  flex: none;
 }
 .set-cap {
   display: inline-flex;
