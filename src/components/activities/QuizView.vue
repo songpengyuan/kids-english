@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from "vue";
 import { speak } from "../../utils/speech";
 import { sfxCorrect, sfxWrong, celebrate } from "../../utils/effects";
 import { useProgressStore } from "../../stores/progress";
-import { Volume2 } from "@lucide/vue";
+import { CheckCircle2, ChevronRight, Volume2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
 const emit = defineEmits(["done"]);
@@ -56,7 +56,7 @@ const pick = (opt) => {
     celebrate();
     // 单词掌握度：答对记一次正确（此前在该题答错已各记一次错误）
     progress.recordWord(opt.lessonId, opt.id, { correct: 1 });
-    setTimeout(next, 1300);
+    // 不自动跳：底部出现"继续"按钮，由小朋友自己决定进下一题（多邻国式）
   } else {
     // 答错：只把这一项标红，不显示正确答案、不自动读答案、不前进；
     // 孩子可以继续点其他选项，直到选对才进入下一题
@@ -119,10 +119,18 @@ const scoreStars = computed(() => {
       </div>
     </div>
 
-    <p v-if="locked" class="praise anim-pop">太棒了！</p>
-    <p v-else-if="wrongPicks.size" class="oh anim-pop">再听一次哦～</p>
-    <!-- 占位：忙时用透明文本撑住高度，避免答题后整页上下跳动 -->
-    <p v-else class="praise placeholder" aria-hidden="true">占位</p>
+    <!-- 判定反馈区（多邻国式：答对 → 绿色反馈条 + 继续按钮；答错 → 仅提示重听，无继续） -->
+    <div class="judge-zone">
+      <p v-if="locked" class="praise anim-pop">
+        <CheckCircle2 class="k-ico" />太棒了！
+      </p>
+      <p v-else-if="wrongPicks.size" class="oh anim-pop">再听一次哦～</p>
+      <!-- 占位：忙时用透明文本撑住高度，避免答题后整页上下跳动 -->
+      <p v-else class="praise placeholder" aria-hidden="true">占位</p>
+      <button v-if="locked" class="continue-btn anim-pop" @click="next">
+        继续<ChevronRight class="k-ico" />
+      </button>
+    </div>
   </div>
 </template>
 
@@ -245,6 +253,56 @@ const scoreStars = computed(() => {
 }
 .placeholder {
   visibility: hidden;
+}
+/* 判定反馈区：推到底部（小朋友拇指区域），内含反馈条 + 继续按钮 */
+.judge-zone {
+  margin-top: auto;
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-s);
+  padding: 0 var(--gap-m) max(12px, env(safe-area-inset-bottom));
+  flex: none;
+}
+/* 答对反馈条（多邻国式绿色条） */
+.praise {
+  margin: 0;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: var(--fs-btn);
+  color: var(--on-tone);
+  background: var(--green);
+  padding: clamp(12px, 2.2vh, 18px);
+  border-radius: var(--radius-s);
+  box-shadow: 0 3px 0 var(--green-dark);
+  text-align: center;
+}
+/* 继续按钮（多邻国式绿色大按钮） */
+.continue-btn {
+  width: 100%;
+  min-height: calc(var(--tap-min) + 12px);
+  font-size: var(--fs-btn);
+  font-weight: 800;
+  color: var(--on-tone);
+  background: var(--green);
+  border: none;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 var(--press) 0 var(--green-dark);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform var(--dur-fast), box-shadow var(--dur-fast);
+}
+.continue-btn:active {
+  transform: translateY(calc(var(--press) - 1px)) scale(0.98);
+  box-shadow: 0 1px 0 var(--green-dark);
 }
 
 /**
