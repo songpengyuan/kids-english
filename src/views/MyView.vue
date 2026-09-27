@@ -21,6 +21,7 @@ import { dueWords } from "../utils/reviewQueue";
 import HeaderBar from "../components/layout/HeaderBar.vue";
 import { ChevronRight, Flame, Star } from "@lucide/vue";
 import PathIcon from "../components/PathIcon.vue";
+import ShellIcon from "../components/ShellIcon.vue";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();
@@ -120,7 +121,7 @@ const todayWords = computed(() => {
           <span class="k">连击天数</span>
         </div>
         <div class="cell">
-          <span class="v"><PathIcon name="shell" class="st-ico" />{{ rewards.shells }}</span>
+          <span class="v"><ShellIcon />{{ rewards.shells }}</span>
           <span class="k">贝壳</span>
         </div>
         <div class="cell">

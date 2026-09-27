@@ -42,7 +42,10 @@ const emit = defineEmits<{ back: [] }>();
   padding: 10px 12px;
   min-height: 56px;
   box-sizing: border-box;
-  background: var(--bg);
+  /* 毛玻璃：半透明 + 模糊，让全站背景质感透上来，仍能遮住滚到下面的内容 */
+  background: var(--bar-bg, var(--bg));
+  -webkit-backdrop-filter: blur(var(--bar-blur, 14px));
+  backdrop-filter: blur(var(--bar-blur, 14px));
 }
 .hdr-back {
   flex: none;

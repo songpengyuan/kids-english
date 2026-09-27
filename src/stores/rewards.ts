@@ -1,33 +1,48 @@
 /**
- * 奖励 store（贝壳 + 贴纸收藏）——Pinia + TS，localStorage 独立键存储。
+ * 奖励 store（贝壳 + 英雄图鉴）—— Pinia + TS，localStorage 独立键存储。
  *
- * - 独立于进度键 kids-english-progress-v1（历史键名禁止改动，此处另开新键）。
- * - 为"游戏模式"预留：贝壳 = 通用货币，贴纸 = 收藏图鉴。
- * - 奖励发放入口统一走 grant()，组件不直接改 state，保证数据流单向。
+ * 玩法闭环：
+ *   完成玩法 → 开宝箱 → 得贝壳（3~6）→ 攒够贝壳去"英雄图鉴"兑换形态
+ *   开箱另有 25% 概率直接掉一个**还没收集的形态**（惊喜感，不用等攒够）
  *
- * 说明：从 src/store/rewards.js 迁移而来（存储键与行为完全一致），统一进 Pinia。
+ * 形态可以**升级**：重复兑换同一形态 +1★（上限 3★），给贝壳一个长期去处，
+ * 也避免"集齐了就没有目标"（旧贴纸体系的问题）。
+ *
+ * 存储键 kids-english-rewards-v1 保持不变（历史键名禁止改动）。
+ * 老数据（sticksers 贴纸）在 load() 时按原价折算成贝壳，不让孩子白攒。
  */
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { ALL_FORMS, FORM_TOTAL, formById, type FlatForm } from "../data/heroes";
 
-/** 贴纸池：第一版用课程主题 emoji（水手/音乐/海洋/颜色），后续可替换成 SVG 贴纸图鉴 */
-export const stickerPool = ["🐙", "🐬", "⭐", "🎺", "🎵", "🌊", "🚢", "🦀", "🌈", "🦄"];
-
-/** 贴纸总数（图鉴进度展示用） */
-export const stickerTotal = stickerPool.length;
-
-/** 商店定向购买一张未收集贴纸的价格（贝壳）——给"只进不出"的贝壳一个消耗出口 */
-export const stickerPrice = 20;
+/** 形态最高星级 */
+export const MAX_FORM_STARS = 3;
+/** 旧贴纸的回收价（贝壳）：按当年售价折算，老数据不亏 */
+export const LEGACY_STICKER_REFUND = 20;
+/** 开箱直接掉落未收集形态的概率 */
+export const CHEST_FORM_CHANCE = 0.25;
 
 /** 一次开箱的结果 */
 export interface ChestRoll {
   shells: number;
-  sticker: string | null;
+  /** 掉落的形态 id（没掉到就是 null） */
+  formId: string | null;
+  /** 掉到的形态是不是新的（用于"新形态登场"高光） */
+  isNew: boolean;
 }
 
 const KEY = "kids-english-rewards-v1";
 
-function load(): Record<string, unknown> {
+interface SavedState {
+  shells?: number;
+  /** 形态 → 星级（1..3） */
+  forms?: Record<string, number>;
+  chestsOpened?: number;
+  /** 老数据：emoji 贴纸（迁移后不再写入） */
+  stickers?: string[];
+}
+
+function load(): SavedState {
   try {
     return JSON.parse(localStorage.getItem(KEY) || "{}") || {};
   } catch {
@@ -39,68 +54,132 @@ export const useRewardsStore = defineStore("rewards", () => {
   const saved = load();
   /** 贝壳数（通用货币） */
   const shells = ref<number>(Number(saved.shells) || 0);
-  /** 已收集贴纸（emoji 列表，去重） */
-  const stickers = ref<string[]>(Array.isArray(saved.stickers) ? (saved.stickers as string[]) : []);
+  /** 已收集形态：id → 星级（1..3） */
+  const forms = ref<Record<string, number>>(
+    saved.forms && typeof saved.forms === "object" ? { ...saved.forms } : {}
+  );
   /** 累计开箱次数 */
   const chestsOpened = ref<number>(Number(saved.chestsOpened) || 0);
 
+  /* ---------- 老数据迁移：emoji 贴纸 → 贝壳 ---------- */
+  const legacyStickers = Array.isArray(saved.stickers) ? saved.stickers : [];
+  if (legacyStickers.length > 0) {
+    shells.value += legacyStickers.length * LEGACY_STICKER_REFUND;
+  }
+
   /** 随机整数 [min, max] */
-  function randInt(min: number, max: number): number {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+  function randInt(min: number, max: number, rng: () => number): number {
+    return Math.floor(rng() * (max - min + 1)) + min;
   }
 
   function save() {
     try {
       localStorage.setItem(
         KEY,
-        JSON.stringify({ shells: shells.value, stickers: stickers.value, chestsOpened: chestsOpened.value })
+        JSON.stringify({ shells: shells.value, forms: forms.value, chestsOpened: chestsOpened.value })
       );
     } catch {
       /* 无痕模式写入失败，忽略 */
     }
   }
+  // 迁移结果要落盘（否则每次启动都重复折算）
+  if (legacyStickers.length > 0) save();
+
+  /** 该形态星级（0 = 还没收集） */
+  function starsOf(formId: string): number {
+    return forms.value[formId] || 0;
+  }
+  function isOwned(formId: string): boolean {
+    return starsOf(formId) > 0;
+  }
+  const ownedCount = computed(
+    () => Object.values(forms.value).filter((n) => n > 0).length
+  );
+  /** 是否已集齐全部形态 */
+  function allOwned(): boolean {
+    return ownedCount.value >= FORM_TOTAL;
+  }
+  /** 图鉴完成度（0..100） */
+  const albumPct = computed(() =>
+    FORM_TOTAL ? Math.round((ownedCount.value / FORM_TOTAL) * 100) : 0
+  );
+  const totalStars = computed(() =>
+    Object.values(forms.value).reduce((sum, n) => sum + Math.min(MAX_FORM_STARS, n || 0), 0)
+  );
 
   /**
-   * 开箱结果：固定给贝壳，贴纸从池里抽一张"还没收集"的；
-   * 全收集完就不再出贴纸（只给贝壳）。
+   * 开箱：固定给贝壳，另有 CHEST_FORM_CHANCE 概率掉形态。
+   * 优先掉"还没收集"的；全收集后改为给随机已收集形态升星（满了就不再掉）。
    */
-  function rollChest(): ChestRoll {
-    const s = randInt(3, 6);
-    let sticker: string | null = null;
-    if (stickers.value.length < stickerPool.length) {
-      const missing = stickerPool.filter((x) => !stickers.value.includes(x));
-      sticker = missing[randInt(0, missing.length - 1)];
+  function rollChest(rng: () => number = Math.random): ChestRoll {
+    const shellsWon = randInt(3, 6, rng);
+    let formId: string | null = null;
+    let isNew = false;
+    if (rng() < CHEST_FORM_CHANCE) {
+      const missing = ALL_FORMS.filter((f) => !isOwned(f.id));
+      if (missing.length > 0) {
+        const picked = missing[randInt(0, missing.length - 1, rng)];
+        formId = picked.id;
+        isNew = true;
+      } else {
+        const upgradable = ALL_FORMS.filter((f) => starsOf(f.id) < MAX_FORM_STARS);
+        if (upgradable.length > 0) {
+          formId = upgradable[randInt(0, upgradable.length - 1, rng)].id;
+        }
+      }
     }
-    return { shells: s, sticker };
+    return { shells: shellsWon, formId, isNew };
   }
 
-  /** 发放奖励（幂等：贴纸去重，重复开出的同款贴纸只算一次） */
+  /** 发放奖励（贴纸时代的 grant 语义保留：只加不减） */
   function grant(roll: ChestRoll) {
     shells.value += roll.shells;
-    if (roll.sticker && !stickers.value.includes(roll.sticker)) {
-      stickers.value.push(roll.sticker);
+    if (roll.formId) {
+      const cur = starsOf(roll.formId);
+      forms.value[roll.formId] = Math.min(MAX_FORM_STARS, cur + 1);
     }
     chestsOpened.value += 1;
     save();
   }
 
-  /** 当前是否集齐全部贴纸 */
-  function allStickers(): boolean {
-    return stickers.value.length >= stickerPool.length;
-  }
-
   /**
-   * 定向购买一张未收集的贴纸（贝壳消耗出口）。
-   * 失败（已收集/余额不足/不在池内）返回 false，不改任何状态。
+   * 兑换 / 升级一个形态（贝壳消费出口）。
+   * - 没收集过 → 解锁（"bought"）
+   * - 已收集但没满星 → 升一星（"upgraded"）
+   * - 已满星 / 贝壳不够 / id 非法 → 不改任何状态
    */
-  function buySticker(emoji: string): boolean {
-    if (!stickerPool.includes(emoji) || stickers.value.includes(emoji)) return false;
-    if (shells.value < stickerPrice) return false;
-    shells.value -= stickerPrice;
-    stickers.value.push(emoji);
+  function buyForm(formId: string): "bought" | "upgraded" | "maxed" | "poor" | "invalid" {
+    const form: FlatForm | null = formById(formId);
+    if (!form) return "invalid";
+    const cur = starsOf(formId);
+    if (cur >= MAX_FORM_STARS) return "maxed";
+    if (shells.value < form.price) return "poor";
+    shells.value -= form.price;
+    forms.value[formId] = cur + 1;
     save();
-    return true;
+    return cur === 0 ? "bought" : "upgraded";
   }
 
-  return { shells, stickers, chestsOpened, rollChest, grant, allStickers, buySticker, stickerTotal };
+  function reset() {
+    shells.value = 0;
+    forms.value = {};
+    chestsOpened.value = 0;
+    localStorage.removeItem(KEY);
+  }
+
+  return {
+    shells,
+    forms,
+    chestsOpened,
+    ownedCount,
+    albumPct,
+    totalStars,
+    starsOf,
+    isOwned,
+    allOwned,
+    rollChest,
+    grant,
+    buyForm,
+    reset,
+  };
 });

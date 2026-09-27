@@ -21,6 +21,7 @@ import HeaderBar from "../components/layout/HeaderBar.vue";
 import MasteryTrend from "../components/MasteryTrend.vue";
 import { dueWords } from "../utils/reviewQueue";
 import PathIcon from "../components/PathIcon.vue";
+import ShellIcon from "../components/ShellIcon.vue";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();
@@ -244,7 +245,7 @@ const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stick
         <div class="kv">
           <div class="item">
             <span class="k">贝壳</span>
-            <span class="v"><PathIcon name="shell" class="mini-ico" /> {{ rewards.shells }}</span>
+            <span class="v"><ShellIcon /> {{ rewards.shells }}</span>
           </div>
           <div class="item">
             <span class="k">贴纸图鉴</span>

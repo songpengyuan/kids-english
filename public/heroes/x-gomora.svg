@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="240" height="280" role="img" aria-label="光之英雄占位形象">
+  <!-- 原创简笔形象（scripts/gen-hero-art.py 生成）。家长可用同名 png 替换：public/heroes/x-gomora.png -->
+  <defs>
+    <radialGradient id="aura" cx="50%" cy="46%" r="52%">
+      <stop offset="0%" stop-color="#62a2f3" stop-opacity="0.55"/>
+      <stop offset="70%" stop-color="#62a2f3" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#62a2f3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8ebcf6"/>
+      <stop offset="100%" stop-color="#4c7ebe"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="60" cy="66" r="60" fill="url(#aura)"/>
+
+  <!-- 腿 -->
+  <rect x="42" y="104" width="15" height="28" rx="7.5" fill="#4c7ebe" stroke="#fff" stroke-width="2"/>
+  <rect x="63" y="104" width="15" height="28" rx="7.5" fill="#4c7ebe" stroke="#fff" stroke-width="2"/>
+  <!-- 脚 -->
+  <rect x="38" y="126" width="22" height="10" rx="5" fill="#4c7ebe" stroke="#fff" stroke-width="2"/>
+  <rect x="59" y="126" width="22" height="10" rx="5" fill="#4c7ebe" stroke="#fff" stroke-width="2"/>
+
+  <rect x="22" y="72" width="14" height="38" rx="7.0" fill="url(#body)" stroke="#fff" stroke-width="2" transform="rotate(-16 31.0 91)"/><rect x="84" y="72" width="14" height="38" rx="7.0" fill="url(#body)" stroke="#fff" stroke-width="2" transform="rotate(16 89.0 91)"/>
+
+  <!-- 躯干 -->
+  <rect x="40" y="66" width="40" height="44" rx="16.0" fill="url(#body)" stroke="#fff" stroke-width="2"/>
+  <!-- 胸口能量计时器 -->
+  <circle cx="60" cy="86" r="8" fill="#d3e5fc" stroke="#fff" stroke-width="2.5"/>
+  <circle cx="60" cy="86" r="3" fill="#fff" opacity="0.85"/>
+
+  <!-- 头 -->
+  <ellipse cx="60" cy="44" rx="27" ry="25" fill="url(#body)" stroke="#fff" stroke-width="2"/>
+  <path d="M46 20 Q60 6 74 20 Z" fill="#4c7ebe" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+  <!-- 眼睛（发光） -->
+  <ellipse cx="48.1" cy="46" rx="7.6" ry="9.0" fill="#ecf4fe" transform="rotate(-14 48.1 46)"/>
+  <ellipse cx="71.9" cy="46" rx="7.6" ry="9.0" fill="#ecf4fe" transform="rotate(14 71.9 46)"/>
+  <ellipse cx="48.1" cy="46" rx="3.4" ry="4.2" fill="#fff" opacity="0.9" transform="rotate(-14 48.1 46)"/>
+  <ellipse cx="71.9" cy="46" rx="3.4" ry="4.2" fill="#fff" opacity="0.9" transform="rotate(14 71.9 46)"/>
+  <!-- 额头水晶 -->
+  <path d="M60 30 L64.5 36 L60 42 L55.5 36 Z" fill="#d3e5fc" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+</svg>

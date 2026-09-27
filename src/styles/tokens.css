@@ -107,6 +107,9 @@
   --sticker: inset 0 0 0 3px rgba(255, 255, 255, 0.32);
   --shadow-hard: 0 6px 0 rgba(0, 0, 0, 0.12);
   --shadow-soft: 0 2px 0 rgba(0, 0, 0, 0.08);
+  /* 顶栏/底栏毛玻璃：半透明 + 模糊，让背景质感透出来，同时仍能挡住滚动内容 */
+  --bar-bg: color-mix(in srgb, var(--bg) 80%, transparent);
+  --bar-blur: 14px;
   /* 立体按钮的下压深度 */
   --press: clamp(3px, 0.7vh, 5px);
 
@@ -214,6 +217,8 @@
   --sticker: inset 0 0 0 3px rgba(255, 255, 255, 0.14);
   --shadow-hard: 0 6px 0 rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
   --shadow-soft: 0 2px 0 rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  /* 暗色下顶栏/底栏再透一点（深底上的半透明不容易糊成一片） */
+  --bar-bg: color-mix(in srgb, var(--bg) 74%, transparent);
 }
 
 /* ===== 断点约定（供参考，CSS 无法定义变量化断点，改动时请同步各处） =====

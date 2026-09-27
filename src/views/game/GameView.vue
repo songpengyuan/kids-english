@@ -18,8 +18,10 @@ import GamePath from "../../components/GamePath.vue";
   flex-direction: column;
   min-height: 0;
   flex: 1;
-  /* 关卡地图背景纹理：多邻国式彩色圆点（浅色主题），不随内容滚动 */
-  background-color: var(--bg);
+  /* 关卡地图背景纹理：多邻国式彩色圆点（浅色主题），不随内容滚动。
+   * ⚠️ 底色**故意透明**：全站背景质感层（CuteBackdrop，微渐变+柔光+颗粒）在 z-index:-1，
+   *    这里一旦铺不透明底色就会把它整片盖掉（地图页曾经就是"最平"的一页）。 */
+  background-color: transparent;
   background-image:
     radial-gradient(circle at 16% 18%, rgba(28, 176, 246, 0.12) 0 8px, transparent 9px),
     radial-gradient(circle at 78% 8%, rgba(255, 178, 54, 0.13) 0 6px, transparent 7px),

@@ -24,6 +24,8 @@ import {
 } from "../utils/effects";
 import { useRewardsStore } from "../stores/rewards";
 import { parabola } from "../utils/flyCurve";
+import { formById } from "../data/heroes";
+import ShellIcon from "./ShellIcon.vue";
 
 const rewards = useRewardsStore();
 
@@ -33,7 +35,9 @@ const emit = defineEmits(["done"]);
 const taps = ref(0);
 /** 阶段：closed(<3 敲击) | open(第 3 下开箱瞬间) | reward(展示+收取) | flying(飞行中) | collected */
 const phase = ref("closed");
-const reward = ref(null); // { shells, sticker }
+const reward = ref(null); // { shells, formId, isNew }
+/** 本次掉落的形态（角色名 + 图片）；没掉到形态就是 null */
+const wonForm = computed(() => (reward.value?.formId ? formById(reward.value.formId) : null));
 /** 顶部徽标当前显示数（收取动画前 = 入账前旧值，收取时逐个 +1 到新值） */
 const shown = ref(0);
 /** 徽标脉冲重触发计数 */
@@ -64,7 +68,7 @@ function openChest() {
   rewards.grant(r);
   reward.value = r;
   sfxCoin();
-  if (r.sticker) sfxSticker();
+  if (r.formId) sfxSticker();
   later(() => {
     phase.value = "reward";
   }, 1000);
@@ -165,7 +169,7 @@ const cap = computed(() => {
   <div class="chest-wrap">
     <!-- 顶部贝壳徽标：收取动画的目标（fixed 右上，接收时脉冲 + 数字递增） -->
     <div ref="badgeEl" class="shell-badge" :class="{ pulsing: phase === 'flying' }" :key="'pulse-' + pulseTick">
-      <PathIcon name="shell" class="b-ico" />
+      <span class="shell-emoji b-ico"><ShellIcon /></span>
       <span class="b-num">{{ shown }}</span>
     </div>
 
@@ -207,7 +211,8 @@ const cap = computed(() => {
         :class="{ on: taps >= i }"
         :style="{ animationDelay: (i - 1) * 0.08 + 's' }"
       >
-        <PathIcon :name="['shell', 'sticker', 'gift'][i - 1]" class="h-ico" />
+        <ShellIcon v-if="i === 1" class="h-ico" />
+        <PathIcon v-else :name="['sticker', 'gift'][i - 2]" class="h-ico" />
       </span>
     </div>
 
@@ -217,23 +222,41 @@ const cap = computed(() => {
     <div v-if="phase === 'reward' && reward" class="reward">
       <p class="got">获得</p>
       <div class="rewards">
-        <span class="shells anim-pop"><PathIcon name="shell" class="r-ico" /> ×{{ reward.shells }}</span>
-        <span v-if="reward.sticker" class="stick anim-pop" :style="{ animationDelay: '0.12s' }">{{ reward.sticker }} 贴纸</span>
+        <span class="shells anim-pop"><ShellIcon /> ×{{ reward.shells }}</span>
       </div>
-      <button class="k-btn take" @click="collect">收取 <PathIcon name="shell" class="r-ico" /></button>
+      <!-- 掉到形态：新形态单独高光展示（图片 + 角色·形态名） -->
+      <div v-if="wonForm" class="won anim-pop" :style="{ '--tone': wonForm.color }">
+        <span class="won-tag">{{ reward.isNew ? "新形态！" : "升星！" }}</span>
+        <img class="won-img" :src="wonForm.fallback" :alt="wonForm.heroName + wonForm.name" />
+        <p class="won-name">{{ wonForm.heroName }} · {{ wonForm.name }}</p>
+        <p class="won-en">{{ wonForm.heroEn }}, {{ wonForm.en }}</p>
+      </div>
+      <button class="k-btn take" @click="collect">收取 <span class="shell-emoji"><ShellIcon /></span></button>
     </div>
     <p v-if="phase === 'collected'" class="cap collected">
       <PathIcon name="gift" class="gift-ico" /> 已收进宝藏罐！
     </p>
 
     <!-- 飞行中的宝石/贝壳（fixed，跟随抛物线轨迹） -->
-    <span v-if="phase === 'flying'" ref="flyEl" class="fly"><PathIcon name="shell" class="fly-ico" /></span>
+    <span v-if="phase === 'flying'" ref="flyEl" class="fly"><ShellIcon /></span>
   </div>
 </template>
 
 <style scoped>
 .chest-wrap {
-  position: relative;
+  /* 全屏遮罩：必须**视口固定**。
+   * 之前是 position:relative —— 嵌在游戏地图的滚动容器里时，整个开箱界面会被排到
+   * 地图内容末尾（实测 y≈4400），孩子在"开宝箱"关卡点开后什么都看不到。
+   * 结算页（LessonResult）里看不出问题，所以一直没暴露。 */
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  justify-content: center;
+  /* 磨砂遮罩：把地图/页面压到后面，视线聚焦开箱（与全站毛玻璃语言一致） */
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  overflow-y: auto; /* 矮屏/横屏时内容可滚，不会把"收取"挤出屏幕 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -263,7 +286,7 @@ const cap = computed(() => {
 .shell-badge .b-ico {
   width: 16px;
   height: 16px;
-  color: var(--c-orange);
+  font-size: 16px;
 }
 .shell-badge.pulsing {
   animation: badge-pulse 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -536,7 +559,7 @@ const cap = computed(() => {
   justify-content: center;
   gap: var(--gap-s);
 }
-.shells, .stick {
+.shells {
   font-weight: 800;
   font-size: var(--fs-body);
   color: var(--on-tone);
@@ -545,7 +568,46 @@ const cap = computed(() => {
   box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.15);
 }
 .shells { background: var(--c-orange); }
-.stick { background: var(--c-purple); }
+
+/* 掉到的形态：一张带主色描边的小卡（新形态高光） */
+.won {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: color-mix(in srgb, var(--tone) 16%, var(--card-bg));
+  border: 3px solid color-mix(in srgb, var(--tone) 55%, transparent);
+  border-radius: var(--radius);
+  padding: var(--gap-s) var(--gap-m);
+}
+.won-tag {
+  position: absolute;
+  top: -12px;
+  background: var(--c-orange);
+  color: var(--on-tone);
+  font-size: var(--fs-small);
+  font-weight: 900;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+}
+.won-img {
+  width: clamp(64px, 12vh, 96px);
+  height: clamp(64px, 12vh, 96px);
+  object-fit: contain;
+}
+.won-name {
+  margin: 0;
+  font-weight: 900;
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+.won-en {
+  margin: 0;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
 .take {
   width: 100%;
   max-width: 260px;

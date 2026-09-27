@@ -543,6 +543,8 @@ pnpm test   # vitest run，覆盖：
 | `src/utils/__tests__/speakSession.test.ts` | 跟我读：首次通过率→星级 |
 | `src/utils/__tests__/matchBoard.test.ts` | 连一连：分组口径（随屏幕）+ 按连错次数→星级 |
 | `src/stores/__tests__/progress.test.ts` | 单词 SRS 升/降级、老数据迁移、掌握度概览、每日快照（30 天上限） |
+| `src/stores/__tests__/rewards.test.ts` | 贝壳 → 英雄形态：兑换/升级/满级、开箱掉落、全收集后行为、老贴纸折算、持久化 |
+| `src/data/__tests__/heroes.test.ts` | 图鉴数据自检：角色→形态结构、id 唯一、价格与稀有度一致、图片路径、发音介绍文案 |
 | `src/composables/__tests__/useQuizSession.test.ts` | 会话状态机：答错不推进/标红自动消失、答对锁定、星级、重置、进度上报 |
 | `src/components/**/__tests__/*.test.ts` | 组件：AppDialog 退场流程、Pager 受控翻页、WordCard 点读、MasteryTrend 趋势图、**LearnView 点读覆盖率整关行为** |
 
@@ -851,6 +853,80 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 - 环：done 关 `ring=Y segs=星数×2/6`、active/locked `ring=n`；`环与按钮间隙 x/y≈8–10`（呼吸中）、`ringCenterOffsetMax=0`（恒同心）；`docOverflowX=0 / stageOverflowX=0`（最窄 375px 也不横向溢出）。
 - `pnpm test` 64 用例 + `pnpm type-check` + `GH_REPO=kids-english pnpm build:ci` 全通过。
 - 走查脚本口径：本轮用一次性 CDP 脚本截图 + 量几何（非 layout-audit.mjs），脚本用完已删。
+### 13.34 背景质感三层化 + 毛玻璃顶栏/底栏（2026-09-27）
+
+**问题**：全站背景是一层纯色 `var(--bg)`，大屏上很"糊"；而且 **地图页 `.game` 铺了不透明底色**，
+把 `CuteBackdrop`（云朵/星星/圆点）整片盖住 —— 页面之间背景语言还不一致。
+
+**三层质感**（都在 `CuteBackdrop` 这一层，纯 CSS + 一个内联 SVG，无图片资源、无网络请求）：
+
+1. **微渐变打底**：`linear-gradient(180deg, var(--bg), color-mix(in srgb, var(--bg) 92%, #000))`
+   —— 顶部与 `--bg` 完全一致（状态栏 `theme-color` 不会跳色），向下压暗 8% 产生纵深。
+2. **柔光**：顶部环境光（`#fff 45%`）+ 三团超大半径品牌色柔光（blue 15% / pink 13% / purple 13%）。
+   暗色主题单独调（深底上低不透明度看不见）：环境光换成蓝色 14%、品牌柔光提到 16~20%、底压暗 12%。
+3. **细颗粒**：`.backdrop::after` 用内联 `feTurbulence`（`stitchTiles` 保证 140px 无缝平铺）+ `feColorMatrix saturate 0`
+   转灰度，`opacity: .045`（暗色 .07）—— 像纸张纹理，消掉渐变的"塑料感"。
+   只用 `z-index:-1` 压在下层：**父元素背景之上、云朵/星星/圆点之下**（负 z 子层的绘制顺序）。
+
+**层级修正**：`.game` 底色改 `transparent`（地图本来有自绘彩色圆点，不需要再铺底色）。
+**规则**：页面级容器不要铺不透明 `var(--bg)`，否则质感层被整片盖掉。
+
+**毛玻璃**：顶栏（`HeaderBar`、首页 `.hero`）与固定底栏（`BottomNav`）改为
+`background: var(--bar-bg)`（`color-mix(--bg 80%, transparent)`，暗色 74%）+ `backdrop-filter: blur(var(--bar-blur))`，
+让质感透上来、滚动内容在栏下呈磨砂虚化（`-webkit-` 前缀一并写，iOS Safari 兼容）。
+
+**实测**：无头 Chrome 截「首页 / 地图 / 课程菜单」× 浅色/暗色 6 张 + 地图滚动态 2 张，
+确认质感可见但不抢内容、滚动内容在顶栏下正确虚化、`color-mix`/`backdrop-filter` 不兼容时分别退化为纯色底与纯色栏。
+### 13.35 奖励经济改版：贝壳 → 英雄图鉴（角色 → 形态）（2026-09-27）
+
+**背景**：原奖励是 10 张 emoji 贴纸、统一 20 贝壳、买空就没目标（评审时就标为"奖励经济单薄"）。
+用户提出"攒贝壳换各种奥特曼"，并要求**一个角色分多个形态**、**点卡片有发音介绍**。
+
+**数据层 `src/data/heroes.ts`**
+- 结构：**世代（era）→ 角色（Hero）→ 形态（HeroForm）**，每个形态是独立收集品。
+  完整名录 **41 位角色 / 81 个形态**，按昭和（12 位，多为单形态）/ 平成（12 位）/ 新生代（16 位）/ 令和（1 位）分段。
+  唯一数据源是同文件顶部的 `ROSTER`：加角色只需追加一行 `{ id, name, en, era, color, forms: [[id, 中文名, 英文名]] }`。
+- **稀有度与主色自动派生**（别再手写）：`rarityByIndex(i)` —— 第 1 个形态常见、第 2~3 个稀有、第 4 个起传说；
+  `formColor(base, i)` 用 `mixHex` 逐形态微调主色（同一角色的卡不会全一个色）。
+- 稀有度定价：常见 20 / 稀有 60 / 传说 120 贝壳（全收集 660）。
+- 每个形态带 `name` + `en`（发音介绍要念英文，顺便当英语输入）+ `color`（卡片主色）。
+- `ALL_FORMS` 扁平化后供图鉴/商店/开箱遍历；`introOf(id)` 给出"英文 + 中文"两段介绍文案。
+
+**素材约定（关键：改图不用改代码）**
+- 默认形象是项目自带的**原创** SVG 占位图 `public/heroes/<formId>.svg`，
+  由 `scripts/gen-hero-art.py` 生成（15 个形态按配色/体型/头型/姿势参数化，同角色不同形态一眼能分辨）。
+- 家长把图片命名为 `<formId>.png` 放进 `public/heroes/` 即自动替换：卡片先试 png，
+  `@error` 时回退内置 svg（与单词图片"缺图回退 emoji"同一套写法）。
+- **命名与素材的责任边界**：角色名/形态名是**使用者（家长）指定的私人数据**（用户明确要求用真实角色名）；
+  仓库内不含任何受版权保护的角色素材——`public/heroes/*.svg` 全部是 `gen-hero-art.py` 生成的原创占位图，
+  真实图片由使用者自行放入 `public/heroes/<id>.png`，仅供家庭内部使用。
+
+**奖励逻辑 `src/stores/rewards.ts`（重写）**
+- 状态从 `stickers: string[]` 改为 `forms: Record<formId, 星级>`（1..3 星）。
+- `buyForm(id)`：未收集 → 解锁；已收集未满 → 升星；满星/贝壳不足/非法 id 各自返回明确结果且**不改状态**。
+- `rollChest()`：贝壳 3~6 + **25% 概率**掉一个未收集形态（全收集后改为给已收集形态升星；全满星则只给贝壳）。
+- 老数据迁移：`stickers` 里的 emoji 按当年售价（20 贝壳/张）折算成贝壳并落盘，孩子不白攒。
+
+**UI**
+- `TreasureView` 重写成**三级图鉴**：世代分段（昭和/平成/新生代/令和）→ 角色 → 形态。
+  单形态角色（昭和 12 位）用**紧凑卡网格**（一屏 4 个），多形态角色一角色一段并列其形态；
+  这样 41 位角色 / 81 个形态的整页高度从 ~9500px 压到 ~6450px，仍然一览到底。
+- 形态卡抽成 `components/HeroFormCard.vue`（三态：未收集剪影 + 兑换价/"再攒 N"、已收集 ★ + 升级、满星"已满级"；
+  图片 png→svg 回退也收在组件内），`TreasureView` 只负责分组与数据装配。
+- 点卡片 → `speak("Blaze Warrior, Sky Form")` 再 `speakZh("烈焰战士，空中型")`（英文在前，当听力输入）。
+- `ChestReward` 的奖励面板改为展示掉到的形态（图片 + 角色·形态名 + "新形态！/升星！"角标）。
+
+**顺手修掉一个真 bug**：`ChestReward` 的根节点原来是 `position: relative`，
+嵌在游戏地图的滚动容器里时整个开箱界面会被排到**地图内容末尾**（实测 y≈4400）——
+孩子在"开宝箱"关卡点开后什么都看不到（结算页里看不出来，所以一直没暴露）。
+改成 `position: fixed` + 磨砂遮罩（`--bg` 80% + blur 6px）+ `overflow-y: auto`。
+
+**贝壳图标改为 🐚（用户要求）**：矢量贝壳在 12~20px 下像一对括号，孩子/家长都认不出。
+新增 `components/ShellIcon.vue` 单点承载这枚 emoji，**这是"界面不用 emoji"铁律的唯一例外**，
+范围仅限贝壳货币；无障碍仍带 `role="img" aria-label="贝壳"`。
+
+**测试**：`rewards.test.ts`（12 例，含开箱用可控 rng 断言掉落、迁移不重复折算）+ `heroes.test.ts`（7 例，数据护栏）。
+总数 146 → **165**；`type-check` + `build:ci` 通过；无头 Chrome 实测宝藏罐（浅/暗各 2 张）+ 开箱掉形态 1 张。
 ### 13.31 关卡按钮改椭圆（参考图的透视圆柱）+ 进度环呼吸微动画（2026-09-27）
 
 **用户反馈**：参考图里的按钮**并不是正圆**（是俯视透视的圆柱：横向略宽、纵向略扁），另外关卡周围的进度环希望有轻微的大小动画。

@@ -33,7 +33,7 @@
  */
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-function asset(path: string | null | undefined): string | null {
+export function asset(path: string | null | undefined): string | null {
   if (!path) return null;
   if (/^(https?:)?\/\//.test(path)) return path; // 外链原样返回
   return BASE + (path.startsWith("/") ? path : `/${path}`);

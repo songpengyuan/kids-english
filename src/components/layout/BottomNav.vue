@@ -71,7 +71,10 @@ function goMe() {
   display: flex;
   gap: var(--gap-s);
   padding: 6px calc(var(--pad-x) + env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) calc(var(--pad-x) + env(safe-area-inset-left));
-  background: var(--bg);
+  /* 毛玻璃：与 HeaderBar 同一套 token（--bar-bg / --bar-blur） */
+  background: var(--bar-bg, var(--bg));
+  -webkit-backdrop-filter: blur(var(--bar-blur, 14px));
+  backdrop-filter: blur(var(--bar-blur, 14px));
   box-shadow: 0 -2px 0 rgba(0, 0, 0, 0.06), 0 -6px 16px rgba(0, 0, 0, 0.05);
 }
 .bottom-nav button {

@@ -1,41 +1,115 @@
-<script setup>
+<script setup lang="ts">
 /**
- * 宝藏罐：展示贝壳余额 + 贴纸图鉴（已收集亮色，未收集灰显"?"激励收集）。
- * 只读 rewards store，不在此页发奖励——数据流单向。
+ * 宝藏罐（/treasure）：贝壳余额 + **英雄图鉴**。
+ *
+ * 两级结构（用户要求）：
+ *   第一级 = 角色（烈焰战士 / 苍蓝战士 …）
+ *   第二级 = 同一角色的不同**形态**（复合型 / 强力型 / 空中型 …），每个形态独立收集
+ *
+ * 交互：
+ *   · 点任意形态卡 → 发音介绍（先英文"Blaze Warrior, Combo Form"再中文"烈焰战士，复合型"）
+ *   · 未收集 → 显示剪影 + 价格；贝壳够就能兑换，不够则提示"再攒 N 个贝壳"
+ *   · 已收集 → 显示 ★（可重复兑换升级，最高 3★）—— 给贝壳一个长期去处
+ *
+ * 数据流单向：本页只调 rewards store 的 buyForm，不改其它状态。
  */
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { useRewardsStore, stickerPool, stickerPrice, stickerTotal } from "../stores/rewards";
-import { sfxCoin, sfxTap, sfxWrong } from "../utils/effects";
+import {
+  ALL_FORMS,
+  ERA_INFO,
+  FORM_TOTAL,
+  HERO_TOTAL,
+  RARITY_INFO,
+  heroesByEra,
+  introOf,
+} from "../data/heroes";
+import { MAX_FORM_STARS, useRewardsStore } from "../stores/rewards";
+import { sfxCoin, sfxCorrect, sfxTap, sfxWrong } from "../utils/effects";
+import { speak, speakZh } from "../utils/speech";
 import { Star } from "@lucide/vue";
 import HeaderBar from "../components/layout/HeaderBar.vue";
+import HeroFormCard from "../components/HeroFormCard.vue";
+import type { AlbumForm } from "../components/HeroFormCard.vue";
 import PathIcon from "../components/PathIcon.vue";
+import ShellIcon from "../components/ShellIcon.vue";
 
 defineOptions({ name: "TreasureView" }); // KeepAlive include 需要稳定组件名
 
 const rewards = useRewardsStore();
 const router = useRouter();
 
-/** 图鉴：池子里的贴纸 + 是否已收集 */
-const album = computed(() => {
-  return stickerPool.map((s) => ({ emoji: s, got: rewards.stickers.includes(s) }));
-});
+/** 卡片条目 = 形态数据 + 它属于哪个角色（单形态角色的卡上直接显示角色名） */
+interface CardEntry {
+  key: string;
+  heroName: string;
+  form: AlbumForm;
+}
 
-const albumPct = computed(() =>
-  stickerTotal ? Math.round((rewards.stickers.length / stickerTotal) * 100) : 0
+/** 形态 → 卡片数据（价格/是否收集/星级/够不够钱） */
+function toCard(f: (typeof ALL_FORMS)[number]): AlbumForm {
+  const price = RARITY_INFO[f.rarity].price;
+  return {
+    id: f.id,
+    name: f.name,
+    rarity: f.rarity,
+    rarityLabel: RARITY_INFO[f.rarity].label,
+    color: f.color,
+    price,
+    image: `/heroes/${f.id}.png`,
+    fallback: f.fallback,
+    owned: rewards.isOwned(f.id),
+    stars: rewards.starsOf(f.id),
+    afford: rewards.shells >= price,
+    short: Math.max(0, price - rewards.shells),
+  };
+}
+
+/** 图鉴：世代 → 角色 → 形态（三级；41 位角色不分段会太长） */
+const album = computed(() =>
+  heroesByEra().map(({ era, heroes }) => ({
+    era,
+    ...ERA_INFO[era],
+    /** 单形态角色（昭和居多）→ 紧凑卡网格，省掉一屏一屏的空行 */
+    singles: heroes
+      .filter((h) => h.forms.length === 1)
+      .map<CardEntry>((h) => ({ key: h.id, heroName: h.name, form: toCard(ALL_FORMS.find((x) => x.id === h.forms[0].id)!) })),
+    /** 多形态角色 → 一个角色一段，形态并排 */
+    groups: heroes
+      .filter((h) => h.forms.length > 1)
+      .map((hero) => ({
+        id: hero.id,
+        name: hero.name,
+        en: hero.en,
+        owned: hero.forms.filter((f) => rewards.isOwned(f.id)).length,
+        total: hero.forms.length,
+        forms: hero.forms.map<CardEntry>((f) => ({
+          key: f.id,
+          heroName: hero.name,
+          form: toCard(ALL_FORMS.find((x) => x.id === f.id)!),
+        })),
+      })),
+  }))
 );
 
-/** 商店与图鉴同构：未收集的贴纸可按标价定向购买（贝壳的消耗出口） */
-const shop = computed(() =>
-  stickerPool.map((s) => ({ emoji: s, got: rewards.stickers.includes(s) }))
-);
-
-function buy(emoji) {
+/** 点卡片：发音介绍（英文 + 中文），已收集/未收集都能听 */
+function introduce(formId: string) {
   sfxTap();
-  const ok = rewards.buySticker(emoji);
-  if (ok) sfxCoin();
+  const intro = introOf(formId);
+  if (!intro) return;
+  speak(intro.en); // 英文：顺便当英语输入
+  setTimeout(() => speakZh(intro.zh), 1400);
+}
+
+/** 兑换 / 升级 */
+function buy(formId: string) {
+  sfxTap();
+  const r = rewards.buyForm(formId);
+  if (r === "bought") sfxCoin();
+  else if (r === "upgraded") sfxCorrect();
   else sfxWrong();
 }
+
 </script>
 
 <template>
@@ -43,14 +117,14 @@ function buy(emoji) {
     <HeaderBar show-back back-label="返回首页" @back="router.push('/')">
       <template #title><PathIcon name="gift" class="title-ico" /> 宝藏罐</template>
       <template #right>
-        <div class="star-badge"><Star class="k-ico star-fill" />{{ rewards.chestsOpened }} 次开箱</div>
+        <div class="star-badge"><Star class="k-ico star-fill" />{{ rewards.totalStars }}</div>
       </template>
     </HeaderBar>
 
     <div class="view-body treasure-body">
       <!-- 贝壳余额 -->
       <div class="shells-card anim-pop">
-        <span class="shell-ico"><PathIcon name="shell" class="shell-ico-in" /></span>
+        <span class="shell-big"><ShellIcon /></span>
         <div>
           <p class="label">攒了这么多贝壳</p>
           <p class="num">{{ rewards.shells }}</p>
@@ -58,50 +132,54 @@ function buy(emoji) {
         </div>
       </div>
 
-      <!-- 贴纸图鉴 -->
+      <!-- 英雄图鉴：角色 → 形态 -->
       <div class="album anim-fade-up">
         <div class="album-head">
-          <span class="album-title">贴纸图鉴</span>
-          <span class="album-progress">{{ rewards.stickers.length }} / {{ stickerTotal }}（{{ albumPct }}%）</span>
+          <span class="album-title">英雄图鉴</span>
+          <span class="album-progress">
+            {{ rewards.ownedCount }} / {{ FORM_TOTAL }} 个形态 · {{ HERO_TOTAL }} 位角色（{{ rewards.albumPct }}%）
+          </span>
         </div>
-        <div class="grid">
-          <div
-            v-for="(s, i) in album"
-            :key="s.emoji + i"
-            class="cell"
-            :class="{ got: s.got }"
-          >
-            <span class="sticker">{{ s.got ? s.emoji : "?" }}</span>
-            <span class="cell-cap">{{ s.got ? "已收集" : "待收集" }}</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- 贴纸商店：贝壳定向购买未收集贴纸（消耗出口，避免贝壳只进不出） -->
-      <div class="album anim-fade-up">
-        <div class="album-head">
-          <span class="album-title"><PathIcon name="sticker" class="mini-ico" /> 贴纸商店</span>
-          <span class="album-progress"><PathIcon name="shell" class="mini-ico" /> {{ rewards.shells }}</span>
-        </div>
-        <p class="shop-tip">贝壳攒着也是攒着，买下还没集到的贴纸吧！一张 {{ stickerPrice }} 贝壳</p>
-        <div class="grid">
-          <div
-            v-for="(s, i) in shop"
-            :key="'shop' + s.emoji + i"
-            class="cell"
-            :class="{ got: s.got }"
-          >
-            <span class="sticker">{{ s.got ? s.emoji : "?" }}</span>
-            <button
-              v-if="!s.got"
-              class="buy"
-              :disabled="rewards.shells < stickerPrice"
-              :aria-label="'购买' + s.emoji + '贴纸'"
-              @click="buy(s.emoji)"
-            >
-              <PathIcon name="shell" class="mini-ico" /> {{ stickerPrice }}
-            </button>
-            <span v-else class="cell-cap">已收集</span>
+        <!-- 世代 → 角色 → 形态 -->
+        <div v-for="era in album" :key="era.era" class="era-block">
+          <div class="era-head">
+            <span class="era-name">{{ era.label }}</span>
+            <span class="era-en">{{ era.en }} · {{ era.hint }}</span>
+          </div>
+
+          <!-- 单形态角色：紧凑卡网格（角色名显示在卡上） -->
+          <div v-if="era.singles.length" class="forms mini">
+            <HeroFormCard
+              v-for="c in era.singles"
+              :key="c.key"
+              :form="c.form"
+              :hero-name="c.heroName"
+              :max-stars="MAX_FORM_STARS"
+              compact
+              @introduce="introduce"
+              @buy="buy"
+            />
+          </div>
+
+          <!-- 多形态角色：一个角色一段 -->
+          <div v-for="hero in era.groups" :key="hero.id" class="hero-row">
+            <div class="hero-head">
+              <span class="hero-name">{{ hero.name }}</span>
+              <span class="hero-en">{{ hero.en }}</span>
+              <span class="hero-count">{{ hero.owned }}/{{ hero.total }}</span>
+            </div>
+            <div class="forms">
+              <HeroFormCard
+                v-for="c in hero.forms"
+                :key="c.key"
+                :form="c.form"
+                :hero-name="c.heroName"
+                :max-stars="MAX_FORM_STARS"
+                @introduce="introduce"
+                @buy="buy"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -111,17 +189,17 @@ function buy(emoji) {
 
 <style scoped>
 .treasure {
-  align-items: center;
+  gap: var(--gap-s);
 }
 .treasure-body {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-m);
+  gap: var(--gap-s);
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: var(--pad-y);
+  padding-bottom: var(--gap-m);
 }
 
+/* ---------- 贝壳余额 ---------- */
 .shells-card {
   display: flex;
   align-items: center;
@@ -130,32 +208,33 @@ function buy(emoji) {
   border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
   padding: var(--gap-m);
-  border-left: 8px solid var(--yellow);
+  flex: none;
 }
-.shell-ico {
-  font-size: var(--fs-emoji-xl);
+.shell-big {
+  font-size: clamp(34px, 7vh, 54px);
   line-height: 1;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.12));
 }
 .label {
   margin: 0;
-  font-weight: 800;
-  color: var(--ink-soft);
   font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--ink-soft);
 }
 .num {
-  margin: 2px 0 0;
-  font-weight: 800;
-  font-size: clamp(30px, min(6vh, 5vw), 48px);
-  color: var(--gold);
-  line-height: 1.1;
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: 900;
+  color: var(--ink);
 }
 .hint {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: var(--fs-small);
   color: var(--ink-faint);
-  font-weight: 700;
+  font-weight: 600;
 }
 
+/* ---------- 图鉴 ---------- */
 .album {
   background: var(--card-bg);
   border-radius: var(--radius);
@@ -163,83 +242,92 @@ function buy(emoji) {
   padding: var(--gap-m);
   display: flex;
   flex-direction: column;
-  gap: var(--gap-s);
+  gap: var(--gap-m);
+  flex: none;
 }
 .album-head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
+  gap: var(--gap-s);
 }
 .album-title {
-  font-weight: 800;
-  color: var(--ink);
+  font-weight: 900;
   font-size: var(--fs-body);
+  color: var(--ink);
 }
 .album-progress {
   font-weight: 800;
-  color: var(--ink-soft);
   font-size: var(--fs-small);
-}
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-  gap: var(--gap-s);
-}
-.cell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: var(--gap-s) 0;
-  border-radius: var(--radius-s);
-  background: var(--tint-cream);
-  transition: background 0.2s;
-}
-.cell.got {
-  background: var(--tint-green);
-  box-shadow: inset 0 0 0 3px rgba(88, 204, 2, 0.25);
-}
-.sticker {
-  font-size: clamp(26px, min(5vh, 4vw), 38px);
-  line-height: 1;
-}
-.cell:not(.got) .sticker {
-  filter: grayscale(1);
-  opacity: 0.35;
-}
-.cell-cap {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ink-faint);
-}
-.cell.got .cell-cap {
-  color: var(--green-dark);
+  color: var(--ink-soft);
 }
 
-/* ---------- 贴纸商店 ---------- */
-.shop-tip {
-  margin: 0;
-  font-size: var(--fs-small);
-  color: var(--ink-faint);
-  font-weight: 700;
+/* 一个角色一段 */
+.era-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-s);
+  padding-top: var(--gap-xs);
+  border-top: 2px dashed var(--line);
 }
-.buy {
-  margin-top: 4px;
-  padding: 4px 12px;
+.era-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.era-name {
+  font-weight: 900;
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--purple) 22%, transparent);
   border-radius: var(--radius-pill);
-  background: linear-gradient(160deg, #ffd87a, #f0b429);
-  color: #6b4e00;
+  padding: 2px 12px;
+}
+.era-en {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+.hero-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-s);
+}
+.hero-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.hero-name {
+  font-weight: 900;
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+.hero-en {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--ink-faint);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hero-count {
+  font-size: var(--fs-small);
   font-weight: 800;
-  font-size: 12px;
-  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.14);
-  transition: transform 0.1s, opacity 0.2s;
+  color: var(--ink-soft);
 }
-.buy:active {
-  transform: translateY(2px);
+
+/* 形态卡网格（卡片本体样式在 components/HeroFormCard.vue 里） */
+.forms {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--gap-s);
 }
-.buy:disabled {
-  opacity: 0.45;
-  transform: none;
-  cursor: not-allowed;
+/* 单形态角色：紧凑卡，一屏能放 3~4 个 */
+.forms.mini {
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
 }
 </style>

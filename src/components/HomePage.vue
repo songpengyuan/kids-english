@@ -12,6 +12,7 @@ import { Star } from "@lucide/vue";
 import ThemeToggle from "./layout/ThemeToggle.vue";
 import SoundToggle from "./layout/SoundToggle.vue";
 import PathIcon from "./PathIcon.vue";
+import ShellIcon from "./ShellIcon.vue";
 import PracticeView from "../views/practice/PracticeView.vue";
 import GameView from "../views/game/GameView.vue";
 
@@ -60,7 +61,7 @@ const mode = computed(() => (route.query.mode === "game" ? "game" : "practice"))
               <Star class="k-ico star-fill" />{{ progress.totalStars }}
             </div>
             <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐：贝壳余额" @click="router.push('/treasure')">
-              <PathIcon name="shell" class="k-ico shell-ico" />{{ rewards.shells }}
+              <ShellIcon />{{ rewards.shells }}
             </button>
             <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天' : '今日目标：复习 ' + streak.reviewed + '/' + streak.reviewGoal + ' 词 + 新学 ' + streak.newLevels + '/1 关'">
               <PathIcon name="flame" class="k-ico flame-ico" />{{ streak.streak }}
@@ -92,7 +93,10 @@ const mode = computed(() => (route.query.mode === "game" ? "game" : "practice"))
   flex: none;
   width: 100%;
   padding: var(--gap-s) 0 var(--gap-xs);
-  background: var(--bg);
+  /* 毛玻璃：与顶栏/底栏统一（--bar-bg / --bar-blur） */
+  background: var(--bar-bg, var(--bg));
+  -webkit-backdrop-filter: blur(var(--bar-blur, 14px));
+  backdrop-filter: blur(var(--bar-blur, 14px));
   border-bottom: 1px solid var(--line, rgba(128,128,128,0.16));
 }
 .hdr-row {
