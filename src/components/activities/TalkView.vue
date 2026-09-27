@@ -4,6 +4,7 @@ import { speak } from "../../utils/speech";
 import { hapticTap } from "../../utils/haptics";
 import { sfxCorrect } from "../../utils/effects";
 import { Check, Star, Volume2 } from "@lucide/vue";
+import AppDialog from "../ui/AppDialog.vue";
 
 const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["done"]);
@@ -13,19 +14,12 @@ const phrases = props.lesson.phrases || [];
 const words = props.lesson.words || [];
 const activeIdx = ref(-1);
 
-/* ---------- 首次引导：两步操作（先点卡片→再挑词），5 岁孩子需要看一遍 ---------- */
+/* ---------- 首次引导：两步操作（先点卡片→再挑词），5 岁孩子需要看一遍 ----------
+ * 对话框底座用通用 AppDialog（遮罩/弹入/收起动画统一管理，本组件只管内容与开关）。 */
 const showGuide = ref(true);
-const guideLeaving = ref(false);
 let guideTimer = null;
-function closeGuide() {
-  if (guideLeaving.value) return;
-  guideLeaving.value = true;
-  clearTimeout(guideTimer);
-  // 淡出后移除遮罩（防止误触挡住玩法）
-  setTimeout(() => (showGuide.value = false), 280);
-}
 onMounted(() => {
-  guideTimer = setTimeout(closeGuide, 6000); // 不点也会自动淡出
+  guideTimer = setTimeout(() => (showGuide.value = false), 6000); // 不点也会自动收起
 });
 onBeforeUnmount(() => clearTimeout(guideTimer));
 
@@ -106,18 +100,18 @@ function finish() {
 
 <template>
   <div class="talk view">
-    <!-- 首次引导：两步操作说明（自动淡出，也可点击关闭） -->
-    <div v-if="showGuide" class="guide-overlay" @click.self="closeGuide">
-      <div class="guide-card anim-pop" :class="{ leave: guideLeaving }" role="dialog" aria-label="亲子对话玩法说明">
+    <!-- 首次引导：两步操作说明（通用对话框底座；不点也会自动收起） -->
+    <AppDialog v-if="showGuide" aria-label="亲子对话玩法说明" @close="showGuide = false">
+      <template #default="{ close }">
         <h3 class="g-title">怎么玩亲子对话？</h3>
         <ol class="g-steps">
           <li><b>1</b> 先点一张对话卡片，听一听怎么说</li>
           <li><b>2</b> 再点下面的单词，把它填进句子里</li>
         </ol>
         <p class="g-note">每句话都听过一遍，就能点亮"我会说啦"</p>
-        <button class="k-btn" @click="closeGuide">知道了，开始玩！</button>
-      </div>
-    </div>
+        <button class="k-btn" @click="close">知道了，开始玩！</button>
+      </template>
+    </AppDialog>
 
     <div class="talk-head view-body-head">
       <h2 class="talk-title">亲子对话</h2>
@@ -171,34 +165,6 @@ function finish() {
   align-items: center;
 }
 
-/* ---------- 首次引导遮罩 ---------- */
-.guide-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-modal, 100);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(40, 30, 20, 0.55);
-  padding: var(--gap-l);
-}
-.guide-card {
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-hard);
-  padding: var(--gap-l);
-  max-width: min(88vw, 420px);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--gap-s);
-  transition: opacity 0.28s, transform 0.28s;
-}
-.guide-card.leave {
-  opacity: 0;
-  transform: scale(0.92);
-}
 .g-title {
   margin: 0;
   font-size: var(--fs-title);

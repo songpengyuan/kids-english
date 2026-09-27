@@ -732,3 +732,7 @@ pnpm test   # vitest run，覆盖：
 - **课程横幅英文**：地图课程横幅由中文（titleZh）改为英文课程名（title，如 "A Sailor Went to Sea"）；aria-label 双语（英文＋中文）。
 - **地图背景纹理**：`.game` 背景加多邻国式彩色圆点（radial-gradient 6 层，固定位置不随内容滚动）；浅色主题半透明彩色点、暗色主题提亮一档（`:root[data-theme="dark"] .game`）。
 - 说明：地图顶部横条为**课程横幅**（显示课程名＋进度 x/y＋已完成数，点击进入课程），非多余 UI。
+### 13.12 通用对话框抽离 + 锁关交互从简（2026-09-27）
+
+- **抽离通用对话框 `AppDialog`**（src/components/ui/AppDialog.vue）：遮罩 + 居中面板 + role="dialog" + aria-label，统一处理弹入（anim-pop）/收起（leaving 过渡后 emit close）动画与遮罩点击关闭；父组件只管 v-if 与内容（slot 提供 close）。TalkView 亲子对话首次玩法引导卡重构复用，删除其自写的 guide-overlay/guide-card。
+- **点击未解锁关卡交互从简**：移除"先完成前面的关卡就能解锁啦"文字提示（locked-tip），改为异常音效（sfxWrong 温柔下行音，内含触感震动）+ 关卡左右抖动动画 + 锁图标摆动（0.5s，保留 --dx 平移基准）；地图关与课程横幅锁关点击均走同一 shakeLocked。

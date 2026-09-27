@@ -29,7 +29,8 @@ import {
   type LevelState,
 } from "../data/pathLevels";
 import { useProgressStore } from "../stores/progress";
-import { hapticTap, hapticWrong } from "../utils/haptics";
+import { hapticTap } from "../utils/haptics";
+import { sfxWrong } from "../utils/effects";
 import PathIcon from "./PathIcon.vue";
 import ChestReward from "./ChestReward.vue";
 import { buildPathGeometry, snakeNodes, R, ROW_H, type PathGeoItem } from "../utils/pathGeometry";
@@ -164,24 +165,25 @@ function startRO() {
 }
 
 /* ---------- 交互：点关卡直接开玩 ---------- */
-const lockedMsg = ref(false);
-let lockedTimer: ReturnType<typeof setTimeout> | null = null;
+/** 锁关点击反馈：抖动动画中的关卡 id 集合（配合异常音效 + 震动，动画结束后移除） */
+const shakeIds = ref(new Set<string>());
+let shakeTimer: ReturnType<typeof setTimeout> | null = null;
 
-/** 锁关点击：可见提示（震动之外，给孩子明确的"先解锁"反馈） */
-function showLockedTip() {
-  lockedMsg.value = true;
-  if (lockedTimer) clearTimeout(lockedTimer);
-  lockedTimer = setTimeout(() => {
-    lockedMsg.value = false;
-  }, 1600);
+/** 锁关点击：异常音（温柔下行，含触感震动）+ 该关抖动动画——不弹文字提示，孩子交互从简 */
+function shakeLocked(id: string) {
+  sfxWrong();
+  shakeIds.value = new Set(shakeIds.value).add(id);
+  if (shakeTimer) clearTimeout(shakeTimer);
+  shakeTimer = setTimeout(() => {
+    shakeIds.value = new Set();
+  }, 500);
 }
 
 /** 点击关卡节点：锁定提示 / 可玩直达该玩法 / 宝箱关卡直接开箱 */
 function enterLevel(lv: PathLevel) {
   const st = states.value[lv.id];
   if (st === "locked") {
-    hapticWrong();
-    showLockedTip();
+    shakeLocked(lv.id);
     return;
   }
   hapticTap();
@@ -220,8 +222,7 @@ function enterUnit(it: GeoItem) {
   if (!first) return;
   const st = states.value[first.id];
   if (st === "locked") {
-    hapticWrong();
-    showLockedTip();
+    shakeLocked(first.id);
   } else {
     hapticTap();
     router.push(`/lesson/${first.lessonId}?mode=quest&step=${first.actKey}`);
@@ -281,7 +282,7 @@ function unitLesson(id: string) {
         <div
           v-else
           class="lv-wrap"
-          :class="[states[(it as GeoItem).level!.id], { flash: flashIds.has((it as GeoItem).level!.id), chest: (it as GeoItem).level!.actKey === 'chest' }]"
+          :class="[states[(it as GeoItem).level!.id], { flash: flashIds.has((it as GeoItem).level!.id), chest: (it as GeoItem).level!.actKey === 'chest', shake: shakeIds.has((it as GeoItem).level!.id) }]"
           :style="{ '--dx': dxOf(it as GeoItem) + 'px' }"
         >
           <!-- 进度圆环：3 段弧，学一部分亮一部分（挂 lv-wrap 层，避免按钮 active 边框干扰绝对定位 → 永远与按钮同心） -->
@@ -325,9 +326,6 @@ function unitLesson(id: string) {
     <!-- 开宝箱独立关卡：地图上直接弹奖励层 -->
     <ChestReward v-if="chestOpen" @done="onChestDone" />
 
-    <Transition name="tip">
-      <p v-if="lockedMsg" class="locked-tip anim-pop" role="status">先完成前面的关卡就能解锁啦</p>
-    </Transition>
   </div>
 </template>
 
@@ -350,17 +348,6 @@ function unitLesson(id: string) {
   width: 100%;
   padding-top: 16px; /* TOP：首横幅上方留白 */
 }
-.locked-tip {
-  margin: var(--gap-s) auto 0;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: var(--surface-soft);
-  color: var(--text-soft);
-  font-size: 14px;
-  text-align: center;
-  box-shadow: var(--shadow-soft);
-}
-
 /* ---------- 课程横幅 ---------- */
 .gp-unit {
   height: 56px; /* BAR_H */
@@ -512,6 +499,27 @@ function unitLesson(id: string) {
   text-align: center;
   pointer-events: none;
 }
+/* 锁关点击抖动：保留 --dx 平移基准，左右快速抖动（配合异常音效 + 震动） */
+.lv-wrap.shake {
+  animation: lv-shake 0.5s ease;
+}
+.lv-wrap.shake .lv-ico-lock {
+  animation: lock-wiggle 0.5s ease;
+}
+@keyframes lv-shake {
+  0%, 100% { transform: translateX(var(--dx, 0px)); }
+  20% { transform: translateX(calc(var(--dx, 0px) - 7px)); }
+  40% { transform: translateX(calc(var(--dx, 0px) + 7px)); }
+  60% { transform: translateX(calc(var(--dx, 0px) - 5px)); }
+  80% { transform: translateX(calc(var(--dx, 0px) + 5px)); }
+}
+@keyframes lock-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-12deg); }
+  50% { transform: rotate(10deg); }
+  75% { transform: rotate(-8deg); }
+}
+
 .lv-name {
   position: absolute;
   left: 50%;
