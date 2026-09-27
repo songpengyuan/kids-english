@@ -1,17 +1,19 @@
 <script setup>
 /**
- * 全站背景质感层 —— "底 + 光 + 粒"三层 + 低打扰可爱元素（云朵 / 星星 / 圆点）。
+ * 全站背景质感层 —— 两个主题，由路由自动切换：
+ *  · 默认（水彩晕染）：不规则水彩色斑 + 纸纹颗粒 + 低打扰云朵/星星/圆点。
+ *  · 游戏闯关地图（?mode=game）：天空草地场景（太阳 / 云朵 / 草地山丘 / 碎星）。
+ *  两版都支持暗色模式（夜空 / 月亮 / 暗丘）。
  *
  * 三层质感（都是纯 CSS / 一个内联 SVG，无图片资源）：
- *  1. 微渐变打底：顶部与 --bg 完全一致（状态栏 theme-color 不会跳色），向下压暗 6%
- *     —— 纯平色底在大屏上会显得"糊"，微渐变立刻有纵深
- *  2. 柔和彩光：三团超大半径的品牌色柔光（8~12% 不透明度），让底不再死板
- *  3. 细颗粒：内联 SVG feTurbulence 噪声（140px 无缝平铺）压到 4~7% 不透明度，
- *     像纸张/布纹，消掉渐变的"塑料感"。静态图层，不掉帧。
+ *  1. 底色：顶部与 --bg 完全一致（状态栏 theme-color 不会跳色），向下过渡
+ *  2. 彩层：水彩版=多团不规则品牌色斑；天空版=天空渐变 + 太阳 + 云 + 草地
+ *  3. 细颗粒：内联 SVG feTurbulence 噪声（140px 无缝平铺）压到 3~7% 不透明度，
+ *     像水彩纸/布纹，消掉渐变的"塑料感"。静态图层，不掉帧。
  *
  * 元素层原则：
  *  · pointer-events: none，绝不挡操作；
- *  · 只用主题 token 上色，暗色下自动变淡；
+ *  · 只用主题 token / 固定色值上色，暗色下自动切换；
  *  · 动画都是缓慢的 CSS 循环，GPU 合成层，不耗电；
  *  · 手机横屏（高度 < 480px）整体隐藏，把每一像素高度留给内容。
  *
@@ -19,7 +21,13 @@
  * ⚠️ 页面级容器**不要**再铺不透明 var(--bg)，否则会把这层质感整片盖掉
  *    （地图页 .game 就踩过这个坑，已改透明）。
  */
+import { computed } from "vue";
+import { useRoute } from "vue-router";
 import { Star } from "@lucide/vue";
+
+const route = useRoute();
+/** 游戏闯关地图页：只 ?mode=game（游戏主页路径图）切天空场景；quest 关卡内保持水彩，答题更专注。 */
+const isSky = computed(() => route.query.mode === "game");
 
 const stars = [
   { top: "12%", left: "6%", s: 1, d: 0 },
@@ -27,6 +35,11 @@ const stars = [
   { top: "64%", left: "4%", s: 0.85, d: 2.1 },
   { top: "78%", left: "92%", s: 1.1, d: 0.6 },
   { top: "44%", left: "96%", s: 0.6, d: 1.7 }
+];
+const skyStars = [
+  { top: "16%", left: "56%", s: 0.8, d: 0.3 },
+  { top: "30%", left: "84%", s: 0.6, d: 1.4 },
+  { top: "48%", left: "90%", s: 0.9, d: 2.0 }
 ];
 const dots = [
   { top: "18%", left: "22%", s: 10, d: 0.4 },
@@ -37,11 +50,12 @@ const dots = [
 
 /**
  * 细颗粒噪声：feTurbulence 生成分形噪声 → 去饱和成灰度 → stitchTiles 保证 140px 平铺无缝。
+ * baseFrequency 0.9 偏高频 = 更细的水彩纸纹（旧版 0.85 偏布纹）。
  * 内联 data URI，不占网络请求；配合 .backdrop::after 的低不透明度使用。
  */
 const GRAIN =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E" +
-  "%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E" +
+  "%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E" +
   "%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E" +
   "%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E\")";
 
@@ -50,22 +64,42 @@ const grainStyle = { "--grain": GRAIN };
 </script>
 
 <template>
-  <div class="backdrop" :style="grainStyle" aria-hidden="true">
-    <span class="cloud c1"></span>
-    <span class="cloud c2"></span>
-    <span class="cloud c3"></span>
-    <Star
-      v-for="(st, i) in stars"
-      :key="'s' + i"
-      class="star-fill deco-star"
-      :style="{ top: st.top, left: st.left, '--s': st.s, '--d': st.d + 's' }"
-    />
-    <span
-      v-for="(dt, i) in dots"
-      :key="'d' + i"
-      class="dot"
-      :style="{ top: dt.top, left: dt.left, '--s': dt.s + 'px', '--d': dt.d + 's' }"
-    ></span>
+  <div class="backdrop" :class="{ sky: isSky }" :style="grainStyle" aria-hidden="true">
+    <!-- 水彩版装饰：云朵 + 星星 + 圆点 -->
+    <template v-if="!isSky">
+      <span class="cloud c1"></span>
+      <span class="cloud c2"></span>
+      <span class="cloud c3"></span>
+      <Star
+        v-for="(st, i) in stars"
+        :key="'s' + i"
+        class="star-fill deco-star"
+        :style="{ top: st.top, left: st.left, '--s': st.s, '--d': st.d + 's' }"
+      />
+      <span
+        v-for="(dt, i) in dots"
+        :key="'d' + i"
+        class="dot"
+        :style="{ top: dt.top, left: dt.left, '--s': dt.s + 'px', '--d': dt.d + 's' }"
+      ></span>
+    </template>
+
+    <!-- 天空版装饰：太阳 + 云朵 + 草地山丘 + 少量碎星 -->
+    <template v-else>
+      <span class="sky-sun"></span>
+      <span class="cloud c1"></span>
+      <span class="cloud c2"></span>
+      <span class="cloud c3"></span>
+      <Star
+        v-for="(st, i) in skyStars"
+        :key="'ss' + i"
+        class="star-fill deco-star"
+        :style="{ top: st.top, left: st.left, '--s': st.s, '--d': st.d + 's' }"
+      />
+      <span class="hill h1"></span>
+      <span class="hill h2"></span>
+      <span class="hill h3"></span>
+    </template>
   </div>
 </template>
 
@@ -76,13 +110,16 @@ const grainStyle = { "--grain": GRAIN };
   z-index: -1; /* 负层级：垫在内容下面、body 背景上面（#app 不创建层叠上下文，恰好可用） */
   pointer-events: none;
   overflow: hidden;
-  /* 打底（微渐变）+ 三团柔光。顺序：先写的在上层 */
+  /* 水彩晕染：5 团品牌色斑（蓝/粉/紫/绿/橙）+ 顶部白光 + 暖纸底（向下微微加深）。
+   * 色斑位置错落、半径不均，像水彩在纸上晕开。顺序：先写的在上层 */
   background-image:
-    radial-gradient(72% 30% at 50% -8%, color-mix(in srgb, #fff 45%, transparent), transparent 72%),
-    radial-gradient(58% 42% at 8% 2%, color-mix(in srgb, var(--blue) 15%, transparent), transparent 72%),
-    radial-gradient(46% 38% at 96% 16%, color-mix(in srgb, var(--pink) 13%, transparent), transparent 74%),
-    radial-gradient(70% 46% at 58% 104%, color-mix(in srgb, var(--purple) 13%, transparent), transparent 76%),
-    linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 92%, #000) 100%);
+    radial-gradient(58% 40% at 6% 4%, color-mix(in srgb, var(--blue) 16%, transparent), transparent 68%),
+    radial-gradient(46% 36% at 92% 8%, color-mix(in srgb, var(--pink) 13%, transparent), transparent 70%),
+    radial-gradient(52% 42% at 88% 46%, color-mix(in srgb, var(--purple) 11%, transparent), transparent 72%),
+    radial-gradient(48% 40% at 12% 58%, color-mix(in srgb, var(--green) 12%, transparent), transparent 70%),
+    radial-gradient(42% 34% at 54% 96%, color-mix(in srgb, var(--orange) 10%, transparent), transparent 72%),
+    radial-gradient(60% 26% at 50% -6%, color-mix(in srgb, #fff 40%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 92%, #6a5a3a) 100%);
   background-color: var(--bg); /* 渐变兜底（老浏览器/极端 DPR） */
 }
 /* 细颗粒：在打底之上、云朵/星星之下（负 z-index 子层 = 父背景之上、其余内容之下） */
@@ -93,9 +130,61 @@ const grainStyle = { "--grain": GRAIN };
   z-index: -1;
   background-image: var(--grain);
   background-repeat: repeat;
-  opacity: 0.045;
+  opacity: 0.05;
   pointer-events: none;
 }
+
+/* ---------- 天空草地版（游戏闯关地图 ?mode=game） ---------- */
+.backdrop.sky {
+  background-image:
+    linear-gradient(180deg, #a9d8f7 0%, #d8eeff 42%, #eef7e0 78%, #dceac4 100%);
+}
+.backdrop.sky::after {
+  opacity: 0.03; /* 天空颗粒更轻，保持通透 */
+}
+/* 太阳：左上暖光 */
+.sky-sun {
+  position: absolute;
+  top: 5%;
+  left: 8%;
+  width: clamp(48px, 9vw, 80px);
+  height: clamp(48px, 9vw, 80px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #fff6c8, #ffd76e 62%, #ffc94d);
+  box-shadow: 0 0 36px 12px rgba(255, 224, 130, 0.45);
+  animation: sun-breathe 4.6s ease-in-out infinite;
+}
+@keyframes sun-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+/* 天空云朵：更白更大更实（区别于水彩版的半透明） */
+.backdrop.sky .cloud {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    calc(var(--w, 26px)) calc(var(--h, -12px)) 0 -4px rgba(255, 255, 255, 0.92);
+}
+.backdrop.sky .cloud.c1 { --w: 34px; --h: -14px; top: 9%; left: 6%; transform: scale(1.35); }
+.backdrop.sky .cloud.c2 { --w: 22px; --h: -10px; top: 22%; left: 52%; transform: scale(1.05); }
+.backdrop.sky .cloud.c3 { --w: 16px; --h: -7px; top: 58%; left: 74%; transform: scale(0.85); opacity: 0.9; }
+/* 天空碎星：亮色下很淡（点缀），暗色下自然显亮 */
+.backdrop.sky .deco-star {
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 0.35;
+}
+/* 草地山丘：底部椭圆色带，地图内容浮在草地上 */
+.hill {
+  position: absolute;
+  bottom: -16%;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  background: linear-gradient(180deg, #9fd87a 0%, #76b85c 100%);
+  pointer-events: none;
+}
+.hill.h1 { left: -12%; width: 58%; height: 36%; }
+.hill.h2 { right: -16%; width: 66%; height: 44%; }
+.hill.h3 { left: 28%; bottom: -12%; width: 46%; height: 32%; opacity: 0.9; }
+
+/* 装饰元素（水彩版与天空版共用类） */
 .cloud {
   position: absolute;
   width: clamp(70px, 16vw, 150px);
@@ -144,20 +233,48 @@ const grainStyle = { "--grain": GRAIN };
 @media (max-height: 480px) {
   .backdrop { display: none; }
 }
-/* 暗色：底色更沉、彩光给足（深底上低不透明度看不见）、颗粒略强（深色更容易显脏） */
+
+/* ---------- 暗色模式 ---------- */
+/* 水彩版：底色更沉、色斑降饱和压深（深底上低不透明度看不见）、颗粒略强（深色更容易显脏） */
 :root[data-theme="dark"] .backdrop {
   background-image:
-    radial-gradient(72% 30% at 50% -8%, color-mix(in srgb, var(--blue) 14%, transparent), transparent 72%),
-    radial-gradient(58% 42% at 8% 2%, color-mix(in srgb, var(--blue) 20%, transparent), transparent 72%),
-    radial-gradient(46% 38% at 96% 16%, color-mix(in srgb, var(--pink) 16%, transparent), transparent 74%),
-    radial-gradient(70% 46% at 58% 104%, color-mix(in srgb, var(--purple) 18%, transparent), transparent 76%),
-    linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 88%, #000) 100%);
+    radial-gradient(58% 40% at 6% 4%, color-mix(in srgb, var(--blue) 13%, transparent), transparent 68%),
+    radial-gradient(46% 36% at 92% 8%, color-mix(in srgb, var(--pink) 10%, transparent), transparent 70%),
+    radial-gradient(52% 42% at 88% 46%, color-mix(in srgb, var(--purple) 13%, transparent), transparent 72%),
+    radial-gradient(48% 40% at 12% 58%, color-mix(in srgb, var(--green) 10%, transparent), transparent 70%),
+    radial-gradient(42% 34% at 54% 96%, color-mix(in srgb, var(--orange) 9%, transparent), transparent 72%),
+    radial-gradient(60% 26% at 50% -6%, color-mix(in srgb, var(--blue) 12%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 86%, #000) 100%);
 }
 :root[data-theme="dark"] .backdrop::after {
   opacity: 0.07;
 }
+/* 天空版：夜空渐变 + 月亮 + 暗丘 + 夜云 */
+:root[data-theme="dark"] .backdrop.sky {
+  background-image:
+    linear-gradient(180deg, #161d2f 0%, #232b47 46%, #24313a 78%, #18261d 100%);
+}
+:root[data-theme="dark"] .backdrop.sky::after {
+  opacity: 0.06;
+}
+:root[data-theme="dark"] .sky-sun {
+  background: radial-gradient(circle at 42% 38%, #ffffff, #e4ecff 64%, #c3d0f5);
+  box-shadow: 0 0 30px 10px rgba(190, 210, 255, 0.4);
+}
+:root[data-theme="dark"] .backdrop.sky .cloud {
+  background: rgba(206, 219, 246, 0.22);
+  box-shadow:
+    calc(var(--w, 26px)) calc(var(--h, -12px)) 0 -4px rgba(206, 219, 246, 0.22);
+}
+:root[data-theme="dark"] .backdrop.sky .deco-star {
+  color: rgba(255, 255, 255, 0.95);
+  opacity: 0.8;
+}
+:root[data-theme="dark"] .hill {
+  background: linear-gradient(180deg, #2d4d3c 0%, #1c3428 100%);
+}
 /* 尊重系统"减少动态效果" */
 @media (prefers-reduced-motion: reduce) {
-  .cloud, .deco-star, .dot { animation: none; }
+  .cloud, .deco-star, .dot, .sky-sun { animation: none; }
 }
 </style>
