@@ -99,6 +99,8 @@ function skip() {
 /**
  * 关闭 · 无论动画进行到哪一步都能一键退出：
  * 还没开箱（closed）→ 奖励照常入账（与"跳过"一致）；已开箱 → 直接收起。
+ * 注意：**已收进宝藏罐（collected）也能关** —— 结算页如果没有接 @done，
+ * 这里就是用户唯一的出口（否则会卡在"已收进宝藏罐"这一屏）。
  */
 function closeOverlay() {
   if (phase.value === "closed") {
@@ -180,7 +182,7 @@ const cap = computed(() => {
 <template>
   <div class="chest-wrap">
     <!-- 关闭：固定右上角，任何阶段都能点（开箱动画/奖励面板都不拦路） -->
-    <button v-if="phase !== 'collected'" class="chest-close" aria-label="关闭" title="关闭" @click="closeOverlay">
+    <button class="chest-close" aria-label="关闭" title="关闭" @click="closeOverlay">
       <PathIcon name="close" class="close-ico" />
     </button>
 

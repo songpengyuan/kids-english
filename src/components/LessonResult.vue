@@ -9,6 +9,7 @@
  * - 底部动作：返回地图/下一关（quest）、再选玩法/下一课（free），由父组件处理。
  */
 import { Star } from "@lucide/vue";
+import { ref } from "vue";
 import PathIcon from "./PathIcon.vue";
 import ChestReward from "./ChestReward.vue";
 
@@ -29,6 +30,12 @@ const emit = defineEmits<{
   toMenu: [];
   goNextLesson: [];
 }>();
+
+/**
+ * 宝箱收取完就卸载 —— ChestReward 通过 @done 通知（收取完成 / 点关闭）。
+ * 之前这里没接 @done：收取后组件仍留在 collected 态，界面卡在"已收进宝藏罐"没法退出。
+ */
+const chestDone = ref(false);
 </script>
 
 <template>
@@ -79,7 +86,8 @@ const emit = defineEmits<{
       <div v-if="streakJustHit" class="streak-banner anim-pop">
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
-      <ChestReward />
+      <!-- 收取完成（或点关闭）就卸载，避免卡在"已收进宝藏罐"那一屏 -->
+      <ChestReward v-if="!chestDone" @done="chestDone = true" />
       <div class="btn-row">
         <button class="k-btn" @click="emit('toMenu')">再选一个玩法</button>
         <button v-if="nextLesson" class="k-btn gray" @click="emit('goNextLesson')">

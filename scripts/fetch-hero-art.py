@@ -61,6 +61,7 @@ FANDOM = os.environ.get("HERO_FANDOM_BASE", "https://ultra.fandom.com")
 BING = os.environ.get("HERO_BING_BASE", "https://cn.bing.com")
 BAIDU = os.environ.get("HERO_BAIDU_BASE", "https://image.baidu.com")
 MOEGIRL = os.environ.get("HERO_MOEGIRL_BASE", "https://zh.moegirl.org.cn")
+TSUBURAYA = os.environ.get("HERO_TSUBURAYA_BASE", "https://tsuburaya-prod.com")
 SLEEP_SEC = 1.2  # 对上游站点保持礼貌
 MAX_EDGE = 512
 
@@ -76,16 +77,20 @@ def show_path(path):
 def load_forms():
     """从 src/data/heroes.ts 读形态清单（唯一数据源，避免两边不一致）。
 
-    返回 [(form_id, 形态中文, 形态英文, 角色中文, 角色英文)]，顺序与名录一致。
+    返回 [(form_id, 形态中文, 形态英文, 角色中文, 角色英文, 形态序号)]，顺序与名录一致。
     """
     src = open(HEROES_TS, encoding="utf-8").read()
     roster = src[src.index("const ROSTER"): src.index("/** 展开成图鉴用的正式结构")]
     heroes = re.findall(r'id: "([a-z0-9]+)", name: "([^"]+)", en: "([^"]+)"', roster)
     forms = re.findall(r'\["([a-z0-9-]+)", "([^"]+)", "([^"]+)"\]', roster)
     out = []
+    seen = {}
     for fid, zh, en in forms:
         hero = next((h for h in heroes if fid.startswith(h[0] + "-")), None)
-        out.append((fid, zh, en, hero[1] if hero else "", hero[2] if hero else ""))
+        hid = hero[0] if hero else ""
+        idx = seen.get(hid, 0)
+        seen[hid] = idx + 1
+        out.append((fid, zh, en, hero[1] if hero else "", hero[2] if hero else "", idx))
     return out
 
 
@@ -181,8 +186,9 @@ def fandom_file_url(file_name):
     return None
 
 
-def fandom_candidates(query, limit=6):
+def fandom_candidates(ctx, limit=6):
     """Fandom：页面主图 +（主图不合适时）页面图片按关键词打分兜底"""
+    query = ctx["query_en"]
     try:
         titles = fandom_search(query)
         if not titles:
@@ -203,8 +209,9 @@ def fandom_candidates(query, limit=6):
 
 # ---------------------------------------------------------------- 必应图片
 
-def bing_find(query):
+def bing_find(ctx, limit=8):
     """必应图片：解析 async 结果里的 murl，按域名可信度 + .png 排序"""
+    query = ctx["query_en"]
     url = f"{BING}/images/async?q={urllib.parse.quote(query)}&first=1&count=35&mmasync=1&FORM=HDRSC2"
     html = http_text(url, referer=f"{BING}/images/")
     urls = re.findall(r"murl&quot;:&quot;(.*?)&quot;", html) or re.findall(r'"murl":"(.*?)"', html)
@@ -215,8 +222,9 @@ def bing_find(query):
 
 # ---------------------------------------------------------------- 百度图片
 
-def baidu_find(query):
+def baidu_find(ctx, limit=8):
     """百度图片：acjson 接口；返回的 JSON 有时不合法 → 正则兜底"""
+    query = ctx["query_zh"]
     url = (f"{BAIDU}/search/acjson?tn=resultjson_com&ipn=rj&ie=utf-8&pn=0&rn=20&word="
            + urllib.parse.quote(query))
     raw = http_text(url, referer=f"{BAIDU}/")
@@ -238,8 +246,9 @@ def baidu_find(query):
 
 # ---------------------------------------------------------------- 萌娘百科
 
-def moegirl_find(query):
+def moegirl_find(ctx, limit=3):
     """萌娘百科：MediaWiki API 搜索 → 页面主图（图片站有防盗链，下载要带 Referer）"""
+    query = ctx["query_zh"]
     api = f"{MOEGIRL}/api.php?action=query&list=search&srlimit=5&format=json&srsearch=" + urllib.parse.quote(query)
     hits = http_json(api, referer=f"{MOEGIRL}/").get("query", {}).get("search", [])
     if not hits:
@@ -257,23 +266,124 @@ def moegirl_find(query):
     return []
 
 
+# ---------------------------------------------------------------- 圆谷官方站
+
+_official_cache = None
+
+
+def official_heroes():
+    """圆谷官网 /heroeslist → [{slug, name, image, page}]（进程内缓存，一次请求复用）。
+
+    列表页是懒加载：真实图片在 <noscript><img src=...> 里（形如 /wp-content/uploads/…/Xxx-Top.png），
+    每张都是角色的透明立绘，质量最稳，所以把它排在所有图源之前。
+    """
+    global _official_cache
+    if _official_cache is not None:
+        return _official_cache
+    html = http_text(f"{TSUBURAYA}/heroeslist", referer=TSUBURAYA + "/")
+    out = []
+    for art in re.findall(r'<article class="p-herolist__item">(.*?)</article>', html, re.S):
+        slug = re.search(r'/heroes/([a-z0-9-]+)"', art)
+        img = (re.search(r'<noscript><img[^>]+src="([^"]+)"', art)
+               or re.search(r'data-src="([^"]+)"', art)
+               or re.search(r'<img[^>]+src="(/wp-content[^"]+)"', art))
+        name = re.search(r'p-herolist__name">\s*([^<]+)', art)
+        if not (slug and img):
+            continue
+        url = img.group(1)
+        if url.startswith("/"):
+            url = TSUBURAYA + url
+        out.append({
+            "slug": slug.group(1),
+            "name": (name.group(1).strip() if name else ""),
+            "image": url,
+            "page": f"{TSUBURAYA}/heroes/{slug.group(1)}",
+        })
+    _official_cache = out
+    return out
+
+
+def _norm_name(s):
+    """归一化角色名：去 ULTRAMAN 前缀与所有非字母数字（'Ultraman Zero' ↔ 'ULTRAMAN ZERO'）"""
+    s = re.sub(r"[^A-Za-z0-9]", "", s or "").lower()
+    return s.replace("ultraman", "")
+
+
+def official_match(hero_en):
+    for h in official_heroes():
+        if _norm_name(h["name"]) and _norm_name(h["name"]) == _norm_name(hero_en):
+            return h
+    slug_guess = "ultraman-" + re.sub(r"[^a-z0-9]+", "-", hero_en.lower()).strip("-")
+    for h in official_heroes():
+        if h["slug"] in (slug_guess, slug_guess.replace("ultraman-ultraman", "ultraman")):
+            return h
+    return None
+
+
+def official_candidates(ctx, limit=3):
+    """官方站候选：
+    · 基础形态（index 0）→ 角色页里的立绘 PNG（优先 *-Top.png / 文件名含角色名），
+      兜底用列表页那张；
+    · 非基础形态 → **只**用角色页里"文件名含形态英文名"的图（找不到就交给后面的图源）。
+      刻意不拿基础形态的图顶替 —— 那会把同一个形象套给该角色的所有形态（报告里的 ⚠️ 同图就是这么来的）。
+    """
+    hero = official_match(ctx["hero_en"])
+    if not hero:
+        return []
+    out = []
+    form_key = re.sub(r"[^a-z0-9]", "", ctx["form_en"].lower())
+    hero_key = _norm_name(ctx["hero_en"])
+    try:
+        page = http_text(hero["page"], referer=TSUBURAYA + "/")
+    except Exception:
+        page = ""
+    for u in re.findall(r'src="(/wp-content/uploads/[^"]+\.(?:png|jpg|jpeg))"', page):
+        flat = re.sub(r"[^a-z0-9]", "", u.lower())
+        # 排除"角色名标题图/logo/横幅"这类非立绘素材
+        if any(bad in flat for bad in ("name", "logo", "title", "bnr", "banner", "icon", "thumb")):
+            continue
+        if ctx["index"] == 0 and ("top" in flat or (hero_key and hero_key in flat)):
+            out.append((TSUBURAYA + u, f"[official] {hero['name']}（角色页立绘）"))
+        elif ctx["index"] > 0 and form_key and form_key in flat:
+            out.append((TSUBURAYA + u, f"[official] {hero['name']} · {ctx['form_en']}"))
+    if ctx["index"] == 0:
+        out.append((hero["image"], f"[official] {hero['name']}（官方立绘）"))
+    # 去重（保留首个说明）
+    seen, uniq = set(), []
+    for url, note in out:
+        if url not in seen:
+            seen.add(url)
+            uniq.append((url, note))
+    return uniq[:limit]
+
+
 SOURCES = {
-    "fandom": (fandom_candidates, "en", FANDOM + "/"),
-    "bing": (bing_find, "en", BING + "/"),
-    "baidu": (baidu_find, "zh", BAIDU + "/"),
-    "moegirl": (moegirl_find, "zh", MOEGIRL + "/"),
+    "official": (official_candidates, TSUBURAYA + "/"),
+    "fandom": (fandom_candidates, FANDOM + "/"),
+    "bing": (bing_find, BING + "/"),
+    "baidu": (baidu_find, BAIDU + "/"),
+    "moegirl": (moegirl_find, MOEGIRL + "/"),
 }
 
 
 def candidate_stream(form, order, per_source=6, total=10):
     """按图源顺序产出候选图：(url, 说明, referer)。调用方逐张下载质检，不合格再取下一张。"""
-    fid, zh_form, en_form, zh_hero, en_hero = form
+    fid, zh_form, en_form, zh_hero, en_hero, index = form
+    ctx = {
+        "form_id": fid,
+        "form_zh": zh_form,
+        "form_en": en_form,
+        "hero_zh": zh_hero,
+        "hero_en": en_hero,
+        "index": index,
+        "query_en": f"{en_hero} {en_form}".strip(),
+        "query_zh": f"{zh_hero} {zh_form}".strip(),
+    }
     yielded = 0
     for name in order:
-        finder, lang, referer = SOURCES[name]
-        query = f"{zh_hero} {zh_form}" if lang == "zh" else f"{en_hero} {en_form}".strip()
+        finder, referer = SOURCES[name]
         try:
-            found = finder(query)
+            found = finder(ctx)
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError) as e:
             network_hint(e)
             continue
@@ -448,8 +558,8 @@ def main():
     ap.add_argument("--map", help="映射文件：每行 `formId 文件名`")
     ap.add_argument("--only", help="只处理这些形态 id（逗号分隔）")
     ap.add_argument("--limit", type=int, default=0, help="最多处理几个形态（0 = 不限）")
-    ap.add_argument("--source", default="fandom,bing,baidu,moegirl",
-                    help="图源顺序（逗号分隔）：fandom,bing,baidu,moegirl；默认全部依次尝试")
+    ap.add_argument("--source", default="official,fandom,bing,baidu,moegirl",
+                    help="图源顺序（逗号分隔）：official,fandom,bing,baidu,moegirl；默认全部依次尝试")
     ap.add_argument("--out", default=DEFAULT_OUT, help=f"输出目录（默认 {show_path(DEFAULT_OUT)}）")
     ap.add_argument("--force", action="store_true", help="已有 png 也重新处理")
     ap.add_argument("--dry-run", action="store_true", help="只打印计划，不下载")

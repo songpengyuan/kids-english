@@ -1099,3 +1099,13 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 
 **验收**（无头 Chrome）：宝箱关闭按钮 `hasClose=true aria=关闭`；连一连听音模式 `modeBtns=2 / soundIcons=3 / 单词文本为空`；
 亲子对话重叠检测（**与滚动容器求交后的可见区域**才算，避免把滚出可视区误报成重叠）在 360×640 与 iPad 上均为「无重叠」；全流程 0 页面异常。
+### 13.39 修复宝箱"已收进宝藏罐"后卡死（2026-09-27）
+用户反馈：宝箱收进宝藏罐后**没有关闭按钮、界面卡住**。
+
+- 根因：`LessonResult` 把宝箱挂载成 `<ChestReward />` —— **没接 `@done`**。`collect()` 收完动画后 emit `done` 没人理，
+  组件仍停在 `collected` 态；而我上一轮加的 ✕ 又是 `v-if="phase !== 'collected'"`（收完就隐藏）→ 唯一出口也没了。
+- 修复两处：
+  1. `LessonResult` 接 `@done="chestDone = true"`，收取完即卸载宝箱（结算页回归星星+按钮）；
+  2. `ChestReward` 的 ✕ **所有阶段都显示**（含 collected）—— 即便父级没接 `@done`，用户也永远有出口。
+- 验收：无头 Chrome 走「自由练习 → 学单词 → 结算页 → 开箱 → 收取」，收取后 `chestStillMounted=false`、结算页仍在；
+  修复前该状态会一直停在"宝石飞向宝藏罐/已收进宝藏罐"。

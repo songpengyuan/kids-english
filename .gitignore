@@ -29,3 +29,5 @@ _tmp_*
 public/heroes/*.png
 # 素材下载报告（含来源 URL）同样只留本地
 public/heroes/fetch-report.tsv
+# 下载过程中的临时文件
+public/heroes/.tmp-download
