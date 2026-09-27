@@ -94,8 +94,6 @@ const scoreStars = computed(() => {
 
 <template>
   <div class="quiz view">
-    <div class="progress"><div class="fill" :style="{ width: percent + '%' }"></div></div>
-
     <button class="big-speaker anim-float" @click="replay" aria-label="再听一遍" title="再听一遍">
       <Volume2 class="k-ico" />
     </button>

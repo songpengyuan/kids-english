@@ -807,3 +807,7 @@ pnpm test   # vitest run，覆盖：
 
 - 关闭（✕）与返回（←）图标加入 pathIcons.ts（APP_ICON_PATHS.close / back），HeaderBar 由 lucide X/ChevronLeft 改为 PathIcon 渲染，与玩法/课程/底部导航图标同源。
 - 实测：关闭按钮 svg.path-icon 22px、stroke-width 2.2 渲染正常。
+### 13.28 修复答题页双进度条（2026-09-27）
+
+- 此前 QuizView 本地进度条删除未落盘（脚本中途崩溃），答题页出现顶栏 + 内容区两条进度条；已补删本地进度条，答题页仅保留顶部（✕ 旁）一条。
+- 实测：页面 progress 条仅 1 个（hdr-progress，y=37）。
