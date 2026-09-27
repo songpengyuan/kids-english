@@ -7,9 +7,9 @@
  * - 右侧：走 #right 插槽（徽章 / 日期 / 主题切换等），保证布局对齐。
  * 替换各页手写 topbar，视觉与交互保持一致（面向儿童：大点击区、圆角、柔和阴影）。
  */
-import { ChevronLeft } from "@lucide/vue";
+import { ChevronLeft, X } from "@lucide/vue";
 
-defineProps<{ showBack?: boolean; backLabel?: string }>();
+defineProps<{ showBack?: boolean; backLabel?: string; close?: boolean }>();
 const emit = defineEmits<{ back: [] }>();
 </script>
 
@@ -18,11 +18,12 @@ const emit = defineEmits<{ back: [] }>();
     <button
       v-if="showBack"
       class="hdr-back"
-      :aria-label="backLabel || '返回'"
-      :title="backLabel || '返回'"
+      :aria-label="close ? '关闭' : backLabel || '返回'"
+      :title="close ? '关闭' : backLabel || '返回'"
       @click="emit('back')"
     >
-      <ChevronLeft class="k-ico" />
+      <X v-if="close" class="k-ico" />
+      <ChevronLeft v-else class="k-ico" />
     </button>
     <div class="hdr-title"><slot name="title" /></div>
     <div class="hdr-right"><slot name="right" /></div>
