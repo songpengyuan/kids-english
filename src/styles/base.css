@@ -162,12 +162,14 @@ img {
     calc(var(--pad-x) + env(safe-area-inset-left));
 }
 
-/* 手机横屏：高度极紧张，压缩外壳内边距并把安全区只留给左右 */
+/* 手机横屏：高度极紧张，压缩外壳内边距但保留左右安全区（刘海在横屏时在左右） */
 @media (max-height: 480px) {
   #app {
     padding:
-      4px calc(var(--pad-x) + env(safe-area-inset-right))
-      4px calc(var(--pad-x) + env(safe-area-inset-left));
+      calc(4px + env(safe-area-inset-top))
+      calc(var(--pad-x) + env(safe-area-inset-right))
+      calc(4px + env(safe-area-inset-bottom))
+      calc(var(--pad-x) + env(safe-area-inset-left));
   }
 }
 

@@ -97,6 +97,15 @@ function sayEntry(name: string, path: string) {
     <AppHeader title="我的" icon="me" />
 
     <div class="me-body view-body">
+      <!-- 设置（顶部一行）：声音 + 暗黑模式，随时可切 -->
+      <section class="settings anim-fade-up">
+        <span class="set-cap" @click="sayCell('声音', '静音只关音效与提示语，单词发音保留')"><PathIcon name="me" class="set-ico" />声音</span>
+        <SoundToggle />
+        <span class="sep"></span>
+        <span class="set-cap" @click="sayCell('暗黑模式', '切换亮色与暗色主题')">暗黑模式</span>
+        <ThemeToggle />
+      </section>
+
       <!-- 身份卡：⭐ 总星星展示；🔥 连击可点击 → 打卡日历（子页，见 BottomNav） -->
       <section class="profile card anim-pop" @click="sayProfile">
         <span class="pf-emoji">🦊</span>
