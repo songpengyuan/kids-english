@@ -3,7 +3,9 @@
  * 我的（/me）——个人中心，儿童友好的"成就汇总 + 功能入口"页：
  * - 身份/成就：吉祥物 + 总星星 + 连击
  * - 统计：星星 / 连击 / 贝壳 / 贴纸图鉴 / 今日时长 / 今日玩法
- * - 入口：宝藏罐 / 家长报告 / 错词复习（子页高亮"我的"tab，见 BottomNav）
+ * - 今日目标：复习 N 个到期词 + 新学 1 关（进度条 + 明细）
+ * - 入口：宝藏罐 / 家长报告 / 到期复习（子页高亮"我的"tab，见 BottomNav）
+ * - 设置：静音开关（音效与提示语）
  * 数据全部来自本地存储，不上传。
  */
 import { computed } from "vue";
@@ -12,6 +14,10 @@ import { useRewardsStore } from "../stores/rewards";
 import { useStreakStore } from "../stores/streak";
 import { useRouter } from "vue-router";
 import ThemeToggle from "../components/layout/ThemeToggle.vue";
+import SoundToggle from "../components/layout/SoundToggle.vue";
+import { soundOn } from "../utils/sound";
+import { lessons } from "../data/lessons";
+import { dueWords } from "../utils/reviewQueue";
 import HeaderBar from "../components/layout/HeaderBar.vue";
 import { ChevronRight, Flame, Star } from "@lucide/vue";
 import PathIcon from "../components/PathIcon.vue";
@@ -21,6 +27,9 @@ const rewards = useRewardsStore();
 const streak = useStreakStore();
 const router = useRouter();
 
+/** 全词库（用于过滤掉课程已删除的残留词） */
+const allWords = lessons.flatMap((l) => l.words);
+
 function fmtDuration(sec) {
   const s = Math.max(0, Math.round(sec));
   const m = Math.floor(s / 60);
@@ -29,8 +38,15 @@ function fmtDuration(sec) {
   return `${m} 分 ${rest} 秒`;
 }
 
-/** 待复习弱词数（有则入口带数量） */
-const weakCount = computed(() => progress.getWeakWords().length);
+/** 今天到期该复习的词数（有则入口带数量） */
+const weakCount = computed(() => dueWords(progress.getReviewQueue(), allWords).length);
+
+/** 今日目标进度（复习到期词 + 新学一关） */
+const goalPct = computed(() => {
+  const reviewPart = streak.reviewGoal > 0 ? Math.min(1, streak.reviewed / streak.reviewGoal) : 1;
+  const levelPart = Math.min(1, streak.newLevels / 1);
+  return Math.round(((reviewPart + levelPart) / 2) * 100);
+});
 
 const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stickerTotal}`);
 
@@ -62,7 +78,7 @@ const todayWords = computed(() => {
   <div class="me view">
     <HeaderBar>
       <template #title><PathIcon name="me" /> 我的</template>
-      <template #right><ThemeToggle /></template>
+      <template #right><SoundToggle /><ThemeToggle /></template>
     </HeaderBar>
 
     <div class="me-body view-body">
@@ -76,6 +92,21 @@ const todayWords = computed(() => {
             <span class="pf-flame"><Flame class="k-ico flame" />{{ streak.streak }} 天连击</span>
           </p>
         </div>
+      </section>
+
+      <!-- 今日目标：复习到期词 + 新学一关（家长/孩子都能看懂的两件事） -->
+      <section class="goal card anim-fade-up" :class="{ done: streak.todayDone }">
+        <div class="goal-head">
+          <h3>今日目标</h3>
+          <span class="goal-state">{{ streak.todayDone ? "已达成" : "进行中" }}</span>
+        </div>
+        <div class="goal-bar"><div class="goal-fill" :style="{ width: goalPct + '%' }"></div></div>
+        <p class="goal-line">
+          复习到期词 <b>{{ streak.reviewed }}/{{ streak.reviewGoal }}</b>
+          · 新学关卡 <b>{{ streak.newLevels }}/1</b>
+        </p>
+        <p class="goal-hint" v-if="weakCount > 0">首页「{{ weakCount }} 个词到期」入口就是复习</p>
+        <p class="goal-hint" v-else>今天没有到期的词，直接去闯新关吧</p>
       </section>
 
       <!-- 成就统计 -->
@@ -117,19 +148,24 @@ const todayWords = computed(() => {
         <button class="entry" @click="router.push('/report')">
           <span class="en-ico"><PathIcon name="chart" /></span>
           <span class="en-cap">家长报告</span>
-          <span class="en-desc">今日学情 · 错词清单</span>
+          <span class="en-desc">掌握度趋势 · 待巩固词</span>
           <ChevronRight class="k-ico en-arrow" />
         </button>
         <button class="entry" @click="router.push('/review')">
           <span class="en-ico"><PathIcon name="review" /></span>
-          <span class="en-cap">错词复习</span>
-          <span class="en-desc" v-if="weakCount">有 {{ weakCount }} 个词要复习</span>
-          <span class="en-desc" v-else>都掌握得很好！</span>
+          <span class="en-cap">到期复习</span>
+          <span class="en-desc" v-if="weakCount">今天有 {{ weakCount }} 个词到期</span>
+          <span class="en-desc" v-else>今天没有到期的词</span>
           <ChevronRight class="k-ico en-arrow" />
         </button>
       </section>
 
-      <p class="foot">数据只保存在这台设备上，不会上传。</p>
+      <section class="settings">
+        <span class="set-cap"><PathIcon name="me" class="set-ico" />静音（只关音效与提示语，单词发音保留）</span>
+        <SoundToggle />
+      </section>
+
+      <p class="foot">数据只保存在这台设备上，不会上传。{{ soundOn ? "" : "（已静音）" }}</p>
     </div>
   </div>
 </template>
@@ -137,6 +173,83 @@ const todayWords = computed(() => {
 <style scoped>
 .me {
   align-items: center;
+}
+
+/* 今日目标卡片 */
+.goal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-s);
+  width: 100%;
+}
+.goal.done {
+  box-shadow: var(--shadow-hard), inset 0 0 0 2px var(--green);
+}
+.goal-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--gap-s);
+}
+.goal-head h3 {
+  margin: 0;
+}
+.goal-state {
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+}
+.goal.done .goal-state {
+  color: var(--green-dark);
+}
+.goal-bar {
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  overflow: hidden;
+}
+.goal-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--green), var(--green-dark));
+  transition: width var(--dur-slow) var(--ease-out);
+}
+.goal-line,
+.goal-hint {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+}
+.goal-line b {
+  color: var(--ink);
+}
+.goal-hint {
+  color: var(--ink-faint);
+}
+
+/* 设置行 */
+.settings {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-s);
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: var(--gap-s) var(--gap-m);
+}
+.set-cap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+}
+.set-ico {
+  color: var(--ink-faint);
 }
 .me-body {
   display: flex;

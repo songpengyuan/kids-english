@@ -72,20 +72,77 @@ export function hitTestPath<T extends PathGeoItem>(
 
 /**
  * 多邻国式 S 形等距节点（等弧长采样）。
- * 曲线：`x(t)=w/2+0.26w·sin(2πt)`，`y(t)=startY+(endY-startY)·t`（t∈[0,1]），
+ * 曲线：`x(t)=w/2+A·sin(2πt)`，`y(t)=startY+(endY-startY)·t`（t∈[0,1]），
  * 起点终点都在水平中线，中间沿 S 曲线左右摆动；
  * 按曲线弧长等距取 n 个点 → **首末关水平居中、相邻节点直线距离相等**。
  * @param n 该课关卡总数（≥1）
  */
+
+/**
+ * S 形横向振幅上限（px）。
+ *
+ * 曾是 `A = 0.12 × 容器宽`：手机上摆 ±41 还好，但 iPad/Mac 上摆到 ±80~±145，
+ * 而纵向圆心距是固定的（CSS 里的 margin），于是**相邻节点的直线距离忽大忽小**
+ * （实测 iPad：竖列 109 vs 斜列 136 → 看起来"不是等距"）。
+ * 现在把振幅与纵向节奏绑定成固定值：各设备上的路径形状一致，斜距最多比竖距长 ~8%。
+ */
+export const SNAKE_SWING = 46;
+
+/* ---------- 关卡纵向节奏（统一"视觉留白"） ----------
+ *
+ * 节点有两个可变量：**有没有进度环**。环是"光晕"，比按钮高 34px（上下各 17px），
+ * 于是"固定 margin"永远会让留白忽大忽小：实测 环→环 28px、环→无环 43px、无环→无环 50px。
+ *
+ * 解法：间距**按相邻两关的形态动态算**，让"可见轮廓之间"的留白恒等于 VISUAL_GAP。
+ * 代价是圆心距不再恒定（约 104~131px），但眼睛量的是留白，不是圆心。
+ * 常量必须与 GamePath.vue 的 CSS 保持一致（改样式要同步改这里 + 跑单测）。
+ */
+
+/** 目标视觉留白：相邻两关"可见轮廓之间"的空白（px） */
+export const VISUAL_GAP = 40;
+/** 椭圆按钮高度 */
+export const NODE_H = 57;
+/** 按钮下方 3D 底座投影高度 */
+export const NODE_BASE = 7;
+/** 进度环相对按钮的上下外扩 */
+export const RING_OVERHANG = 17;
+/** 按钮 → 关卡名 的间距（lv-wrap 的 gap） */
+export const LABEL_GAP = 18;
+/** 关卡名行高 */
+export const LABEL_H = 14.4;
+
+/** 节点可见轮廓相对按钮上下缘的外扩量 */
+export interface Overhang {
+  top: number;
+  bottom: number;
+}
+
+/** 有环：上下各外扩 RING_OVERHANG；无环：上缘就是按钮边缘，下缘多出 3D 底座 */
+export function overhangOf(hasRing: boolean): Overhang {
+  return hasRing ? { top: RING_OVERHANG, bottom: RING_OVERHANG } : { top: 0, bottom: NODE_BASE };
+}
+
+/**
+ * 上一关（或课名横幅）到本关的 margin-top，使两者可见轮廓之间恒为 VISUAL_GAP。
+ * @param prev 上一关的轮廓外扩；传 null 表示上一项是课名横幅（中间没有关卡名）
+ */
+export function marginBefore(prev: Overhang | null, cur: Overhang): number {
+  if (!prev) return VISUAL_GAP + cur.top;
+  return VISUAL_GAP - (LABEL_GAP + LABEL_H) + prev.bottom + cur.top;
+}
+
+/** 按上面的 margin 排布后，两关可见轮廓之间的实际留白（单测用它验证"处处相等"） */
+export function visualGapOf(prev: Overhang, cur: Overhang, margin: number): number {
+  return margin + LABEL_GAP + LABEL_H - prev.bottom - cur.top;
+}
+
 export interface SnakeNode {
   x: number;
   y: number;
 }
 export function snakeNodes(width: number, n: number, startY: number, endY: number): SnakeNode[] {
-  // 等弧长 S 形：x(t)=w/2+0.12w·sin(2πt)，y(t)=startY+(endY-startY)·t。
-  // 首末关都在水平中线；沿曲线弧长等距取 n 个点 → 间距视觉均匀
-  // （小振幅 0.12w 下弦长差异 < 20px，约 14%）。
-  const A = 0.12 * width;
+  // 等弧长 S 形：首末关都在水平中线；沿曲线弧长等距取 n 个点 → 间距视觉均匀
+  const A = Math.min(0.12 * width, SNAKE_SWING);
   const H = endY - startY;
   const xAt = (t: number) => width / 2 + A * Math.sin(2 * Math.PI * t);
   const yAt = (t: number) => startY + H * t;

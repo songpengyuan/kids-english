@@ -2,6 +2,8 @@
 /** 模块级滚动记忆：KeepAlive 缓存下 GamePath 子树可能被重建，
  *  script setup 内局部变量每次挂载重置，故存模块作用域，跨实例/跨 KeepAlive 保留。 */
 export let savedGameTop = 0;
+/** 上次定位/看到过的"当前关"：当前关变了（通关推进）→ 进地图时自动跟过去 */
+export let lastSeenLevelId = "";
 </script>
 
 <script setup lang="ts">
@@ -34,6 +36,7 @@ import { sfxWrong } from "../utils/effects";
 import PathIcon from "./PathIcon.vue";
 import ChestReward from "./ChestReward.vue";
 import { buildPathGeometry, snakeNodes, R, ROW_H, type PathGeoItem } from "../utils/pathGeometry";
+import { marginBefore, overhangOf } from "../utils/pathGeometry";
 
 const router = useRouter();
 const progress = useProgressStore();
@@ -43,6 +46,8 @@ const states = computed(() => computeStates(levels, progress.progress));
 
 /** 当前关卡（第一个 active）——键盘 Enter 直达 */
 const activeLevel = computed(() => currentLevel(levels, states.value));
+/** 当前关 id（自动定位用） */
+const activeId = computed(() => activeLevel.value?.id ?? "");
 
 /* ---------- 地图几何（每课渐变横幅 + 蛇形蜿蜒圆节点，无连线） ---------- */
 
@@ -52,6 +57,10 @@ interface GeoItem extends PathGeoItem {
   stars?: number;
   done?: number;
   total?: number;
+  /** 该关是否有进度环（决定可见轮廓的外扩量，用于算与上一关的间距） */
+  ring?: boolean;
+  /** 与上一项之间的 margin-top（px）：上一项是关卡时按"视觉留白恒等"算，横幅时另算 */
+  marginTop?: number;
 }
 
 /** 整图几何（课名横幅 + 关卡节点纵向坐标），横向 x 由 snakeNodes 按宽度铺列 */
@@ -70,6 +79,7 @@ const geo = computed<GeoItem[]>(() => {
       ...g,
       level: lv,
       state: lv ? states.value[lv.id] : undefined,
+      ring: lv ? ringOf({ level: lv, state: states.value[lv.id] } as GeoItem) > 0 : false,
       stars: (progress.progress[g.lessonId] as Record<string, number> | undefined)?.[g.activityKey!] || 0,
     } as GeoItem;
   });
@@ -90,11 +100,24 @@ const layout = computed<GeoItem[]>(() => {
     const lvs = levels.filter((lv) => lv.lessonId === lid);
     nodesByLesson.set(lid, snakeNodes(width, lvs.length, 0, 100));
   }
-  return geo.value.map((it) => {
+  const withX = geo.value.map((it) => {
     if (it.type === "unit") return { ...it, x: width / 2, y: 0 };
     const arr = nodesByLesson.get(it.level!.lessonId)!;
     const idx = levels.filter((lv) => lv.lessonId === it.level!.lessonId).findIndex((lv) => lv.id === it.level!.id);
     return { ...it, x: arr[idx].x, y: 0 };
+  });
+  // 纵向节奏：按"上一项是横幅还是关卡 + 两关各自有没有环"动态给 margin，
+  // 让相邻两关**可见轮廓之间**的留白处处相等（见 utils/pathGeometry 的说明）
+  let prevOverhang: ReturnType<typeof overhangOf> | null = null;
+  return withX.map((it) => {
+    if (it.type === "unit") {
+      prevOverhang = null; // 横幅下方没有关卡名
+      return it;
+    }
+    const cur = overhangOf(!!it.ring);
+    const marginTop = Math.round(marginBefore(prevOverhang, cur));
+    prevOverhang = cur;
+    return { ...it, marginTop };
   });
 });
 
@@ -123,6 +146,29 @@ function restoreTop() {
   });
 }
 
+/**
+ * 把某一关滚到可视区中部。
+ * 地图有 35 关（≈4 屏），孩子不该自己去翻——进地图默认定位到"当前该玩的那一关"，
+ * 解锁新关后也自动跟着走（多邻国式）。
+ */
+function centerLevel(id: string, smooth = false) {
+  const el = stageEl.value;
+  if (!el || !id) return;
+  const node = el.querySelector<HTMLElement>(`[data-lv-id="${id}"]`);
+  if (!node) return;
+  const nr = node.getBoundingClientRect();
+  const cr = el.getBoundingClientRect();
+  const top = Math.max(
+    0,
+    Math.min(
+      el.scrollTop + (nr.top - cr.top) - (el.clientHeight - nr.height) / 2,
+      el.scrollHeight - el.clientHeight
+    )
+  );
+  if (smooth) el.scrollTo({ top, behavior: "smooth" });
+  else el.scrollTop = top;
+}
+
 /* ---------- 解锁闪光（金色圆环扩散，CSS 动画一次播放） ---------- */
 const flashIds = ref(new Set<string>());
 let snapshotBefore: Record<string, LevelState> = {};
@@ -147,7 +193,17 @@ onActivated(() => {
   setTimeout(() => {
     if (flashIds.value.size) flashIds.value = new Set();
   }, 1200);
-  restoreTop();
+  // 解锁了新关 → 自动滚到新解锁的那一关（孩子一眼看到"可以玩这个了"）；
+  // 没解锁变化 → 恢复离开时的位置。
+  const firstNew = [...flash][0];
+  if (firstNew) {
+    lastSeenLevelId = firstNew;
+    requestAnimationFrame(() => centerLevel(firstNew, true));
+  } else if (activeId.value && activeId.value !== lastSeenLevelId) {
+    // 在别处通关了（当前关推进）→ 回来时跟到新关卡
+    lastSeenLevelId = activeId.value;
+    requestAnimationFrame(() => centerLevel(activeId.value, true));
+  } else restoreTop();
   measure();
   startRO();
 });
@@ -155,7 +211,13 @@ onMounted(() => {
   stageEl.value?.addEventListener("scroll", onScroll, { passive: true });
   measure();
   startRO();
-  restoreTop();
+  // 当前关变了（通关推进）或首次进入 → 定位到当前该玩的那一关；否则恢复上次的滚动位置
+  const id = activeId.value;
+  if (id && id !== lastSeenLevelId) {
+    lastSeenLevelId = id;
+    requestAnimationFrame(() => centerLevel(id));
+  } else if (savedGameTop > 0) restoreTop();
+  else requestAnimationFrame(() => centerLevel(id));
 });
 
 function startRO() {
@@ -206,13 +268,15 @@ function onChestDone() {
   chestLessonId.value = "";
 }
 
-/** 关卡圆环点亮段数（0..3）：完成=星级数（至少 1），学习中=1 段，锁定=0；
- *  宝箱关：已领取=3、可开=1、锁定=0 —— "学一部分亮一部分" */
+/** 圆环分段总数：6 段，每段 60°（窄间距、圆头，参考多邻国环形进度样式） */
+const RING_SEGS = 6;
+
+/** 关卡圆环点亮段数（0..6）：每颗星 = 2 段；宝箱关已领取 = 6 段。
+ *  **0 表示该关还没有进度 —— 此时整个圆环不渲染**（未玩过的当前关、锁定关都没有环）。 */
 function ringOf(lv: GeoItem): number {
   const st = states.value[lv.level!.id];
-  if (lv.level!.actKey === "chest") return st === "done" ? 3 : st === "active" ? 1 : 0;
-  if (st === "done") return Math.min(3, Math.max(1, lv.stars || 0));
-  if (st === "active") return 1;
+  if (lv.level!.actKey === "chest") return st === "done" ? RING_SEGS : 0;
+  if (st === "done") return Math.min(3, Math.max(1, lv.stars || 0)) * 2;
   return 0;
 }
 
@@ -227,14 +291,6 @@ function enterUnit(it: GeoItem) {
     hapticTap();
     router.push(`/lesson/${first.lessonId}?mode=quest&step=${first.actKey}`);
   }
-}
-
-/** 状态角标内容：lock / done / play */
-function tagOf(lv: PathLevel): string {
-  const st = states.value[lv.id];
-  if (st === "locked") return "lock";
-  if (st === "done") return "done";
-  return "play";
 }
 
 /** 单关无障碍描述 */
@@ -259,7 +315,7 @@ function unitLesson(id: string) {
     <!-- 蛇形路径（文档流：课名横幅全宽；关卡节点默认居中，translateX 左右摆动成 S 形） -->
     <div class="gp-canvas">
       <!-- 按几何顺序交替渲染：课横幅 → 关卡 → 课横幅 → 关卡（文档流保持真实阅读顺序） -->
-      <template v-for="it in layout" :key="it.type === 'unit' ? 'u-' + it.lessonId : 'l-' + (it as GeoItem).level!.id">
+      <template v-for="(it, i) in layout" :key="it.type === 'unit' ? 'u-' + it.lessonId : 'l-' + (it as GeoItem).level!.id">
         <!-- 课程横幅（文档流全宽块） -->
         <div
           v-if="it.type === 'unit'"
@@ -275,6 +331,8 @@ function unitLesson(id: string) {
           <PathIcon :name="(it as GeoItem).lessonId" class="u-ico" />
           <span class="u-name">{{ unitLesson((it as GeoItem).lessonId)?.title }}</span>
           <span class="u-count">{{ (it as GeoItem).done || 0 }}/{{ (it as GeoItem).total || 1 }}</span>
+          <!-- 右侧固定图标：每课都是同一本"课本"，作为课程横幅的固定标记（不随课程变化） -->
+          <PathIcon name="book" class="u-go" />
           <span class="u-bar"><span class="u-bar-fill" :style="{ width: Math.min(100, Math.round((((it as GeoItem).done || 0) / ((it as GeoItem).total || 1)) * 100)) + '%' }"></span></span>
         </div>
 
@@ -283,24 +341,32 @@ function unitLesson(id: string) {
           v-else
           class="lv-wrap"
           :class="[states[(it as GeoItem).level!.id], { flash: flashIds.has((it as GeoItem).level!.id), chest: (it as GeoItem).level!.actKey === 'chest', shake: shakeIds.has((it as GeoItem).level!.id) }]"
-          :style="{ '--dx': dxOf(it as GeoItem) + 'px' }"
+          :style="{ '--dx': dxOf(it as GeoItem) + 'px', '--gap-above': ((it as GeoItem).marginTop ?? 0) + 'px' }"
+          :data-lv-id="(it as GeoItem).level!.id"
         >
-          <!-- 进度圆环：3 段弧，学一部分亮一部分（挂 lv-wrap 层，避免按钮 active 边框干扰绝对定位 → 永远与按钮同心） -->
-          <svg class="lv-ring" viewBox="0 0 80 80" aria-hidden="true">
-              <circle class="ring-bg" cx="40" cy="40" r="30" pathLength="100" />
-              <circle
-                v-for="seg in 3"
-                :key="seg"
-                class="ring-seg"
-                :class="{ on: ringOf(it as GeoItem) >= seg }"
-                cx="40"
-                cy="40"
-                r="30"
-                pathLength="100"
-                stroke-dasharray="33.34 66.66"
-                :style="{ transform: 'rotate(' + ((seg - 1) * 120 - 90) + 'deg)' }"
-              />
-            </svg>
+          <!-- 关卡进度环：6 段断开圆弧（每颗星 = 2 段），**只有该关有进度时才显示**
+               （挂 lv-wrap 层：wrap 无边框，绝对定位恒定与按钮同心） -->
+          <svg
+            v-if="ringOf(it as GeoItem) > 0"
+            class="lv-ring"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            :style="{ '--ring-delay': (i % 7) * 0.18 + 's' }"
+            aria-hidden="true"
+          >
+            <circle
+              v-for="seg in RING_SEGS"
+              :key="seg"
+              class="ring-seg"
+              :class="{ on: ringOf(it as GeoItem) >= seg }"
+              cx="50"
+              cy="50"
+              r="43"
+              pathLength="100"
+              stroke-dasharray="12.2 4.467"
+              :style="{ transform: 'rotate(' + ((seg - 1) * 60 - 90) + 'deg)' }"
+            />
+          </svg>
             <button
               class="gp-level"
               :aria-label="levelLabel((it as GeoItem).level!)"
@@ -313,9 +379,6 @@ function unitLesson(id: string) {
               <PathIcon v-if="(it as GeoItem).state === 'locked'" name="lock" class="lv-ico lv-ico-lock" />
               <PathIcon v-else-if="(it as GeoItem).level!.actKey === 'chest'" name="chest" class="lv-ico lv-ico-chest" />
               <PathIcon v-else :name="(it as GeoItem).level!.actKey" class="lv-ico" />
-              <span v-if="tagOf((it as GeoItem).level!) === 'done'" class="lv-tag" aria-hidden="true">
-                <span class="tick">✓</span>
-              </span>
               <span v-if="(it as GeoItem).stars && (it as GeoItem).level!.actKey !== 'chest'" class="lv-star" aria-hidden="true">★{{ (it as GeoItem).stars }}</span>
             </button>
           <span class="lv-name">{{ (it as GeoItem).level!.name }}</span>
@@ -355,7 +418,9 @@ function unitLesson(id: string) {
   top: 8px;
   z-index: 5;
   height: 56px; /* BAR_H */
-  margin: 20px 0 38px; /* 下节留白 / 横幅底 → 首节点圆心(66-28) */
+  /* 横幅底 → 首节点的间距交给节点的 --gap-above（同样按"视觉留白恒等"算），
+     这里下边距设 0 避免与节点 margin-top 发生外边距合并（否则会取较大值，间距失控） */
+  margin: 20px 0 0;
   border-radius: 14px;
   display: flex;
   align-items: center;
@@ -395,6 +460,13 @@ function unitLesson(id: string) {
   opacity: 0.95;
   flex: none;
 }
+.u-go {
+  width: 22px;
+  height: 22px;
+  color: #fff;
+  opacity: 0.92;
+  flex: none;
+}
 .u-bar {
   position: absolute;
   left: 16px;
@@ -430,21 +502,33 @@ function unitLesson(id: string) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  /* 按钮 → 关卡名的间距（与 utils/pathGeometry 的 LABEL_GAP 保持一致）：
+     18px 保证关卡名不会被本关自己的进度环（向下外扩 17px）压到 */
+  gap: 18px;
   transform: translateX(var(--dx, 0px)); /* 相对居中的左右摆动 */
   transition: transform var(--dur-base) var(--ease-out);
 }
-.lv-wrap + .lv-wrap {
-  margin-top: 10px; /* 圆心距 ≈ 10 + (64 + 8 + 14) ≈ 96，与放大前一致 */
+/* 与上一项的间距由 JS 按"视觉留白恒等"逐关算好（--gap-above，见 utils/pathGeometry）。
+ * 有环/无环的可见轮廓高度不同，固定 margin 会让留白在 28~50px 之间跳；
+ * 现在每对相邻关卡的留白都等于 VISUAL_GAP（40px）。 */
+.lv-wrap {
+  margin-top: var(--gap-above, 22px);
+  transition: transform var(--dur-base) var(--ease-out), margin-top var(--dur-slow) var(--ease-out);
 }
 .gp-level {
+  /* 3D 立体按钮（参考图）：顶面 + 下方一圈更深的底座色构成厚度。
+   * 顶面是**椭圆不是正圆** —— 参考图是俯视透视的圆柱，横向略宽、纵向略扁。 */
+  --face: #fff;
+  --base: rgba(0, 0, 0, 0.22);
+  --depth: 7px;
   position: relative; /* 角标/星/光圈锚点 */
-  width: 64px;
-  height: 64px;
+  width: 68px;
+  height: 57px; /* 68 × 57 ≈ 参考图的透视比例 */
   border-radius: 50%;
   border: none;
-  background: #fff;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12);
+  background: var(--face);
+  /* 底座（实心圆下移 = 圆柱侧壁）+ 落地投影 */
+  box-shadow: 0 var(--depth) 0 var(--base), 0 calc(var(--depth) + 5px) 14px rgba(0, 0, 0, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -455,56 +539,36 @@ function unitLesson(id: string) {
   -webkit-tap-highlight-color: transparent;
 }
 .gp-level:focus-visible {
-  box-shadow: 0 0 0 4px var(--focus-ring, rgba(28, 176, 246, 0.4));
+  /* 保留 3D 底座，再叠一圈键盘焦点环 */
+  box-shadow: 0 var(--depth) 0 var(--base), 0 0 0 4px var(--focus-ring, rgba(28, 176, 246, 0.4));
 }
 .gp-level:active {
-  transform: scale(0.9);
+  /* 按下：底座压扁 + 整体下沉，模拟按下去 */
+  --depth: 1px;
+  transform: translateY(5px) scale(0.97);
 }
 .lv-ico {
-  width: 30px;
-  height: 30px;
+  width: 27px; /* 57px 高的椭圆顶面 + 右下角标，图标略收一点才不被打到 */
+  height: 27px;
   color: var(--ink-faint);
   pointer-events: none;
 }
-.lv-tag {
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  border: 1.5px solid rgba(0, 0, 0, 0.14);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  pointer-events: none;
-}
-.lv-tag .tick {
-  color: #6b4e00;
-  font-weight: 900;
-  font-size: 12px;
-}
-.lv-tag svg {
-  width: 12px;
-  height: 12px;
-  color: #9a938a;
-}
+/* 说明：原来右下角还有个 ✓ 角标表示"已通关"，但进度环已在表达同一件事
+ * （有环 = 做过的关卡），两个标记重复 → 2026-09-27 去掉，节点更干净。 */
 .lv-star {
   position: absolute;
   right: 2px;
-  top: 2px;
-  height: 20px;
-  min-width: 20px;
+  top: 3px;
+  height: 19px;
+  min-width: 19px;
   padding: 0 3px;
   border-radius: 999px;
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.12);
   color: var(--gold);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
-  line-height: 16px;
+  line-height: 15px;
   text-align: center;
   pointer-events: none;
 }
@@ -578,44 +642,59 @@ function unitLesson(id: string) {
   to { transform: scale(2.1); opacity: 0; }
 }
 
-/* ---------- 关卡进度圆环（3 段弧：学一部分亮一部分） ----------
- * 挂在 lv-wrap 层：wrap 无边框，绝对定位恒定与按钮同心（active 边框不再造成偏移） */
+/* ---------- 关卡进度圆环（6 段断开圆弧，每颗星 = 2 段） ----------
+ * 挂在 lv-wrap 层：wrap 无边框，绝对定位恒定与按钮同心（active 边框不造成偏移）。
+ * **只在"该关有进度"时渲染**（见 ringOf）：未玩过的当前关、锁定关没有环。 */
 .lv-ring {
   position: absolute;
-  inset: -8px; /* 64 + 8*2 = 80 */
-  width: 80px;
-  height: 80px;
+  /* 横向按"按钮中心"居中（不能用 inset：关卡名比按钮宽时 wrap 会变宽，环会偏心）；
+   * 用 margin-left 而非 transform 居中 —— 把 transform 留给呼吸微动画 */
+  left: 50%;
+  margin-left: -52.5px;
+  top: -17px;
+  /* 105 × 91 + preserveAspectRatio="none"：正圆投影拉伸成椭圆，
+   * 与 68 × 57 的椭圆按钮四周保持均匀 8px 间隙（105 × 0.4 - 34 = 8）。
+   * 上下各外扩 17px —— 这个外扩量写进了 utils/pathGeometry 的 RING_OVERHANG，
+   * 由"视觉留白恒等"的间距算法统一补偿；改这里的尺寸必须同步改常量。 */
+  width: 105px;
+  height: 91px;
   pointer-events: none;
+  will-change: transform;
+  animation:
+    ring-in var(--dur-base) var(--ease-out) both,
+    ring-breathe 3.4s var(--ease-in-out) var(--ring-delay, 0s) infinite;
 }
-.ring-bg {
-  fill: none;
-  stroke: rgba(128, 128, 128, 0.18);
-  stroke-width: 6;
+@keyframes ring-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* 进度环呼吸微动画：整体轻轻放大再收回（各关按序号错峰 → 地图上像波浪） */
+@keyframes ring-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 .ring-seg {
   fill: none;
-  stroke: transparent;
+  stroke: rgba(128, 128, 128, 0.18); /* 未点亮的段：浅灰轨道（圆头、段间留缝） */
   stroke-width: 6;
   stroke-linecap: round;
-  transform-origin: 40px 40px;
+  transform-origin: 50px 50px;
   transition: stroke var(--dur-base) var(--ease-out);
 }
 .lv-wrap.done .ring-seg.on { stroke: var(--gold, #f0b429); }
-.lv-wrap.active .ring-seg.on { stroke: var(--c-blue, #1cb0f6); }
 .lv-wrap.chest .ring-seg.on { stroke: #d98e04; }
-.lv-wrap.locked .ring-seg.on { stroke: #c9c2b8; }
 
 /* 未学习关卡：主体只显示大锁（玩法图标不展示） */
 .lv-wrap.locked .lv-ico-lock {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   color: #b8b0a4;
 }
 
 /* 宝箱独立关卡：金色礼物节点 */
 .lv-wrap.chest .gp-level {
-  background: linear-gradient(160deg, #ffe9a8, #ffd87a);
-  box-shadow: 0 3px 0 rgba(176, 120, 0, 0.32);
+  --face: linear-gradient(160deg, #ffe9a8, #ffd87a);
+  --base: rgba(176, 120, 0, 0.42);
 }
 .lv-wrap.chest .lv-ico-chest {
   width: 34px;
@@ -628,5 +707,13 @@ function unitLesson(id: string) {
 }
 .lv-wrap.chest .lv-tag {
   border-color: rgba(176, 120, 0, 0.4);
+}
+
+/* 暗色主题：深底上黑色半透明底座几乎看不见 → 换成更深的实色、空段提亮一档，保住立体与环的层次 */
+:root[data-theme="dark"] .gp-level {
+  --base: rgba(0, 0, 0, 0.55);
+}
+:root[data-theme="dark"] .ring-seg {
+  stroke: rgba(210, 210, 210, 0.2);
 }
 </style>

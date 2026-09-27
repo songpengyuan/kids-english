@@ -15,6 +15,13 @@
  */
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
+import {
+  isMastered,
+  onCorrect,
+  onWrong,
+  seedFromCounts,
+  type SrsState,
+} from "../utils/reviewSchedule";
 
 /** 单个单词的掌握度记录 */
 export interface WordStat {
@@ -26,6 +33,10 @@ export interface WordStat {
   wrong?: number;
   /** 最近一次活动的毫秒时间戳（家长报告按"今天"过滤用） */
   lastAt?: number;
+  /** 间隔重复：记忆阶段（0..4，4 = 已掌握）；老数据在 load() 时折算 */
+  stage?: number;
+  /** 间隔重复：下次到期时间戳（已掌握为 0） */
+  dueAt?: number;
 }
 
 /** 单课进度：各玩法星数 + 玩过的玩法列表 + 单词掌握度 */
@@ -58,9 +69,42 @@ export interface DailyStats {
 type ProgressMap = Record<string, LessonProgress> & {
   _daily: DailyStats | null;
   _last: string | null;
+  /** 每日快照（家长报告的掌握度趋势）：date → { durationSec, activities, mastered } */
+  _dailyLog: Record<string, DailySnapshot>;
 };
 
+/** 每日快照：掌握度趋势曲线的数据点 */
+export interface DailySnapshot {
+  /** 当日累计学习时长（秒） */
+  durationSec: number;
+  /** 当日完成的玩法数 */
+  activities: number;
+  /** 当日结束时的"已掌握单词数"（累计值，用于趋势） */
+  mastered: number;
+}
+
+/** 复习队列条目（不含词面信息，en/zh 由调用方查 lessons） */
+export interface ReviewItem {
+  lessonId: string;
+  wordId: string;
+  /** 记忆阶段 0..4（4 = 已掌握） */
+  stage: number;
+  /** 下次到期时间戳（已掌握为 0） */
+  dueAt: number;
+  correct: number;
+  wrong: number;
+  seen: number;
+}
+
 const KEY = "kids-english-progress-v1";
+
+/** 顶层元字段（不是课程 id）——任何"遍历所有课程"的地方都要跳过它们 */
+export const META_KEYS = new Set(["_daily", "_last", "_dailyLog"]);
+
+/** 该 key 是否为课程 id（非元字段） */
+export function isLessonKey(k: string): boolean {
+  return !META_KEYS.has(k);
+}
 
 function today(): string {
   const d = new Date();
@@ -79,16 +123,30 @@ function load(): ProgressMap {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || "{}") || {};
     for (const k of Object.keys(raw)) {
+      if (k === "_daily" || k === "_last" || k === "_dailyLog") continue;
       const l = raw[k];
       if (l && typeof l === "object" && !(l as LessonProgress).words) {
         (l as LessonProgress).words = {};
       }
+      // 单词级 SRS 增量迁移：老数据只有 correct/wrong，折算成 stage/dueAt
+      const words = (l as LessonProgress | undefined)?.words;
+      if (words) {
+        const now = Date.now();
+        for (const wid of Object.keys(words)) {
+          const w = words[wid];
+          if (typeof w.stage === "number" && typeof w.dueAt === "number") continue;
+          const seeded = seedFromCounts(w, now);
+          w.stage = seeded.stage;
+          w.dueAt = seeded.dueAt;
+        }
+      }
     }
     if (raw._daily === undefined) raw._daily = null;
     if (raw._last === undefined) raw._last = null;
+    if (!raw._dailyLog || typeof raw._dailyLog !== "object") raw._dailyLog = {};
     return raw as ProgressMap;
   } catch {
-    return { _daily: null, _last: null } as ProgressMap;
+    return { _daily: null, _last: null, _dailyLog: {} } as ProgressMap;
   }
 }
 
@@ -103,7 +161,7 @@ export const useProgressStore = defineStore("progress", () => {
 
   const totalStars = computed(() =>
     Object.keys(progress)
-      .filter((k) => k !== "_daily" && k !== "_last")
+      .filter(isLessonKey)
       .reduce(
         (sum, id) =>
           sum +
@@ -204,35 +262,102 @@ export const useProgressStore = defineStore("progress", () => {
     const l = (progress[lessonId] || { words: {} }) as LessonProgress;
     l.words = l.words || {};
     const w = (l.words[wordId] = l.words[wordId] || {});
+    const now = Date.now();
+    // 本次更新之前的计数：老单词对象没有 SRS 字段时用它折算初始 stage
+    const before = {
+      correct: (w.correct || 0) - (delta.correct || 0),
+      wrong: (w.wrong || 0) - (delta.wrong || 0),
+      lastAt: w.lastAt,
+    };
     if (delta.seen) w.seen = (w.seen || 0) + delta.seen;
     if (delta.correct) w.correct = (w.correct || 0) + delta.correct;
     if (delta.wrong) w.wrong = (w.wrong || 0) + delta.wrong;
-    w.lastAt = Date.now();
+    // 间隔重复：答错打回 stage 0，答对进一级（1/3/7/14 天 → 掌握）
+    const prevSrs: SrsState =
+      typeof w.stage === "number" && typeof w.dueAt === "number"
+        ? { stage: w.stage, dueAt: w.dueAt }
+        : seedFromCounts(before, now);
+    // 按次数逐次推进（调用方通常一次一个：答对 +1 / 答错 +1；多条一起报也按序折算）
+    let srs: SrsState = prevSrs;
+    for (let i = 0; i < Math.max(0, delta.correct || 0); i++) srs = onCorrect(srs, now);
+    for (let i = 0; i < Math.max(0, delta.wrong || 0); i++) srs = onWrong(srs, now);
+    w.stage = srs.stage;
+    w.dueAt = srs.dueAt;
+    w.lastAt = now;
     progress[lessonId] = l;
     save();
   }
 
   /**
-   * 全部"弱词"（需要复习）：答错过、且正确次数 ≤ 错误次数。
-   * 返回不含词面信息（en/zh 由调用方经 lessons 数据查询），
-   * 保持 store 不依赖数据层。
+   * 到期需要复习的词（间隔重复队列）：未掌握 且 已到期，按到期时间升序。
+   * 返回不含词面信息（en/zh 由调用方经 lessons 数据查询），保持 store 不依赖数据层。
    */
-  function getWeakWords(): { lessonId: string; wordId: string; correct: number; wrong: number }[] {
-    const out: { lessonId: string; wordId: string; correct: number; wrong: number }[] = [];
+  function getReviewQueue(now = Date.now()): ReviewItem[] {
+    const out: ReviewItem[] = [];
     for (const id of Object.keys(progress)) {
-      if (id === "_daily" || id === "_last") continue;
-      const words = progress[id].words;
+      if (!isLessonKey(id)) continue;
+      const words = progress[id]?.words;
       if (!words) continue;
       for (const wordId of Object.keys(words)) {
-        const w = words[wordId];
-        const correct = w.correct || 0;
-        const wrong = w.wrong || 0;
-        if (wrong > 0 && correct <= wrong) {
-          out.push({ lessonId: id, wordId, correct, wrong });
-        }
+        const s = srsOf(words[wordId], now);
+        if (isMastered(s) || s.dueAt > now) continue;
+        out.push({ lessonId: id, wordId, stage: s.stage, dueAt: s.dueAt, ...countsOf(words[wordId]) });
       }
     }
+    out.sort((a, b) => a.dueAt - b.dueAt);
     return out;
+  }
+
+  /** 尚未掌握的词（家长报告"待巩固"清单），按到期时间升序（最该练的在前面） */
+  function getUnmasteredWords(now = Date.now()): ReviewItem[] {
+    const out: ReviewItem[] = [];
+    for (const id of Object.keys(progress)) {
+      if (!isLessonKey(id)) continue;
+      const words = progress[id]?.words;
+      if (!words) continue;
+      for (const wordId of Object.keys(words)) {
+        const s = srsOf(words[wordId], now);
+        if (isMastered(s)) continue;
+        out.push({ lessonId: id, wordId, stage: s.stage, dueAt: s.dueAt, ...countsOf(words[wordId]) });
+      }
+    }
+    out.sort((a, b) => a.dueAt - b.dueAt);
+    return out;
+  }
+
+  /**
+   * 掌握度概览（家长报告 + 今日目标用）：
+   * tracked = 有学习记录的词数、mastered = 已掌握、due = 今天到期该复习的词数。
+   * 课程总词数由调用方（数据层）提供，store 不依赖 lessons。
+   */
+  function masterySummary(now = Date.now()) {
+    let tracked = 0;
+    let mastered = 0;
+    let due = 0;
+    for (const id of Object.keys(progress)) {
+      if (!isLessonKey(id)) continue;
+      const words = progress[id]?.words;
+      if (!words) continue;
+      for (const wordId of Object.keys(words)) {
+        tracked++;
+        const s = srsOf(words[wordId], now);
+        if (isMastered(s)) mastered++;
+        else if (s.dueAt <= now) due++;
+      }
+    }
+    return { tracked, mastered, learning: tracked - mastered, due };
+  }
+
+  /** 单词的 SRS 状态（老数据兜底折算一次，保证读到的永远合法） */
+  function srsOf(w: WordStat, now: number): SrsState {
+    if (typeof w.stage === "number" && typeof w.dueAt === "number") {
+      return { stage: w.stage, dueAt: w.dueAt };
+    }
+    return seedFromCounts(w, now);
+  }
+
+  function countsOf(w: WordStat) {
+    return { correct: w.correct || 0, wrong: w.wrong || 0, seen: w.seen || 0 };
   }
 
   /* ---------- 今日学情（家长报告） ---------- */
@@ -255,7 +380,21 @@ export const useProgressStore = defineStore("progress", () => {
     cur.durationSec += Math.max(0, Math.round(durationSec));
     cur.activities += 1;
     progress._daily = cur;
+    // 每日快照：掌握度趋势的数据点（保留最近 30 天）
+    const log = (progress._dailyLog = progress._dailyLog || {});
+    log[t] = { durationSec: cur.durationSec, activities: cur.activities, mastered: masterySummary().mastered };
+    const days = Object.keys(log).sort();
+    for (const old of days.slice(0, Math.max(0, days.length - 30))) delete log[old];
     save();
+  }
+
+  /** 最近 n 天的每日快照（含今天），按日期升序 —— 家长报告趋势用 */
+  function recentDays(n = 7): { date: string; durationSec: number; activities: number; mastered: number }[] {
+    const log = progress._dailyLog || {};
+    return Object.keys(log)
+      .sort()
+      .slice(-n)
+      .map((date) => ({ date, ...log[date] }));
   }
 
   /* ---------- 最近课程（首页"继续学习"） ---------- */
@@ -283,8 +422,12 @@ export const useProgressStore = defineStore("progress", () => {
     isPlayed,
     isUnlocked,
     recordWord,
-    getWeakWords,
+    getReviewQueue,
+    getUnmasteredWords,
+    masterySummary,
     todayStats,
+    recentDays,
+    dailyLog: computed(() => progress._dailyLog || {}),
     addDailyActivity,
     setLastLesson,
     lastLesson,

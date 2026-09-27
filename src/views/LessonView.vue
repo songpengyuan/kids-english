@@ -114,6 +114,7 @@ const isPlay = computed(() =>
 );
 /** 听音选词每题进度（0-100），由 QuizView 上报到顶栏进度条 */
 const playPct = ref(0);
+
 </script>
 
 
@@ -198,6 +199,7 @@ const playPct = ref(0);
       @to-menu="toMenu"
       @go-next-lesson="router.push('/lesson/' + (nextLesson?.id ?? ''))"
     />
+
   </div>
 </template>
 

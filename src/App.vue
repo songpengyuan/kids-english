@@ -4,10 +4,12 @@ import { useRoute, useRouter } from "vue-router";
 import CuteBackdrop from "./components/CuteBackdrop.vue";
 import BottomNav from "./components/layout/BottomNav.vue";
 import { getLesson } from "./data/lessons";
+import { useStreakStore } from "./stores/streak";
 import { initPWA, applyUpdateIfIdle } from "./utils/pwa";
 
 const router = useRouter();
 const route = useRoute();
+const streak = useStreakStore();
 
 /** 底部导航常驻（App 风格）：首页/我的/宝藏/报告/复习显示，课程内隐藏（沉浸学习） */
 const showNav = computed(() => !route.path.startsWith("/lesson"));
@@ -37,6 +39,13 @@ onMounted(() => {
   router.afterEach((to) => {
     if (to.name === "home") applyUpdateIfIdle();
   });
+  // 跨天检查：应用放了一夜再打开（或切回前台）时，把"今日目标/连击"翻到新的一天。
+  // computed 不会因为日期变化自动失效，必须有这个显式触发点。
+  const onVisible = () => {
+    if (!document.hidden) streak.refreshDay();
+  };
+  document.addEventListener("visibilitychange", onVisible);
+  onVisible();
 });
 </script>
 

@@ -22,9 +22,18 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # 质量门禁：测试或类型检查不过就不部署。
+      # 之前 CI 只 build —— 白屏级的语法错误（如 setup 里漏 import）照样能上线。
+      - name: Quality gate (test + type-check)
+        run: |
+          pnpm test
+          pnpm type-check
+
       - name: Build
         run: |
-          pnpm install --frozen-lockfile
           GH_REPO="${{ github.event.repository.name }}" pnpm build:ci
       - uses: actions/upload-pages-artifact@v3
         with:

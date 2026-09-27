@@ -39,7 +39,8 @@ export interface UseLessonFlowOptions {
     progress: Record<string, Record<string, unknown>>;
   };
   streak: {
-    markActivity: () => boolean;
+    /** 完成一个关卡；firstTime = 该关首次通关（重刷不计入"新学 1 关"） */
+    markNewLevel: (firstTime?: boolean) => boolean;
     todayDone: boolean;
   };
   isNarrow: ComputedRef<boolean>;
@@ -186,13 +187,17 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   }
 
   function afterGame(stars?: number) {
-    // learn 玩法完成不传星数（emit("done") 无参数），兜底为 1 星：完成即点亮
+    // 兜底 1 星：玩法组件没报星数时（老调用/异常路径）至少点亮
     const s = stars || 1;
     lastStars.value = s;
-    progress.setGameStars(lesson.value?.id ?? "", stage.value, s);
+    const lessonId = lesson.value?.id ?? "";
+    const actKey = stage.value;
+    // 首次通关判定要在写星之前取（写进去就都成"已完成"了）
+    const firstTime = !((progress.progress[lessonId]?.[actKey] as number | undefined) ?? 0);
+    progress.setGameStars(lessonId, actKey, s);
     settleActivity();
-    // 完成玩法 → 记今日目标；今天第一次达成时结算页亮横幅
-    const first = streak.markActivity();
+    // 今日目标：新学 1 关（首次通关）+ 复习到期词（复习页记）
+    const first = streak.markNewLevel(firstTime);
     streakJustHit.value = first && streak.todayDone;
     if (quest.questMode.value) {
       finishQuestStep();
@@ -210,7 +215,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     lastStars.value = 1;
     // 童谣星数由 SongView 内部记（markSong 幂等），这里只累计今日学情
     settleActivity();
-    const first = streak.markActivity();
+    const first = streak.markNewLevel(true);
     streakJustHit.value = first && streak.todayDone;
     if (quest.questMode.value) finishQuestStep();
   }

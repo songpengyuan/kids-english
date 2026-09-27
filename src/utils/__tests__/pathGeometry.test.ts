@@ -9,7 +9,20 @@
  * 关卡序列每课固定 7 关（6 玩法 learn/quiz/match/speak/talk/song + 末尾开宝箱 chest）。
  */
 import { describe, expect, it } from "vitest";
-import { buildPathGeometry, hitTestPath, snakeNodes, R } from "../pathGeometry";
+import {
+  buildPathGeometry,
+  hitTestPath,
+  marginBefore,
+  overhangOf,
+  snakeNodes,
+  visualGapOf,
+  LABEL_GAP,
+  LABEL_H,
+  RING_OVERHANG,
+  SNAKE_SWING,
+  VISUAL_GAP,
+  R,
+} from "../pathGeometry";
 
 const LESSONS = ["l4", "l5", "l6", "l7", "l8"].map((id) => ({ id }));
 const KEYS = ["learn", "quiz", "match", "speak", "talk", "song", "chest"];
@@ -87,10 +100,20 @@ describe("snakeNodes", () => {
     for (const d of dists) expect(Math.abs(d - d0)).toBeLessThan(20);
   });
 
-  it("S 形确有左右摆动（中间节点离开中线 > 90）", () => {
+  it("S 形有左右摆动，但振幅被钳住（不再随容器宽无限放大）", () => {
     const nodes = snakeNodes(W, 7, startY, endY);
     const off = nodes.slice(1, -1).map((n) => Math.abs(n.x - 500));
-    expect(Math.max(...off)).toBeGreaterThan(90);
+    // 有摆动（不是一条直线）
+    expect(Math.max(...off)).toBeGreaterThan(20);
+    // 但不超过固定上限 —— 否则宽屏上相邻节点的斜距会明显大于竖距（看起来"不等距"）
+    expect(Math.max(...off)).toBeLessThanOrEqual(SNAKE_SWING + 1);
+  });
+
+  it("超宽容器也不放宽摆幅：1000px 与 2400px 摆幅一致", () => {
+    // 取相对中心的有符号偏移：两边的形状应完全一致（只是居中位置不同）
+    const a = snakeNodes(1000, 7, startY, endY).map((n) => n.x - 500);
+    const b = snakeNodes(2400, 7, startY, endY).map((n) => n.x - 1200);
+    expect(a.map(Math.round)).toEqual(b.map(Math.round));
   });
 
   it("单关：居中单点；零宽：x 居中兜底", () => {
@@ -98,6 +121,63 @@ describe("snakeNodes", () => {
     expect(one).toHaveLength(1);
     expect(one[0].x).toBe(500);
     expect(snakeNodes(0, 7, startY, endY).map((n) => n.x)).toEqual([0, 0, 0, 0, 0, 0, 0]);
+  });
+});
+
+describe("关卡纵向节奏（统一视觉留白）", () => {
+  const combos = [
+    { prev: true, cur: true, name: "环→环" },
+    { prev: true, cur: false, name: "环→无环" },
+    { prev: false, cur: true, name: "无环→环" },
+    { prev: false, cur: false, name: "无环→无环" },
+  ];
+
+  it("四种相邻组合的可见留白都等于 VISUAL_GAP（这就是统一的口径）", () => {
+    for (const c of combos) {
+      const prev = overhangOf(c.prev);
+      const cur = overhangOf(c.cur);
+      const m = marginBefore(prev, cur);
+      expect(visualGapOf(prev, cur, m)).toBeCloseTo(VISUAL_GAP, 6);
+      // 间距不能是负数（不能靠重叠来"凑"留白）
+      expect(m).toBeGreaterThan(0);
+    }
+  });
+
+  it("间距按形态自适应：无环→无环最小、环→环最大（环是光晕，要往外让）", () => {
+    const m = (p: boolean, c: boolean) => marginBefore(overhangOf(p), overhangOf(c));
+    const plainPlain = m(false, false);
+    const ringRing = m(true, true);
+    const ringPlain = m(true, false);
+    const plainRing = m(false, true);
+    expect(plainPlain).toBeLessThan(ringPlain);
+    expect(ringPlain).toBeLessThan(plainRing);
+    expect(plainRing).toBeLessThan(ringRing);
+    // 极差约 2.9 倍 —— 对应"可见留白恒定 40px"（固定 margin 时留白会在 28~50 之间跳）
+    expect(ringRing / plainPlain).toBeLessThan(3);
+  });
+
+  it("关卡名不会被下一关的进度环压住：间距 ≥ 环外扩 + 6px 余量", () => {
+    for (const c of combos) {
+      const cur = overhangOf(c.cur);
+      const m = marginBefore(overhangOf(c.prev), cur);
+      // 关卡名底 → 下一关轮廓顶 = m - cur.top
+      expect(m - cur.top).toBeGreaterThanOrEqual(6);
+    }
+  });
+
+  it("横幅 → 首节点：可见留白同样等于 VISUAL_GAP", () => {
+    for (const hasRing of [true, false]) {
+      const cur = overhangOf(hasRing);
+      const m = marginBefore(null, cur);
+      expect(m - cur.top).toBeCloseTo(VISUAL_GAP, 6);
+    }
+  });
+
+  it("常量与 CSS 口径一致（改样式必须同步改常量）", () => {
+    expect(LABEL_GAP).toBe(18);
+    expect(LABEL_H).toBeCloseTo(14.4, 6);
+    expect(RING_OVERHANG).toBe(17);
+    expect(overhangOf(false)).toEqual({ top: 0, bottom: 7 });
   });
 });
 

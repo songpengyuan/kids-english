@@ -11,6 +11,7 @@ import { speak } from "../../utils/speech";
 import { useViewport } from "../../composables/useViewport";
 import { usePager } from "../../composables/usePager";
 import { pickColumns } from "../../utils/layout";
+import { dueWords } from "../../utils/reviewQueue";
 import Pager from "../../components/activities/Pager.vue";
 import { BookOpenText, Check } from "@lucide/vue";
 
@@ -90,7 +91,10 @@ function enter(l: Lesson) {
 }
 
 /* ---------- 快捷引导 ---------- */
-const weakCount = computed(() => progress.getWeakWords().length);
+/** 全词库（过滤课程已删除的残留词） */
+const allWords = lessons.flatMap((l) => l.words);
+/** 今天到期该复习的词数（间隔重复队列；词库已删除的残留词自动丢弃） */
+const weakCount = computed(() => dueWords(progress.getReviewQueue(), allWords).length);
 const lastLessonObj = computed(() => {
   const id = progress.lastLesson;
   return id ? getLesson(id) : null;
@@ -101,7 +105,7 @@ const lastLessonObj = computed(() => {
   <div class="practice">
     <div v-if="weakCount > 0 || lastLessonObj" class="quick-links anim-fade-up">
       <button v-if="weakCount > 0" class="q-link review" @click="router.push('/review')">
-        <BookOpenText class="k-ico" />复习 {{ weakCount }} 个词
+        <BookOpenText class="k-ico" />今天该复习 {{ weakCount }} 个词
       </button>
       <button v-if="lastLessonObj" class="q-link" @click="enter(lastLessonObj)">
         ⏩ 继续：{{ lastLessonObj.emoji }} {{ lastLessonObj.titleZh }}

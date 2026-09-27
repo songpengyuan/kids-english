@@ -1,10 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, reactive, nextTick, watch } from "vue";
 import { speak } from "../../utils/speech";
-import { sfxMatch, sfxWrong, celebrate } from "../../utils/effects";
+import { sfxMatch, sfxWrong } from "../../utils/effects";
 import { useProgressStore } from "../../stores/progress";
 import { useViewport } from "../../composables/useViewport";
-import { splitBalanced } from "../../utils/layout";
+import { buildMatchGroups, matchGroupRange, matchStars } from "../../utils/matchBoard";
+import { shuffleWith } from "../../utils/quizSession";
 import { Link2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
@@ -14,24 +15,10 @@ const progress = useProgressStore();
 
 const { sizeTier, isNarrow } = useViewport();
 
-function shuffle(a) {
-  return [...a].sort(() => Math.random() - 0.5);
-}
-
-/**
- * 分组：屏幕越小每组越少，避免中间单词列被挤到看不清。
- * 小屏用 2~4 对，大屏维持 3~6 对。
- */
-const groupRange = computed(() =>
-  isNarrow.value || sizeTier.value === "tiny"
-    ? { min: 2, max: 4 }
-    : { min: 3, max: 6 }
+/** 分组与星级口径见 utils/matchBoard（分组随屏幕大小变化，规则可单测） */
+const groups = computed(() =>
+  buildMatchGroups(props.words, matchGroupRange(isNarrow.value, sizeTier.value))
 );
-
-const groups = computed(() => {
-  const { min, max } = groupRange.value;
-  return splitBalanced(shuffle(props.words), min, max);
-});
 
 const groupIdx = ref(0);
 const curGroup = computed(() => groups.value[groupIdx.value] || []);
@@ -138,7 +125,7 @@ let pendingSide = null; // pendingWord 所在侧，供连错时精确定位要�
 const totalPairs = computed(() => curGroup.value.length);
 const doneCount = computed(() => matched.size);
 const groupDone = computed(() => totalPairs.value > 0 && doneCount.value >= totalPairs.value);
-const stars = computed(() => (wrongCount.value === 0 ? 3 : wrongCount.value <= 2 ? 2 : 1));
+const stars = computed(() => matchStars(wrongCount.value));
 
 function localPoint(e) {
   const rect = board.value.getBoundingClientRect();
@@ -251,7 +238,7 @@ function tryMatch(other, otherSide) {
     justMatched.value = first.id;
     sfxMatch();
     speak(other.en, { lessonId: other.lessonId, wordId: other.id });
-    celebrate();
+    // 撒花只在关卡完成时（useLessonFlow）触发，单次配对成功只用音效+触感反馈
     // 单词掌握度：配对成功记一次正确（first/other 同 id，记一次）
     progress.recordWord(other.lessonId, other.id, { correct: 1 });
     setTimeout(() => (justMatched.value = null), 600);
@@ -287,11 +274,11 @@ function setupGroup(g) {
   pendingWord = null;
   pendingSide = null;
   ready.value = false;
-  const imgs = shuffle(g);
+  const imgs = shuffleWith(g);
   const half = Math.ceil(imgs.length / 2);
   leftImgs.value = imgs.slice(0, half);
   rightImgs.value = imgs.slice(half);
-  midWords.value = shuffle(g);
+  midWords.value = shuffleWith(g);
   transitioning.value = false;
 }
 

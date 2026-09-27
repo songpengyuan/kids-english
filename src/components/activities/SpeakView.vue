@@ -1,214 +1,59 @@
-<script setup>
-import { ref, computed, onBeforeUnmount } from "vue";
+<script setup lang="ts">
+import { computed, ref } from "vue";
 import { speak } from "../../utils/speech";
-import {
-  asrSupported,
-  createWordRecognizer,
-  scorePronunciation,
-  gradeScore,
-  recorderSupported,
-  createRecorder
-} from "../../utils/speechScore";
-import { celebrate, sfxCorrect, sfxWrong, sfxTap } from "../../utils/effects";
+import { sfxCorrect, sfxWrong } from "../../utils/effects";
 import { useProgressStore } from "../../stores/progress";
+import { useSpeechSession } from "../../composables/useSpeechSession";
+import type { Word } from "../../data/lessons";
 import { ChevronRight, Mic, RotateCcw, Square, ThumbsUp, Volume2 } from "@lucide/vue";
 
-const props = defineProps({ words: { type: Array, required: true } });
+const props = defineProps<{ words: Word[] }>();
 const emit = defineEmits(["done"]);
 
 const progress = useProgressStore();
 
-/*
- * 双模式：
- *  asr     —— 浏览器语音识别自动打分（默认尝试）
- *  record  —— 降级：录音回放 + 家长判定（识别不可用/网络失败时切换）
+/**
+ * 跟我读：双模式会话（ASR 自动打分 / 录音回放 + 家长判定）在 useSpeechSession 里，
+ * 这里只做音效、掌握度落库与渲染。
  */
-const mode = ref(asrSupported() ? "asr" : "record");
-const idx = ref(0); // 当前单词
-const status = ref("idle"); // idle | listening | feedback
-const grade = ref(""); // perfect | good | retry
-const heard = ref(""); // 识别到的内容
-const firstAttemptOk = ref(0); // 一次通过的词数
-const attempts = ref(0); // 当前词第几次尝试
-const canRecord = recorderSupported();
-const recordHint = ref("");
-const recAudio = ref<HTMLAudioElement | null>(null); // 回放元素（无原生控件，隐藏进度条）
-const recUrl = ref("");
-const imgFailed = ref(false);
-
-let recognizer = null;
-let recorder = null;
-
-const cur = computed(() => props.words[idx.value]);
-const progressText = computed(() => `${idx.value + 1} / ${props.words.length}`);
-
-function hearExample() {
-  sfxTap();
-  speak(cur().en, { lessonId: cur().lessonId, wordId: cur().id });
-}
-
-/* ---------- ASR 主路径 ---------- */
-let asrTimer = null;
-function startAsr() {
-  if (recognizer) {
-    recognizer.abort();
-    recognizer = null;
-  }
-  status.value = "listening";
-  grade.value = "";
-  heard.value = "";
-  try {
-    recognizer = createWordRecognizer(cur().en);
-  } catch {
-    fallbackToRecord("语音识别不可用");
-    return;
-  }
-  const my = recognizer;
-  my.onFinish((err, alternatives) => {
-    if (recognizer !== my) return; // 已被新的尝试取代
-    recognizer = null;
-    if (err === "not-allowed" || err === "service-not-allowed") {
-      fallbackToRecord("麦克风权限被拒绝");
-      return;
-    }
-    if (err === "network") {
-      fallbackToRecord("识别服务连不上，已改用录音模式");
-      return;
-    }
-    if (err === "no-speech") {
-      attempts.value++;
-      status.value = "feedback";
-      grade.value = "retry";
-      heard.value = "";
-      sfxWrong();
-      return;
-    }
-    // 正常结束（err 为 null 或 aborted）
-    const { score, heard: h } = scorePronunciation(cur().en, alternatives);
-    heard.value = h;
-    grade.value = gradeScore(score);
-    attempts.value++;
-    status.value = "feedback";
-    if (grade.value === "retry") {
-      sfxWrong();
-      progress.recordWord(cur().lessonId, cur().id, { wrong: 1 }); // 错词落库 → 复习池
-    } else {
-      sfxCorrect();
-      celebrate();
-      if (attempts.value === 1) firstAttemptOk.value++;
-      speak(cur().en, { lessonId: cur().lessonId, wordId: cur().id });
-      progress.recordWord(cur().lessonId, cur().id, { correct: 1 });
-    }
-  });
-  my.start();
-  // 最长 3.5 秒自动收尾
-  clearTimeout(asrTimer);
-  asrTimer = setTimeout(() => my.stop(), 3500);
-}
-
-function fallbackToRecord(reason) {
-  if (recognizer) {
-    recognizer.abort();
-    recognizer = null;
-  }
-  mode.value = "record";
-  recordHint.value = reason ? `已切换录音模式：${reason}` : "已切换录音模式";
-  status.value = "idle";
-}
-
-/* ---------- 统一交互：按住说话，松开停止 ----------
- * asr    —— 按住开始识别，松开立即出分（不傻等 3.5 秒自动收尾）
- * record —— 按住开始录音，松开停止并自动播放回放
- */
-function startMic() {
-  if (mode.value === "asr") {
-    startAsr();
-  } else {
-    startRecord();
-  }
-}
-function stopMic() {
-  if (mode.value === "asr") {
-    if (recognizer) recognizer.stop();
-    return;
-  }
-  stopRecord();
-}
-
-/* ---------- 降级路径：录音回放 + 家长判定 ---------- */
-async function startRecord() {
-  status.value = "listening";
-  try {
-    if (!recorder) recorder = createRecorder();
-    await recorder.start();
-  } catch {
-    status.value = "idle";
-    recordHint.value = "无法访问麦克风，请检查权限";
-  }
-}
-function stopRecord() {
-  if (!recorder) return;
-  recorder.stop().then((url) => {
-    if (recUrl.value) URL.revokeObjectURL(recUrl.value);
-    recUrl.value = url;
-    grade.value = ""; // 等家长判定
-    status.value = "feedback";
-  });
-}
-/** 复读：重播本词录音回放（读完不满意再听一遍，不必看进度条） */
-function replayRec() {
-  const a = recAudio.value;
-  if (a) {
-    a.currentTime = 0;
-    a.play().catch(() => {});
-  }
-}
-function parentJudge(ok) {
-  grade.value = ok ? "perfect" : "retry";
-  attempts.value++;
-  status.value = "feedback";
-  if (ok) {
+const session = useSpeechSession(computed(() => props.words), {
+  onCorrect: (w) => {
     sfxCorrect();
-    celebrate();
-    if (attempts.value === 1) firstAttemptOk.value++;
-    speak(cur().en, { lessonId: cur().lessonId, wordId: cur().id });
-    progress.recordWord(cur().lessonId, cur().id, { correct: 1 });
-  } else {
+    // 撒花只在关卡完成时（useLessonFlow）触发，单个词读对只用音效+触感反馈
+    speak(w.en, { lessonId: w.lessonId, wordId: w.id });
+    progress.recordWord(w.lessonId, w.id, { correct: 1 }); // SRS 进一级
+  },
+  onWrong: (w) => {
     sfxWrong();
-    progress.recordWord(cur().lessonId, cur().id, { wrong: 1 }); // 错词落库 → 复习池
-  }
-}
-
-/* ---------- 流程 ---------- */
-function retry() {
-  status.value = "idle";
-  grade.value = "";
-}
-function next() {
-  if (idx.value + 1 >= props.words.length) {
-    const ratio = firstAttemptOk.value / props.words.length;
-    const stars = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : 1;
-    emit("done", stars);
-    return;
-  }
-  idx.value++;
-  attempts.value = 0;
-  status.value = "idle";
-  grade.value = "";
-  heard.value = "";
-  imgFailed.value = false;
-  if (recUrl.value) {
-    URL.revokeObjectURL(recUrl.value);
-    recUrl.value = "";
-  }
-}
-
-onBeforeUnmount(() => {
-  clearTimeout(asrTimer);
-  if (recognizer) recognizer.abort();
-  if (recUrl.value) URL.revokeObjectURL(recUrl.value);
-  if (recorder && recorder.release) recorder.release();
+    progress.recordWord(w.lessonId, w.id, { wrong: 1 }); // 打回 stage 0 → 复习队列
+  },
 });
+
+const {
+  mode,
+  status,
+  grade,
+  heard,
+  canRecord,
+  recordHint,
+  recAudio,
+  recUrl,
+  imgFailed,
+  cur,
+  progressText,
+  stars,
+  hearExample,
+  startMic,
+  stopMic,
+  replayRec,
+  parentJudge,
+  retry,
+} = session;
+
+/** 最后一个词 → 上报星级（首次通过率） */
+function next() {
+  if (session.next()) emit("done", stars.value);
+}
 </script>
 
 <template>
@@ -222,7 +67,11 @@ onBeforeUnmount(() => {
 
     <div class="word-zone">
       <div class="pic anim-pop" data-haptic @click="hearExample">
-        <img v-if="!imgFailed" :src="cur.image" @error="imgFailed = true" />
+        <img
+          v-if="!imgFailed && cur.image"
+          :src="cur.image || undefined"
+          @error="imgFailed = true"
+        />
         <span v-else class="fallback-emoji">{{ cur.emoji }}</span>
       </div>
       <div class="word-text">

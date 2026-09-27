@@ -126,7 +126,7 @@ LessonView.vue   stage: menu | questStart | learn | quiz | match | speak | song 
 | LearnView / QuizView / MatchView / SpeakView | `words` | `done(stars)` | 玩法结束上报星级（1~3）；内部把错词记入 progress.words |
 | SongView | `lesson` | `back` / `song-done` | 童谣页，星级固定 1（内部 markSong） |
 | TalkView | `lesson` | `done(stars)` | 亲子对话，带首次引导 |
-| ReviewView | — | — | 独立页 /review：从 progress 捞弱词集中复习 |
+| ReviewView | — | — | 独立页 /review：到期词复习（间隔重复队列，复用 useQuizSession） |
 | ReportView | — | — | 独立页 /report：今日学情 + 错词清单 + 宝藏概览 |
 | TreasureView | — | — | 独立页 /treasure：贝壳 + 图鉴 + 贴纸商店 |
 | ChestReward | — | `done` | 自包含三连击开箱 + 抛物线收取（flyCurve 纯函数轨迹），可跳过 |
@@ -536,9 +536,20 @@ pnpm test   # vitest run，覆盖：
 | `src/utils/__tests__/speechScore.test.js` | 打分归一化 / 编辑距离 / 档位边界（0.85 / 0.55） |
 | `src/stores/__tests__/streak.test.ts` | 连击：幂等 / 跨天 / 断档 / 持久化读回 / 损坏数据 |
 | `src/composables/__tests__/usePager.test.js` | 分页切片 / 容量变化夹页码 / 数据源变化回第一页 |
-| `src/utils/__tests__/pathGeometry.test.ts` | 游戏地图布局（buildPathGeometry）与命中判定（hitTestPath），13 用例 |
+| `src/utils/__tests__/pathGeometry.test.ts` | 游戏地图布局（buildPathGeometry）与命中判定（hitTestPath）+ S 形振幅上限 |
+| `src/utils/__tests__/reviewSchedule.test.ts` | 间隔重复：1/3/7/14 天间隔、答对升级/答错打回、到期判定、老数据折算 |
+| `src/utils/__tests__/quizSession.test.ts` | 听音选图：洗牌/出题（跨课干扰、复合键）、首次答对率→星级 |
+| `src/utils/__tests__/learnSession.test.ts` | 看图学词：点读覆盖率→星级 |
+| `src/utils/__tests__/speakSession.test.ts` | 跟我读：首次通过率→星级 |
+| `src/utils/__tests__/matchBoard.test.ts` | 连一连：分组口径（随屏幕）+ 按连错次数→星级 |
+| `src/stores/__tests__/progress.test.ts` | 单词 SRS 升/降级、老数据迁移、掌握度概览、每日快照（30 天上限） |
+| `src/composables/__tests__/useQuizSession.test.ts` | 会话状态机：答错不推进/标红自动消失、答对锁定、星级、重置、进度上报 |
+| `src/components/**/__tests__/*.test.ts` | 组件：AppDialog 退场流程、Pager 受控翻页、WordCard 点读、MasteryTrend 趋势图、**LearnView 点读覆盖率整关行为** |
 
-改动布局算法、评分阈值、连击逻辑、分页逻辑、**地图布局常量/命中规则**时必须补/跑对应测试。
+改动布局算法、评分阈值、连击逻辑、分页逻辑、**地图布局常量/命中规则**、
+**间隔重复间隔/星级口径/每日目标**时必须补/跑对应测试。
+组件测试用 `@vue/test-utils` + jsdom（文件头 `// @vitest-environment jsdom`），
+jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保守兜底（每页 4 张）。
 
 ### 10.1 TDD 工作流（游戏闯关地图）
 
@@ -811,3 +822,131 @@ pnpm test   # vitest run，覆盖：
 
 - 此前 QuizView 本地进度条删除未落盘（脚本中途崩溃），答题页出现顶栏 + 内容区两条进度条；已补删本地进度条，答题页仅保留顶部（✕ 旁）一条。
 - 实测：页面 progress 条仅 1 个（hdr-progress，y=37）。
+### 13.29 庆祝收敛：撒花只在关卡完成时（2026-09-27）
+
+- **规则**：单个"题目/步骤"完成只给音效 + 触感反馈（sfxCorrect / sfxMatch），**撒花（celebrate）只在玩法/关卡完成时**触发（useLessonFlow：闯关 finishQuestStep → bigCelebrate；自由模式满分 bigCelebrate、其余 celebrate）。
+- 移除的逐题撒花：QuizView 答对一题、MatchView 配对成功一对、SpeakView 读对一个词（ASR 打分 + 家长判定两条路径）。learn/song 的撒花本就在本关结束时触发，未动。
+- **错词复习（ReviewView）**：原来只逐题撒花、整轮结束不撒花 —— 改为逐题不撒花，整轮做完（finished=true）补 bigCelebrate，避免"练完整轮反而没有庆祝"。
+- 自动化：`pnpm test` 64 用例 + `pnpm type-check` 全通过。浏览器实测口径：答对 1 题只有音效无礼花，走完本关总结页出现礼花（待用户走一遍确认）。
+### 13.30 关卡地图：外圈 = 该关进度 + 3D 立体按钮（2026-09-27）
+
+**需求**（用户参考图）：关卡外圈显示该关进度、每个关卡圆要有投影、**只有有进度时才显示外圈**。
+
+**进度环（GamePath.vue）**
+
+- 形状改为参考图样式：**6 段断开圆弧**，圆头（stroke-linecap: round）、段间留缝（dasharray `12.2 4.467` / pathLength 100），未点亮段是浅灰轨道 `rgba(128,128,128,0.18)`。
+- 语义：**每颗星 = 2 段**（1 星 ≈ 1/3 圈，3 星满圈）；宝箱关已领取 = 6 段。`ringOf()` 返回 0..6，**返回 0 时整个 `<svg class="lv-ring">` 不渲染** —— 未玩过的当前关（active）与锁定关都没有环，与参考图的锁定节点一致。
+- 几何：`viewBox 0 0 100 100`、圆心线 r=43、描边 6，环盒 105×91（椭圆，见 §13.31），**环内缘距按钮外缘 8px**。定位用 `left:50% + margin-left:-52.5px`（**不能用 inset**：关卡名比按钮宽时 lv-wrap 会变宽，inset 会让环偏心；用 margin 而非 transform，把 transform 留给呼吸动画）。
+- 出现时 `ring-in` 淡入，避免进度环突然蹦出来。
+
+**3D 立体按钮**
+
+- `.gp-level` 改为 token 化立体按钮：`--face`（顶面）/ `--base`（底座色）/ `--depth`（厚度 = 底座下移量），`box-shadow: 0 var(--depth) 0 var(--base), 0 calc(var(--depth)+5px) 14px rgba(0,0,0,.12)` —— 第一层实心圆下移即圆柱侧壁，第二层是落地投影。默认 depth 7px、base `rgba(0,0,0,.22)`；宝箱关改 `--face` 金色渐变 + 棕色底座。
+- 按下（`:active`）底座压到 1px + 整体下移 5px，模拟按下去；`:focus-visible` 保留底座再叠焦点环。
+- **暗色主题**：深底上黑色半透明底座几乎不可见 → `:root[data-theme="dark"] .gp-level { --base: rgba(0,0,0,.55) }`，空段提亮到 `rgba(210,210,210,.2)`。
+- 节点纵向间距随环放大：lv-wrap `gap` 8→18px、`margin-top` 10→20px（圆心距 ≈109，等距不变），保证环（含呼吸放大 1.05）不压到相邻关卡名。
+
+**实测**（无头 Chrome + 注入进度数据，375×667 / 390×844 / 1024×768 / 390×844 暗色共 4 组）：
+
+- 环：done 关 `ring=Y segs=星数×2/6`、active/locked `ring=n`；`环与按钮间隙 x/y≈8–10`（呼吸中）、`ringCenterOffsetMax=0`（恒同心）；`docOverflowX=0 / stageOverflowX=0`（最窄 375px 也不横向溢出）。
+- `pnpm test` 64 用例 + `pnpm type-check` + `GH_REPO=kids-english pnpm build:ci` 全通过。
+- 走查脚本口径：本轮用一次性 CDP 脚本截图 + 量几何（非 layout-audit.mjs），脚本用完已删。
+### 13.31 关卡按钮改椭圆（参考图的透视圆柱）+ 进度环呼吸微动画（2026-09-27）
+
+**用户反馈**：参考图里的按钮**并不是正圆**（是俯视透视的圆柱：横向略宽、纵向略扁），另外关卡周围的进度环希望有轻微的大小动画。
+
+**椭圆顶面**
+
+- `.gp-level`：64×64 正圆 → **68×57 椭圆**（≈ 参考图 230:190 的透视比例），仍 `border-radius: 50%`。3D 底座（下移的实心椭圆）与落地投影自然跟着变成椭圆圆柱。
+- 进度环同步改椭圆：SVG 仍是 `viewBox 0 0 100 100` 的圆弧，但元素盒设成 **105×91 + `preserveAspectRatio="none"`**，把正圆投影拉伸成椭圆 —— 与 68×57 的椭圆按钮四周保持**均匀 8px 间隙**（105×0.4 − 34 = 8）。
+- 角标/图标配比跟着调小：玩法图标 30→27px、锁定大锁 34→30px、★N 角标 20→19px、✓ 角标 22→20px，角标回到椭圆"边缘上"（right 2 / top 3），既不压住图标、也不飘在按钮外的空隙里。
+
+**进度环呼吸微动画**
+
+- `.lv-ring` 加 `ring-breathe`：3.4s 无限循环、`scale(1 ↔ 1.05)`，缓动用 `--ease-in-out`；`will-change: transform` 提示合成层。
+- 各关按序号错峰 `--ring-delay: (地图序号 % 7) × 0.18s` → 地图上像一道缓慢的波浪，而不是 35 个环整齐同步跳。
+- 进场的 `ring-in` 只保留淡入（不再做缩放），避免与呼吸动画争同一个 `transform`。
+- 动画放在 **SVG 整体**（每关 1 个元素）而不是 6 段圆弧（每关 6 个元素）：35 关最多 35 个动画元素，滚动/性能可控。
+
+**实测**：4 组视口（375/390/1024/暗色）—— 按钮 `68x57`、环盒实测 105–110 × 91–96（呼吸到 1.05 时 110×96，说明动画在跑）、`ringCenterOffsetMax=0`、`docOverflowX=0`、节点圆心距 109（课内等距）。`pnpm test` 64 用例 + `pnpm type-check` + `build:ci` 全通过。
+### 13.32 课程横幅右侧固定"课本"图标（2026-09-27）
+
+**用户需求**：游戏闯关里每课的横幅（课程标题条）最右侧放一个**固定的** icon，可以用类似一本书的图标。
+
+- `data/pathIcons.ts` 的 `APP_ICON_PATHS` 新增 `book`（lucide Book：合上的书）。**刻意不用 `ICON_PATHS.learn`** —— 那个是"学单词"玩法的**打开的书**，同一个图标两处用会混淆。
+- GamePath 课程横幅结构变为 `[课程图标][课程名 (flex:1)][已完成 x/y][书 icon]`，最右侧的书本对每门课都一样（"固定的 icon"，不随课程 tone/图标变化），表示"进入这门课"。
+- 样式 `.u-go`：22px、白色描边、opacity .92、`flex: none`（不被课程名挤扁）；图标 `aria-hidden`，无障碍描述沿用横幅自身的 `aria-label`。
+
+**实测**：iPhone/iPad 截图确认横幅右侧稳定出现书本图标（`I Am the Music Man … 2/6` + 书本），长课程名（A Sailor Went to Sea）下图标未被挤出；`docOverflowX=0`。
+
+### 13.33 阶段 4：评级可信度 + 间隔重复 + 交互补齐 + 逻辑分层（2026-09-27）
+
+用户按上一轮评审逐条立项，本轮完成 5 条（内容流水线、奖励经济两条留待后续）。
+
+#### 1) 星级语义修复 + CI 质量门禁
+
+两个"评级失真"的根因（探索性评审时发现）：
+
+| 问题 | 根因 | 修复 |
+|---|---|---|
+| 听音选图**恒 3 星** | 玩法是"答错不推进、必须选对才下一题"，`rightCount/total` 结束必然 = 1 | 改成**首次答对率**（第一下就选对的比例），`utils/quizSession.starsForFirstTry`：≥90% 3 星 / ≥60% 2 星 / 其余 1 星 |
+| 看图学词**恒 1 星** → "全部通关"永远不可达 | `emit("done")` 不传星 → 兜底 1 星，而通关口径要求 learn ≥ 2 | 改成**点读覆盖率**（点过发音的词占比，`utils/learnSession.learnStars`），并把星数真的上报 |
+
+- 星级口径统一沉淀：`utils/stars.starsForRatio` 为公共档位（90%/60%）；连线按连错次数、跟读按首次通过率（80%/50%）各有专门函数，全部带单测。
+- **CI 门禁**：`.github/workflows/deploy.yml` 在 build 前新增 `Quality gate (test + type-check)` 步骤（install → test → type-check → build）。
+  此前 CI 只 build，白屏级错误（文档里记过两次：漏 import、注释残留）都能直接上线。
+- 图标：界面禁用 emoji 的铁律保持；本轮新增 `APP_ICON_PATHS.book`（见 §13.32）。
+
+#### 2) 交互补齐（面向 5 岁孩子 + 家长）
+
+| 改动 | 为什么 |
+|---|---|
+| **进地图自动定位当前关** | 35 关 ≈ 4 屏，孩子不该自己翻。首次进入 / 在别处通关后回来 → 滚到当前关居中；解锁新关时用平滑滚动；没变化则恢复上次位置（`lastSeenLevelId` 模块级记忆） |
+| ~~中途退出确认~~ | 一度加了"要退出这一关吗？"确认框，**用户实测后要求去掉**（多一次点击反而打断节奏）→ 已还原为 ✕ 直接退出。教训：给孩子用的应用，**退出要一步到位**，用"误触代价低"（重新玩一关只要 1 分钟）换"零打断" |
+| **静音开关** | `utils/sound.ts` + `components/layout/SoundToggle.vue`（首页顶栏 + 我的页设置行）。**只关音效与中文提示语**，单词/童谣/对话发音保留（静音就没法练听力了） |
+| **去掉 ✓ 冗余角标** | 进度环（有环 = 做过的关）已在表达同一件事，★N 保留（星数是具体信息） |
+
+#### 3) 学习闭环：间隔重复 + 每日目标 + 掌握度趋势
+
+- **SRS（`utils/reviewSchedule.ts`，纯函数 + 单测）**：答错打回 stage 0（1 天后到期），答对逐级 3 → 7 → 14 天，
+  连对 4 次 = 已掌握、移出队列。练习时答错的词**第二天**才到期，不再当天反复打扰。
+- **老数据迁移**（`progress.load()`）：老的 `correct/wrong` 折算成 stage = clamp(correct-wrong)；
+  老的"弱词"（错≥对）= stage 0 且**立即到期**，升级后马上出现在复习队列；历史星星完全不动。
+- **复习页**改用到期队列（`getReviewQueue`），答对一次计入今日目标；结算文案改为"还有 N 个词在排队"。
+- **每日目标**（`stores/streak.ts` 重写）：**复习 N 个到期词 + 新学 1 关**。
+  N = min(5, 今天到期数)，由复习页 `syncReviewGoal(到期数 + 今日已复习数)` 同步（保证"边复习边缩小的 due"不会让目标缩水，且目标只增不减）。
+  "新学"只认**首次通关**（重刷不算）。跨天：`refreshDay()` + App.vue 的 `visibilitychange` 触发
+  （computed 不会因日期变化自动失效 → 必须有显式触发点，这是本轮修掉的一个真实缺陷）。
+- **掌握度趋势**：`progress._dailyLog`（每天一条快照：时长/玩法数/已掌握词数，保留 30 天）+
+  `components/MasteryTrend.vue`（7 根柱子，柱顶是当天掌握词数，柱下是星期）+ 报告页概览（已掌握/学习中/今天到期）。
+  待巩固清单改为"未掌握 + 记忆阶段 + 下次到期日"。
+
+#### 4) 逻辑分层 + 测试
+
+| 玩法 | 抽出 | 组件剩余职责 |
+|---|---|---|
+| 听音选图 | `composables/useQuizSession.ts` + `utils/quizSession.ts` | 模板 + 音效/朗读/store 注入 |
+| 到期复习 | 复用 `useQuizSession`（`distractors` 跨课、`keyOf` 复合键） | 结算页 + 自动下一题节奏 |
+| 看图学词 | `composables/useLearnSession.ts` + `utils/learnSession.ts` | 模板 + 音效 |
+| 跟我读 | `composables/useSpeechSession.ts` + `utils/speakSession.ts` | 模板 + 音效/落库 |
+| 连一连 | `utils/matchBoard.ts`（分组 + 星级；拖拽/命中仍留在组件） | 测量/连线/拖拽 |
+
+测试从 8 文件 73 用例 → **19 文件 137 用例**（新增 store 的 progress、组件层 AppDialog/Pager/WordCard/MasteryTrend/LearnView、composable 的 useQuizSession）。
+`@vue/test-utils@2.5.1` 进 devDependencies（CI 的 `--frozen-lockfile` 已同步）。
+
+#### 5) 关卡地图视觉等距（两轮）
+
+**第一轮：横向摆幅**。实测（无头 Chrome 注入进度）发现问题：**纵向圆心距恒定 109，但相邻斜距差异很大**
+——手机 109/114，iPad **109/136**，超宽窗口更大（S 振幅曾是 `0.12 × 容器宽`，宽屏摆到 ±80~±145）。
+修复：`SNAKE_SWING = 46` 把振幅与纵向节奏绑定（`A = min(0.12w, 46)`），各设备路径形状一致。
+复测：手机与 iPad 完全一致（`dX=0/33`、斜距 114/119，差 4%）。
+
+**第二轮：可见留白统一**（用户反馈"统一"）。固定 margin 下，含环/无环的可见轮廓高度差 34px，
+留白实测 **环→环 28 / 环→无环 43 / 无环→无环 50**（2 倍差）。
+改成**按相邻两关形态动态算间距**：`pathGeometry.marginBefore(prev, cur)` 让
+`margin + LABEL_GAP + LABEL_H - prev.bottom - cur.top ≡ VISUAL_GAP(40px)`，
+四种组合的可见留白都恒等于 40px（单测 `visualGapOf` 直接断言这个恒等式）。
+代价：圆心距不再恒定（131/114/121/104），但**眼睛量的是留白不是圆心**，而间距变化有
+`transition` 平滑过渡（通关后环出现的重排不会跳）。
+常量（`NODE_BASE/RING_OVERHANG/LABEL_GAP/LABEL_H`）与 GamePath.vue 的 CSS 一一对应，
+改样式必须同步改常量（单测里有一条"常量与 CSS 口径一致"守着）。

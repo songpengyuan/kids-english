@@ -11,6 +11,7 @@
  *   2. 兜底键 `en` —— 只按英文名也能发音（兼容旧调用/未带上下文的场景）。
  */
 import { lessons } from "../data/lessons";
+import { soundEnabled } from "./sound";
 
 /* ---------- 预生成发音注册表 ---------- */
 const wordAudioByKey: Record<string, string> = {}; // "lessonId:wordId" -> url
@@ -115,5 +116,7 @@ export async function speak(
 }
 
 export function speakZh(text: string, rate = 1): void {
+  // 中文提示语归"音效"开关管；单词发音（speak）不受影响，静音后仍能练听音选图
+  if (!soundEnabled()) return;
   speakWithTTS(text, { rate, lang: "zh-CN" });
 }

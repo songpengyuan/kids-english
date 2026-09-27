@@ -10,6 +10,7 @@ import { useRewardsStore } from "../stores/rewards";
 import { useStreakStore } from "../stores/streak";
 import { Star } from "@lucide/vue";
 import ThemeToggle from "./layout/ThemeToggle.vue";
+import SoundToggle from "./layout/SoundToggle.vue";
 import PathIcon from "./PathIcon.vue";
 import PracticeView from "../views/practice/PracticeView.vue";
 import GameView from "../views/game/GameView.vue";
@@ -52,7 +53,7 @@ const mode = computed(() => (route.query.mode === "game" ? "game" : "practice"))
           <span
             v-if="mode === 'game'"
             class="hdr-streak"
-            :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天' : '完成一个玩法点亮今天的火焰'"
+            :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天' : '今日目标：复习 ' + streak.reviewed + '/' + streak.reviewGoal + ' 词 + 新学 ' + streak.newLevels + '/1 关'"
           ><PathIcon name="flame" class="k-ico flame-ico" />{{ streak.streak }}</span>
           <div v-else class="badges">
             <div class="star-badge" title="我的星星总数">
@@ -61,10 +62,11 @@ const mode = computed(() => (route.query.mode === "game" ? "game" : "practice"))
             <button class="treasure-badge" aria-label="打开宝藏罐" title="宝藏罐：贝壳余额" @click="router.push('/treasure')">
               <PathIcon name="shell" class="k-ico shell-ico" />{{ rewards.shells }}
             </button>
-            <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天' : '完成一个玩法点亮今天的火焰'">
+            <div class="streak-badge" :class="{ done: streak.todayDone }" :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天' : '今日目标：复习 ' + streak.reviewed + '/' + streak.reviewGoal + ' 词 + 新学 ' + streak.newLevels + '/1 关'">
               <PathIcon name="flame" class="k-ico flame-ico" />{{ streak.streak }}
             </div>
           </div>
+          <SoundToggle />
           <ThemeToggle />
         </div>
       </div>

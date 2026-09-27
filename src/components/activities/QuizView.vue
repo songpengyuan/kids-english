@@ -1,95 +1,59 @@
-<script setup>
-import { ref, computed, onMounted, watch } from "vue";
+<script setup lang="ts">
+import { onBeforeUnmount, ref, watch } from "vue";
 import { speak } from "../../utils/speech";
-import { sfxCorrect, sfxWrong, celebrate } from "../../utils/effects";
+import { sfxCorrect, sfxWrong } from "../../utils/effects";
 import { useProgressStore } from "../../stores/progress";
+import { useQuizSession } from "../../composables/useQuizSession";
+import type { Word } from "../../data/lessons";
 import { CheckCircle2, ChevronRight, Volume2 } from "@lucide/vue";
 
-const props = defineProps({ words: { type: Array, required: true } });
+const props = defineProps<{ words: Word[] }>();
 const emit = defineEmits(["done", "progress"]);
 
 const progress = useProgressStore();
+const imgFail = ref<Record<string, boolean>>({}); // 记录加载失败的图
 
-function shuffle(a) {
-  return [...a].sort(() => Math.random() - 0.5);
-}
+/* 会话逻辑（出题/判题/首次答对率算星）全在 composable 里，见 useQuizSession */
+const session = useQuizSession<Word>(() => props.words, {
+  onProgress: (p) => emit("progress", p),
+  onCorrect: (w) => {
+    sfxCorrect();
+    speak(w.en, { lessonId: w.lessonId, wordId: w.id });
+    // 撒花只在关卡完成时（useLessonFlow）触发，单题答对只用音效+触感反馈。
+    // 单词掌握度：答对记一次正确（此前在该题答错已各记一次错误）→ SRS 进一级
+    progress.recordWord(w.lessonId, w.id, { correct: 1 });
+  },
+  onWrong: (picked) => {
+    sfxWrong();
+    progress.recordWord(picked.lessonId, picked.id, { wrong: 1 }); // 错词落库 → 复习队列
+  },
+});
 
-// 题目：每个单词出一题，选项为正确图 + 3 个干扰图
-const questions = computed(() =>
-  shuffle(props.words).map((target) => {
-    const distractors = shuffle(props.words.filter((w) => w.id !== target.id)).slice(0, 3);
-    return { target, options: shuffle([target, ...distractors]) };
-  })
-);
-
-const idx = ref(0);
-const picked = ref(null); // 答对时锁定为正确答案 id；答错时为 null（可继续选）
-const wrongPicks = ref(new Set()); // 选错的选项集合：只标红，不揭示正确答案
-const imgFail = ref({}); // 记录加载失败的图
-const rightCount = ref(0);
-
-const q = computed(() => questions.value[idx.value]);
-const total = computed(() => questions.value.length);
-const percent = computed(() => Math.round((idx.value / total.value) * 100));
-// 每题进度上报顶栏（多邻国式：进度条在顶部 ✕ 旁）
-watch(percent, (p) => emit("progress", p), { immediate: true });
-// 只有答对才锁定本题（答错不锁，可以继续选）
-const locked = computed(() => picked.value !== null);
-
-function autoSpeak() {
-  const t = q.value.target;
-  setTimeout(() => speak(t.en, { lessonId: t.lessonId, wordId: t.id }), 350);
-}
-onMounted(autoSpeak);
+const { q, total, picked, wrongPicks, locked, stars, pick, next: gotoNext, cleanup } = session;
 
 function replay() {
   const t = q.value.target;
   speak(t.en, { lessonId: t.lessonId, wordId: t.id });
 }
 
-// 判题：选对才前进；选错只标红（wrongPicks），不揭示正确答案、不自动读答案、不前进
-const pick = (opt) => {
-  if (locked.value || wrongPicks.value.has(opt.id)) return;
-  if (opt.id === q.value.target.id) {
-    picked.value = opt.id;
-    rightCount.value++;
-    sfxCorrect();
-    speak(opt.en, { lessonId: opt.lessonId, wordId: opt.id });
-    celebrate();
-    // 单词掌握度：答对记一次正确（此前在该题答错已各记一次错误）
-    progress.recordWord(opt.lessonId, opt.id, { correct: 1 });
-    // 不自动跳：底部出现"继续"按钮，由小朋友自己决定进下一题（多邻国式）
-  } else {
-    // 答错：这一项短暂标红提示（约 0.6s）后自动消失，孩子继续选其他选项直到选对；
-    // 不显示正确答案、不自动读答案、不前进
-    sfxWrong();
-    progress.recordWord(opt.lessonId, opt.id, { wrong: 1 }); // 错词落库 → 复习池
-    wrongPicks.value = new Set([...wrongPicks.value, opt.id]);
-    setTimeout(() => {
-      if (wrongPicks.value.has(opt.id)) {
-        const s = new Set(wrongPicks.value);
-        s.delete(opt.id);
-        wrongPicks.value = s;
-      }
-    }, 600);
-  }
-};
+/** 每题进来先听一遍（首题与每次翻页都读）*/
+watch(
+  () => session.idx.value,
+  () => {
+    const t = q.value?.target;
+    if (!t) return;
+    setTimeout(() => speak(t.en, { lessonId: t.lessonId, wordId: t.id }), 350);
+  },
+  { immediate: true }
+);
 
+/** 继续：最后一题 → 上报星级（首次答对率），否则进下一题 */
 function next() {
-  if (idx.value >= total.value - 1) {
-    emit("done", scoreStars.value);
-    return;
-  }
-  idx.value++;
-  picked.value = null;
-  wrongPicks.value = new Set();
-  autoSpeak();
+  const r = gotoNext();
+  if (r.done) emit("done", r.stars);
 }
 
-const scoreStars = computed(() => {
-  const r = rightCount.value / total.value;
-  return r >= 0.9 ? 3 : r >= 0.6 ? 2 : 1;
-});
+onBeforeUnmount(cleanup);
 </script>
 
 <template>
@@ -114,8 +78,8 @@ const scoreStars = computed(() => {
       >
         <div class="pic">
           <img
-            v-if="!imgFail[opt.id]"
-            :src="opt.image"
+            v-if="!imgFail[opt.id] && opt.image"
+            :src="opt.image || undefined"
             :alt="opt.en"
             @error="imgFail[opt.id] = true"
           />

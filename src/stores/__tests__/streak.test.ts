@@ -1,79 +1,133 @@
 // @vitest-environment jsdom
 /**
- * streak store 测试：跨天连击、幂等、断档重置、持久化读回。
- * 用 fake timers 控制系统时钟（localDate 按本地日历日，跨时区安全）。
+ * streak store 测试（每日目标改版后）：
+ * 目标是"复习 N 个到期词 + 新学 1 关"，测试覆盖目标自适应、达标判定、
+ * 连击续/断、幂等、重刷不计新学、跨天归零、持久化读回与损坏数据。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
-import { useStreakStore } from "../streak";
+import { REVIEW_GOAL_DEFAULT, useStreakStore } from "../streak";
 
 const KEY = "kids-english-streak-v1";
+
+/** 默认目标 5 词 + 1 关：复习完 + 新学一关即达标 */
+function completeGoal(s: ReturnType<typeof useStreakStore>, dueToday = REVIEW_GOAL_DEFAULT) {
+  s.syncReviewGoal(dueToday);
+  s.markReview(Math.min(REVIEW_GOAL_DEFAULT, dueToday));
+  return s.markNewLevel(true);
+}
 
 describe("streak store", () => {
   beforeEach(() => {
     localStorage.clear();
     setActivePinia(createPinia());
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-09-26T10:00:00")); // 本地周六
+    vi.setSystemTime(new Date("2026-09-27T10:00:00"));
   });
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it("首次活跃 → 连击 1、今日已达标", () => {
+  it("默认目标：复习 5 词 + 新学 1 关", () => {
     const s = useStreakStore();
-    expect(s.markActivity()).toBe(true);
+    expect(s.reviewGoal).toBe(REVIEW_GOAL_DEFAULT);
+    expect(s.reviewed).toBe(0);
+    expect(s.newLevels).toBe(0);
+    expect(s.todayDone).toBe(false);
+  });
+
+  it("只完成一关不算达标（复习部分没做）", () => {
+    const s = useStreakStore();
+    expect(s.markNewLevel(true)).toBe(false);
+    expect(s.todayDone).toBe(false);
+    expect(s.streak).toBe(0);
+  });
+
+  it("复习满 N 词 + 新学 1 关 → 达标、连击 1", () => {
+    const s = useStreakStore();
+    s.syncReviewGoal(5);
+    s.markReview(4);
+    expect(s.todayDone).toBe(false);
+    expect(s.markReview(1)).toBe(false); // 复习够了但还没新学
+    expect(s.markNewLevel(true)).toBe(true); // 这一下才达标
+    expect(s.todayDone).toBe(true);
     expect(s.streak).toBe(1);
+  });
+
+  it("到期词不足 5 个 → 目标按实际到期数缩小", () => {
+    const s = useStreakStore();
+    s.syncReviewGoal(2);
+    expect(s.reviewGoal).toBe(2);
+    s.markReview(2);
+    s.markNewLevel(true);
     expect(s.todayDone).toBe(true);
   });
 
-  it("同一天重复达标 → 幂等，连击不重复累计", () => {
+  it("今天没有到期词 → 复习目标为 0，新学一关即达标", () => {
     const s = useStreakStore();
-    s.markActivity();
-    expect(s.markActivity()).toBe(false);
+    s.syncReviewGoal(0);
+    expect(s.reviewGoal).toBe(0);
+    expect(s.markNewLevel(true)).toBe(true);
+    expect(s.todayDone).toBe(true);
+  });
+
+  it("目标只增不减：复习中途 due 变少也不会缩水", () => {
+    const s = useStreakStore();
+    s.syncReviewGoal(5);
+    s.markReview(5);
+    s.syncReviewGoal(2); // 复习完 3 个后 due 只剩 2
+    expect(s.reviewGoal).toBe(5);
+  });
+
+  it("重刷旧关卡不计入新学", () => {
+    const s = useStreakStore();
+    s.syncReviewGoal(0);
+    s.markNewLevel(false);
+    expect(s.newLevels).toBe(0);
+    expect(s.todayDone).toBe(false);
+  });
+
+  it("同一天重复达标 → 连击不重复累计", () => {
+    const s = useStreakStore();
+    expect(completeGoal(s)).toBe(true);
+    expect(s.streak).toBe(1);
+    expect(s.markNewLevel(true)).toBe(false);
     expect(s.streak).toBe(1);
   });
 
-  it("昨天活跃 + 今天活跃 → 连击 +1", () => {
+  it("昨天达标 + 今天达标 → 连击 +1", () => {
     const s = useStreakStore();
-    s.markActivity(); // 9-26
-    vi.setSystemTime(new Date("2026-09-27T09:00:00"));
-    expect(s.todayDone).toBe(false); // 今天还没达标
-    expect(s.markActivity()).toBe(true);
+    completeGoal(s);
+    vi.setSystemTime(new Date("2026-09-28T09:00:00"));
+    s.refreshDay(); // 应用回到前台时的跨天检查（computed 不随日期自动失效）
+    expect(s.todayDone).toBe(false); // 新的一天，进度归零
+    expect(completeGoal(s)).toBe(true);
     expect(s.streak).toBe(2);
   });
 
   it("隔两天（断档）→ 连击重置为 1", () => {
     const s = useStreakStore();
-    s.markActivity(); // 9-26
-    vi.setSystemTime(new Date("2026-09-28T09:00:00"));
-    expect(s.markActivity()).toBe(true);
+    completeGoal(s);
+    vi.setSystemTime(new Date("2026-09-29T09:00:00"));
+    expect(completeGoal(s)).toBe(true);
     expect(s.streak).toBe(1);
   });
 
-  it("从 localStorage 读回状态（模拟应用重启）", () => {
-    localStorage.setItem(KEY, JSON.stringify({ last: "2026-09-26", streak: 3 }));
-    setActivePinia(createPinia());
+  it("从 localStorage 读回当天进度（模拟应用重启）", () => {
     const s = useStreakStore();
-    expect(s.streak).toBe(3);
-    expect(s.todayDone).toBe(true); // 系统时钟仍是 9-26
+    s.syncReviewGoal(3);
+    s.markReview(2);
+    setActivePinia(createPinia());
+    const s2 = useStreakStore();
+    expect(s2.reviewed).toBe(2);
+    expect(s2.reviewGoal).toBe(3);
+    expect(s2.todayDone).toBe(false);
   });
 
   it("损坏数据按新号处理，不崩溃", () => {
-    localStorage.setItem(KEY, "not-json{{{");
-    setActivePinia(createPinia());
+    localStorage.setItem(KEY, "{oops");
     const s = useStreakStore();
     expect(s.streak).toBe(0);
-    expect(s.todayDone).toBe(false);
-    expect(s.markActivity()).toBe(true);
-    expect(s.streak).toBe(1);
-  });
-
-  it("reset 清空存储与状态", () => {
-    const s = useStreakStore();
-    s.markActivity();
-    s.reset();
-    expect(s.streak).toBe(0);
-    expect(localStorage.getItem(KEY)).toBeNull();
+    expect(s.reviewed).toBe(0);
   });
 });

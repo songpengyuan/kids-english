@@ -8,6 +8,7 @@ import {
   hapticTap,
   hapticWrong
 } from "./haptics";
+import { soundEnabled } from "./sound";
 
 /**
  * 礼花配色：直接读 CSS 变量，跟着主题走。
@@ -56,6 +57,8 @@ function audioCtx() {
 }
 
 function tone(freq, start, dur, type = "sine", gain = 0.15) {
+  // 静音开关只关"音效"：单词/童谣等教学内容发音不受影响（见 utils/sound.ts）
+  if (!soundEnabled()) return;
   const c = audioCtx();
   if (!c) return;
   const o = c.createOscillator();

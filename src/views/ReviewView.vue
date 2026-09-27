@@ -1,132 +1,126 @@
-<script setup>
+<script setup lang="ts">
 /**
- * 错词复习页（/review）
+ * 到期词复习页（/review）—— 间隔重复（SRS）队列
  *
- * 产品闭环补位：练习中答错/连错的单词由各玩法 recordWord 落库，
- * 本页把它们捞出来做"听音选图"式集中复习——答对一次记一次正确，
- * 当正确次数超过错误次数后，getWeakWords 自动把它移出弱词池。
+ * 队列来源：progress.getReviewQueue()——未掌握且**已到期**的词（1/3/7/14 天制）。
+ * 答对 → SRS 进一级（下次间隔拉长）；答错 → 打回第 0 级，明天再来。
+ * 答对同时计入今日目标的"复习 N 词"（streak.markReview）。
  *
- * 规则与听音选图一致（统一错误反馈）：答错只标红、不揭示答案、不前进；
+ * 判题规则与听音选图一致：答错只标红、不揭示答案、不前进；
  * 点错的选项也记一次错误（说明它同样不熟）。
  */
-import { computed, onMounted, ref, watch } from "vue";
-import { lessons } from "../data/lessons";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { lessons, type Word } from "../data/lessons";
 import { useProgressStore } from "../stores/progress";
+import { useStreakStore } from "../stores/streak";
 import { useRouter } from "vue-router";
 import { speak } from "../utils/speech";
-import { sfxCorrect, sfxWrong, celebrate, sfxTap } from "../utils/effects";
+import { bigCelebrate, sfxCorrect, sfxWrong, sfxTap } from "../utils/effects";
+import { useQuizSession } from "../composables/useQuizSession";
+import { dueWords as dueWordsOf } from "../utils/reviewQueue";
 import { useViewport } from "../composables/useViewport";
 import { Check, RotateCcw, Volume2 } from "@lucide/vue";
 import HeaderBar from "../components/layout/HeaderBar.vue";
 import PathIcon from "../components/PathIcon.vue";
 
 const progress = useProgressStore();
+const streak = useStreakStore();
 const router = useRouter();
 const { isNarrow } = useViewport();
 
 /** 全词库（跨课抽干扰项用；同一 en 在不同课算两个词） */
 const allWords = lessons.flatMap((l) => l.words);
 
-/** 当前弱词（含词面信息）：答错过、且正确 ≤ 错误 */
-const words = computed(() => {
-  const weak = progress.getWeakWords();
-  return weak
-    .map((w) => allWords.find((x) => x.id === w.wordId && x.lessonId === w.lessonId))
-    .filter(Boolean);
+/** 本轮题目：开一轮时快照下来的到期词（不打乱答题过程中变化的队列） */
+const seq = ref<Word[]>([]);
+const finished = ref(false);
+const rightCount = ref(0);
+
+/** 当前到期队列（含词面信息；词库已删除的孤儿词自动丢弃，见 utils/reviewQueue） */
+const dueWords = computed(() => dueWordsOf(progress.getReviewQueue(), allWords));
+
+/** 一轮结束后仍有到期词 / 未掌握词 */
+const againCount = computed(() => dueWordsOf(progress.getReviewQueue(), allWords).length);
+const unmasteredCount = computed(() => dueWordsOf(progress.getUnmasteredWords(), allWords).length);
+
+/* 出题/判题复用听音选图会话（跨课干扰 + lessonId:id 复合键） */
+const session = useQuizSession<Word>(() => seq.value, {
+  distractors: () => allWords,
+  // 跨课可能有同 id 的词（如 l4/l6 的 blue）→ 用 lessonId:id 做键
+  keyOf: (w) => `${w.lessonId}:${w.id}`,
+  onCorrect: (w) => {
+    sfxCorrect();
+    rightCount.value++;
+    speak(w.en, { lessonId: w.lessonId, wordId: w.id });
+    progress.recordWord(w.lessonId, w.id, { correct: 1 }); // SRS 进一级
+    streak.markReview(1); // 今日目标：复习到期词
+    setTimeout(next, 1100); // 复习页节奏：答对后自动进下一题
+  },
+  onWrong: (picked) => {
+    sfxWrong();
+    progress.recordWord(picked.lessonId, picked.id, { wrong: 1 }); // 打回 stage 0
+  },
 });
 
-/** 复习一轮结束后仍待练的弱词数 */
-const againCount = computed(() => progress.getWeakWords().length);
-
-/* ---------- 出题状态 ---------- */
-const seq = ref([]); // 本轮出题序列（word 对象，随机序）
-const idx = ref(0);
-const opts = ref([]); // 当前题的 4 个选项
-const picked = ref(null); // 已正确选中的选项 key（lessonId:id，防跨课同 id 误标）
-const wrongPicks = ref(new Set()); // 已点错的选项 key（lessonId:id）
-const rightCount = ref(0);
-const total = ref(0);
-const finished = ref(false);
-
-function shuffle(list) {
-  return [...list].sort(() => Math.random() - 0.5);
-}
-
-function loadQuestion() {
-  const t = seq.value[idx.value];
-  if (!t) return;
-  picked.value = null;
-  wrongPicks.value = new Set();
-  const others = allWords.filter((w) => !(w.id === t.id && w.lessonId === t.lessonId));
-  opts.value = shuffle([...shuffle(others).slice(0, 3), t]);
-  speak(t.en, { lessonId: t.lessonId, wordId: t.id }); // 自动读题
-}
+const { q, idx, picked, wrongPicks, pick, cleanup } = session;
+const total = computed(() => seq.value.length);
+const target = computed(() => q.value?.target ?? null);
 
 function start() {
-  seq.value = shuffle(words.value);
-  total.value = seq.value.length;
-  idx.value = 0;
+  seq.value = [...dueWords.value];
+  session.reset();
   rightCount.value = 0;
   finished.value = false;
-  if (total.value > 0) loadQuestion();
+  // 今日目标：复习目标 = min(5, 今天到期的词数)，到期词少了目标自动变小
+  streak.syncReviewGoal(dueWords.value.length + streak.reviewed);
+  const t = seq.value[0];
+  if (t) speak(t.en, { lessonId: t.lessonId, wordId: t.id });
+}
+
+/** 答对后自动进下一题；最后一题 → 结算 */
+function next() {
+  const r = session.next();
+  if (r.done) {
+    finished.value = true;
+    bigCelebrate(); // 整轮复习完成 = 一次"关卡完成"，此时才撒花
+  } else {
+    const t = seq.value[idx.value];
+    if (t) speak(t.en, { lessonId: t.lessonId, wordId: t.id });
+  }
 }
 
 onMounted(() => {
-  if (words.value.length > 0) start();
+  if (dueWords.value.length > 0) start();
+  else streak.syncReviewGoal(0);
 });
-// 弱词数据晚到（响应式从 0 → N）时兜底开一轮；避免 seq 为空但 quiz 分支已渲染导致 target.en 报错
-watch(words, (w) => {
+// 队列数据晚到（响应式从 0 → N）时兜底开一轮
+watch(dueWords, (w) => {
   if (w.length > 0 && seq.value.length === 0) start();
 });
-
-/** 当前题目标词 */
-const target = computed(() => seq.value[idx.value] || null);
+onBeforeUnmount(cleanup);
 
 function replay() {
   const t = target.value;
   if (t) speak(t.en, { lessonId: t.lessonId, wordId: t.id });
-}
-
-function pick(opt) {
-  const t = target.value;
-  if (!t || picked.value || wrongPicks.value.has(`${opt.lessonId}:${opt.id}`)) return;
-  if (opt.id === t.id && opt.lessonId === t.lessonId) {
-    picked.value = `${t.lessonId}:${t.id}`;
-    rightCount.value++;
-    sfxCorrect();
-    celebrate();
-    progress.recordWord(t.lessonId, t.id, { correct: 1 }); // 答对 → 逐步移出弱词池
-    setTimeout(next, 1100);
-  } else {
-    sfxWrong();
-    // 统一错误反馈（与听音选图一致）：只标红、不揭示、不前进；点错的词也入复习池
-    progress.recordWord(opt.lessonId, opt.id, { wrong: 1 });
-    wrongPicks.value = new Set([...wrongPicks.value, `${opt.lessonId}:${opt.id}`]);
-  }
-}
-
-function next() {
-  if (idx.value >= seq.value.length - 1) {
-    finished.value = true;
-  } else {
-    idx.value++;
-    loadQuestion();
-  }
 }
 </script>
 
 <template>
   <div class="review view">
     <HeaderBar show-back back-label="返回首页" @back="router.push('/')">
-      <template #title><PathIcon name="learn" class="title-ico" /> 错词复习</template>
-      <template #right><span class="cnt-badge">{{ words.length }} 个待练</span></template>
+      <template #title><PathIcon name="learn" class="title-ico" /> 到期复习</template>
+      <template #right><span class="cnt-badge">{{ dueWords.length }} 个到期</span></template>
     </HeaderBar>
 
-    <!-- 空态：没有弱词 -->
-    <div v-if="words.length === 0" class="empty view-body view-center">
+    <!-- 空态：今天没有到期的词 -->
+    <div v-if="dueWords.length === 0" class="empty view-body view-center">
       <div class="empty-emoji anim-float"><PathIcon name="learn" class="empty-ico" /></div>
-      <h2>没有要复习的词</h2>
-      <p>答错的单词会自动出现在这里，先回首页学一课吧！</p>
+      <h2>今天没有要复习的词</h2>
+      <p>
+        答错或刚学会的单词会按 1 / 3 / 7 天的节奏回到这里。
+        <template v-if="unmasteredCount > 0">还有 {{ unmasteredCount }} 个词在排队，明天见～</template>
+        <template v-else>先回首页学一课吧！</template>
+      </p>
       <button class="k-btn" @click="router.push('/')">回首页</button>
     </div>
 
@@ -146,7 +140,7 @@ function next() {
 
       <div class="opts" :class="{ narrow: isNarrow }">
         <button
-          v-for="opt in opts"
+          v-for="opt in q?.options ?? []"
           :key="opt.lessonId + ':' + opt.id"
           class="opt anim-pop"
           :class="{
@@ -156,7 +150,8 @@ function next() {
           :disabled="picked !== null"
           @click="pick(opt)"
         >
-          <img :src="opt.image" :alt="opt.en" />
+          <img v-if="opt.image" :src="opt.image || undefined" :alt="opt.en" />
+          <span v-else class="ph">{{ opt.emoji }}</span>
           <span v-if="picked === opt.lessonId + ':' + opt.id" class="mark hit-mark"><Check class="k-ico" /></span>
           <span v-if="wrongPicks.has(opt.lessonId + ':' + opt.id)" class="mark miss-mark">✗</span>
         </button>

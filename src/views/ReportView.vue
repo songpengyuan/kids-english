@@ -12,12 +12,14 @@
  */
 import { computed } from "vue";
 import { lessons } from "../data/lessons";
-import { useProgressStore } from "../stores/progress";
+import { isLessonKey, useProgressStore } from "../stores/progress";
 import { useRewardsStore } from "../stores/rewards";
 import { useStreakStore } from "../stores/streak";
 import { useRouter } from "vue-router";
 import { Flame, Star } from "@lucide/vue";
 import HeaderBar from "../components/layout/HeaderBar.vue";
+import MasteryTrend from "../components/MasteryTrend.vue";
+import { dueWords } from "../utils/reviewQueue";
 import PathIcon from "../components/PathIcon.vue";
 
 const progress = useProgressStore();
@@ -57,7 +59,7 @@ function isToday(ts) {
 const todayWords = computed(() => {
   const out = [];
   for (const id of Object.keys(progress.progress)) {
-    if (id === "_daily" || id === "_last") continue;
+    if (!isLessonKey(id)) continue;
     const words = progress.progress[id].words || {};
     for (const wordId of Object.keys(words)) {
       const w = words[wordId];
@@ -83,10 +85,10 @@ const todayWords = computed(() => {
   });
 });
 
-/** 错词清单（按课分组） */
+/** 待巩固清单（按课分组）：未掌握的词 + 记忆阶段 + 下次到期 */
 const weakByLesson = computed(() => {
   const map = new Map();
-  for (const w of progress.getWeakWords()) {
+  for (const w of progress.getUnmasteredWords()) {
     const meta = allWords.find((x) => x.id === w.wordId && x.lessonId === w.lessonId);
     if (!map.has(w.lessonId)) map.set(w.lessonId, []);
     map.get(w.lessonId).push({
@@ -95,7 +97,9 @@ const weakByLesson = computed(() => {
       zh: meta?.zh || "",
       emoji: meta?.emoji || "🔤",
       correct: w.correct,
-      wrong: w.wrong
+      wrong: w.wrong,
+      stage: w.stage,
+      dueText: dueText(w.dueAt)
     });
   }
   return [...map.entries()].map(([lessonId, list]) => {
@@ -103,6 +107,28 @@ const weakByLesson = computed(() => {
     return { lessonId, title: l ? `${l.emoji} ${l.titleZh}` : lessonId, list };
   });
 });
+
+/** 下次到期日文案：今天到期 / 明天 / M 月 D 日 */
+function dueText(dueAt) {
+  if (!dueAt) return "已掌握";
+  const d = new Date(dueAt);
+  const now = new Date();
+  const dayDiff = Math.floor(
+    (new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() -
+      new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) /
+      86400000
+  );
+  if (dayDiff <= 0) return "今天到期";
+  if (dayDiff === 1) return "明天";
+  return `${d.getMonth() + 1} 月 ${d.getDate()} 日`;
+}
+
+/** 掌握度概览 + 最近 7 天趋势（每日快照） */
+const mastery = computed(() => progress.masterySummary());
+const trendDays = computed(() => progress.recentDays(7));
+
+/** 今天到期数按"能在词库中出题"的口径算，和复习页显示的数字保持一致 */
+const dueCount = computed(() => dueWords(progress.getReviewQueue(), allWords).length);
 
 const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stickerTotal}`);
 </script>
@@ -134,6 +160,12 @@ const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stick
             </span>
           </div>
           <div class="item">
+            <span class="k">目标明细</span>
+            <span class="v">
+              复习 {{ streak.reviewed }}/{{ streak.reviewGoal }} 词 · 新学 {{ streak.newLevels }}/1 关
+            </span>
+          </div>
+          <div class="item">
             <span class="k">连续学习</span>
             <span class="v"><Flame class="k-ico flame" />{{ streak.streak }} 天</span>
           </div>
@@ -146,6 +178,29 @@ const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stick
             <span class="v">{{ todayWords.length }} 个</span>
           </div>
         </div>
+      </section>
+
+      <!-- 掌握度趋势（间隔重复的"学会"口径） -->
+      <section class="card">
+        <h3>掌握度趋势</h3>
+        <p class="sub-line">
+          每个词按 1 / 3 / 7 / 14 天的间隔重复，连续答对 4 次算"已掌握"
+        </p>
+        <div class="kv">
+          <div class="item">
+            <span class="k">已掌握</span>
+            <span class="v good">{{ mastery.mastered }} 个</span>
+          </div>
+          <div class="item">
+            <span class="k">学习中</span>
+            <span class="v">{{ mastery.learning }} 个</span>
+          </div>
+          <div class="item">
+            <span class="k">今天到期</span>
+            <span class="v" :class="{ bad: dueCount > 0 }">{{ dueCount }} 个</span>
+          </div>
+        </div>
+        <MasteryTrend :days="trendDays" />
       </section>
 
       <!-- 今日单词明细 -->
@@ -166,20 +221,21 @@ const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stick
         <p v-else class="empty-line">今天还没有学习记录，学一课就会出现这里。</p>
       </section>
 
-      <!-- 错词清单 -->
+      <!-- 待巩固清单 -->
       <section class="card">
         <h3>还不熟的词（{{ weakByLesson.reduce((s, g) => s + g.list.length, 0) }}）</h3>
-        <p class="sub-line">答错次数 ≥ 答对次数的词，会出现在首页的"复习"里</p>
+        <p class="sub-line">这些词会按到期日自动回到首页的"到期复习"里</p>
         <div v-if="weakByLesson.length" v-for="g in weakByLesson" :key="g.lessonId" class="weak-group">
           <div class="g-title">{{ g.title }}</div>
           <div class="chips">
             <span v-for="w in g.list" :key="w.id" class="chip">
               {{ w.emoji }} {{ w.en }} <i>{{ w.zh }}</i>
               <b class="wrong">错 {{ w.wrong }}</b><b class="right">对 {{ w.correct }}</b>
+              <b class="due">{{ w.dueText }}</b>
             </span>
           </div>
         </div>
-        <p v-else class="empty-line ok">没有弱词，掌握得很好！</p>
+        <p v-else class="empty-line ok">全部掌握啦，真棒！</p>
       </section>
 
       <!-- 宝藏概览 -->
@@ -362,6 +418,13 @@ const stickerDone = computed(() => `${rewards.stickers.length} / ${rewards.stick
 .chip .right {
   color: var(--green-dark);
   font-size: 11px;
+}
+.chip .due {
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+.kv .v.good {
+  color: var(--green-dark);
 }
 
 .empty-line {

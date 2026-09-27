@@ -1,17 +1,25 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from "vue";
 import { speak } from "../../utils/speech";
 import { sfxTap } from "../../utils/effects";
 import { useProgressStore } from "../../stores/progress";
+import type { Word } from "../../data/lessons";
 import { Volume2 } from "@lucide/vue";
 
-const props = defineProps({
-  word: { type: Object, required: true },
-  size: { type: String, default: "md" }, // sm | md | lg
-  speakZhHint: { type: Boolean, default: false },
-  /** 在页内的序号，用于入场动画的阶梯延迟；-1 表示不做入场动画 */
-  enterIndex: { type: Number, default: -1 }
-});
+const props = withDefaults(
+  defineProps<{
+    word: Word;
+    /** sm | md | lg */
+    size?: string;
+    speakZhHint?: boolean;
+    /** 在页内的序号，用于入场动画的阶梯延迟；-1 表示不做入场动画 */
+    enterIndex?: number;
+  }>(),
+  { size: "md", speakZhHint: false, enterIndex: -1 }
+);
+
+/** 点读过（图或词）—— LearnView 用它统计点读覆盖率（星级依据） */
+const emit = defineEmits<{ tap: [word: Word] }>();
 
 const progress = useProgressStore();
 
@@ -45,6 +53,7 @@ function onImage() {
   sfxTap();
   speak(props.word.en, { lessonId: props.word.lessonId, wordId: props.word.id });
   progress.recordWord(props.word.lessonId, props.word.id, { seen: 1 }); // 今日单词明细
+  emit("tap", props.word);
   pop();
 }
 function onWord() {
@@ -52,6 +61,7 @@ function onWord() {
   speak(props.word.en, { rate: 0.7, lessonId: props.word.lessonId, wordId: props.word.id });
   if (props.speakZhHint) speak(props.word.zh, { lang: "zh-CN", rate: 1 });
   progress.recordWord(props.word.lessonId, props.word.id, { seen: 1 });
+  emit("tap", props.word);
   pop();
 }
 </script>
@@ -68,7 +78,12 @@ function onWord() {
     @animationend.self="popping = false"
   >
     <div class="pic" data-haptic @click="onImage" :title="'点击听发音：' + word.en">
-      <img v-if="!imgFailed" :src="word.image" :alt="word.en" @error="imgFailed = true" />
+      <img
+        v-if="!imgFailed && word.image"
+        :src="word.image || undefined"
+        :alt="word.en"
+        @error="imgFailed = true"
+      />
       <!-- 图片缺失时的 emoji 占位 -->
       <span v-else class="placeholder">{{ word.emoji }}</span>
       <span class="speaker"><Volume2 class="k-ico" /></span>
