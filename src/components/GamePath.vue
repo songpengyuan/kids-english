@@ -140,6 +140,23 @@ function scheduleMeasure() {
 /* ---------- 滚动位置记忆（底部 tab 切换不丢位置） ---------- */
 function onScroll() {
   if (stageEl.value) savedGameTop = stageEl.value.scrollTop;
+  updateStuck();
+}
+
+/* ---------- 课程横幅吸顶态：滚动吸顶时切毛玻璃（防止关卡从标题下透出） ---------- */
+const stuckId = ref("");
+function updateStuck() {
+  const el = stageEl.value;
+  if (!el) return;
+  // sticky top:8px 是相对滚动容器（.game-path）的，视口锚点 = 容器视口顶部 + 8
+  const anchor = el.getBoundingClientRect().top + 8;
+  let id = "";
+  el.querySelectorAll<HTMLElement>(".gp-unit").forEach((u) => {
+    const r = u.getBoundingClientRect();
+    // 文档序最后一个顶到吸顶锚点的横幅 = 当前吸顶的那个（被顶走的已滚出）
+    if (Math.abs(r.top - anchor) < 3 && r.bottom > anchor) id = u.dataset.lessonId || "";
+  });
+  if (id !== stuckId.value) stuckId.value = id;
 }
 function restoreTop() {
   requestAnimationFrame(() => {
@@ -185,6 +202,7 @@ onBeforeUnmount(() => {
   ro = null;
 });
 onActivated(() => {
+  requestAnimationFrame(updateStuck);
   const flash = new Set<string>();
   levels.forEach((lv) => {
     if (snapshotBefore[lv.id] === "locked" && states.value[lv.id] !== "locked") flash.add(lv.id);
@@ -210,6 +228,7 @@ onActivated(() => {
 });
 onMounted(() => {
   stageEl.value?.addEventListener("scroll", onScroll, { passive: true });
+  requestAnimationFrame(updateStuck);
   measure();
   startRO();
   // 当前关变了（通关推进）或首次进入 → 定位到当前该玩的那一关；否则恢复上次的滚动位置
@@ -323,21 +342,17 @@ function unitLesson(id: string) {
         <div
           v-if="it.type === 'unit'"
           class="gp-unit"
+          :class="{ 'is-stuck': stuckId === (it as GeoItem).lessonId }"
           role="button"
           tabindex="0"
-          :class="'tone-' + (unitLesson((it as GeoItem).lessonId)?.tone || 'blue')"
+          :data-lesson-id="(it as GeoItem).lessonId"
           :aria-label="`${unitLesson((it as GeoItem).lessonId)?.title || ''}（${unitLesson((it as GeoItem).lessonId)?.titleZh || ''}），已完成 ${(it as GeoItem).done || 0} 关，共 ${(it as GeoItem).total || 1} 关`"
           @click="enterUnit(it as GeoItem)"
           @keydown.enter="enterUnit(it as GeoItem)"
           @keydown.space.prevent="enterUnit(it as GeoItem)"
         >
-          <!-- 课程图标用课程 emoji，与「自由练习」页的课程卡保持一致 -->
-          <span class="u-emoji" aria-hidden="true">{{ unitLesson((it as GeoItem).lessonId)?.emoji }}</span>
           <span class="u-name">{{ unitLesson((it as GeoItem).lessonId)?.title }}</span>
           <span class="u-count">{{ (it as GeoItem).done || 0 }}/{{ (it as GeoItem).total || 1 }}</span>
-          <!-- 右侧固定图标：每课都是同一本"课本"，作为课程横幅的固定标记（不随课程变化） -->
-          <PathIcon name="book" class="u-go" />
-          <span class="u-bar"><span class="u-bar-fill" :style="{ width: Math.min(100, Math.round((((it as GeoItem).done || 0) / ((it as GeoItem).total || 1)) * 100)) + '%' }"></span></span>
         </div>
 
         <!-- 关卡节点（文档流：默认居中，--dx 左右位移；圆按钮 + 进度圆环） -->
@@ -417,23 +432,32 @@ function unitLesson(id: string) {
 }
 /* ---------- 课程横幅 ---------- */
 .gp-unit {
-  /* sticky 吸顶：滚动到下一课时上一课横幅固定留在滚动区顶部（多邻国式）；同时为 u-bar 提供绝对定位上下文 */
+  /* 透明吸顶标题行：文档流中无背景色块（地图上只有圆环关卡与投影）；
+     滚动吸顶时切毛玻璃（.is-stuck），保证滚过的关卡不会从标题下透出 */
   position: sticky;
   top: 8px;
   z-index: 5;
-  height: 56px; /* BAR_H */
-  /* 横幅底 → 首节点的间距交给节点的 --gap-above（同样按"视觉留白恒等"算），
-     这里下边距设 0 避免与节点 margin-top 发生外边距合并（否则会取较大值，间距失控） */
+  height: 44px;
   margin: 20px 0 0;
   border-radius: 14px;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 0 16px;
-  color: #fff;
+  color: var(--ink-1);
   cursor: pointer;
-  box-shadow: var(--shadow-soft);
-  transition: transform var(--dur-fast) var(--ease-out), filter var(--dur-fast);
+  background: transparent;
+  transition: background var(--dur-base), box-shadow var(--dur-base), transform var(--dur-fast) var(--ease-out);
+}
+.gp-unit.is-stuck {
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+:root[data-theme="dark"] .gp-unit.is-stuck {
+  background: rgba(22, 24, 28, 0.55);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 .gp-unit:active {
   transform: scale(0.985);
@@ -442,21 +466,9 @@ function unitLesson(id: string) {
 .gp-canvas > .gp-unit:first-child {
   margin-top: 0;
 }
-.u-ico {
-  width: 30px;
-  height: 30px;
-  color: #fff;
-  flex: none;
-}
-.u-emoji {
-  font-size: 26px;
-  line-height: 1;
-  flex: none;
-  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.18));
-}
 .u-name {
   font-weight: 800;
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1;
   flex: 1;
   min-width: 0;
@@ -466,42 +478,10 @@ function unitLesson(id: string) {
 }
 .u-count {
   font-weight: 800;
-  font-size: 14px;
-  opacity: 0.95;
+  font-size: 13px;
+  opacity: 0.75;
   flex: none;
 }
-.u-go {
-  width: 22px;
-  height: 22px;
-  color: #fff;
-  opacity: 0.92;
-  flex: none;
-}
-.u-bar {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 10px;
-  height: 5px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.35);
-  overflow: hidden;
-}
-.u-bar-fill {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  background: #fff;
-  transition: width var(--dur-slow) var(--ease-out);
-}
-
-/* tone 色板（与 tokens 卡片同源 hue） */
-.gp-unit.tone-orange { background: linear-gradient(180deg, var(--c-orange), color-mix(in srgb, var(--c-orange) 70%, #000)); }
-.gp-unit.tone-blue { background: linear-gradient(180deg, var(--c-blue), color-mix(in srgb, var(--c-blue) 70%, #000)); }
-.gp-unit.tone-purple { background: linear-gradient(180deg, var(--c-purple), color-mix(in srgb, var(--c-purple) 70%, #000)); }
-.gp-unit.tone-pink { background: linear-gradient(180deg, var(--c-pink), color-mix(in srgb, var(--c-pink) 70%, #000)); }
-.gp-unit.tone-green { background: linear-gradient(180deg, var(--c-green), color-mix(in srgb, var(--c-green) 70%, #000)); }
-.gp-unit.tone-teal { background: linear-gradient(180deg, var(--c-teal), color-mix(in srgb, var(--c-teal) 70%, #000)); }
 
 /* ---------- 已通关关卡：主色调跟随所属课程横幅（孩子一眼看出这组关卡属于哪门课） ---------- */
 .lv-wrap.tone-blue { --tone: var(--c-blue); }
