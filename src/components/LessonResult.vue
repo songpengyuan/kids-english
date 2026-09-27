@@ -36,6 +36,13 @@ const emit = defineEmits<{
  * 之前这里没接 @done：收取后组件仍留在 collected 态，界面卡在"已收进宝藏罐"没法退出。
  */
 const chestDone = ref(false);
+/** 防止"下一关/下一课"按钮重复点击导致连续跳转 */
+const navClicked = ref(false);
+function nav(fn) {
+  if (navClicked.value) return;
+  navClicked.value = true;
+  fn();
+}
 </script>
 
 <template>
@@ -63,7 +70,7 @@ const chestDone = ref(false);
       <!-- 开宝箱已移到闯关地图（独立宝箱关卡）；闯关完成不再自动弹宝箱 -->
       <div class="btn-row">
         <button class="k-btn gray" @click="emit('backToMap')">返回闯关地图</button>
-        <button v-if="nextLevel" class="k-btn" @click="emit('goNextLevel')">
+        <button v-if="nextLevel" class="k-btn" :disabled="navClicked" @click="nav(() => emit('goNextLevel'))">
           下一关：<PathIcon :name="nextLevel.actKey" /> {{ nextLevel.name }} →
         </button>
       </div>
@@ -90,7 +97,7 @@ const chestDone = ref(false);
       <ChestReward v-if="!chestDone" @done="chestDone = true" />
       <div class="btn-row">
         <button class="k-btn" @click="emit('toMenu')">再选一个玩法</button>
-        <button v-if="nextLesson" class="k-btn gray" @click="emit('goNextLesson')">
+        <button v-if="nextLesson" class="k-btn gray" :disabled="navClicked" @click="nav(() => emit('goNextLesson'))">
           下一课：<PathIcon :name="nextLesson.id" /> {{ nextLesson.title }}
         </button>
       </div>
@@ -101,16 +108,30 @@ const chestDone = ref(false);
 <style scoped>
 .stars {
   display: flex;
-  gap: 6px;
+  gap: var(--gap-m);
   justify-content: center;
+  align-items: center;
 }
 .star {
-  width: 56px;
-  height: 56px;
+  width: clamp(52px, 11vh, 72px);
+  height: clamp(52px, 11vh, 72px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--star-gold);
+}
+.star .k-ico {
+  width: 100%;
+  height: 100%;
 }
 .star.dim {
   color: var(--star-dim);
+}
+.btn-row {
+  display: flex;
+  gap: var(--gap-s);
+  flex-wrap: wrap;
+  justify-content: center;
 }
 .quest-done-badge {
   font-weight: 800;
