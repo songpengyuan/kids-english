@@ -38,7 +38,7 @@ const emit = defineEmits<{
 const chestDone = ref(false);
 /** 防止"下一关/下一课"按钮重复点击导致连续跳转 */
 const navClicked = ref(false);
-function nav(fn) {
+function nav(fn: () => void) {
   if (navClicked.value) return;
   navClicked.value = true;
   fn();

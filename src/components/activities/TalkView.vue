@@ -129,9 +129,9 @@ function finish() {
         @click="tap(p, i)"
       >
         <span class="role">{{ i % 2 === 0 ? "家长说" : "宝宝答" }}</span>
-        <!-- 中文对话在上，英文单词/句子放在对话下面 -->
-        <span class="pzh">{{ p.zh }}</span>
+        <!-- 英文句子在上，中文翻译在下 -->
         <span class="pen"><Volume2 class="k-ico" />{{ p.en }}</span>
+        <span class="pzh">{{ p.zh }}</span>
         <!-- 填入后的完整句（选了备选单词后出现） -->
         <span v-if="filledSentence(p, i)" class="pfill anim-pop">{{ filledSentence(p, i) }}</span>
         <span v-if="listened.has(i)" class="heard-mark"><Check class="k-ico" />听过啦</span>
@@ -275,7 +275,7 @@ function finish() {
   font-size: clamp(16px, min(3.2vh, 2.6vw), 26px);
   color: var(--ink);
 }
-/* 英文单词/句子：放在对话下面，用主题色突出 */
+/* 英文单词/句子：放在对话上方，用主题色突出 */
 .pen {
   font-weight: 800;
   font-size: clamp(15px, min(2.9vh, 2.3vw), 24px);

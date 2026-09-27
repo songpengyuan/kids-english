@@ -109,9 +109,18 @@ const seeking = ref(false);
 const seekEl = ref(null);
 
 const LOOP_KEY = "kids-english-song-loop";
+/* 会话内兜底：iOS 无痕模式 localStorage 写入会被拒，靠 sessionStorage
+ * 在本次会话里保持用户的选择（跨会话无法持久化是系统限制） */
+const LOOP_SESSION_KEY = "kids-english-song-loop-session";
 /* 默认循环：童谣就是反复听才上口，孩子不用去管播放到哪了。
  * 只有"手动关过"（localStorage 里存了 "0"）才保持关闭，尊重用户的选择。 */
-const loop = ref(localStorage.getItem(LOOP_KEY) !== "0");
+const loop = ref(
+  (() => {
+    const s = sessionStorage.getItem(LOOP_SESSION_KEY);
+    if (s !== null) return s !== "0";
+    return localStorage.getItem(LOOP_KEY) !== "0";
+  })()
+);
 
 const playedPct = computed(() =>
   duration.value ? Math.min(100, (currentTime.value / duration.value) * 100) + "%" : "0%"
@@ -135,10 +144,16 @@ function onLoadedMeta() {
 
 function toggleLoop() {
   loop.value = !loop.value;
+  const v = loop.value ? "1" : "0";
   try {
-    localStorage.setItem(LOOP_KEY, loop.value ? "1" : "0");
+    localStorage.setItem(LOOP_KEY, v);
   } catch {
     /* 无痕模式写入失败，忽略 */
+  }
+  try {
+    sessionStorage.setItem(LOOP_SESSION_KEY, v);
+  } catch {
+    /* 会话存储也不可用，忽略 */
   }
   hapticTap();
 }
