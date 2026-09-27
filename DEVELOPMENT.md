@@ -736,3 +736,8 @@ pnpm test   # vitest run，覆盖：
 
 - **抽离通用对话框 `AppDialog`**（src/components/ui/AppDialog.vue）：遮罩 + 居中面板 + role="dialog" + aria-label，统一处理弹入（anim-pop）/收起（leaving 过渡后 emit close）动画与遮罩点击关闭；父组件只管 v-if 与内容（slot 提供 close）。TalkView 亲子对话首次玩法引导卡重构复用，删除其自写的 guide-overlay/guide-card。
 - **点击未解锁关卡交互从简**：移除"先完成前面的关卡就能解锁啦"文字提示（locked-tip），改为异常音效（sfxWrong 温柔下行音，内含触感震动）+ 关卡左右抖动动画 + 锁图标摆动（0.5s，保留 --dx 平移基准）；地图关与课程横幅锁关点击均走同一 shakeLocked。
+### 13.13 修复关卡名脱离文档流遮挡课程横幅（2026-09-27）
+
+- 现象：关卡名（lv-name，absolute 定位）溢出关卡节点底部约 24px，被下一个课程横幅（gp-unit margin-top 20px）顶边遮挡（如 I Am the Music Man 遮住上方开宝箱文字下半）。
+- 修复：`.lv-name` 改为参与文档流（lv-wrap 改 flex column + gap 8px，name 排在按钮正下方，不再 absolute 溢出）；`.lv-wrap + .lv-wrap` margin-top 32→10px，圆心距保持 ≈96px 不变。
+- 实测：开宝箱文字底部与下一横幅顶间隔 20px 无遮挡；连续节点圆心距 96/96/96 均匀。

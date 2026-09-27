@@ -422,11 +422,16 @@ function unitLesson(id: string) {
   position: relative;
   width: max-content;
   margin: 0 auto; /* 默认水平居中 */
+  /* 关卡名参与文档流（不再 absolute 溢出节点底部，避免遮挡下方课程横幅） */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   transform: translateX(var(--dx, 0px)); /* 相对居中的左右摆动 */
   transition: transform var(--dur-base) var(--ease-out);
 }
 .lv-wrap + .lv-wrap {
-  margin-top: 32px; /* 圆心距 = 32 + 64 = 96（节点间距随按钮放大，儿童更舒展） */
+  margin-top: 10px; /* 圆心距 ≈ 10 + (64 + 8 + 14) ≈ 96，与放大前一致 */
 }
 .gp-level {
   position: relative; /* 角标/星/光圈锚点 */
@@ -521,12 +526,9 @@ function unitLesson(id: string) {
 }
 
 .lv-name {
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 8px);
-  transform: translateX(-50%);
   white-space: nowrap;
   font-size: 12px;
+  line-height: 1.2;
   font-weight: 700;
   color: var(--ink-soft);
   pointer-events: none;
