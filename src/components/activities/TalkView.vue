@@ -5,6 +5,7 @@ import { hapticTap } from "../../utils/haptics";
 import { sfxCorrect } from "../../utils/effects";
 import { Check, Star, Volume2 } from "@lucide/vue";
 import AppDialog from "../ui/AppDialog.vue";
+import LessonFooter from "./LessonFooter.vue";
 
 const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["done"]);
@@ -153,10 +154,16 @@ function finish() {
       </div>
     </div>
 
-    <button class="k-btn green finish" :disabled="listened.size < phrases.length" @click="finish">
-      <template v-if="listened.size < phrases.length">先听一遍所有句子哦</template>
-      <template v-else><Star class="k-ico star-fill" />我会说啦</template>
-    </button>
+    <LessonFooter
+      :button-text="listened.size < phrases.length ? '先听一遍所有句子哦' : '我会说啦'"
+      :button-disabled="listened.size < phrases.length"
+      :show-arrow="false"
+      @button="finish"
+    >
+      <template v-if="listened.size >= phrases.length" #button-content>
+        <Star class="k-ico star-fill" />我会说啦
+      </template>
+    </LessonFooter>
   </div>
 </template>
 
@@ -350,16 +357,6 @@ function finish() {
   border-color: var(--green);
   background: var(--tint-green);
   color: var(--green-dark);
-}
-
-.finish {
-  flex: none;
-  width: 100%;
-  max-width: 460px;
-}
-.finish:disabled {
-  filter: grayscale(1);
-  opacity: 0.55;
 }
 
 /* 手机横屏：句子卡片改双列省高度 */

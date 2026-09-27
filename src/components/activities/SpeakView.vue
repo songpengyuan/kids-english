@@ -270,7 +270,7 @@ function next() {
   flex: none;
   /* 录音按钮靠下：贴近屏幕底部，孩子拇指好按（图片/单词在上部可更大） */
   margin-top: auto;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
 }
 .mic {
   width: clamp(72px, min(17vh, 12vw), 124px);
@@ -360,7 +360,7 @@ function next() {
   background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
-  padding: clamp(8px, 1.4vh, 14px) clamp(10px, 1.6vw, 16px);
+  padding: clamp(10px, 1.6vh, 16px) clamp(10px, 1.6vw, 16px) max(28px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -381,6 +381,11 @@ function next() {
 }
 .verdict.perfect {
   color: var(--green-dark);
+  background: var(--state-ok-bg);
+  border: 2px solid var(--green);
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-title);
 }
 .verdict.good {
   color: var(--blue-dark);
