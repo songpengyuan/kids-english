@@ -58,11 +58,18 @@ const pick = (opt) => {
     progress.recordWord(opt.lessonId, opt.id, { correct: 1 });
     // 不自动跳：底部出现"继续"按钮，由小朋友自己决定进下一题（多邻国式）
   } else {
-    // 答错：只把这一项标红，不显示正确答案、不自动读答案、不前进；
-    // 孩子可以继续点其他选项，直到选对才进入下一题
+    // 答错：这一项短暂标红提示（约 0.6s）后自动消失，孩子继续选其他选项直到选对；
+    // 不显示正确答案、不自动读答案、不前进
     sfxWrong();
     progress.recordWord(opt.lessonId, opt.id, { wrong: 1 }); // 错词落库 → 复习池
     wrongPicks.value = new Set([...wrongPicks.value, opt.id]);
+    setTimeout(() => {
+      if (wrongPicks.value.has(opt.id)) {
+        const s = new Set(wrongPicks.value);
+        s.delete(opt.id);
+        wrongPicks.value = s;
+      }
+    }, 600);
   }
 };
 
