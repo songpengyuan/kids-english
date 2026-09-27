@@ -171,6 +171,11 @@ img {
   }
 }
 
+/* 答题页（无底部导航）：取消 nav-h 预留的底部 padding，让玩法 footer 真正贴底 */
+html.no-bottom-nav #app {
+  padding-bottom: max(var(--pad-y), env(safe-area-inset-bottom));
+}
+
 /* 平板竖屏：空间充裕，稍微放宽左右留白 */
 @media (min-width: 700px) and (orientation: portrait) {
   #app {

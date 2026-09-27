@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import CuteBackdrop from "./components/CuteBackdrop.vue";
 import BottomNav from "./components/layout/BottomNav.vue";
@@ -13,6 +13,11 @@ const streak = useStreakStore();
 
 /** 底部导航常驻（App 风格）：首页/我的/宝藏/报告/复习显示，课程内隐藏（沉浸学习） */
 const showNav = computed(() => !route.path.startsWith("/lesson"));
+
+/** 答题页无底部导航：去掉 #app 预留的 nav-h 底部 padding，让 footer 真正贴底 */
+watch(showNav, (v) => {
+  document.documentElement.classList.toggle("no-bottom-nav", !v);
+}, { immediate: true });
 
 /**
  * 兼容旧深链 ?lesson=l4&stage=talk（业务复杂化前的书签/分享链接）：
