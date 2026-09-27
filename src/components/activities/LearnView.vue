@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import WordCard from "./WordCard.vue";
 import Pager from "./Pager.vue";
 import { celebrate, bigCelebrate, sfxCorrect } from "../../utils/effects";
@@ -14,7 +14,7 @@ import { Check, MousePointerClick } from "@lucide/vue";
  * 星级 = 点读覆盖率（都点过发音 = 3 星），见 utils/learnSession。
  */
 const props = defineProps<{ words: Word[] }>();
-const emit = defineEmits(["done"]);
+const emit = defineEmits(["done", "progress"]);
 
 const {
   stageEl,
@@ -31,6 +31,13 @@ const {
   tappedCount,
   stars,
 } = useLearnSession(computed(() => props.words));
+
+/** 页进度 → 顶栏进度条（多邻国式：学单词逐页有进度） */
+watch(
+  () => page.value,
+  () => emit("progress", Math.round(((page.value + 1) / total.value) * 100)),
+  { immediate: true }
+);
 
 /** 本课全部词都点过发音（完成前置条件） */
 const allTapped = computed(() => props.words.length > 0 && tappedCount.value >= props.words.length);
@@ -70,7 +77,7 @@ function finish() {
       </div>
     </div>
 
-    <Pager :page="page" :total="total" @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
+    <Pager :page="page" :total="total" hide-dots @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
 
     <button class="k-btn next" :disabled="!canFinish" @click="finish">
       <template v-if="canFinish"><Check class="k-ico" />我都会啦</template>

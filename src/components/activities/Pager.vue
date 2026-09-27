@@ -15,14 +15,16 @@ const props = defineProps({
   page: { type: Number, required: true }, // 0-based
   total: { type: Number, required: true },
   /** 超过这个页数就不再画圆点，只显示 "x / n" */
-  maxDots: { type: Number, default: 10 }
+  maxDots: { type: Number, default: 10 },
+  /** 隐藏圆点（顶栏已有进度条时避免双进度指示） */
+  hideDots: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(["prev", "next", "go"]);
 
 const canPrev = computed(() => props.page > 0);
 const canNext = computed(() => props.page < props.total - 1);
-const showDots = computed(() => props.total > 1 && props.total <= props.maxDots);
+const showDots = computed(() => props.total > 1 && props.total <= props.maxDots && !props.hideDots);
 
 function onKey(e) {
   if (props.total <= 1) return;

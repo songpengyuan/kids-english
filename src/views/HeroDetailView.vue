@@ -21,6 +21,7 @@ import { speak, speakZh, stopSpeaking } from "../utils/speech";
 import { sfxTap } from "../utils/effects";
 import HeaderBar from "../components/layout/HeaderBar.vue";
 import PathIcon from "../components/PathIcon.vue";
+import { ZoomIn } from "@lucide/vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -178,6 +179,17 @@ function goBack() {
           <span v-if="speaking === 'hero'" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
         </span>
       </template>
+      <template #right>
+        <!-- 右上角操作：放大查看大图（内容区同类按钮保留，孩子两手都够得到） -->
+        <button
+          class="hd-zoom"
+          aria-label="放大查看图片"
+          title="放大查看"
+          @click="openZoom"
+        >
+          <ZoomIn class="k-ico" />
+        </button>
+      </template>
     </HeaderBar>
 
     <div class="hd-body">
@@ -329,6 +341,22 @@ function goBack() {
 }
 
 /* ---------- 顶栏标题（可点朗读） ---------- */
+.hd-zoom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  color: var(--ink);
+  box-shadow: var(--shadow-hard);
+  font-size: 20px;
+  transition: transform 0.1s;
+}
+.hd-zoom:active {
+  transform: translateY(2px);
+}
 .hd-title {
   display: inline-flex;
   align-items: center;

@@ -122,7 +122,7 @@ const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
 const isPlay = computed(() =>
   ["learn", "quiz", "match", "speak", "song", "talk"].includes(stage.value)
 );
-/** 听音选词每题进度（0-100），由 QuizView 上报到顶栏进度条 */
+/** 玩法进度（0-100），由 Learn/Quiz/Match/Speak 上报到顶栏进度条（多邻国式） */
 const playPct = ref(0);
 
 </script>
@@ -137,9 +137,10 @@ const playPct = ref(0);
       @back="back"
     >
       <template #title>
-        <!-- 玩法页：不显示课程标题；听音选词把进度条上移到顶栏（多邻国式） -->
+        <!-- 玩法页：不显示课程标题；步骤型玩法（学/辨/连/读）把进度条上移到顶栏（多邻国式）。
+             童谣（song）用播放器自身进度、亲子对话（talk）自由探索，不进顶栏进度条。 -->
         <div
-          v-if="isPlay && stage === 'quiz'"
+          v-if="isPlay && ['learn', 'quiz', 'match', 'speak'].includes(stage)"
           class="hdr-progress"
           role="progressbar"
           :aria-valuenow="playPct"

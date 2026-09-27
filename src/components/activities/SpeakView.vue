@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { speak } from "../../utils/speech";
 import { sfxCorrect, sfxWrong } from "../../utils/effects";
 import { useProgressStore } from "../../stores/progress";
@@ -8,7 +8,7 @@ import type { Word } from "../../data/lessons";
 import { ChevronRight, Mic, RotateCcw, Square, ThumbsUp, Volume2 } from "@lucide/vue";
 
 const props = defineProps<{ words: Word[] }>();
-const emit = defineEmits(["done"]);
+const emit = defineEmits(["done", "progress"]);
 
 const progress = useProgressStore();
 
@@ -40,6 +40,8 @@ const {
   recUrl,
   imgFailed,
   cur,
+  idx,
+  total,
   progressText,
   stars,
   hearExample,
@@ -49,6 +51,13 @@ const {
   parentJudge,
   retry,
 } = session;
+
+/** 词进度 → 顶栏进度条（多邻国式：跟读逐词有进度） */
+watch(
+  () => idx.value,
+  () => emit("progress", Math.round(((idx.value + 1) / total.value) * 100)),
+  { immediate: true }
+);
 
 /** 最后一个词 → 上报星级（首次通过率） */
 function next() {
