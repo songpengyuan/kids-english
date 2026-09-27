@@ -1114,3 +1114,11 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 - 底部导航第一个 tab：标签"自由"→"学习"（aria-label 同步），图标由靶心改为书本（闭合，lucide Book 语义，与学单词玩法"打开的书"区分）。
 - 移动端点击加固：BottomNav 按钮加 touch-action: manipulation / tap-highlight 透明 / user-select none，消除轻滑被当成滚动、双击缩放导致 click 丢失（"手机上有时点不过去"）。
 - 确认：开宝箱关闭按钮已在 805323b 提供（chest-close 左上角 ✕，z70 > 遮罩 z60；未开箱关闭＝奖励照常入账，已开箱直接收起）。
+### 13.30 全站文字点击发音（2026-09-27）
+
+- 需求：目前没发音的可点文字，点击都应发音（如底部导航标题等）。
+- 合理处理原则：**英文内容读英文、中文 UI 读中文**——
+  - 学习页课程卡片 / 游戏地图课程横幅 / 课程菜单顶栏标题（英文课程名）→ 点击 speak()（预生成音频优先，回退 TTS）；
+  - 底部导航 tab（学习/游戏/我的）与玩法卡片（学单词/听音选图…）→ 点击 speakZh()（中文，归音效开关，静音不读）；
+  - 单词点读（LearnView/QuizView/ReviewView 等）此前已有，不重复接入。
+- 实现：PracticeView.enter、GamePath.enterUnit、LessonView.sayTitle/openSound、BottomNav goPractice/goGame/goMe。

@@ -11,6 +11,7 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import PathIcon from "../PathIcon.vue";
+import { speakZh } from "../../utils/speech";
 
 const route = useRoute();
 const router = useRouter();
@@ -22,14 +23,17 @@ const isMe = computed(
 );
 
 function goPractice() {
+  speakZh("学习");
   if (isHome.value && !isGame.value) return;
   void router.push({ path: "/", query: {} }).catch(() => {});
 }
 function goGame() {
+  speakZh("游戏");
   if (isGame.value) return;
   void router.push({ path: "/", query: { mode: "game" } }).catch(() => {});
 }
 function goMe() {
+  speakZh("我的");
   if (route.name === "me") return;
   void router.push("/me").catch(() => {});
 }

@@ -86,7 +86,8 @@ const cardsStyle = computed(() => ({
 }));
 
 function enter(l: Lesson) {
-  speak(l.words[0].en, { lessonId: l.id, wordId: l.words[0].id });
+  // 点击卡片文字（课程英文标题）→ 朗读标题；进课程后由 LearnView 逐词发音
+  speak(l.title);
   router.push(`/lesson/${l.id}`);
 }
 

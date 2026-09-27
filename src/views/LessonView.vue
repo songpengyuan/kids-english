@@ -18,6 +18,7 @@ import HeaderBar from "../components/layout/HeaderBar.vue";
 import LessonResult from "../components/LessonResult.vue";
 import ThemeToggle from "../components/layout/ThemeToggle.vue";
 import { getLesson } from "../data/lessons";
+import { speak, speakZh } from "../utils/speech";
 import { useProgressStore } from "../stores/progress";
 import { useStreakStore } from "../stores/streak";
 import { useRoute, useRouter } from "vue-router";
@@ -107,6 +108,16 @@ const {
   backToMap,
   goNextLevel
 } = flow;
+
+/** 点击玩法卡片：读中文玩法名 + 进入玩法 */
+function openSound(a: (typeof activities.value)[number]) {
+  speakZh(a.name);
+  open(a);
+}
+/** 点击顶栏课程名：朗读英文标题 */
+function sayTitle() {
+  if (lesson.value) speak(lesson.value.title);
+}
 const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
 /** 玩法页（答题中）：顶部按钮用"关闭"（✕）而非返回箭头（多邻国式） */
 const isPlay = computed(() =>
@@ -137,7 +148,11 @@ const playPct = ref(0);
         >
           <div class="fill" :style="{ width: playPct + '%' }"></div>
         </div>
-        <template v-else-if="!isPlay">{{ lesson.emoji }} {{ lesson.title }}</template>
+        <template v-else-if="!isPlay"
+          ><span class="hdr-title-tap" role="button" tabindex="0" aria-label="朗读课程名" @click="sayTitle" @keydown.enter.prevent="sayTitle"
+            >{{ lesson.emoji }} {{ lesson.title }}</span
+          ></template
+        >
       </template>
       <template #right>
         <div class="star-badge" role="img" aria-label="已获得星星"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</div>
@@ -159,7 +174,7 @@ const playPct = ref(0);
           class="act anim-fade-up"
           :class="'tone-' + a.tone"
           :style="{ animationDelay: i * 0.08 + 's' }"
-          @click="open(a)"
+          @click="openSound(a)"
         >
           <component :is="a.icon" class="k-ico ico" />
           <span class="nm">{{ a.name }}</span>
@@ -204,6 +219,15 @@ const playPct = ref(0);
 </template>
 
 <style scoped>
+.hdr-title-tap {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px 6px;
+  margin: -2px -6px;
+}
+.hdr-title-tap:active {
+  background: rgba(127, 127, 127, 0.14);
+}
 .menu {
   display: flex;
   flex-direction: column;

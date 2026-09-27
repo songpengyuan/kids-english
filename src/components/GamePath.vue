@@ -31,6 +31,7 @@ import {
   type LevelState,
 } from "../data/pathLevels";
 import { useProgressStore } from "../stores/progress";
+import { speak } from "../utils/speech";
 import { hapticTap } from "../utils/haptics";
 import { sfxWrong } from "../utils/effects";
 import PathIcon from "./PathIcon.vue";
@@ -280,7 +281,7 @@ function ringOf(lv: GeoItem): number {
   return 0;
 }
 
-/** 点击课程横幅 → 进该课第一关 */
+/** 点击课程横幅 → 朗读课程标题并进该课第一关 */
 function enterUnit(it: GeoItem) {
   const first = levels.find((lv) => lv.lessonId === it.lessonId);
   if (!first) return;
@@ -288,6 +289,8 @@ function enterUnit(it: GeoItem) {
   if (st === "locked") {
     shakeLocked(first.id);
   } else {
+    const title = lessons.find((x) => x.id === it.lessonId)?.title;
+    if (title) speak(title);
     hapticTap();
     router.push(`/lesson/${first.lessonId}?mode=quest&step=${first.actKey}`);
   }
