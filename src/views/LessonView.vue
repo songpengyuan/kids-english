@@ -7,7 +7,7 @@
  *  - useLessonFlow —— 阶段机（菜单→玩法→结算）+ 结算/测量/引导。
  * 本组件只保留：课时解析、玩法清单（依赖 phrases）、composable 装配与模板。
  */
-import { computed, onMounted, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import LearnView from "../components/activities/LearnView.vue";
 import QuizView from "../components/activities/QuizView.vue";
 import MatchView from "../components/activities/MatchView.vue";
@@ -112,6 +112,8 @@ const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
 const isPlay = computed(() =>
   ["learn", "quiz", "match", "speak", "song", "talk"].includes(stage.value)
 );
+/** 听音选词每题进度（0-100），由 QuizView 上报到顶栏进度条 */
+const playPct = ref(0);
 </script>
 
 
@@ -123,10 +125,22 @@ const isPlay = computed(() =>
       :back-label="questMode ? '返回闯关地图' : stage === 'menu' ? '返回课程列表' : '返回本课菜单'"
       @back="back"
     >
-      <template #title>{{ lesson.emoji }} {{ lesson.title }}</template>
+      <template #title>
+        <!-- 玩法页：不显示课程标题；听音选词把进度条上移到顶栏（多邻国式） -->
+        <div
+          v-if="isPlay && stage === 'quiz'"
+          class="hdr-progress"
+          role="progressbar"
+          :aria-valuenow="playPct"
+          aria-label="答题进度"
+        >
+          <div class="fill" :style="{ width: playPct + '%' }"></div>
+        </div>
+        <template v-else-if="!isPlay">{{ lesson.emoji }} {{ lesson.title }}</template>
+      </template>
       <template #right>
         <div class="star-badge" role="img" aria-label="已获得星星"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</div>
-        <ThemeToggle />
+        <ThemeToggle v-if="!isPlay" />
       </template>
     </HeaderBar>
 
@@ -162,6 +176,7 @@ const isPlay = computed(() =>
       :is="stage === 'learn' ? LearnView : stage === 'quiz' ? QuizView : stage === 'match' ? MatchView : SpeakView"
       :words="lesson.words"
       @done="afterGame"
+      @progress="playPct = $event"
     />
     <SongView v-else-if="stage === 'song'" :lesson="lesson" @song-done="afterSong" @back="toMenu" />
     <TalkView v-else-if="stage === 'talk'" :lesson="lesson" @done="afterGame" />
@@ -446,6 +461,23 @@ const isPlay = computed(() =>
   background: linear-gradient(90deg, var(--gold), var(--yellow));
   border-radius: var(--radius-pill);
   transition: width 0.5s;
+}
+
+/* 顶栏进度条（听音选词）：细条紧跟 ✕（多邻国式） */
+.hdr-progress {
+  flex: 1;
+  min-width: 0;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-hard);
+  overflow: hidden;
+}
+.hdr-progress .fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--green);
+  transition: width 0.35s ease;
 }
 
 </style>

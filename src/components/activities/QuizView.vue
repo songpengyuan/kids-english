@@ -1,12 +1,12 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { speak } from "../../utils/speech";
 import { sfxCorrect, sfxWrong, celebrate } from "../../utils/effects";
 import { useProgressStore } from "../../stores/progress";
 import { CheckCircle2, ChevronRight, Volume2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
-const emit = defineEmits(["done"]);
+const emit = defineEmits(["done", "progress"]);
 
 const progress = useProgressStore();
 
@@ -31,6 +31,8 @@ const rightCount = ref(0);
 const q = computed(() => questions.value[idx.value]);
 const total = computed(() => questions.value.length);
 const percent = computed(() => Math.round((idx.value / total.value) * 100));
+// 每题进度上报顶栏（多邻国式：进度条在顶部 ✕ 旁）
+watch(percent, (p) => emit("progress", p), { immediate: true });
 // 只有答对才锁定本题（答错不锁，可以继续选）
 const locked = computed(() => picked.value !== null);
 
