@@ -247,8 +247,8 @@ function goBack() {
     <div class="hd-body">
       <!-- 形象大图：多姿势左右滑动轮播（小点/箭头指示）；点"放大看"进全屏查看器 -->
       <div class="hero-stage" :style="{ '--tone': currentForm.color }">
-        <div ref="poseEl" class="pose-view">
-          <div class="pose-strip" @scroll.passive="syncPose">
+        <div class="pose-view">
+          <div ref="poseEl" class="pose-strip" @scroll.passive="syncPose">
             <figure v-for="(src, i) in poses" :key="src" class="pose-cell" :class="{ sil: !rewards.isOwned(currentForm.id) }">
               <img :src="src" :alt="`${hero.name}${currentForm.name}${poses.length > 1 ? ' 姿势' + (i + 1) : ''}`" @error="onPoseError(src)" />
             </figure>
