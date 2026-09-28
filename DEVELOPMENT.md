@@ -28,8 +28,9 @@
 pnpm install
 pnpm dev      # 本地开发
 pnpm test     # 单元测试（vitest）
-pnpm build    # 产出 dist/（本地预览；部署时带 GH_REPO 环境变量，见 §9）
-pnpm build:ci # 部署构建（强制要求 GH_REPO，防止子路径部署 404）
+pnpm build      # 产出 dist/（本地预览默认根路径；部署见 §9）
+pnpm build:root  # 部署构建：自定义域名/根路径（BASE_PATH=/，guard 放行）
+pnpm build:ci    # 部署构建：GitHub Pages 项目子路径（强制 GH_REPO）
 ```
 
 ---
@@ -431,7 +432,13 @@ python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
 
 ```bash
 # 1. 构建并起一个模拟 GitHub Pages 子路径的本地服务
-GH_REPO=kids-english pnpm build
+自定义域名（根路径部署）：
+
+    pnpm build:root      # = BASE_PATH=/ pnpm build:ci，产物资源前缀为 /assets/
+
+GitHub Pages 项目子路径（无自定义域名）：
+
+    GH_REPO=kids-english pnpm build
 rsync -a --exclude='*.mp4' --exclude='*.mp3' dist/ /tmp/preview/kids-english/
 cd /tmp/preview && python3 -m http.server 8801
 
@@ -458,7 +465,7 @@ node scripts/layout-audit.mjs
 node scripts/verify-pwa.mjs
 ```
 
-脚本自己负责构建（带 `GH_REPO`）→ 起 `vite preview`（4173 端口，模拟子路径）→ CDP 验证 → 杀进程。
+脚本自己负责构建（自定义域名用 `build:root`、项目子路径带 `GH_REPO`）→ 起 `vite preview`（4173 端口）→ CDP 验证 → 杀进程。
 覆盖：manifest 合法、SW 接管、壳缓存就位、媒体进缓存、**真·断网**（直接杀 preview 服务）后
 首页可渲染 / 音频可读 / Range 请求返回 206、改 `dist/index.html` 立即生效（network-first）、
 改 `dist/sw.js` 构建号后 SW 自动升级、玩法中不被强制刷新且回首页静默刷新。
@@ -506,7 +513,10 @@ dev 的 `/sw.js` 由插件中间件提供，不缓存任何 dev 模块。
 ## 9. 构建与部署
 
 推送到 `main` 会自动触发 `.github/workflows/deploy.yml`：
-安装依赖 → `GH_REPO=<仓库名> pnpm build:ci` → 上传 `dist/` → 部署到 GitHub Pages。
+安装依赖 → 自定义域名用 `pnpm build:root`，GitHub Pages 项目子路径用 `GH_REPO=<仓库名> pnpm build:ci` → 上传 `dist/` → 部署（自定义域名解析到根路径）。
+
+> base 优先级：`BASE_PATH`（显式，任意部署路径）> `GH_REPO`（子路径）> `/`（默认根路径）。
+> sw.js 已用 `self.registration.scope` 自适应任意部署路径，无需改 PWA 逻辑。
 
 `GH_REPO` 环境变量决定 `vite.config.js` 里的 `base`，即部署子路径。
 **本地构建如果不带这个变量，产物资源路径会指向根目录**，部署后必挂 —— 本地想复现线上就带上它。
