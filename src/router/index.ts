@@ -16,12 +16,14 @@
  */
 import { createRouter, createWebHashHistory } from "vue-router";
 import HomeView from "../views/HomeView.vue";
+import GameView from "../views/game/GameView.vue";
 import LessonView from "../views/LessonView.vue";
 
 export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     { path: "/", name: "home", component: HomeView, meta: { title: "丞丞ABC" } },
+    { path: "/game", name: "game", component: GameView, meta: { title: "游戏闯关" } },
     { path: "/me", name: "me", component: () => import("../views/MyView.vue"), meta: { title: "我的" } },
     { path: "/streak", name: "streak", component: () => import("../views/StreakView.vue"), meta: { title: "连击" } },
     { path: "/treasure", name: "treasure", component: () => import("../views/TreasureView.vue"), meta: { title: "宝藏罐" } },
@@ -31,7 +33,23 @@ export const router = createRouter({
         // 玩法直达：/lesson/:id 或 /lesson/:id/:stage（如 #/lesson/l4/learn），
     // 兼容旧 query 深链（?stage=learn），入口解析在 useLessonFlow.boot */
     { path: "/lesson/:id/:stage?", name: "lesson", component: LessonView, meta: { title: "学习" } },
+    // 游戏闯关玩法：独立路由（地图点关卡 → /quest/:id?step=玩法，不再 ?mode=quest 参数）
+    { path: "/quest/:id/:stage?", name: "quest", component: LessonView, meta: { title: "学习" } },
     // 未知路径回首页（含旧 ?lesson= 深链被 replace 掉之前的空 hash 场景）
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
+});
+
+// 兼容旧深链（游戏模式/闯关曾用 query 参数指向）：
+//  · #/?mode=game → #/game（独立路由）
+//  · #/lesson/...?mode=quest&step=... → #/quest/...?step=...（独立路由）
+router.beforeEach((to) => {
+  if (to.path === "/" && to.query.mode === "game") {
+    return { path: "/game", replace: true };
+  }
+  if (to.query.mode === "quest") {
+    const rest = to.path.replace(/^\/lesson/, "");
+    return { path: `/quest${rest}`, query: to.query.step ? { step: to.query.step } : {}, replace: true };
+  }
+  return true;
 });

@@ -57,9 +57,10 @@ onMounted(() => {
 
 <template>
   <CuteBackdrop />
-  <!-- 只缓存首页：游戏模式 KeepAlive 缓存下，返回首页时 onActivated 对比关卡状态触发解锁动效 -->
+  <!-- 缓存两个首页级页面（自由 #/ + 游戏 #/game）：
+       返回游戏页时 GamePath 的 onActivated 对比关卡状态触发解锁动效 -->
   <router-view v-slot="{ Component }">
-    <KeepAlive include="HomeView">
+    <KeepAlive include="HomeView,GameView">
       <component :is="Component" />
     </KeepAlive>
   </router-view>

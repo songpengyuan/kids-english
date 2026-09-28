@@ -15,7 +15,7 @@ export let lastSeenLevelId = "";
  * - 无连线：关卡节点按 snakeNodes 等弧长 S 形蜿蜒排列，每课一段。
  * - 全局线性解锁：第一关总是可玩，前一关完成解锁下一关（跨课连续）。
  *   状态：done（金渐变+✓）/ active（当前，光圈脉动）/ locked（灰+锁）。
- * - 点关卡节点 → 直接开玩该玩法（/lesson/:id?mode=quest&step=<玩法>）。
+ * - 点关卡节点 → 直接开玩该玩法（/quest/:id?step=<玩法>，独立路由）。
  * - 全部节点为 DOM <button>：原生点击/聚焦/键盘/无障碍；滚动即普通 DOM 滚动（惯性、贴边）。
  * - 几何坐标全部来自纯函数 pathGeometry（TDD 基线），布局只随容器宽度重算（ResizeObserver）。
  */
@@ -274,7 +274,7 @@ function enterLevel(lv: PathLevel) {
     chestOpen.value = true;
     return;
   }
-  router.push(`/lesson/${lv.lessonId}?mode=quest&step=${lv.actKey}`);
+  router.push(`/quest/${lv.lessonId}?step=${lv.actKey}`);
 }
 
 /** 宝箱关卡打开状态（地图上直接弹开宝箱奖励层） */

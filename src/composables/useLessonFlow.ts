@@ -183,7 +183,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
       stage.value = "menu";
       return;
     }
-    router.push(quest.questMode.value ? { path: "/", query: { mode: "game" } } : "/");
+    router.push(quest.questMode.value ? "/game" : "/");
   }
 
   function toMenu() {

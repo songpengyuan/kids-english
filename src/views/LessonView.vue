@@ -84,7 +84,7 @@ onMounted(flow.boot);
 // 同一路由组件变参（换课 / 下一关 ?step= / 玩法子路径 :stage / 回退无 stage）不重挂载 → watch 重置
 // boot() 幂等：有 stage 直达玩法、无 stage 回菜单并朗读标题
 watch(
-  () => [route.params.id, route.params.stage, route.query.mode, route.query.step],
+  () => [route.params.id, route.params.stage, route.path, route.query.step],
   () => flow.boot()
 );
 

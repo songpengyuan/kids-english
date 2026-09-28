@@ -46,6 +46,7 @@ async function bootHost(url: string): Promise<Host> {
     history: createMemoryHistory(),
     routes: [
       { path: "/lesson/:id/:stage?", name: "lesson", component: { template: "<div />" } },
+      { path: "/quest/:id/:stage?", name: "quest", component: { template: "<div />" } },
       { path: "/", name: "home", component: { template: "<div />" } }
     ]
   });
@@ -122,8 +123,8 @@ describe("useLessonFlow 引导（深链解析）", () => {
     expect(flow.stage.value).toBe("learn");
   });
 
-  it("闯关模式（?mode=quest&step=quiz）：跳过菜单直接进对应玩法", async () => {
-    const { flow } = await bootHost("/lesson/l4?mode=quest&step=quiz");
+  it("闯关模式（#/quest/l4?step=quiz 独立路由）：跳过菜单直接进对应玩法", async () => {
+    const { flow } = await bootHost("/quest/l4?step=quiz");
     flow.boot();
     expect(flow.stage.value).toBe("quiz");
   });
@@ -208,7 +209,7 @@ describe("useLessonFlow 结算", () => {
   });
 
   it("闯关模式结算：触发 quest.finish 并进大画面", async () => {
-    const { flow, wrapper } = await bootHost("/lesson/l4?mode=quest&step=0");
+    const { flow, wrapper } = await bootHost("/quest/l4?step=0");
     flow.boot();
     flow.open(acts[0]);
     flow.afterGame(3);

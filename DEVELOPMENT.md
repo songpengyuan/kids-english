@@ -112,7 +112,7 @@ LessonView.vue   stage: menu | learn | quiz | match | speak | song | talk | resu
 
 - 页面级用 vue-router（hash 模式）：/me、/treasure、/report、/review、/lesson/:id 都是独立页面，
   深链刷新不掉链（GitHub Pages 静态托管下 history 模式深链会 404）。
-- **底部导航常驻三入口**（App.vue 全局）：自由（/ 不带 query）/ 游戏（/?mode=game）/ 我的（/me）。
+- **底部导航常驻三入口**（App.vue 全局）：自由（/）/ 游戏（/game 独立路由）/ 我的（/me）。
   首页的自由/游戏是同一路由的两种浏览模式，用 query 区分，URL 可直达可分享；
   /me、/treasure、/report、/review 高亮"我的"tab；/lesson/:id 沉浸学习不显示导航。
 - 课程内**不逐玩法拆路由**：stage 由 useLessonFlow 管理，玩法间共享大量状态，
@@ -127,7 +127,7 @@ LessonView.vue   stage: menu | learn | quiz | match | speak | song | talk | resu
 | 组件 | props | emits | 说明 |
 |---|---|---|---|
 | BottomNav | — | — | 底部导航：自由/游戏/我的，路由高亮（App.vue 全局，玩法页隐藏） |
-| HomePage | — | — | 课时卡片分页 + 复习/继续入口；模式由路由 query（?mode=game）驱动 |
+| HomePage | — | — | 课时卡片分页 + 复习/继续入口；游戏模式已拆独立路由 #/game |
 | MyView | — | — | 独立页 /me：统计（星星/连击/贝壳/贴纸/今日学情）+ 宝藏/报告/复习入口 |
 | LessonView | — | — | 按 `stage` 渲染各玩法或结算页；闯关模式有关卡卡（questStart） |
 | LearnView / QuizView / MatchView / SpeakView | `words` | `done(stars)` | 玩法结束上报星级（1~3）；内部把错词记入 progress.words |
@@ -399,7 +399,7 @@ python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
 #/lesson/l4?stage=match        → 直达"图词连线"
 #/lesson/l4?stage=speak        → 直达"跟我读"
 #/lesson/l4?stage=song         → 直达"唱童谣"
-#/lesson/l4?mode=quest         → 闯关模式（游戏地图进入）
+#/quest/l4?step=learn          → 闯关模式（游戏地图进入，独立路由）
 #/me                           → 我的（个人中心）
 #/review                       → 错词复习页
 #/report                       → 家长学情页
@@ -664,7 +664,7 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 | 项 | 内容 |
 | --- | --- |
 | 2-1 目录分层 | `src/views/`（页面级）+ `src/components/activities/`（玩法）+ `src/components/layout/`（HeaderBar/ThemeToggle/BottomNav）+ `src/composables/`（逻辑）。20+ 组件搬移 + import 全量重写。 |
-| 2-2 HomePage 拆分 | 壳 + PracticeView（自由练习：课程卡/继续学习/quick 入口）+ GameView（游戏闯关地图，canvas 蜿蜒路径 + 关卡 + 星星/连击顶栏）。URL 兼容 `#/` 与 `#/?mode=game`，BottomNav 语义不变。 |
+| 2-2 HomePage 拆分 | 自由（#/ HomeView：课程卡/继续学习/quick）+ 游戏（#/game GameView：闯关地图，蜿蜒路径 + 关卡 + 星星/连击顶栏）。2026-09-28 游戏模式独立路由 #/game、闯关 #/quest/:id（不再 query 参数），旧深链守卫兼容。 |
 | 2-3 composables | `useLessonFlow.ts`（stage 机：菜单→玩法→结算 + 结算/测量/引导，从 LessonView 711 行抽离）+ `useQuest.ts`（闯关身份：模式/关卡序列/当前关/下一关）。LessonView 瘦身为流程编排层（~150 行）。 |
 | 2-4 JS→TS | 数据/工具全量 TS 化：`lessons.ts`（Lesson 类型 + words 生成）、`layout.ts`、`usePager.ts`、`speech.ts`（SpeakOptions/类型化 Audio）、`speechScore.ts`（SRImpl/RecorderLike 接口）。核心组件 script 转 `lang="ts"`（LessonView 等）。**迁移规则：Vite 不认显式 `.js` 后缀 import，迁移后重启 dev server 清旧依赖图。** |
 

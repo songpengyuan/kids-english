@@ -3,8 +3,7 @@
  * 底部导航（App 风格常驻三入口）：
  *   📖 学习（学习练习课程列表） / 🗺️ 游戏（闯关路径图） / 👤 我的（个人中心）
  *
- * - 学习/游戏是首页（/）内的两种浏览模式，用 query ?mode=game 区分：
- *   学习 = 不带 query，游戏 = ?mode=game。URL 保持干净（#/）。
+ * - 学习/游戏是独立路由：#/ 与 #/game（不再用 query 区分）。
  * - 我的 tab 高亮覆盖其子页：/me、/treasure、/report、/review。
  * - 玩法页（/lesson/:id）不渲染本组件（沉浸学习，见 App.vue）。
  */
@@ -17,7 +16,7 @@ const route = useRoute();
 const router = useRouter();
 
 const isHome = computed(() => route.name === "home");
-const isGame = computed(() => isHome.value && route.query.mode === "game");
+const isGame = computed(() => route.name === "game");
 const isMe = computed(
   () =>
     route.name === "me" ||
@@ -30,13 +29,13 @@ const isMe = computed(
 
 function goPractice() {
   speakZh("学习");
-  if (isHome.value && !isGame.value) return;
-  void router.push({ path: "/", query: {} }).catch(() => {});
+  if (isHome.value) return;
+  void router.push("/").catch(() => {});
 }
 function goGame() {
   speakZh("游戏");
   if (isGame.value) return;
-  void router.push({ path: "/", query: { mode: "game" } }).catch(() => {});
+  void router.push("/game").catch(() => {});
 }
 function goMe() {
   speakZh("我的");

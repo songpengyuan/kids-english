@@ -53,6 +53,7 @@ vi.mock("../../services/effects", () => ({
 }));
 
 import HomeView from "../../views/HomeView.vue";
+import GameView from "../game/GameView.vue";
 import MyView from "../MyView.vue";
 import ReportView from "../ReportView.vue";
 import TreasureView from "../TreasureView.vue";
@@ -108,8 +109,8 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(errors).toEqual([]);
   });
 
-  it("首页（游戏闯关）", async () => {
-    const w = await mountPage(HomeView, "/", { mode: "game" });
+  it("游戏闯关（独立路由 /game）", async () => {
+    const w = await mountPage(GameView, "/game");
     expect(w.text()).toContain("游戏闯关");
     expect(errors).toEqual([]);
   });

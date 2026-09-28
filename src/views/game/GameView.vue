@@ -1,14 +1,23 @@
 <script setup lang="ts">
 /**
- * 游戏闯关首页（阶段 2-2：从 HomePage 拆分）。
+ * 游戏闯关首页：独立路由 #/game（不再由首页 ?mode=game 参数指向）。
  * 多邻国式关卡路径图；滚动条贴最右缘（slot 宽度向右扩展一个 --pad-x）。
+ * KeepAlive 缓存整页（App.vue include="HomeView,GameView"），
+ * 返回本页时 GamePath 的 onActivated 对比关卡状态触发解锁动效。
  */
+import AppHeader from "../../components/layout/AppHeader.vue";
 import GamePath from "../../components/game/GamePath.vue";
+
+defineOptions({ name: "GameView" }); // KeepAlive include 需要稳定组件名
 </script>
 
 <template>
-  <div class="game">
+  <div class="game view">
+    <AppHeader title="游戏闯关" icon="game" />
+
     <GamePath class="gp-slot" />
+
+    <p class="foot">建议家长陪同，每次 10~15 分钟</p>
   </div>
 </template>
 
@@ -19,9 +28,22 @@ import GamePath from "../../components/game/GamePath.vue";
   min-height: 0;
   flex: 1;
   /* 背景**故意透明**：游戏闯关地图的天空草地场景由全站背景质感层
-   *（CuteBackdrop 的 sky 主题，随 ?mode=game 自动切换）提供；
+   *（CuteBackdrop 的 sky 主题，随 #/game 路由自动切换）提供；
    *  这里不再铺任何纹理/底色，避免与场景背景叠加。 */
   background: transparent;
+}
+.foot {
+  text-align: center;
+  color: var(--ink-faint);
+  font-weight: 700;
+  font-size: var(--fs-small);
+  margin: 0;
+  flex: none;
+}
+@media (max-height: 480px) {
+  .foot {
+    display: none;
+  }
 }
 
 /* 游戏模式：占满剩余高度，路径图超高时可上下滚动；

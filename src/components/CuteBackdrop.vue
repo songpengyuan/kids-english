@@ -2,7 +2,7 @@
 /**
  * 全站背景质感层 —— 两个主题，由路由自动切换：
  *  · 默认（水彩晕染）：不规则水彩色斑 + 纸纹颗粒 + 低打扰云朵/星星/圆点。
- *  · 游戏闯关地图（?mode=game）：天空草地场景（太阳 / 云朵 / 草地山丘 / 碎星）。
+ *  · 游戏闯关地图（#/game 路由）：天空草地场景（太阳 / 云朵 / 草地山丘 / 碎星）。
  *  两版都支持暗色模式（夜空 / 月亮 / 暗丘）。
  *
  * 三层质感（都是纯 CSS / 一个内联 SVG，无图片资源）：
@@ -26,8 +26,8 @@ import { useRoute } from "vue-router";
 import { Star } from "@lucide/vue";
 
 const route = useRoute();
-/** 游戏闯关地图页：只 ?mode=game（游戏主页路径图）切天空场景；quest 关卡内保持水彩，答题更专注。 */
-const isSky = computed(() => route.query.mode === "game");
+/** 游戏闯关地图页：只 #/game（独立路由）切天空场景；quest 关卡内保持水彩，答题更专注。 */
+const isSky = computed(() => route.path === "/game");
 
 const stars = [
   { top: "12%", left: "6%", s: 1, d: 0 },
@@ -139,7 +139,7 @@ const grainStyle = { "--grain": GRAIN };
   pointer-events: none;
 }
 
-/* ---------- 天空草地版（游戏闯关地图 ?mode=game） ---------- */
+/* ---------- 天空草地版（游戏闯关地图 #/game 路由） ---------- */
 .backdrop.sky {
   background-image:
     linear-gradient(180deg, #8ec8f5 0%, #cde9ff 42%, #eef7e0 78%, #d4e6b8 100%);
