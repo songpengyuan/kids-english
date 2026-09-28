@@ -14,7 +14,7 @@
 | 项 | 说明 |
 |---|---|
 | 框架 | Vue 3（`<script setup>` 组合式 API） |
-| 路由 | vue-router，**hash 模式**（`/#/lesson/l4`；GitHub Pages 静态托管下 history 深链刷新会 404） |
+| 路由 | vue-router，**hash 模式**（`/#/learn/lesson/l4/learn`；GitHub Pages 静态托管下 history 深链刷新会 404） |
 | 状态 | Pinia 3 个 store：progress（进度/单词掌握度/今日学情）、streak（连击）、rewards（贝壳/贴纸） |
 | 构建 | Vite 8 |
 | 包管理 | pnpm |
@@ -43,7 +43,7 @@ kids-english/
 │   ├── main.js                 # 入口：主题 → Pinia → 路由 → 挂载；注册触感/错误上报/页面标题
 │   ├── App.vue                 # 顶层外壳：首页 KeepAlive 缓存（返回不丢模式/页码）
 │   ├── router/
-│   │   └── index.ts            # hash 路由 + meta.title（页面标题）+ 低频页懒加载（见 §14.3）
+│   │   └── index.ts            # hash 路由 + meta.title + 三域子路由分层 + 旧路径迁移守卫（见 §14.3）
 │   ├── styles/
 │   │   ├── tokens.css          # ★ 设计 token：颜色/间距/字号/圆角/阴影 + 断点表注释
 │   │   └── base.css            # ★ reset、应用外壳、跨页面共享 UI（.view/.k-btn/.topbar/进度条/动画）
@@ -110,14 +110,13 @@ router (hash)   / 首页(HomeView，KeepAlive 缓存)  /me  /streak  /treasure  
 LessonView.vue   stage: menu | learn | quiz | match | speak | song | talk | result
 ```
 
-- 页面级用 vue-router（hash 模式）：/me、/treasure、/report、/review、/lesson/:id 都是独立页面，
+- 页面级用 vue-router（hash 模式）：三入口为**顶层父路由，子页面全部用子路由承载**（不在根路径平铺），
   深链刷新不掉链（GitHub Pages 静态托管下 history 模式深链会 404）。
 - **底部导航常驻三入口**（App.vue 全局）：学习（/learn）/ 游戏（/game）/ 我的（/me），各自独立路由；#/ 重定向 #/learn。
-  首页的自由/游戏是同一路由的两种浏览模式，用 query 区分，URL 可直达可分享；
-  /me、/treasure、/report、/review 高亮"我的"tab；/lesson/:id 沉浸学习不显示导航。
-- 课程内**不逐玩法拆路由**：stage 由 useLessonFlow 管理，玩法间共享大量状态，
-  拆路由反而增加耦合；**玩法直达用可选子路径 `/lesson/:id/:stage`**（如 #/lesson/l4/learn，
-  入口解析 params.stage 优先、旧 query `?stage=` 兼容），见 §14.3 路由策略。
+  /me、/me/streak、/me/treasure、/me/report 高亮"我的"tab；/learn/lesson/:id 沉浸学习不显示导航。
+- **玩法（题目详情）走独立子路由**：`/learn/lesson/:id/:stage`（如 #/learn/lesson/l4/learn，
+  URL 标记"第几课 + 题型"）；进入/退出玩法时 URL 实时同步（useLessonFlow.replace，不堆历史）；
+  旧 `?stage=` query 与旧平铺路径由守卫统一迁移，见 §14.3 路由分层表。
 - **加载策略**：首页/课程主链路同步加载（离线首开最稳），我的/宝藏/报告/复习/连击/英雄详情
   懒加载（在线首屏更小，chunk 进 sw 预缓存清单，离线不降级），见 §14.3。
 - 需要真机直达验收时用调试深链（见 §7.1）。
@@ -393,19 +392,21 @@ python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
 不用一路点进来，直接在真机上打开指定页面验收布局：
 
 ```
-#/learn                      → 学习主页（自由练习；#/ 自动重定向至此）
-#/game                       → 游戏闯关地图
-#/lesson/l4                    → 直接进第 4 课的菜单
-#/lesson/l4/learn              → 直达"看图学词"（子路径）
-#/lesson/l4/quiz               → 直达"听音选图"（子路径）
-#/lesson/l4/match              → 直达"图词连线"（子路径）
-#/lesson/l4/speak              → 直达"跟我读"（子路径）
-#/lesson/l4/song               → 直达"唱童谣"（子路径）
-#/quest/l4?step=learn          → 闯关模式（游戏地图进入，独立路由）
+#/learn                          → 学习主页（自由练习；#/ 自动重定向至此）
+#/learn/lesson/l4                → 直接进第 4 课的菜单
+#/learn/lesson/l4/learn          → 直达"看图学词"（课 id + 题型）
+#/learn/lesson/l4/quiz           → 直达"听音选图"
+#/learn/lesson/l4/match          → 直达"图词连线"
+#/learn/lesson/l4/speak          → 直达"跟我读"
+#/learn/lesson/l4/song           → 直达"唱童谣"
+#/learn/review                   → 错词复习页（学习域）
+#/game                           → 游戏闯关地图
+#/game/quest/l4?step=learn       → 闯关玩法（游戏地图进入）
 #/me                           → 我的（个人中心）
-#/review                       → 错词复习页
-#/report                       → 家长学情页
-#/treasure                     → 宝藏罐（图鉴 + 贴纸商店）
+#/me/streak                    → 连击日历 / 今日目标
+#/me/treasure                  → 宝藏罐（图鉴 + 贴纸商店）
+#/me/treasure/hero/:id         → 英雄图鉴详情
+#/me/report                    → 家长学情页
 ```
 
 `stage` 取值：`learn | quiz | match | speak | song | talk`。仅在开发/验收时用，不影响正常流程。
