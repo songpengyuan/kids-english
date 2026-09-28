@@ -336,10 +336,10 @@ function setupGroup(g) {
   pendingWord = null;
   pendingSide = null;
   ready.value = false;
+  // 两列布局：左列全部图片，右列全部单词/声音（中间连线空间更大）
   const imgs = shuffleWith(g);
-  const half = Math.ceil(imgs.length / 2);
-  leftImgs.value = imgs.slice(0, half);
-  rightImgs.value = imgs.slice(half);
+  leftImgs.value = imgs;
+  rightImgs.value = [];
   midWords.value = shuffleWith(g);
   transitioning.value = false;
 }
@@ -485,39 +485,8 @@ onBeforeUnmount(() => {
           <!-- 听音模式：只显示喇叭，不显示单词（点一下先听发音） -->
           <span v-else class="sound-wrap" :class="{ playing: playingId === w.id }">
             <Volume2 class="sound-ico" :aria-label="w.en" />
-            <span class="wave w1"></span>
-            <span class="wave w2"></span>
-            <span class="wave w3"></span>
+            <span v-if="playingId === w.id" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
           </span>
-        </div>
-      </div>
-
-      <div class="col imgs">
-        <div
-          v-for="(w, i) in rightImgs"
-          :key="w.id"
-          :ref="(el) => (rightEls[i] = el)"
-          class="cell pic anim-pop"
-          data-haptic
-          data-side="img"
-          :data-word="w.id"
-          :style="{ animationDelay: (i + 2) * 0.06 + 's' }"
-          :class="{
-            gone: matched.has(w.id),
-            wrong: imgWrong === w.id,
-            active: startWord && startSide === 'img' && startWord.id === w.id
-          }"
-          @pointerdown="onCardDown(w, 'img', $event)"
-        >
-          <img
-            :src="w.image"
-            :alt="w.en"
-            @error="
-              $event.target.style.display = 'none';
-              $event.target.nextElementSibling.style.display = 'flex';
-            "
-          />
-          <span class="ph" style="display: none">{{ w.emoji }}</span>
         </div>
       </div>
 
@@ -614,7 +583,7 @@ onBeforeUnmount(() => {
   flex: 1;
 }
 .col.words {
-  flex: 1.2;
+  flex: 1;
 }
 
 .cell {
@@ -669,29 +638,34 @@ onBeforeUnmount(() => {
   height: clamp(28px, 6vh, 46px);
   color: var(--blue-dark);
 }
-/* 声波扩散动画：三层圆弧从喇叭向外扩散 */
+/* 波纹跳动（与英雄详情/听音选词一致）：播放时喇叭右侧三根波纹交替起伏 */
 .wave {
   position: absolute;
-  border: 3px solid var(--blue);
-  border-radius: 50%;
-  opacity: 0;
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
   pointer-events: none;
 }
-.sound-wrap.playing .wave {
-  animation: wave-out 0.9s ease-out infinite;
+.wave i {
+  width: 3px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--blue);
+  animation: wave-bounce 0.7s ease-in-out infinite;
 }
-.sound-wrap.playing .w2 { animation-delay: 0.15s; }
-.sound-wrap.playing .w3 { animation-delay: 0.3s; }
-@keyframes wave-out {
-  0% {
-    width: 20px;
-    height: 20px;
-    opacity: 0.8;
-  }
+.wave i:nth-child(2) { animation-delay: 0.14s; }
+.wave i:nth-child(3) { animation-delay: 0.28s; }
+@keyframes wave-bounce {
+  0%,
   100% {
-    width: 64px;
-    height: 64px;
-    opacity: 0;
+    height: 4px;
+  }
+  50% {
+    height: 11px;
   }
 }
 /* 练习方式切换（看词 / 听音） */
@@ -775,10 +749,10 @@ onBeforeUnmount(() => {
 /* 手机窄屏：中间单词列再加宽，图片列收窄，优先保证单词可读 */
 @media (max-width: 600px) {
   .col.imgs {
-    flex: 0.85;
+    flex: 1;
   }
   .col.words {
-    flex: 1.3;
+    flex: 1;
   }
   .cell.pic img {
     width: 74%;
