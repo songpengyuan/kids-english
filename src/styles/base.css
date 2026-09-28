@@ -40,7 +40,6 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: var(--bg);
   color: var(--ink);
   font-size: var(--fs-body);
   /* 防止孩子双击缩放 / 长按选中 */
@@ -50,6 +49,10 @@ body {
   /* App 体验：整页不滚动、无回弹 */
   overflow: hidden;
   overscroll-behavior: none;
+}
+/* html 兜底底色（backdrop 加载前/不支持时不露白）；body 必须透明，否则盖住 backdrop 渐变 */
+html {
+  background: var(--bg);
 }
 
 button {
