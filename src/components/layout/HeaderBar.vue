@@ -66,13 +66,15 @@ const emit = defineEmits<{ back: [] }>();
 .hdr-back:active {
   transform: translateY(2px);
 }
-/* 关闭按钮：弱化——去掉圆圈底和阴影，只留浅灰图标 */
+/* 关闭按钮：弱化底色但尺寸按儿童触控目标放大（52px ≥ --tap-min）；
+   图标随 font-size 走（PathIcon 1em），浅灰弱化不变 */
 .hdr-back.isClose {
   background: transparent;
   box-shadow: none;
   color: var(--ink-faint);
-  width: 36px;
-  height: 36px;
+  width: 52px;
+  height: 52px;
+  font-size: 24px;
 }
 .hdr-back.isClose:hover {
   color: var(--ink-soft);

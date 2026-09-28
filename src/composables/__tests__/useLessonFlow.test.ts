@@ -160,12 +160,16 @@ describe("useLessonFlow 玩法迁移", () => {
     expect(router.currentRoute.value.path).toBe("/learn");
   });
 
-  it("back()：玩法中先回本课菜单", async () => {
-    const { flow } = await bootHost("/lesson/l4");
+  it("back()：玩法中先回本课菜单，URL 同步去题型段", async () => {
+    const { flow, router } = await bootHost("/lesson/l4");
     flow.boot();
     flow.open(acts[0]);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(router.currentRoute.value.path).toBe("/lesson/l4/" + acts[0].key);
     flow.back();
+    await new Promise((r) => setTimeout(r, 0));
     expect(flow.stage.value).toBe("menu");
+    expect(router.currentRoute.value.path).toBe("/lesson/l4");
   });
 });
 
