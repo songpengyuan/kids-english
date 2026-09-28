@@ -33,8 +33,10 @@ jobs:
           pnpm type-check
 
       - name: Build
+        # 自定义域名（zelab.cn）部署在根路径，必须用 build:root（BASE_PATH=/）；
+        # 无自定义域名走 GitHub Pages 子路径时改回 GH_REPO=... pnpm build:ci
         run: |
-          GH_REPO="${{ github.event.repository.name }}" pnpm build:ci
+          pnpm build:root
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
