@@ -447,6 +447,7 @@ function unitLesson(id: string) {
   color: var(--ink-1);
   cursor: pointer;
   background: transparent;
+  box-shadow: none; /* 覆盖全局 tone-* 贴纸边：横幅常态无框，吸顶阴影由 .is-stuck 自管 */
   transition: background var(--dur-base), box-shadow var(--dur-base), transform var(--dur-fast) var(--ease-out);
 }
 /* 课程横幅 tone：--tone 与关卡节点同源（主色 + 投影色） */
@@ -554,6 +555,10 @@ function unitLesson(id: string) {
   gap: 18px;
   transform: translateX(var(--dx, 0px)); /* 相对居中的左右摆动 */
   transition: transform var(--dur-base) var(--ease-out);
+  /* ★ 覆盖全局 .tone-* 卡片规则（base.css 会给带 tone-* 类的元素整块着色+贴纸边）：
+     地图上只有圆按钮（.gp-level）允许有背景色，关卡名/进度环区域保持透明无框 */
+  background: transparent;
+  box-shadow: none;
 }
 /* 与上一项的间距由 JS 按"视觉留白恒等"逐关算好（--gap-above，见 utils/pathGeometry）。
  * 有环/无环的可见轮廓高度不同，固定 margin 会让留白在 28~50px 之间跳；
