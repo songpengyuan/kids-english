@@ -6,26 +6,46 @@
  * 2026-09-28：课程列表从"翻页"改为"上下滚动"——后续课程会越加越多，
  * 滚动浏览比翻页轻松，也更贴近 App 首页"往下滑看全部课"的惯用节奏。
  */
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { activityKeys, getLesson, lessons, type Lesson } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { useRouter } from "vue-router";
 import { speak } from "../../services/speech";
-import { useViewport } from "../../composables/useViewport";
 import { dueWords } from "../../utils/reviewQueue";
 import { BookOpenText, Check } from "@lucide/vue";
 
 const progress = useProgressStore();
 const router = useRouter();
-const { isNarrow, width } = useViewport();
 
-/** 卡片列数：手机 2 列，平板 3 列，超宽屏 4 列（别一行摊太散） */
-const cols = computed(() => (isNarrow.value ? 2 : width.value >= 1080 ? 4 : 3));
-
-const cardsStyle = computed(() => ({
-  "--cols": cols.value,
-  "--grid-gap": "14px"
-}));
+/** 课程轮播：每页 2 课（左右滑动 + 底部小点），移动端到超宽屏统一 */
+const PAGE_SIZE = 2;
+const pages = computed(() => {
+  const n = Math.ceil(lessons.length / PAGE_SIZE);
+  return Array.from({ length: n }, (_, i) => lessons.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE));
+});
+const carouselEl = ref<HTMLDivElement | null>(null);
+const curPage = ref(0);
+function recalcPage() {
+  const el = carouselEl.value;
+  if (!el) return;
+  const max = pages.value.length - 1;
+  curPage.value = Math.max(0, Math.min(max, Math.round(el.scrollLeft / el.clientWidth)));
+}
+function goPage(i: number) {
+  const el = carouselEl.value;
+  if (!el) return;
+  el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+}
+onMounted(() => {
+  const el = carouselEl.value;
+  if (el) el.addEventListener("scroll", recalcPage, { passive: true });
+  window.addEventListener("resize", recalcPage);
+});
+onBeforeUnmount(() => {
+  const el = carouselEl.value;
+  if (el) el.removeEventListener("scroll", recalcPage);
+  window.removeEventListener("resize", recalcPage);
+});
 
 function enter(l: Lesson) {
   // 点击卡片文字（课程英文标题）→ 朗读标题；进课程后由 LearnView 逐词发音
@@ -55,24 +75,43 @@ const lastLessonObj = computed(() => {
       </button>
     </div>
 
-    <!-- 课程列表：上下滚动，课多了往下滑即可；不再翻页 -->
-    <div class="stage view-body">
-      <div class="cards" :style="cardsStyle">
+    <!-- 课程列表：左右轮播（一页 2 课），底部小点指示器 -->
+    <div class="stage">
+      <div
+        class="course-carousel"
+        ref="carouselEl"
+        role="region"
+        aria-label="课程列表，可左右滑动"
+      >
+        <div v-for="(page, pi) in pages" :key="pi" class="cc-page">
+          <button
+            v-for="(l, i) in page"
+            :key="l.id"
+            class="lesson-card anim-pop"
+            :class="'tone-' + l.tone"
+            :style="{ animationDelay: (i % 2) * 0.08 + 's' }"
+            @click="enter(l)"
+          >
+            <span class="big-emoji anim-float">{{ l.emoji }}</span>
+            <span class="lt">{{ l.title }}</span>
+            <span class="card-done" v-if="progress.isCompleted(l.id, activityKeys(l))">
+              <Check class="k-ico" />全部通关
+            </span>
+            <span class="cnt">{{ l.words.length }} 个单词</span>
+          </button>
+        </div>
+      </div>
+      <div v-if="pages.length > 1" class="cc-dots" role="tablist" aria-label="课程页">
         <button
-          v-for="(l, i) in lessons"
-          :key="l.id"
-          class="lesson-card anim-pop"
-          :class="'tone-' + l.tone"
-          :style="{ animationDelay: Math.min(i, 8) * 0.08 + 's' }"
-          @click="enter(l)"
-        >
-          <span class="big-emoji anim-float">{{ l.emoji }}</span>
-          <span class="lt">{{ l.title }}</span>
-          <span class="card-done" v-if="progress.isCompleted(l.id, activityKeys(l))">
-            <Check class="k-ico" />全部通关
-          </span>
-          <span class="cnt">{{ l.words.length }} 个单词</span>
-        </button>
+          v-for="(_, i) in pages"
+          :key="i"
+          class="cc-dot"
+          :class="{ on: curPage === i }"
+          role="tab"
+          :aria-selected="curPage === i"
+          :aria-label="`第 ${i + 1} 页`"
+          @click="goPage(i)"
+        ></button>
       </div>
     </div>
   </div>
@@ -115,23 +154,59 @@ const lastLessonObj = computed(() => {
 /* 滚动列表：占满剩余高度，课多了往下滑 */
 .stage {
   display: flex;
-  min-height: 0;
-  width: 100%;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  padding-bottom: var(--gap-s);
-}
-.cards {
+  flex-direction: column;
+  gap: 10px;
   flex: 1;
   min-height: 0;
   width: 100%;
+  padding-bottom: var(--gap-s);
+}
+/* 左右轮播：原生 scroll-snap，滑动即换页；滚动条隐藏（小点即指示器） */
+.course-carousel {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.course-carousel::-webkit-scrollbar {
+  display: none;
+}
+.cc-page {
+  flex: 0 0 100%;
   display: grid;
-  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
-  /* 行高 ≈ 之前翻页版"每屏两行"的卡片高度：按视口高换算，课多了整体往下滚 */
-  grid-auto-rows: clamp(150px, calc((100dvh - 170px) / 2), 420px);
-  align-content: start;
-  gap: var(--grid-gap, 14px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: clamp(140px, calc((100dvh - 210px) / 2), 360px);
+  gap: 14px;
+  padding: 2px 8px;
+  scroll-snap-align: start;
+}
+.cc-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+.cc-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: var(--ink-faint);
+  opacity: 0.45;
+  transition: width var(--dur-fast) var(--ease-out), background var(--dur-fast), opacity var(--dur-fast);
+}
+.cc-dot.on {
+  width: 22px;
+  background: var(--brand, #1cb0f6);
+  opacity: 1;
 }
 .lesson-card {
   border-radius: var(--radius);
