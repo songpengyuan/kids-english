@@ -105,7 +105,7 @@ export const NODE_H = 57;
 /** 按钮下方 3D 底座投影高度 */
 export const NODE_BASE = 7;
 /** 进度环相对按钮的上下外扩 */
-export const RING_OVERHANG = 17;
+export const RING_OVERHANG = 14;
 /** 按钮 → 关卡名 的间距（lv-wrap 的 gap） */
 export const LABEL_GAP = 18;
 /** 关卡名行高 */

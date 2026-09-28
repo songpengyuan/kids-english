@@ -717,10 +717,10 @@ function unitLesson(id: string) {
    * 用 margin-left 而非 transform 居中 —— 把 transform 留给呼吸微动画 */
   left: 50%;
   margin-left: -52.5px;
-  top: -17px;
+  top: -14px;
   /* 105 × 91 + preserveAspectRatio="none"：正圆投影拉伸成椭圆，
    * 与 68 × 57 的椭圆按钮四周保持均匀 8px 间隙（105 × 0.4 - 34 = 8）。
-   * 上下各外扩 17px —— 这个外扩量写进了 utils/pathGeometry 的 RING_OVERHANG，
+   * 上下各外扩 14px —— 这个外扩量写进了 utils/pathGeometry 的 RING_OVERHANG，
    * 由"视觉留白恒等"的间距算法统一补偿；改这里的尺寸必须同步改常量。 */
   width: 105px;
   height: 91px;
@@ -747,7 +747,7 @@ function unitLesson(id: string) {
   transform-origin: 50px 50px;
   transition: stroke var(--dur-base) var(--ease-out);
 }
-.lv-wrap.done .ring-seg.on { stroke: var(--gold, #f0b429); }
+.lv-wrap.done .ring-seg.on { stroke: #ffc93c; }
 .lv-wrap.chest .ring-seg.on { stroke: #d98e04; }
 
 /* 未学习关卡：主体只显示大锁（玩法图标不展示） */

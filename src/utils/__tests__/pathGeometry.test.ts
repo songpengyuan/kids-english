@@ -176,7 +176,7 @@ describe("关卡纵向节奏（统一视觉留白）", () => {
   it("常量与 CSS 口径一致（改样式必须同步改常量）", () => {
     expect(LABEL_GAP).toBe(18);
     expect(LABEL_H).toBeCloseTo(14.4, 6);
-    expect(RING_OVERHANG).toBe(17);
+    expect(RING_OVERHANG).toBe(14);
     expect(overhangOf(false)).toEqual({ top: 0, bottom: 7 });
   });
 });
