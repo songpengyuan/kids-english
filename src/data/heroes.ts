@@ -8,7 +8,9 @@
  *   1. 形象默认用项目自带的**原创**占位图 `public/heroes/<formId>.svg`
  *      （scripts/gen-hero-art.py 生成，纯几何简笔小人，不含任何受版权保护的角色素材）；
  *   2. 换成自己的图片：命名为 `<formId>.png` 放进 `public/heroes/`，
- *      应用"png 优先、失败回退 svg"自动切换。
+ *      应用"png 优先、失败回退 svg"自动切换；
+ *   3. 多姿势（轮播）：额外图命名为 `<formId>-2.png`、`<formId>-3.png`（scripts/fetch-hero-art.py
+ *      `--multi 3` 自动抓取），详情页顶部大图左右滑动轮播；缺的姿势运行时加载失败自动跳过。
  *
  * ⚠️ 命名与版权（使用者自决）：角色名/形态名由使用者（家长）指定，属私人数据；
  *    仓库内不包含任何受版权保护的角色形象，图片由使用者自行放入并仅供家庭内部使用。
@@ -682,23 +684,34 @@ export interface FlatForm extends HeroForm {
   heroEn: string;
   era: HeroEra;
   price: number;
-  /** 使用者可替换的图（png 优先） */
+  /** 主图（png 优先；加载失败回退 fallback） */
   image: string;
+  /** 多姿势图（轮播用）：约定 <id>.png 主图 + <id>-2.png … <id>-N.png；
+   *  缺失的文件由组件加载失败时跳过（运行时探测，无需改数据）。 */
+  images: string[];
   /** 内置原创占位图（png 缺失时回退） */
   fallback: string;
 }
 
 export const ALL_FORMS: FlatForm[] = HEROES.flatMap((h) =>
-  h.forms.map((f) => ({
-    ...f,
-    heroId: h.id,
-    heroName: h.name,
-    heroEn: h.en,
-    era: h.era,
-    price: RARITY_INFO[f.rarity].price,
-    image: asset(`/heroes/${f.id}.png`) as string,
-    fallback: asset(`/heroes/${f.id}.svg`) as string,
-  }))
+  h.forms.map((f) => {
+    const image = asset(`/heroes/${f.id}.png`) as string;
+    return {
+      ...f,
+      heroId: h.id,
+      heroName: h.name,
+      heroEn: h.en,
+      era: h.era,
+      price: RARITY_INFO[f.rarity].price,
+      image,
+      images: [
+        image,
+        asset(`/heroes/${f.id}-2.png`),
+        asset(`/heroes/${f.id}-3.png`),
+      ].filter(Boolean) as string[],
+      fallback: asset(`/heroes/${f.id}.svg`) as string,
+    };
+  })
 );
 
 /** 形态总数（图鉴进度 xx/81） */

@@ -58,7 +58,60 @@ const formThumbs = computed<FlatForm[]>(() =>
 const imgFailed = ref<Record<string, boolean>>({});
 
 function srcOf(f: FlatForm) {
-  return imgFailed.value[f.id] ? f.fallback : f.image;
+  return imgFailed.value[f.image] ? f.fallback : f.image;
+}
+
+/* ---------- 顶部大图：多姿势轮播（左右滑动 + 小点 + 箭头，放大保留） ---------- */
+/** 当前形态所有姿势图（加载失败的运行时跳过）；主图也失败则退回单张占位图 */
+const poses = computed<string[]>(() => {
+  const f = currentForm.value;
+  if (!f) return [];
+  const list = f.images.filter((u) => !imgFailed.value[u]);
+  return list.length ? list : [f.fallback];
+});
+const poseIndex = ref(0);
+const poseEl = ref<HTMLElement | null>(null);
+
+/** 形态切换：轮播回到第一张 */
+watch(
+  () => currentForm.value?.id,
+  () => {
+    poseIndex.value = 0;
+  }
+);
+
+function onPoseError(src: string) {
+  imgFailed.value[src] = true;
+  if (poseIndex.value >= poses.value.length) poseIndex.value = 0;
+}
+
+function poseCellWidth(): number {
+  return poseEl.value?.querySelector<HTMLElement>(".pose-cell")?.offsetWidth ?? 0;
+}
+
+function syncPose() {
+  const w = poseCellWidth();
+  if (!w) return;
+  const idx = Math.round((poseEl.value?.scrollLeft ?? 0) / w);
+  poseIndex.value = Math.max(0, Math.min(idx, poses.value.length - 1));
+}
+
+function jumpPose(i: number) {
+  const w = poseCellWidth();
+  poseIndex.value = Math.max(0, Math.min(i, poses.value.length - 1));
+  const el = poseEl.value;
+  if (!el) return;
+  el.scrollTo?.({ left: poseIndex.value * w, behavior: "smooth" });
+  // 兜底：个别环境 smooth 动画不触发时，直接定位到目标位（保证箭头/小点点击后画面一定跟随）
+  setTimeout(() => {
+    if (Math.abs((el.scrollLeft ?? 0) - poseIndex.value * w) > 8) {
+      el.scrollLeft = poseIndex.value * w;
+    }
+  }, 420);
+}
+
+function stepPose(d: number) {
+  jumpPose(poseIndex.value + d);
 }
 
 /* ---------- 朗读（单声道：一次只读一条，可停止） ---------- */
@@ -192,22 +245,37 @@ function goBack() {
     </HeaderBar>
 
     <div class="hd-body">
-      <!-- 形象大图：点击全屏放大；多形态缩略可切换 -->
+      <!-- 形象大图：多姿势左右滑动轮播（小点/箭头指示）；点"放大看"进全屏查看器 -->
       <div class="hero-stage" :style="{ '--tone': currentForm.color }">
-        <Transition name="form-fade" mode="out-in">
-          <img
-            :key="currentForm.id"
-            class="hero-big"
-            :class="{ sil: !rewards.isOwned(currentForm.id) }"
-            :src="srcOf(currentForm)"
-            :alt="`${hero.name}${currentForm.name}`"
-            @error="imgFailed[currentForm.id] = true"
-          />
-        </Transition>
+        <div ref="poseEl" class="pose-view">
+          <div class="pose-strip" @scroll.passive="syncPose">
+            <figure v-for="(src, i) in poses" :key="src" class="pose-cell" :class="{ sil: !rewards.isOwned(currentForm.id) }">
+              <img :src="src" :alt="`${hero.name}${currentForm.name}${poses.length > 1 ? ' 姿势' + (i + 1) : ''}`" @error="onPoseError(src)" />
+            </figure>
+          </div>
+        </div>
+        <button v-if="poses.length > 1" class="pose-arrow prev" aria-label="上一张" @click="stepPose(-1)">
+          <PathIcon name="chevron-left" />
+        </button>
+        <button v-if="poses.length > 1" class="pose-arrow next" aria-label="下一张" @click="stepPose(1)">
+          <PathIcon name="chevron-right" />
+        </button>
         <button class="zoom-hint" aria-label="放大查看图片" @click="openZoom">
           🔍 放大看
         </button>
         <span class="form-tag">{{ currentForm.name }}</span>
+        <div v-if="poses.length > 1" class="pose-dots" role="tablist" :aria-label="`${hero.name}${currentForm.name}的姿势`">
+          <button
+            v-for="(src, i) in poses"
+            :key="'d' + i"
+            class="pose-dot"
+            :class="{ on: i === poseIndex }"
+            role="tab"
+            :aria-selected="i === poseIndex"
+            :aria-label="`姿势${i + 1}`"
+            @click="jumpPose(i)"
+          />
+        </div>
       </div>
 
       <!-- 多形态缩略切换 -->
@@ -222,7 +290,7 @@ function goBack() {
           :aria-label="f.name"
           @click="pick(f)"
         >
-          <img :src="srcOf(f)" :alt="f.name" @error="imgFailed[f.id] = true" />
+          <img :src="srcOf(f)" :alt="f.name" @error="imgFailed[f.image] = true" />
         </button>
       </div>
 
@@ -288,17 +356,23 @@ function goBack() {
           <PathIcon name="close" />
         </button>
 
-        <div class="zoom-stage" :style="{ '--tone': currentForm.color }" @click="nextForm">
+        <div class="zoom-stage" :style="{ '--tone': currentForm.color }">
           <Transition name="form-fade" mode="out-in">
             <img
-              :key="currentForm.id"
+              :key="poses[poseIndex]"
               class="zoom-img"
               :class="{ sil: !rewards.isOwned(currentForm.id) }"
-              :src="srcOf(currentForm)"
-              :alt="`${hero.name}${currentForm.name}放大图`"
-              @error="imgFailed[currentForm.id] = true"
+              :src="poses[poseIndex]"
+              :alt="`${hero.name}${currentForm.name}放大图${poses.length > 1 ? ' 姿势' + (poseIndex + 1) : ''}`"
+              @error="onPoseError(poses[poseIndex])"
             />
           </Transition>
+          <button v-if="poses.length > 1" class="zoom-arrow prev" aria-label="上一张" @click="stepPose(-1)">
+            <PathIcon name="chevron-left" />
+          </button>
+          <button v-if="poses.length > 1" class="zoom-arrow next" aria-label="下一张" @click="stepPose(1)">
+            <PathIcon name="chevron-right" />
+          </button>
         </div>
 
         <p
@@ -324,11 +398,11 @@ function goBack() {
             :aria-label="f.name"
             @click="pick(f)"
           >
-            <img :src="srcOf(f)" :alt="f.name" @error="imgFailed[f.id] = true" />
+            <img :src="srcOf(f)" :alt="f.name" @error="imgFailed[f.image] = true" />
           </button>
         </div>
 
-        <p v-if="formThumbs.length > 1" class="zoom-tip">点一下大图切换形态</p>
+        <p v-if="formThumbs.length > 1" class="zoom-tip">左右箭头换姿势，下方缩略图换形态</p>
       </div>
     </div>
   </div>
@@ -406,19 +480,103 @@ function goBack() {
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
   overflow: hidden;
 }
-.hero-big {
+/* 多姿势轮播：单格 = 76% 方形画布（与旧大图同尺寸），横向 snap 滑动 */
+.pose-view {
   width: 76%;
   height: 76%;
+  position: relative;
+}
+.pose-strip {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.pose-strip::-webkit-scrollbar {
+  display: none;
+}
+.pose-cell {
+  flex: none;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  scroll-snap-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pose-cell img {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
 }
-.hero-big.sil {
+.pose-cell.sil img {
   filter: brightness(0.22) drop-shadow(0 6px 12px rgba(0, 0, 0, 0.3));
+}
+/* 左右箭头（孩子友好的大按点） */
+.pose-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: #3a3a3a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+  font-size: 20px;
+  transition: transform 0.1s;
+}
+.pose-arrow:active {
+  transform: translateY(-50%) scale(0.94);
+}
+.pose-arrow.prev {
+  left: 8px;
+}
+.pose-arrow.next {
+  right: 8px;
+}
+/* 小点指示器：当前页拉长胶囊（与课程轮播一致） */
+.pose-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 7px;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill, 999px);
+  background: rgba(255, 255, 255, 0.55);
+}
+.pose-dot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  transition:
+    width 0.22s var(--ease-out, ease),
+    background 0.22s ease;
+}
+.pose-dot.on {
+  width: 22px;
+  background: var(--tone, var(--c-blue, #1cb0f6));
 }
 .form-tag {
   position: absolute;
   left: 12px;
-  bottom: 12px;
+  top: 12px;
   padding: 4px 12px;
   border-radius: var(--radius-pill, 999px);
   background: color-mix(in srgb, var(--tone) 22%, var(--bar-bg, #fff));
@@ -702,6 +860,7 @@ function goBack() {
   transform: scale(0.92);
 }
 .zoom-stage {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -712,7 +871,34 @@ function goBack() {
   background:
     radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--tone) 30%, transparent), transparent 68%),
     rgba(255, 255, 255, 0.08);
+}
+/* 查看器内姿势切换箭头（与主图区同款） */
+.zoom-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: #3a3a3a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
   cursor: pointer;
+  font-size: 22px;
+  transition: transform 0.1s;
+}
+.zoom-arrow:active {
+  transform: translateY(-50%) scale(0.94);
+}
+.zoom-arrow.prev {
+  left: 10px;
+}
+.zoom-arrow.next {
+  right: 10px;
 }
 .zoom-img {
   width: 84%;

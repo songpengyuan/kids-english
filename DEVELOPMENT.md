@@ -99,6 +99,11 @@ kids-english/
 ├── public/
 │   ├── lessons/                # 课时素材目录（约定见 README）
 │   └── heroes/ avatars/        # 英雄图 / 封面占位
+│                               # 英雄图命名：<formId>.png 主图 + <formId>-2/3.png 姿势图
+│                               # （fetch-hero-art.py --multi 3 抓取，详情页轮播用；svg 为原创占位）
+│                               # 图源顺序：dcd（官方卡面，正确性优先）→ moegirl → bing → baidu；
+│                               #   姿势图允许非透明底（卡面带背景也收，丰富优先），英文名易撞词的
+│                               #   形态（Jack/Corona/Supreme 等）抓后务必人工抽查替换错图
 ├── docs/
 │   ├── ARCHITECTURE-REVIEW.md  # 架构评审（P0–P2 分级与执行顺序）
 │   └── COMPONENT-LIBRARY.md    # 组件库规范（目录契约/清单/沉淀门槛/全局改动走查）
@@ -145,6 +150,7 @@ LessonView.vue   stage: menu | learn | quiz | match | speak | song | talk | resu
 | ReviewView | — | — | 独立页 /review：到期词复习（间隔重复队列，复用 useQuizSession） |
 | ReportView | — | — | 独立页 /report：今日学情 + 错词清单 + 宝藏概览 |
 | TreasureView | — | — | 独立页 /treasure：贝壳 + 图鉴 + 贴纸商店 |
+| HeroDetailView | /me/treasure/hero/:id | form= | 详情页：顶部多姿势轮播（左右滑动/箭头/小点）＋放大查看器（姿势切换）；形态缩略切换；介绍/技能/常用语朗读 |
 | ChestReward | — | `done` | 自包含三连击开箱 + 抛物线收取（flyCurve 纯函数轨迹），可跳过 |
 | WordCard | `word`, `size`, `speakZhHint` | — | 纯展示 + 点击朗读（点读记 seen） |
 | Pager | `page`, `total` | `prev` / `next` / `go` | 受控组件，不持有页码状态 |

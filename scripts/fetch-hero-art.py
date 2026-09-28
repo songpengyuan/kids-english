@@ -81,7 +81,7 @@ def load_forms():
     """
     src = open(HEROES_TS, encoding="utf-8").read()
     roster = src[src.index("const ROSTER"): src.index("/** 展开成图鉴用的正式结构")]
-    heroes = re.findall(r'id: "([a-z0-9]+)", name: "([^"]+)", en: "([^"]+)"', roster)
+    heroes = re.findall(r'id: "([a-z0-9]+)",\s*name: "([^"]+)",\s*en: "([^"]+)"', roster, re.S)
     forms = re.findall(r'\["([a-z0-9-]+)", "([^"]+)", "([^"]+)"\]', roster)
     out = []
     seen = {}
@@ -359,17 +359,102 @@ def official_candidates(ctx, limit=3):
     return uniq[:limit]
 
 
+DCD_BASE = "https://www.dcd-ultraman.com.cn"
+DCD_LIST = "https://www.dcd-ultraman.com.cn/list.php?pid=4"
+_DCD_CACHE = "/tmp/dcd-cards.json"  # 卡片名 -> [卡面图 url]，运行时可重新抓取
+
+
+def dcd_load_cards():
+    """加载 DCD 官方卡面清单（名 → 图）。缓存缺失/过期则重新抓列表页。"""
+    import json as _json
+    if os.path.exists(_DCD_CACHE) and os.path.getmtime(_DCD_CACHE) > time.time() - 3600 * 24 * 3:
+        try:
+            return _json.load(open(_DCD_CACHE, encoding="utf-8"))
+        except Exception:
+            pass
+    cards = {}
+    seen = set()
+    for page in range(1, 7):
+        try:
+            t = http_text(f"{DCD_LIST}&page={page}")
+        except Exception:
+            continue
+        items = re.findall(
+            r"<div class='cardImg'><img src='(/uploadfile/upload/[^']+)' alt='([^']*)'></div>"
+            r"\s*<div class='cardDescription'>\s*<h5 class='cardName'>([^<]+)</h5>", t)
+        for img, _alt, name in items:
+            if img in seen:
+                continue
+            seen.add(img)
+            cards.setdefault(name.strip(), []).append(DCD_BASE + img)
+    try:
+        _json.dump(cards, open(_DCD_CACHE, "w", encoding="utf-8"), ensure_ascii=False)
+    except Exception:
+        pass
+    return cards
+
+
+# 我们 heroes.ts 的角色中文名是简称（德凯），DCD 官方卡面用全名（德凯奥特曼）
+_DCD_HERO_FULL = {
+    "德凯": "德凯奥特曼", "特利迦": "特利迦奥特曼", "赛罗": "赛罗奥特曼", "诺亚": "诺亚奥特曼",
+    "高斯": "高斯奥特曼", "梦比优斯": "梦比优斯奥特曼", "银河": "银河奥特曼", "艾克斯": "艾克斯奥特曼",
+    "捷德": "捷德奥特曼", "格丽乔": "格丽乔奥特曼", "泰迦": "泰迦奥特曼", "泽塔": "泽塔奥特曼",
+    "迪迦": "迪迦奥特曼", "杰斯提斯": "杰斯提斯奥特曼", "希卡利": "希卡利奥特曼", "贝利亚": "贝利亚奥特曼",
+    "维克特利": "维克特利奥特曼", "罗索": "罗索奥特曼", "布鲁": "布鲁奥特曼", "戴拿": "戴拿奥特曼",
+    "盖亚": "盖亚奥特曼", "阿古茹": "阿古茹奥特曼", "奈克赛斯": "奈克赛斯奥特曼", "利布特": "利布特奥特曼",
+    "托雷基亚": "托雷基亚奥特曼", "塔尔塔洛斯": "阿布索留特·塔尔塔洛斯", "五帝王": "五帝王",
+}
+# 我们 vs DCD 的形态用词差异（翻译不同，如 强力型 = DCD 强壮型）
+_DCD_FORM_ALIAS = {
+    "强力型": "强壮型",
+    "闪亮型": "闪亮型", "奇迹型": "奇迹型", "至高型": "至高型", "尊皇形态": "尊皇形态",
+    "终极形态": "终极形态", "斯特利姆": "斯特利姆形态", "三重斯特利姆": "三重斯特利姆形态",
+    "阿尔法装甲": "阿尔法装甲", "成年形态": "成年形态", "闪耀型": "闪耀型",
+}
+
+
+def dcd_candidates(ctx, limit=6):
+    """官方卡面：按角色中文名匹配（先全名精确 → 英雄名 → 包含）。卡面 100% 正确，优先使用。"""
+    cards = dcd_load_cards()
+    hero, form = ctx.get("hero_zh", ""), ctx.get("form_zh", "")
+    hero_full = _DCD_HERO_FULL.get(hero, hero)
+    form_alias = _DCD_FORM_ALIAS.get(form, form)
+    # 依次尝试的匹配名：全名+别名形态 → 全名+原名形态 → 全名 → 原名+形态 → 原名 → 包含
+    targets = []
+    if form:
+        targets += [f"{hero_full} {form_alias}".strip(), f"{hero_full} {form}".strip(),
+                    f"{hero} {form_alias}".strip(), f"{hero} {form}".strip()]
+    targets += [hero_full, hero]
+    seen_names = set()
+    full, hero_only, contains = [], [], []
+    for name, urls in cards.items():
+        if name in seen_names:
+            continue
+        seen_names.add(name)
+        if name in targets:
+            full.extend((u, f"[dcd] 官方卡面：{name}") for u in urls)
+        elif name == hero_full or name == hero:
+            hero_only.extend((u, f"[dcd] 官方卡面：{name}") for u in urls)
+        elif (hero_full and hero_full in name) or (hero and hero in name):
+            contains.extend((u, f"[dcd] 官方卡面：{name}") for u in urls)
+    return (full + hero_only + contains)[:limit]
+
+
 SOURCES = {
     "official": (official_candidates, TSUBURAYA + "/"),
     "fandom": (fandom_candidates, FANDOM + "/"),
     "bing": (bing_find, BING + "/"),
     "baidu": (baidu_find, BAIDU + "/"),
     "moegirl": (moegirl_find, MOEGIRL + "/"),
+    "dcd": (dcd_candidates, DCD_BASE + "/"),
 }
 
 
-def candidate_stream(form, order, per_source=6, total=10):
-    """按图源顺序产出候选图：(url, 说明, referer)。调用方逐张下载质检，不合格再取下一张。"""
+def candidate_stream(form, order, per_source=6, total=10, variant="", variant_zh=""):
+    """按图源顺序产出候选图：(url, 说明, referer)。调用方逐张下载质检，不合格再取下一张。
+
+    variant / variant_zh：查询词变体（多姿势取图用——换个说法搜，避免反复拿到主图那张）。
+    """
     fid, zh_form, en_form, zh_hero, en_hero, index = form
     ctx = {
         "form_id": fid,
@@ -378,8 +463,8 @@ def candidate_stream(form, order, per_source=6, total=10):
         "hero_zh": zh_hero,
         "hero_en": en_hero,
         "index": index,
-        "query_en": f"{en_hero} {en_form}".strip(),
-        "query_zh": f"{zh_hero} {zh_form}".strip(),
+        "query_en": (f"{en_hero} {en_form} {variant}".strip() if variant else f"{en_hero} {en_form}".strip()),
+        "query_zh": (f"{zh_hero} {zh_form} {variant_zh}".strip() if variant_zh else f"{zh_hero} {zh_form}".strip()),
     }
     yielded = 0
     for name in order:
@@ -583,6 +668,63 @@ def read_pairs(path):
 
 # ---------------------------------------------------------------- 主流程
 
+# 姿势图查询词变体（第 k 张姿势换一种说法，降低与主图撞图的概率）
+_POSE_VARIANTS = [
+    ("", ""),                  # 第 2 张：原词
+    ("pose", "姿势"),          # 第 3 张：姿态
+    ("full body", "全身"),
+    ("action", "战斗"),
+]
+
+
+def fetch_pose(fid, form, k, order, tmp, out, used_urls, report, sleep_sec, force=False):
+    """为形态补第 k 张姿势图（<fid>-<k>.png）。取不到返回 False，不阻塞主流程。
+
+    姿势图不强制透明底（用户确认：卡片带背景也可以，丰富优先）——
+    首个候选即收为内容兜底，避免该姿势缺图。
+    """
+    vpath = os.path.join(out, f"{fid}-{k}.png")
+    if os.path.exists(vpath) and not force:
+        return True
+    if os.path.exists(vpath):
+        os.remove(vpath)
+    variant, variant_zh = _POSE_VARIANTS[(k - 2) % len(_POSE_VARIANTS)]
+    content_fb = None  # (url, note, backup_path)
+    for vurl, vnote, vreferer in candidate_stream(form, order, variant=variant, variant_zh=variant_zh):
+        if vurl in used_urls:
+            continue
+        try:
+            download(vurl, tmp, vreferer)
+            vsize = normalize(tmp, vpath)
+            ha, vr, vc = png_transparency(vpath)
+            if not ha or (vr < 0.10 and vc < 3):
+                if content_fb is None:
+                    backup = tmp + ".fb"  # 先把首个候选备份起来，避免被后续覆盖/删除
+                    shutil.copyfile(vpath, backup)
+                    content_fb = (vurl, vnote, backup)
+                os.remove(vpath)
+                continue
+            used_urls[vurl] = fid
+            print(f"  {fid}-{k:<16} ✓ {vsize}  ← {vnote}")
+            report.append((f"{fid}-{k}", vnote, str(vsize), "ok"))
+            return True
+        except Exception:
+            continue
+    if content_fb:
+        vurl, vnote, backup = content_fb
+        if os.path.exists(backup):
+            shutil.move(backup, vpath)  # 恢复首个候选为最终文件
+        size = os.path.getsize(vpath)
+        used_urls[vurl] = fid
+        print(f"  {fid}-{k:<16} ✓ {size}B  ← {vnote}（非透明兜底）")
+        report.append((f"{fid}-{k}", f"{vnote}（非透明兜底）", f"{size}B", "ok"))
+        return True
+    print(f"  {fid}-{k:<16} ✗ 姿势图未取到")
+    report.append((f"{fid}-{k}", "-", "-", "失败: 姿势图未取到"))
+    time.sleep(sleep_sec)
+    return False
+
+
 def main():
     ap = argparse.ArgumentParser(description="英雄图鉴素材获取/归位")
     ap.add_argument("--auto", action="store_true", help="从 Fandom 自动搜图（默认模式）")
@@ -595,6 +737,10 @@ def main():
                     help="图源顺序（逗号分隔）：official,fandom,bing,baidu,moegirl；默认全部依次尝试")
     ap.add_argument("--out", default=DEFAULT_OUT, help=f"输出目录（默认 {show_path(DEFAULT_OUT)}）")
     ap.add_argument("--force", action="store_true", help="已有 png 也重新处理")
+    ap.add_argument("--pose-force", action="store_true",
+                    help="只重抓姿势图（主图不动）：force 仅作用于 <id>-N.png")
+    ap.add_argument("--multi", type=int, default=1,
+                    help="每个形态取 N 张姿势图：主图 <id>.png + 额外 <id>-2.png…<id>-N.png（默认 1 = 只主图）")
     ap.add_argument("--dry-run", action="store_true", help="只打印计划，不下载")
     ap.add_argument("--check", action="store_true", help="只检查缺图情况")
     args = ap.parse_args()
@@ -648,8 +794,14 @@ def main():
     else:
         listed = list(dict.fromkeys([*url_map, *file_map]))
         targets = list(by_id.keys()) if (args.auto or not listed) else listed
-    if not args.force:
-        targets = [t for t in targets if not has_png(t)]
+    if not args.force and not args.pose_force:
+        if args.multi > 1:
+            def need_variants(fid):
+                return any(not os.path.exists(os.path.join(args.out, f"{fid}-{k}.png"))
+                           for k in range(2, args.multi + 1))
+            targets = [t for t in targets if not has_png(t) or need_variants(t)]
+        else:
+            targets = [t for t in targets if not has_png(t)]
     if args.limit:
         targets = targets[: args.limit]
 
@@ -669,6 +821,16 @@ def main():
         out_path = os.path.join(args.out, fid + ".png")
         source_note = ""
         try:
+            if has_png(fid) and args.multi > 1 and not args.force:
+                # 主图已有：跳过主图，只补缺失姿势（不重下主图）
+                if args.dry_run:
+                    print(f"  {fid:<18} 主图已有，补姿势")
+                    skipped += 1
+                    continue
+                for k in range(2, args.multi + 1):
+                    fetch_pose(fid, form, k, order, tmp, args.out, used_urls, report, SLEEP_SEC,
+                               force=args.pose_force)
+                continue
             if fid in url_map:
                 url, source_note = url_map[fid], "urls 清单"
                 if args.dry_run:
@@ -686,12 +848,12 @@ def main():
                     continue
                 size = normalize(src, out_path)
             else:
-                # 逐张候选：下载 → 规整 → 质检（要透明底、四角透明），不合格换下一张
+                # 逐张候选：下载 → 规整 → 质检（透明优先），不合格换下一张
                 rejects = []
                 size = None
                 source_note = ""
                 picked_url = None
-                official_fb = None  # 官方源首个候选（内容可靠）：透明质检全失败时兜底，宁要对的非透明
+                content_fb = None  # (url, note, backup_path)
                 for url, note, referer in candidate_stream(form, order):
                     try:
                         if args.dry_run:
@@ -703,10 +865,12 @@ def main():
                         has_alpha, ratio, corners = png_transparency(out_path)
                         # 透明占比 >10%（去背立绘）或有 3 个以上透明角 → 收
                         if not has_alpha or (ratio < 0.10 and corners < 3):
-                            if "official" in note and official_fb is None:
-                                official_fb = (url, note, referer)
-                            rejects.append(f"{note}: 非透明底（透明占比 {ratio:.0%}，角 {corners}/4）")
+                            if content_fb is None:
+                                backup = tmp + ".fb"  # 首个候选先备份，避免被后续覆盖/删除
+                                shutil.copyfile(out_path, backup)
+                                content_fb = (url, note, backup)
                             os.remove(out_path)
+                            rejects.append(f"{note}: 非透明底（透明占比 {ratio:.0%}，角 {corners}/4）")
                             continue
                         source_note, picked_url = note, url
                         break
@@ -721,15 +885,13 @@ def main():
                                     file=sys.stderr,
                                 )
                                 raise SystemExit(0)
-                if not picked_url and official_fb and not args.dry_run:
-                    # 官方源兜底：内容可靠，即使非透明也收（白底在卡片上可接受，远好过张冠李戴）
-                    url, note, referer = official_fb
-                    try:
-                        download(url, tmp, referer)
-                        size = normalize(tmp, out_path)
-                        source_note, picked_url = f"{note}（官方兜底，非透明）", url
-                    except Exception as e:
-                        rejects.append(f"官方兜底: {e}")
+                if not picked_url and content_fb and not args.dry_run:
+                    # 内容兜底：宁可非透明底也要有正确图（用户可后续用 --urls 换更合适的）
+                    url, note, backup = content_fb
+                    if os.path.exists(backup):
+                        shutil.move(backup, out_path)  # 恢复首个候选为最终文件
+                    size = os.path.getsize(out_path)
+                    source_note, picked_url = f"{note}（非透明兜底）", url
                 if not picked_url:
                     reason = "；".join(rejects[-3:]) or "所有图源都没找到候选"
                     print(f"  {fid:<18} ✗ {reason}")
@@ -756,8 +918,13 @@ def main():
                     source_note += f"（换过 {len(rejects)} 张：{'、'.join(r.split(': ')[-1] for r in rejects[:2])}）"
             if not args.dry_run:
                 print(f"  {fid:<18} ✓ {size}  ← {source_note}")
-                report.append((fid, source_note, size, "ok"))
+                report.append((fid, source_note, str(size), "ok"))
                 ok += 1
+            # ---- 多姿势（--multi N）：主图之外再取 N-1 张不同姿势图 ----
+            if args.multi > 1 and not args.dry_run:
+                for k in range(2, args.multi + 1):
+                    fetch_pose(fid, form, k, order, tmp, args.out, used_urls, report, SLEEP_SEC,
+                               force=args.pose_force)
         except Exception as e:  # 单张失败不影响整批
             print(f"  {fid:<18} ✗ {e}")
             report.append((fid, "-", "-", f"失败: {e}"))
