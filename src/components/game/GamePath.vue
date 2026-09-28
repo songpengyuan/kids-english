@@ -654,7 +654,21 @@ function unitLesson(id: string) {
 .lv-wrap.done .lv-tag { border-color: var(--gold); }
 .lv-wrap.active .gp-level { border: 4px solid var(--c-blue, #1cb0f6); }
 .lv-wrap.active .lv-ico { color: var(--c-blue, #1cb0f6); }
-.lv-wrap.locked .gp-level { filter: grayscale(1) opacity(0.85); }
+/* 锁定关卡：只显示锁、整体置灰（灰圆面 + 灰投影 + 灰锁），不掺任何主题色 */
+.lv-wrap.locked .gp-level {
+  --face: #d9dade;
+  --base: rgba(0, 0, 0, 0.18);
+}
+.lv-wrap.locked .lv-ico {
+  color: rgba(0, 0, 0, 0.3);
+}
+:root[data-theme="dark"] .lv-wrap.locked .gp-level {
+  --face: #3a3d43;
+  --base: rgba(0, 0, 0, 0.4);
+}
+:root[data-theme="dark"] .lv-wrap.locked .lv-ico {
+  color: rgba(255, 255, 255, 0.32);
+}
 
 /* active 光圈脉动（替代 canvas 逐帧绘制） */
 .lv-pulse {
