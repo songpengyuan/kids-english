@@ -17,8 +17,8 @@ import { BookOpenText, Check } from "@lucide/vue";
 const progress = useProgressStore();
 const router = useRouter();
 
-/** 课程轮播：每页 3 课（左右滑动 + 底部小点），移动端到超宽屏统一 */
-const PAGE_SIZE = 3;
+/** 课程轮播：每页 4 课 2×2 十字排布（左右滑动 + 底部小点），移动端到超宽屏统一 */
+const PAGE_SIZE = 4;
 const pages = computed(() => {
   const n = Math.ceil(lessons.length / PAGE_SIZE);
   return Array.from({ length: n }, (_, i) => lessons.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE));
@@ -89,7 +89,7 @@ const lastLessonObj = computed(() => {
             :key="l.id"
             class="lesson-card anim-pop"
             :class="'tone-' + l.tone"
-            :style="{ animationDelay: (i % 3) * 0.06 + 's' }"
+            :style="{ animationDelay: (i % 4) * 0.05 + 's' }"
             @click="enter(l)"
           >
             <span class="big-emoji anim-float">{{ l.emoji }}</span>
@@ -179,13 +179,19 @@ const lastLessonObj = computed(() => {
 }
 .cc-page {
   flex: 0 0 100%;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  /* 卡片行高 = 轮播区可用高度（iPad/手机上下撑满），120px 保底防横屏过矮 */
-  grid-auto-rows: minmax(120px, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
   gap: 14px;
   padding: 2px 8px;
   scroll-snap-align: start;
+}
+/* 每页 4 课：2×2 十字排布，上下左右都撑满；不足 4 课（如最后一页 2 课）自动居中 */
+.cc-page .lesson-card {
+  width: calc((100% - 14px) / 2);
+  height: calc((100% - 14px) / 2);
+  min-height: 120px;
 }
 .cc-dots {
   display: flex;
