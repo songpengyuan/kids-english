@@ -45,15 +45,16 @@ const lesson = computed(() => getLesson(typeof route.params.id === "string" ? ro
  */
 const activities = computed<QuestAct[]>(() => {
   const acts = [
+    // 童谣打头（先听歌建立兴趣），再学单词，顺序即菜单与闯关关卡序列
+    { key: "song", name: "唱童谣", icon: Music, tone: "green", game: "song", desc: "听歌看视频" },
     { key: "learn", name: "学单词", icon: BookOpen, tone: "orange", game: "learn", desc: "看图听发音" },
     { key: "quiz", name: "听音选图", icon: Headphones, tone: "blue", game: "quiz", desc: "听声音找图片" },
     { key: "match", name: "连一连", icon: Link2, tone: "purple", game: "match", desc: "图片连线单词" },
-    { key: "speak", name: "跟我读", icon: Mic, tone: "pink", game: "speak", desc: "按住麦克风读单词" },
-    { key: "song", name: "唱童谣", icon: Music, tone: "green", game: "song", desc: "听歌看视频" }
+    { key: "speak", name: "跟我读", icon: Mic, tone: "pink", game: "speak", desc: "按住麦克风读单词" }
   ];
-  // 亲子对话是独立玩法，只有配置了 phrases 的课时才显示
+  // 亲子对话是独立玩法，只有配置了 phrases 的课时才显示（排在最后）
   if (lesson.value?.phrases?.length) {
-    acts.splice(4, 0, {
+    acts.push({
       key: "talk",
       name: "亲子对话",
       icon: MessageCircle,
