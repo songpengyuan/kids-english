@@ -105,7 +105,7 @@ function onTap() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   background: color-mix(in srgb, var(--tone) 12%, var(--card-bg));
   border: 2px solid color-mix(in srgb, var(--tone) 42%, transparent);
   border-radius: var(--radius-s);
@@ -127,7 +127,7 @@ function onTap() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   -webkit-tap-highlight-color: transparent;
 }
 .form-tap:active {
@@ -145,14 +145,15 @@ function onTap() {
   80% { transform: translateX(4px); }
 }
 .form-img {
-  width: clamp(56px, 13vw, 88px);
-  height: clamp(56px, 13vw, 88px);
+  /* 5 岁适龄：手机 80px / 平板 ~112px / 桌面 112px（随 vw 流体） */
+  width: clamp(80px, 15vw, 112px);
+  height: clamp(80px, 15vw, 112px);
   object-fit: contain;
 }
-/* 紧凑卡（单形态角色）小一号 */
+/* 紧凑卡（单形态角色）：手机 64px / 平板 ~96px / 桌面 96px */
 .compact .form-img {
-  width: clamp(44px, 10vw, 66px);
-  height: clamp(44px, 10vw, 66px);
+  width: clamp(64px, 13vw, 96px);
+  height: clamp(64px, 13vw, 96px);
 }
 /* 未收集：剪影（看不清是谁，吊胃口） */
 .form-img.sil {
@@ -160,8 +161,8 @@ function onTap() {
 }
 .form-stars {
   display: flex;
-  gap: 1px;
-  font-size: 11px;
+  gap: 3px;
+  font-size: clamp(13px, 1.4vw, 16px);
   color: var(--line);
   line-height: 1;
 }
@@ -170,14 +171,14 @@ function onTap() {
 }
 .form-name {
   margin: 0;
-  font-size: var(--fs-small);
+  font-size: clamp(15px, 1.7vw, 19px);
   font-weight: 800;
   color: var(--ink);
   text-align: center;
 }
 .rarity {
   margin: 0;
-  font-size: 11px;
+  font-size: clamp(13px, 1.4vw, 16px);
   font-weight: 700;
   color: var(--ink-faint);
 }
@@ -212,7 +213,7 @@ function onTap() {
   box-shadow: none;
 }
 .maxed {
-  font-size: 11px;
+  font-size: clamp(13px, 1.4vw, 16px);
   font-weight: 800;
   color: var(--gold);
 }

@@ -473,8 +473,9 @@ function goBack() {
   max-width: 100%;
 }
 .thumb {
-  width: 58px;
-  height: 58px;
+  /* 5 岁适龄：手机 66px / 平板 ~81px / 桌面 96px */
+  width: clamp(66px, 10vw, 96px);
+  height: clamp(66px, 10vw, 96px);
   flex: none;
   border-radius: 14px;
   background: var(--card);

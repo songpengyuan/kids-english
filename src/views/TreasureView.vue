@@ -331,11 +331,13 @@ function buy(formId: string) {
 /* 形态卡网格（卡片本体样式在 components/treasure/HeroFormCard.vue 里） */
 .forms {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  /* 列宽随设备：手机 ~2 列大卡 / 平板 ~5 列 / 桌面更多，auto-fill 自适应 */
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
   gap: var(--gap-s);
 }
 /* 单形态角色：紧凑卡，一屏能放 3~4 个 */
 .forms.mini {
-  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  /* 紧凑卡：手机 ~3 列 / 平板 ~6 列 */
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
 }
 </style>
