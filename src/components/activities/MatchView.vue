@@ -435,6 +435,32 @@ onBeforeUnmount(() => {
         />
       </svg>
 
+      <div class="col words">
+        <div
+          v-for="(w, i) in midWords"
+          :key="w.id"
+          :ref="(el) => (wordEls[i] = el)"
+          class="cell word anim-pop"
+          data-haptic
+          data-side="word"
+          :style="{ animationDelay: i * 0.06 + 's' }"
+          :data-word="w.id"
+          :class="{
+            gone: matched.has(w.id),
+            wrong: wordWrong === w.id,
+            active: startWord && startSide === 'word' && startWord.id === w.id
+          }"
+          @pointerdown="onCardDown(w, 'word', $event)"
+        >
+          <template v-if="mode === 'word'">{{ w.en }}</template>
+          <!-- 听音模式：只显示喇叭，不显示单词（点一下先听发音） -->
+          <span v-else class="sound-wrap" :class="{ playing: playingId === w.id }">
+            <Volume2 class="sound-ico" :aria-label="w.en" />
+            <span v-if="playingId === w.id" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
+          </span>
+        </div>
+      </div>
+
       <div class="col imgs">
         <div
           v-for="(w, i) in leftImgs"
@@ -461,32 +487,6 @@ onBeforeUnmount(() => {
             "
           />
           <span class="ph" style="display: none">{{ w.emoji }}</span>
-        </div>
-      </div>
-
-      <div class="col words">
-        <div
-          v-for="(w, i) in midWords"
-          :key="w.id"
-          :ref="(el) => (wordEls[i] = el)"
-          class="cell word anim-pop"
-          data-haptic
-          data-side="word"
-          :style="{ animationDelay: i * 0.06 + 's' }"
-          :data-word="w.id"
-          :class="{
-            gone: matched.has(w.id),
-            wrong: wordWrong === w.id,
-            active: startWord && startSide === 'word' && startWord.id === w.id
-          }"
-          @pointerdown="onCardDown(w, 'word', $event)"
-        >
-          <template v-if="mode === 'word'">{{ w.en }}</template>
-          <!-- 听音模式：只显示喇叭，不显示单词（点一下先听发音） -->
-          <span v-else class="sound-wrap" :class="{ playing: playingId === w.id }">
-            <Volume2 class="sound-ico" :aria-label="w.en" />
-            <span v-if="playingId === w.id" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
-          </span>
         </div>
       </div>
 
@@ -535,7 +535,8 @@ onBeforeUnmount(() => {
   position: relative;
   display: flex;
   justify-content: space-between;
-  gap: var(--gap-m);
+  /* 两列中间留足间隔，连线不挤；响应式：小屏 14px → 大屏 44px */
+  gap: clamp(14px, 4vw, 44px);
 }
 .lines {
   position: absolute;
