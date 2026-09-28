@@ -15,7 +15,7 @@ import { speakZh } from "../../services/speech";
 const route = useRoute();
 const router = useRouter();
 
-const isHome = computed(() => route.name === "home");
+const isHome = computed(() => route.name === "learn");
 const isGame = computed(() => route.name === "game");
 const isMe = computed(
   () =>
@@ -30,7 +30,7 @@ const isMe = computed(
 function goPractice() {
   speakZh("学习");
   if (isHome.value) return;
-  void router.push("/").catch(() => {});
+  void router.push("/learn").catch(() => {});
 }
 function goGame() {
   speakZh("游戏");

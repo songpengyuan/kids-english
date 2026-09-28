@@ -15,14 +15,16 @@
  *     首次安装即全部就位。
  */
 import { createRouter, createWebHashHistory } from "vue-router";
-import HomeView from "../views/HomeView.vue";
+import LearnView from "../views/LearnView.vue";
 import GameView from "../views/game/GameView.vue";
 import LessonView from "../views/LessonView.vue";
 
 export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
-    { path: "/", name: "home", component: HomeView, meta: { title: "丞丞ABC" } },
+    // 学习主页独立路由（与 /game、/me 三入口对称）；#/ 旧链接重定向到 #/learn
+    { path: "/", redirect: "/learn" },
+    { path: "/learn", name: "learn", component: LearnView, meta: { title: "丞丞ABC" } },
     { path: "/game", name: "game", component: GameView, meta: { title: "游戏闯关" } },
     { path: "/me", name: "me", component: () => import("../views/MyView.vue"), meta: { title: "我的" } },
     { path: "/streak", name: "streak", component: () => import("../views/StreakView.vue"), meta: { title: "连击" } },
@@ -44,7 +46,7 @@ export const router = createRouter({
 //  · #/?mode=game → #/game（独立路由）
 //  · #/lesson/...?mode=quest&step=... → #/quest/...?step=...（独立路由）
 router.beforeEach((to) => {
-  if (to.path === "/" && to.query.mode === "game") {
+  if (to.query.mode === "game") {
     return { path: "/game", replace: true };
   }
   if (to.query.mode === "quest") {

@@ -48,7 +48,7 @@ kids-english/
 │   │   ├── tokens.css          # ★ 设计 token：颜色/间距/字号/圆角/阴影 + 断点表注释
 │   │   └── base.css            # ★ reset、应用外壳、跨页面共享 UI（.view/.k-btn/.topbar/进度条/动画）
 │   ├── views/                  # ★ 页面（路由级），只做编排壳，不放可复用件
-│   │   ├── HomeView.vue        # 首页壳：自由（PracticeView）/ 游戏（GameView）双模式 + KeepAlive
+│   │   ├── LearnView.vue       # 学习主页（独立路由 #/learn）：PracticeView + KeepAlive
 │   │   ├── practice/GameView.vue  # 自由练习页 / 游戏闯关地图页
 │   │   ├── LessonView.vue      # 单课编排层：stage 机（菜单 ↔ 玩法 ↔ 结算，237 行）
 │   │   └── MyView / TreasureView / ReportView / ReviewView / StreakView / HeroDetailView
@@ -112,7 +112,7 @@ LessonView.vue   stage: menu | learn | quiz | match | speak | song | talk | resu
 
 - 页面级用 vue-router（hash 模式）：/me、/treasure、/report、/review、/lesson/:id 都是独立页面，
   深链刷新不掉链（GitHub Pages 静态托管下 history 模式深链会 404）。
-- **底部导航常驻三入口**（App.vue 全局）：自由（/）/ 游戏（/game 独立路由）/ 我的（/me）。
+- **底部导航常驻三入口**（App.vue 全局）：学习（/learn）/ 游戏（/game）/ 我的（/me），各自独立路由；#/ 重定向 #/learn。
   首页的自由/游戏是同一路由的两种浏览模式，用 query 区分，URL 可直达可分享；
   /me、/treasure、/report、/review 高亮"我的"tab；/lesson/:id 沉浸学习不显示导航。
 - 课程内**不逐玩法拆路由**：stage 由 useLessonFlow 管理，玩法间共享大量状态，
@@ -393,12 +393,14 @@ python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
 不用一路点进来，直接在真机上打开指定页面验收布局：
 
 ```
+#/learn                      → 学习主页（自由练习；#/ 自动重定向至此）
+#/game                       → 游戏闯关地图
 #/lesson/l4                    → 直接进第 4 课的菜单
-#/lesson/l4?stage=learn        → 直达"看图学词"
-#/lesson/l4?stage=quiz         → 直达"听音选图"
-#/lesson/l4?stage=match        → 直达"图词连线"
-#/lesson/l4?stage=speak        → 直达"跟我读"
-#/lesson/l4?stage=song         → 直达"唱童谣"
+#/lesson/l4/learn              → 直达"看图学词"（子路径）
+#/lesson/l4/quiz               → 直达"听音选图"（子路径）
+#/lesson/l4/match              → 直达"图词连线"（子路径）
+#/lesson/l4/speak              → 直达"跟我读"（子路径）
+#/lesson/l4/song               → 直达"唱童谣"（子路径）
 #/quest/l4?step=learn          → 闯关模式（游戏地图进入，独立路由）
 #/me                           → 我的（个人中心）
 #/review                       → 错词复习页

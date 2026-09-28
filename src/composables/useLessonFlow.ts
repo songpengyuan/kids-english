@@ -122,7 +122,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
 
   /** 返回闯关地图（游戏模式首页） */
   function backToMap() {
-    router.push({ path: "/", query: { mode: "game" } });
+    router.push("/game");
   }
 
   /** 进入下一关（单关完成画面按钮） */
@@ -183,7 +183,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
       stage.value = "menu";
       return;
     }
-    router.push(quest.questMode.value ? "/game" : "/");
+    router.push(quest.questMode.value ? "/game" : "/learn");
   }
 
   function toMenu() {

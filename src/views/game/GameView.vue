@@ -2,7 +2,7 @@
 /**
  * 游戏闯关首页：独立路由 #/game（不再由首页 ?mode=game 参数指向）。
  * 多邻国式关卡路径图；滚动条贴最右缘（slot 宽度向右扩展一个 --pad-x）。
- * KeepAlive 缓存整页（App.vue include="HomeView,GameView"），
+ * KeepAlive 缓存整页（App.vue include="LearnView,GameView"），
  * 返回本页时 GamePath 的 onActivated 对比关卡状态触发解锁动效。
  */
 import AppHeader from "../../components/layout/AppHeader.vue";

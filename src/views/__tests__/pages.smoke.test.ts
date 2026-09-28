@@ -52,7 +52,7 @@ vi.mock("../../services/effects", () => ({
   bigCelebrate: vi.fn(),
 }));
 
-import HomeView from "../../views/HomeView.vue";
+import LearnView from "../../views/LearnView.vue";
 import GameView from "../game/GameView.vue";
 import MyView from "../MyView.vue";
 import ReportView from "../ReportView.vue";
@@ -71,7 +71,7 @@ class RO {
 (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = RO;
 
 const routes = [
-  { path: "/", name: "home", component: HomeView },
+  { path: "/learn", name: "learn", component: LearnView },
   { path: "/me", name: "me", component: MyView },
   { path: "/streak", name: "streak", component: StreakView },
   { path: "/report", name: "report", component: ReportView },
@@ -103,8 +103,8 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it("首页（自由练习）", async () => {
-    const w = await mountPage(HomeView, "/");
+  it("学习主页（自由练习）", async () => {
+    const w = await mountPage(LearnView, "/learn");
     expect(w.text()).toContain("个单词");
     expect(errors).toEqual([]);
   });

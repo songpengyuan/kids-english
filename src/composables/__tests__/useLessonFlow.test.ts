@@ -152,12 +152,12 @@ describe("useLessonFlow 玩法迁移", () => {
     expect(flow.stage.value).toBe("menu");
   });
 
-  it("back()：自由模式返回课程列表首页", async () => {
+  it("back()：自由模式返回学习主页（/learn）", async () => {
     const { flow, router } = await bootHost("/lesson/l4");
     flow.boot();
     flow.back();
     await new Promise((r) => setTimeout(r, 0));
-    expect(router.currentRoute.value.path).toBe("/");
+    expect(router.currentRoute.value.path).toBe("/learn");
   });
 
   it("back()：玩法中先回本课菜单", async () => {
