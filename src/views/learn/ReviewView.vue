@@ -10,18 +10,18 @@
  * 点错的选项也记一次错误（说明它同样不熟）。
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { lessons, type Word } from "../data/lessons";
-import { useProgressStore } from "../stores/progress";
-import { useStreakStore } from "../stores/streak";
+import { lessons, type Word } from "../../data/lessons";
+import { useProgressStore } from "../../stores/progress";
+import { useStreakStore } from "../../stores/streak";
 import { useRouter } from "vue-router";
-import { speak } from "../services/speech";
-import { bigCelebrate, sfxCorrect, sfxWrong, sfxTap } from "../services/effects";
-import { useQuizSession } from "../composables/useQuizSession";
-import { dueWords as dueWordsOf } from "../utils/reviewQueue";
-import { useViewport } from "../composables/useViewport";
+import { speak } from "../../services/speech";
+import { bigCelebrate, sfxCorrect, sfxWrong, sfxTap } from "../../services/effects";
+import { useQuizSession } from "../../composables/useQuizSession";
+import { dueWords as dueWordsOf } from "../../utils/reviewQueue";
+import { useViewport } from "../../composables/useViewport";
 import { Check, RotateCcw, Volume2 } from "@lucide/vue";
-import HeaderBar from "../components/layout/HeaderBar.vue";
-import PathIcon from "../components/PathIcon.vue";
+import HeaderBar from "../../components/layout/HeaderBar.vue";
+import PathIcon from "../../components/PathIcon.vue";
 
 const progress = useProgressStore();
 const streak = useStreakStore();

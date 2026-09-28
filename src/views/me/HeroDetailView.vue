@@ -14,12 +14,12 @@
  */
 import { computed, ref, watch, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { HEROES, formById, introOf, type FlatForm } from "../data/heroes";
-import { useRewardsStore } from "../stores/rewards";
-import { speak, speakZh, stopSpeaking } from "../services/speech";
-import { sfxTap } from "../services/effects";
-import HeaderBar from "../components/layout/HeaderBar.vue";
-import PathIcon from "../components/PathIcon.vue";
+import { HEROES, formById, introOf, type FlatForm } from "../../data/heroes";
+import { useRewardsStore } from "../../stores/rewards";
+import { speak, speakZh, stopSpeaking } from "../../services/speech";
+import { sfxTap } from "../../services/effects";
+import HeaderBar from "../../components/layout/HeaderBar.vue";
+import PathIcon from "../../components/PathIcon.vue";
 import { ZoomIn } from "@lucide/vue";
 
 const route = useRoute();

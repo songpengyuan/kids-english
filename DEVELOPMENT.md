@@ -47,11 +47,21 @@ kids-english/
 │   ├── styles/
 │   │   ├── tokens.css          # ★ 设计 token：颜色/间距/字号/圆角/阴影 + 断点表注释
 │   │   └── base.css            # ★ reset、应用外壳、跨页面共享 UI（.view/.k-btn/.topbar/进度条/动画）
-│   ├── views/                  # ★ 页面（路由级），只做编排壳，不放可复用件
-│   │   ├── LearnView.vue       # 学习主页（独立路由 #/learn）：PracticeView + KeepAlive
-│   │   ├── practice/GameView.vue  # 自由练习页 / 游戏闯关地图页
-│   │   ├── LessonView.vue      # 单课编排层：stage 机（菜单 ↔ 玩法 ↔ 结算，237 行）
-│   │   └── MyView / TreasureView / ReportView / ReviewView / StreakView / HeroDetailView
+│   ├── views/                  # ★ 页面（路由级），目录按路由域分层，文件与路由一一对应
+│   │   ├── learn/              # 学习域：#/learn 及子路由
+│   │   │   ├── LearnView.vue   # 学习主页（#/learn，空 path 子路由）
+│   │   │   ├── LessonView.vue  # 课程玩法（#/learn/lesson/:id/:stage?，自由/闯关共用）
+│   │   │   ├── ReviewView.vue  # 错词复习（#/learn/review）
+│   │   │   └── practice/       # 学习主页内嵌练习组件（非路由级）
+│   │   ├── game/               # 游戏域：#/game 及子路由
+│   │   │   ├── GameView.vue    # 游戏闯关地图（#/game）
+│   │   │   └── QuestView.vue   # 闯关玩法（#/game/quest/:id/:stage?，薄壳转发 LessonView）
+│   │   └── me/                 # 我的域：#/me 及子路由
+│   │       ├── MyView.vue      # 我的（#/me）
+│   │       ├── StreakView.vue  # 连击日历（#/me/streak）
+│   │       ├── TreasureView.vue# 宝藏罐（#/me/treasure）
+│   │       ├── HeroDetailView.vue # 英雄图鉴（#/me/treasure/hero/:id）
+│   │       └── ReportView.vue  # 家长报告（#/me/report）
 │   ├── components/
 │   │   ├── layout/             # 全局框架件：AppHeader / HeaderBar / BottomNav / SoundToggle / ThemeToggle
 │   │   ├── activities/         # 一课内的玩法：LearnView / QuizView / MatchView / SpeakView / SongView / TalkView / WordCard / Pager

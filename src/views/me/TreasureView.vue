@@ -24,16 +24,16 @@ import {
   RARITY_INFO,
   heroesByEra,
   introOf,
-} from "../data/heroes";
-import { MAX_FORM_STARS, useRewardsStore } from "../stores/rewards";
-import { sfxCoin, sfxCorrect, sfxTap, sfxWrong } from "../services/effects";
-import { speak, speakZh } from "../services/speech";
+} from "../../data/heroes";
+import { MAX_FORM_STARS, useRewardsStore } from "../../stores/rewards";
+import { sfxCoin, sfxCorrect, sfxTap, sfxWrong } from "../../services/effects";
+import { speak, speakZh } from "../../services/speech";
 import { Star } from "@lucide/vue";
-import HeaderBar from "../components/layout/HeaderBar.vue";
-import HeroFormCard from "../components/treasure/HeroFormCard.vue";
-import type { AlbumForm } from "../components/treasure/HeroFormCard.vue";
-import PathIcon from "../components/PathIcon.vue";
-import ShellIcon from "../components/ShellIcon.vue";
+import HeaderBar from "../../components/layout/HeaderBar.vue";
+import HeroFormCard from "../../components/treasure/HeroFormCard.vue";
+import type { AlbumForm } from "../../components/treasure/HeroFormCard.vue";
+import PathIcon from "../../components/PathIcon.vue";
+import ShellIcon from "../../components/ShellIcon.vue";
 
 defineOptions({ name: "TreasureView" }); // KeepAlive include 需要稳定组件名
 

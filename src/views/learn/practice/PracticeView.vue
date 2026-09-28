@@ -7,18 +7,18 @@
  * 滚动浏览比翻页轻松，也更贴近 App 首页"往下滑看全部课"的惯用节奏。
  */
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { activityKeys, getLesson, lessons, type Lesson } from "../../data/lessons";
-import { useProgressStore } from "../../stores/progress";
+import { activityKeys, getLesson, lessons, type Lesson } from "../../../data/lessons";
+import { useProgressStore } from "../../../stores/progress";
 import { useRouter } from "vue-router";
-import { speak } from "../../services/speech";
-import { dueWords } from "../../utils/reviewQueue";
+import { speak } from "../../../services/speech";
+import { dueWords } from "../../../utils/reviewQueue";
 import { BookOpenText, Check } from "@lucide/vue";
 
 const progress = useProgressStore();
 const router = useRouter();
 
-/** 课程轮播：每页 2 课（左右滑动 + 底部小点），移动端到超宽屏统一 */
-const PAGE_SIZE = 2;
+/** 课程轮播：每页 3 课（左右滑动 + 底部小点），移动端到超宽屏统一 */
+const PAGE_SIZE = 3;
 const pages = computed(() => {
   const n = Math.ceil(lessons.length / PAGE_SIZE);
   return Array.from({ length: n }, (_, i) => lessons.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE));
@@ -89,7 +89,7 @@ const lastLessonObj = computed(() => {
             :key="l.id"
             class="lesson-card anim-pop"
             :class="'tone-' + l.tone"
-            :style="{ animationDelay: (i % 2) * 0.08 + 's' }"
+            :style="{ animationDelay: (i % 3) * 0.06 + 's' }"
             @click="enter(l)"
           >
             <span class="big-emoji anim-float">{{ l.emoji }}</span>
@@ -180,8 +180,9 @@ const lastLessonObj = computed(() => {
 .cc-page {
   flex: 0 0 100%;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: clamp(140px, calc((100dvh - 210px) / 2), 360px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* 卡片行高 = 轮播区可用高度（iPad/手机上下撑满），120px 保底防横屏过矮 */
+  grid-auto-rows: minmax(120px, 1fr);
   gap: 14px;
   padding: 2px 8px;
   scroll-snap-align: start;

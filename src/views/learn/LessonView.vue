@@ -8,23 +8,23 @@
  * 本组件只保留：课时解析、玩法清单（依赖 phrases）、composable 装配与模板。
  */
 import { computed, onMounted, ref, watch } from "vue";
-import LearnView from "../components/activities/LearnView.vue";
-import QuizView from "../components/activities/QuizView.vue";
-import MatchView from "../components/activities/MatchView.vue";
-import SongView from "../components/activities/SongView.vue";
-import SpeakView from "../components/activities/SpeakView.vue";
-import TalkView from "../components/activities/TalkView.vue";
-import HeaderBar from "../components/layout/HeaderBar.vue";
-import LessonResult from "../components/lesson/LessonResult.vue";
-import LessonMenu from "../components/lesson/LessonMenu.vue";
-import { getLesson } from "../data/lessons";
-import { speak, speakZh } from "../services/speech";
-import { useProgressStore } from "../stores/progress";
-import { useStreakStore } from "../stores/streak";
+import LearnView from "../../components/activities/LearnView.vue";
+import QuizView from "../../components/activities/QuizView.vue";
+import MatchView from "../../components/activities/MatchView.vue";
+import SongView from "../../components/activities/SongView.vue";
+import SpeakView from "../../components/activities/SpeakView.vue";
+import TalkView from "../../components/activities/TalkView.vue";
+import HeaderBar from "../../components/layout/HeaderBar.vue";
+import LessonResult from "../../components/lesson/LessonResult.vue";
+import LessonMenu from "../../components/lesson/LessonMenu.vue";
+import { getLesson } from "../../data/lessons";
+import { speak, speakZh } from "../../services/speech";
+import { useProgressStore } from "../../stores/progress";
+import { useStreakStore } from "../../stores/streak";
 import { useRoute, useRouter } from "vue-router";
-import { useViewport } from "../composables/useViewport";
-import { useQuest, type QuestAct } from "../composables/useQuest";
-import { useLessonFlow } from "../composables/useLessonFlow";
+import { useViewport } from "../../composables/useViewport";
+import { useQuest, type QuestAct } from "../../composables/useQuest";
+import { useLessonFlow } from "../../composables/useLessonFlow";
 import { BookOpen, Headphones, Link2, MessageCircle, Mic, Music, Star } from "@lucide/vue";
 
 const progress = useProgressStore();

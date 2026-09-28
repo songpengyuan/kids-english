@@ -34,9 +34,9 @@
  * - 旧路径兼容：beforeEach 统一迁移旧平铺路径 → 新嵌套路径（见文件底部）。
  */
 import { createRouter, createWebHashHistory } from "vue-router";
-import LearnView from "../views/LearnView.vue";
+import LearnView from "../views/learn/LearnView.vue";
 import GameView from "../views/game/GameView.vue";
-import LessonView from "../views/LessonView.vue";
+import LessonView from "../views/learn/LessonView.vue";
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -53,7 +53,7 @@ export const router = createRouter({
         // 课程菜单 + 题目详情（stage 子路径：课 id + 题型标记，如 /learn/lesson/l4/learn）
         { path: "lesson/:id/:stage?", name: "lesson", component: LessonView, meta: { title: "学习" } },
         // 错词复习（学习闭环子页）
-        { path: "review", name: "review", component: () => import("../views/ReviewView.vue"), meta: { title: "错词复习" } },
+        { path: "review", name: "review", component: () => import("../views/learn/ReviewView.vue"), meta: { title: "错词复习" } },
       ],
     },
 
@@ -63,7 +63,7 @@ export const router = createRouter({
       children: [
         { path: "", name: "game", component: GameView, meta: { title: "游戏闯关" } },
         // 闯关玩法（地图点关卡 → /game/quest/:id?step=玩法）
-        { path: "quest/:id/:stage?", name: "quest", component: LessonView, meta: { title: "闯关" } },
+        { path: "quest/:id/:stage?", name: "quest", component: () => import("../views/game/QuestView.vue"), meta: { title: "闯关" } },
       ],
     },
 
@@ -71,17 +71,17 @@ export const router = createRouter({
     {
       path: "/me",
       children: [
-        { path: "", name: "me", component: () => import("../views/MyView.vue"), meta: { title: "我的" } },
-        { path: "streak", name: "streak", component: () => import("../views/StreakView.vue"), meta: { title: "连击" } },
+        { path: "", name: "me", component: () => import("../views/me/MyView.vue"), meta: { title: "我的" } },
+        { path: "streak", name: "streak", component: () => import("../views/me/StreakView.vue"), meta: { title: "连击" } },
         {
           path: "treasure",
           children: [
             // 空子路径承载宝藏罐（与学习/游戏域一致：父容器无组件，顶层渲染）
-            { path: "", name: "treasure", component: () => import("../views/TreasureView.vue"), meta: { title: "宝藏罐" } },
-            { path: "hero/:id", name: "hero-detail", component: () => import("../views/HeroDetailView.vue"), meta: { title: "英雄图鉴" } },
+            { path: "", name: "treasure", component: () => import("../views/me/TreasureView.vue"), meta: { title: "宝藏罐" } },
+            { path: "hero/:id", name: "hero-detail", component: () => import("../views/me/HeroDetailView.vue"), meta: { title: "英雄图鉴" } },
           ],
         },
-        { path: "report", name: "report", component: () => import("../views/ReportView.vue"), meta: { title: "家长报告" } },
+        { path: "report", name: "report", component: () => import("../views/me/ReportView.vue"), meta: { title: "家长报告" } },
       ],
     },
 

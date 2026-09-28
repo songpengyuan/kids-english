@@ -52,15 +52,15 @@ vi.mock("../../services/effects", () => ({
   bigCelebrate: vi.fn(),
 }));
 
-import LearnView from "../../views/LearnView.vue";
+import LearnView from "../../views/learn/LearnView.vue";
 import GameView from "../game/GameView.vue";
-import MyView from "../MyView.vue";
-import ReportView from "../ReportView.vue";
-import TreasureView from "../TreasureView.vue";
-import ReviewView from "../ReviewView.vue";
-import LessonView from "../LessonView.vue";
-import HeroDetailView from "../HeroDetailView.vue";
-import StreakView from "../StreakView.vue";
+import MyView from "../me/MyView.vue";
+import ReportView from "../me/ReportView.vue";
+import TreasureView from "../me/TreasureView.vue";
+import ReviewView from "../learn/ReviewView.vue";
+import LessonView from "../learn/LessonView.vue";
+import HeroDetailView from "../me/HeroDetailView.vue";
+import StreakView from "../me/StreakView.vue";
 
 /** jsdom 没有 ResizeObserver（LearnView/GamePath 会用到） */
 class RO {

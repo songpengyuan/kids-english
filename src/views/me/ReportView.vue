@@ -11,18 +11,18 @@
  * 数据全部来自本地存储，无任何网络上报。
  */
 import { computed } from "vue";
-import { lessons } from "../data/lessons";
-import { isLessonKey, useProgressStore } from "../stores/progress";
-import { useRewardsStore } from "../stores/rewards";
-import { FORM_TOTAL } from "../data/heroes";
-import { useStreakStore } from "../stores/streak";
+import { lessons } from "../../data/lessons";
+import { isLessonKey, useProgressStore } from "../../stores/progress";
+import { useRewardsStore } from "../../stores/rewards";
+import { FORM_TOTAL } from "../../data/heroes";
+import { useStreakStore } from "../../stores/streak";
 import { useRouter } from "vue-router";
 import { Flame, Star } from "@lucide/vue";
-import HeaderBar from "../components/layout/HeaderBar.vue";
-import MasteryTrend from "../components/report/MasteryTrend.vue";
-import { dueWords } from "../utils/reviewQueue";
-import PathIcon from "../components/PathIcon.vue";
-import ShellIcon from "../components/ShellIcon.vue";
+import HeaderBar from "../../components/layout/HeaderBar.vue";
+import MasteryTrend from "../../components/report/MasteryTrend.vue";
+import { dueWords } from "../../utils/reviewQueue";
+import PathIcon from "../../components/PathIcon.vue";
+import ShellIcon from "../../components/ShellIcon.vue";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();

@@ -9,20 +9,20 @@
  * 数据全部来自本地存储，不上传。
  */
 import { computed } from "vue";
-import { useProgressStore } from "../stores/progress";
-import { useRewardsStore } from "../stores/rewards";
-import { FORM_TOTAL } from "../data/heroes";
-import { useStreakStore } from "../stores/streak";
+import { useProgressStore } from "../../stores/progress";
+import { useRewardsStore } from "../../stores/rewards";
+import { FORM_TOTAL } from "../../data/heroes";
+import { useStreakStore } from "../../stores/streak";
 import { useRouter } from "vue-router";
-import SoundToggle from "../components/layout/SoundToggle.vue";
-import ThemeToggle from "../components/layout/ThemeToggle.vue";
-import { soundOn } from "../services/sound";
-import { lessons } from "../data/lessons";
-import { dueWords } from "../utils/reviewQueue";
-import AppHeader from "../components/layout/AppHeader.vue";
+import SoundToggle from "../../components/layout/SoundToggle.vue";
+import ThemeToggle from "../../components/layout/ThemeToggle.vue";
+import { soundOn } from "../../services/sound";
+import { lessons } from "../../data/lessons";
+import { dueWords } from "../../utils/reviewQueue";
+import AppHeader from "../../components/layout/AppHeader.vue";
 import { ChevronRight, Flame, Star } from "@lucide/vue";
-import PathIcon from "../components/PathIcon.vue";
-import { speakZh } from "../services/speech";
+import PathIcon from "../../components/PathIcon.vue";
+import { speakZh } from "../../services/speech";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();
