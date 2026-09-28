@@ -1,7 +1,7 @@
 <!--
   闯关玩法页（路由 /game/quest/:id/:stage?）。
 
-  与自由课程玩法（/learn/lesson）共享同一套玩法页与流程引擎
+  与自由课程玩法（/learn/:id）共享同一套玩法页与流程引擎
   （useLessonFlow + useQuest）：useQuest 按路由前缀 /game/quest 识别闯关身份，
   因此这里只需薄壳转发 learn/LessonView，保证"一个路由对应一个 view 文件"。
 

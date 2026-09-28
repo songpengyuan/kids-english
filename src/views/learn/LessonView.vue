@@ -33,7 +33,7 @@ const route = useRoute();
 const router = useRouter();
 const { isNarrow } = useViewport();
 
-/** 当前课时（由路由 :id 解析，hash 深链 #/lesson/l4 可直达） */
+/** 当前课时（由路由 :id 解析，hash 深链 #/learn/l4 可直达） */
 const lesson = computed(() => getLesson(typeof route.params.id === "string" ? route.params.id : "") || null);
 
 /**
@@ -195,7 +195,7 @@ const playPct = ref(0);
       @back-to-map="backToMap"
       @go-next-level="goNextLevel"
       @to-menu="toMenu"
-      @go-next-lesson="router.push('/learn/lesson/' + (nextLesson?.id ?? ''))"
+      @go-next-lesson="router.push('/learn/' + (nextLesson?.id ?? ''))"
     />
 
   </div>

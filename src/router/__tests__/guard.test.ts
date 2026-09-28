@@ -33,7 +33,8 @@ const MIGRATE: Array<[string, string]> = [
   ["/me/report", "/report"],
   ["/learn/review", "/review"],
   ["/game/quest", "/quest"],
-  ["/learn/lesson", "/lesson"],
+  ["/learn", "/learn/lesson"],
+  ["/learn", "/lesson"],
 ];
 
 function makeRouter() {
@@ -58,13 +59,17 @@ describe("旧路径 → 新嵌套路径迁移守卫", () => {
   const go = async (url: string, q?: Record<string, string>) => {
     await router.push(q ? { path: url, query: q } : url).catch(() => {});
   };
-  it("旧 /lesson/l4 → /learn/lesson/l4", async () => {
+  it("旧 /lesson/l4 → /learn/l4（去 lesson 段）", async () => {
     await go("/lesson/l4");
-    expect(router.currentRoute.value.path).toBe("/learn/lesson/l4");
+    expect(router.currentRoute.value.path).toBe("/learn/l4");
   });
-  it("旧 /lesson/l4/learn → /learn/lesson/l4/learn", async () => {
+  it("旧 /lesson/l4/learn → /learn/l4/learn", async () => {
     await go("/lesson/l4/learn");
-    expect(router.currentRoute.value.path).toBe("/learn/lesson/l4/learn");
+    expect(router.currentRoute.value.path).toBe("/learn/l4/learn");
+  });
+  it("上一版嵌套 /learn/lesson/l4 → /learn/l4", async () => {
+    await go("/learn/lesson/l4");
+    expect(router.currentRoute.value.path).toBe("/learn/l4");
   });
   it("旧 /quest/l4?step=learn → /game/quest/l4?step=learn", async () => {
     await go("/quest/l4", { step: "learn" });
@@ -94,8 +99,8 @@ describe("旧路径 → 新嵌套路径迁移守卫", () => {
     expect(router.currentRoute.value.path).toBe("/game");
   });
   it("新路径不再被迁移", async () => {
-    await go("/learn/lesson/l4");
-    expect(router.currentRoute.value.path).toBe("/learn/lesson/l4");
+    await go("/learn/l4");
+    expect(router.currentRoute.value.path).toBe("/learn/l4");
     await go("/game/quest/l4", { step: "learn" });
     expect(router.currentRoute.value.path).toBe("/game/quest/l4");
   });

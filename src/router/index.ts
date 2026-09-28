@@ -2,14 +2,14 @@
  * 应用路由（vue-router，hash 模式）。
  *
  * - 用 createWebHashHistory：项目部署在 GitHub Pages 静态托管，
- *   history 模式深链刷新会 404，hash 模式（/#/learn/lesson/l4/learn）刷新不掉链。
+ *   history 模式深链刷新会 404，hash 模式（/#/learn/l4/learn）刷新不掉链。
  *
  * - **路由分层（子路由承载）**：三个主入口（学习 / 游戏 / 我的）为顶层父路由，
  *   各自的子页面作为**子路由**挂在父级下，不在根路径平铺新 path：
  *
  *   #/learn（学习域）
  *     ├─ /learn                         学习主页（父容器空 path 子路由，顶层渲染）
- *     ├─ /learn/lesson/:id/:stage?      课程菜单 + 题目详情（课 id + 题型标记）
+ *     ├─ /learn/:id/:stage?             课程菜单 + 题目详情（课 id + 题型标记）
  *     └─ /learn/review                  错词复习（学习闭环：学 → 错 → 复习）
  *   #/game（游戏域）
  *     ├─ /game                          游戏闯关地图
@@ -50,8 +50,8 @@ export const router = createRouter({
       children: [
         // 空子路径承载学习主页（父容器无组件 → 顶层渲染，KeepAlive 可缓存）
         { path: "", name: "learn", component: LearnView, meta: { title: "丞丞ABC" } },
-        // 课程菜单 + 题目详情（stage 子路径：课 id + 题型标记，如 /learn/lesson/l4/learn）
-        { path: "lesson/:id/:stage?", name: "lesson", component: LessonView, meta: { title: "学习" } },
+        // 课程菜单 + 题目详情（stage 子路径：课 id + 题型标记，如 /learn/l4/learn）
+        { path: ":id/:stage?", name: "lesson", component: LessonView, meta: { title: "学习" } },
         // 错词复习（学习闭环子页）
         { path: "review", name: "review", component: () => import("../views/learn/ReviewView.vue"), meta: { title: "错词复习" } },
       ],
@@ -94,7 +94,7 @@ export const router = createRouter({
 // 旧链接兼容（历史平铺路径 → 新嵌套路径；保留 step/form 等 query）：
 //  · #/?mode=game → #/game（游戏模式曾用 query 参数指向）
 //  · #/lesson/...?mode=quest&step=... → #/game/quest/...?step=（闯关曾用参数指向）
-//  · #/lesson/... → #/learn/lesson/...、#/review → #/learn/review
+//  · #/lesson/... → #/learn/...、#/review → #/learn/review
 //  · #/quest/... → #/game/quest/...、#/streak → #/me/streak
 //  · #/treasure/... → #/me/treasure/...、#/report → #/me/report
 router.beforeEach((to) => {
@@ -118,7 +118,8 @@ router.beforeEach((to) => {
     ["/me/report", "/report"],
     ["/learn/review", "/review"],
     ["/game/quest", "/quest"],
-    ["/learn/lesson", "/lesson"],
+    ["/learn", "/learn/lesson"], // 上一版嵌套（/learn/lesson/l4/learn）→ 去 lesson 段（/learn/l4/learn）
+    ["/learn", "/lesson"],           // 历史平铺（/lesson/l4/learn）→ /learn/l4/learn
   ];
   for (const [nw, old] of MIGRATE) {
     if (path.startsWith(old)) {

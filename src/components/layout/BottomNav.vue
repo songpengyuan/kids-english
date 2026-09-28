@@ -5,7 +5,7 @@
  *
  * - 学习/游戏是独立路由：#/ 与 #/game（不再用 query 区分）。
  * - 我的 tab 高亮覆盖其子页：/me、/treasure、/report、/review。
- * - 玩法页（/lesson/:id）不渲染本组件（沉浸学习，见 App.vue）。
+ * - 玩法页（/learn/:id）不渲染本组件（沉浸学习，见 App.vue）。
  */
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";

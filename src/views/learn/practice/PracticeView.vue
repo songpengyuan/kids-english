@@ -50,7 +50,7 @@ onBeforeUnmount(() => {
 function enter(l: Lesson) {
   // 点击卡片文字（课程英文标题）→ 朗读标题；进课程后由 LearnView 逐词发音
   speak(l.title, { ttsOnly: true });
-  router.push(`/learn/lesson/${l.id}`);
+  router.push(`/learn/${l.id}`);
 }
 
 /* ---------- 快捷引导 ---------- */

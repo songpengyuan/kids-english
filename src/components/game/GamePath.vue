@@ -311,7 +311,7 @@ function enterUnit(it: GeoItem) {
     const title = lessons.find((x) => x.id === it.lessonId)?.title;
     if (title) speak(title, { ttsOnly: true });
     hapticTap();
-    router.push(`/lesson/${first.lessonId}?mode=quest&step=${first.actKey}`);
+    router.push(`/game/quest/${first.lessonId}?step=${first.actKey}`);
   }
 }
 

@@ -14,7 +14,7 @@
 | 项 | 说明 |
 |---|---|
 | 框架 | Vue 3（`<script setup>` 组合式 API） |
-| 路由 | vue-router，**hash 模式**（`/#/learn/lesson/l4/learn`；GitHub Pages 静态托管下 history 深链刷新会 404） |
+| 路由 | vue-router，**hash 模式**（`/#/learn/l4/learn`；GitHub Pages 静态托管下 history 深链刷新会 404） |
 | 状态 | Pinia 3 个 store：progress（进度/单词掌握度/今日学情）、streak（连击）、rewards（贝壳/贴纸） |
 | 构建 | Vite 8 |
 | 包管理 | pnpm |
@@ -50,7 +50,7 @@ kids-english/
 │   ├── views/                  # ★ 页面（路由级），目录按路由域分层，文件与路由一一对应
 │   │   ├── learn/              # 学习域：#/learn 及子路由
 │   │   │   ├── LearnView.vue   # 学习主页（#/learn，空 path 子路由）
-│   │   │   ├── LessonView.vue  # 课程玩法（#/learn/lesson/:id/:stage?，自由/闯关共用）
+│   │   │   ├── LessonView.vue  # 课程玩法（#/learn/:id/:stage?，自由/闯关共用）
 │   │   │   ├── ReviewView.vue  # 错词复习（#/learn/review）
 │   │   │   └── practice/       # 学习主页内嵌练习组件（非路由级）
 │   │   ├── game/               # 游戏域：#/game 及子路由
@@ -123,8 +123,8 @@ LessonView.vue   stage: menu | learn | quiz | match | speak | song | talk | resu
 - 页面级用 vue-router（hash 模式）：三入口为**顶层父路由，子页面全部用子路由承载**（不在根路径平铺），
   深链刷新不掉链（GitHub Pages 静态托管下 history 模式深链会 404）。
 - **底部导航常驻三入口**（App.vue 全局）：学习（/learn）/ 游戏（/game）/ 我的（/me），各自独立路由；#/ 重定向 #/learn。
-  /me、/me/streak、/me/treasure、/me/report 高亮"我的"tab；/learn/lesson/:id 沉浸学习不显示导航。
-- **玩法（题目详情）走独立子路由**：`/learn/lesson/:id/:stage`（如 #/learn/lesson/l4/learn，
+  /me、/me/streak、/me/treasure、/me/report 高亮"我的"tab；/learn/:id 沉浸学习不显示导航。
+- **玩法（题目详情）走独立子路由**：`/learn/:id/:stage`（如 #/learn/l4/learn，
   URL 标记"第几课 + 题型"）；进入/退出玩法时 URL 实时同步（useLessonFlow.replace，不堆历史）；
   旧 `?stage=` query 与旧平铺路径由守卫统一迁移，见 §14.3 路由分层表。
 - **加载策略**：首页/课程主链路同步加载（离线首开最稳），我的/宝藏/报告/复习/连击/英雄详情
@@ -403,12 +403,12 @@ python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
 
 ```
 #/learn                          → 学习主页（自由练习；#/ 自动重定向至此）
-#/learn/lesson/l4                → 直接进第 4 课的菜单
-#/learn/lesson/l4/learn          → 直达"看图学词"（课 id + 题型）
-#/learn/lesson/l4/quiz           → 直达"听音选图"
-#/learn/lesson/l4/match          → 直达"图词连线"
-#/learn/lesson/l4/speak          → 直达"跟我读"
-#/learn/lesson/l4/song           → 直达"唱童谣"
+#/learn/l4                → 直接进第 4 课的菜单
+#/learn/l4/learn          → 直达"看图学词"（课 id + 题型）
+#/learn/l4/quiz           → 直达"听音选图"
+#/learn/l4/match          → 直达"图词连线"
+#/learn/l4/speak          → 直达"跟我读"
+#/learn/l4/song           → 直达"唱童谣"
 #/learn/review                   → 错词复习页（学习域）
 #/game                           → 游戏闯关地图
 #/game/quest/l4?step=learn       → 闯关玩法（游戏地图进入）

@@ -6,7 +6,7 @@
  *   → result（结算：闯关大画面 / 自由结算）
  *
  * 职责：
- *  - stage 迁移与深链解析（/lesson/:id/:stage / /quest/:id?step=）；
+ *  - stage 迁移与深链解析（/learn/:id/:stage / /quest/:id?step=）；
  *  - 结算（星数、今日学情、连击横幅、庆祝）。
  * 玩法菜单的测量/排布已内聚到 lesson/LessonMenu.vue（pickColumns 由菜单组件持有）。
  *
@@ -77,7 +77,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   /* ---------- 引导（路由解析） ---------- */
   function boot() {
     if (lesson.value) progress.setLastLesson(lesson.value.id);
-    // stage 子路径优先（#/lesson/l4/learn），旧 query 深链（?stage=learn）兼容
+    // stage 子路径优先（#/learn/l4/learn），旧 query 深链（?stage=learn）兼容
     const ps = typeof route.params.stage === "string" ? route.params.stage : "";
     const s = ps || (typeof route.query.stage === "string" ? route.query.stage : "");
     if (quest.questMode.value) {
@@ -94,7 +94,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
       stage.value = s as LessonStage;
       actStart = Date.now();
     } else {
-      // 无直达 stage（含 URL 从玩法回退到 /lesson/:id）：回菜单，
+      // 无直达 stage（含 URL 从玩法回退到 /learn/:id）：回菜单，
       // 并报出主题歌名（英文），给孩子"这一课唱什么"的预期
       stage.value = "menu";
       setTimeout(() => speak(lesson.value?.title || ""), 400);
@@ -102,7 +102,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   }
 
   /** 进入玩法：同步 stage 并把 URL 更新为独立子路径（题目详情标记：课 id + 题型）。
-   *  · 自由：#/lesson/l4/quiz；闯关：#/quest/l4?step=quiz
+   *  · 自由：#/learn/l4/quiz；闯关：#/quest/l4?step=quiz
    *  · replace 不堆历史（孩子误触返回键不至于层层回退） */
   function open(a: QuestAct) {
     hapticTap();
@@ -111,7 +111,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     stage.value = key;
     const lid = lesson.value?.id;
     if (!lid) return;
-    router.replace(quest.questMode.value ? `/game/quest/${lid}?step=${a.key}` : `/learn/lesson/${lid}/${key}`);
+    router.replace(quest.questMode.value ? `/game/quest/${lid}?step=${a.key}` : `/learn/${lid}/${key}`);
   }
 
   /** 菜单卡片右上角的星星徽章：该玩法已获得的星数 */
@@ -187,10 +187,10 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   /** 左上角 ←：玩法中先回本课菜单，菜单里再点才回课程列表（两步退出，防止误触跳走） */
   function back() {
     if (!quest.questMode.value && stage.value !== "menu") {
-      // 玩法中：回本课菜单，URL 同步去掉题型段（/lesson/l4）
+      // 玩法中：回本课菜单，URL 同步去掉题型段（/learn/l4）
       stage.value = "menu";
       const lid = lesson.value?.id;
-      if (lid) router.replace(`/learn/lesson/${lid}`);
+      if (lid) router.replace(`/learn/${lid}`);
       return;
     }
     router.push(quest.questMode.value ? "/game" : "/learn");
@@ -198,9 +198,9 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
 
   function toMenu() {
     stage.value = "menu";
-    // 结算页"再选玩法"：URL 同步回菜单（/lesson/l4）
+    // 结算页"再选玩法"：URL 同步回菜单（/learn/l4）
     const lid = lesson.value?.id;
-    if (lid && !quest.questMode.value) router.replace(`/learn/lesson/${lid}`);
+    if (lid && !quest.questMode.value) router.replace(`/learn/${lid}`);
   }
 
   /** 下一课（当前课是最后一课则为 null，结算页隐藏该按钮） */

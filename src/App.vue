@@ -24,7 +24,7 @@ watch(showNav, (v) => {
 
 /**
  * 兼容旧深链 ?lesson=l4&stage=talk（业务复杂化前的书签/分享链接）：
- * 挂载时若 URL 是旧 query 形式，转成 hash 路由（#/lesson/l4?stage=talk），
+ * 挂载时若 URL 是旧 query 形式，转成 hash 路由（#/learn/l4?stage=talk），
  * 老链接不失效；GH Pages 部署后 history 深链会 404，统一走 hash。
  */
 onMounted(() => {
@@ -32,7 +32,7 @@ onMounted(() => {
   const id = q.get("lesson");
   if (id && getLesson(id)) {
     router.replace({
-      path: `/lesson/${id}`,
+      path: `/learn/${id}`,
       query: q.get("stage") ? { stage: q.get("stage") } : {},
     }).then(() => {
       // 清掉旧 query 深链（保留 hash）：否则 PWA 版本更新 reload 时会被再次拉回课程

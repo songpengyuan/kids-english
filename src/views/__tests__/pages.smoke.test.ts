@@ -76,7 +76,7 @@ const routes = [
     name: "learn",
     component: LearnView,
     children: [
-      { path: "lesson/:id/:stage?", name: "lesson", component: LessonView },
+      { path: ":id/:stage?", name: "lesson", component: LessonView },
       { path: "review", name: "review", component: ReviewView },
     ],
   },
@@ -174,12 +174,12 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   });
 
   it("课程页（菜单）", async () => {
-    const w = await mountPage(LessonView, "/learn/lesson/l4");
+    const w = await mountPage(LessonView, "/learn/l4");
     expect(w.find(".lesson").exists()).toBe(true);
   });
 
-  it("玩法直达子路径 /learn/lesson/:id/:stage 能渲染（#/learn/lesson/l4/learn）", async () => {
-    const w = await mountPage(LessonView, "/learn/lesson/l4/learn");
+  it("玩法直达子路径 /learn/:id/:stage 能渲染（#/learn/l4/learn）", async () => {
+    const w = await mountPage(LessonView, "/learn/l4/learn");
     // 子路径直达应直接进入看图学词（而不是菜单）
     expect(w.text()).toContain("点图片听发音");
     expect(errors).toEqual([]);
