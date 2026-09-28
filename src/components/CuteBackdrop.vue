@@ -117,15 +117,17 @@ const grainStyle = { "--grain": GRAIN };
    * 色斑位置错落、半径不均，像水彩在纸上晕开。顺序：先写的在上层。
    * ⚠️ 全部用固定 rgba（不用 color-mix(var(--token))：scoped 样式下会被浏览器解析丢弃，
    *    导致整条 background-image 变 none —— 背景就只剩纯色）。 */
-  background-image:
-    radial-gradient(58% 40% at 6% 4%, rgba(28, 176, 246, 0.30), transparent 68%),
-    radial-gradient(46% 36% at 92% 8%, rgba(255, 99, 132, 0.25), transparent 70%),
-    radial-gradient(52% 42% at 88% 46%, rgba(160, 120, 255, 0.25), transparent 72%),
-    radial-gradient(48% 40% at 12% 58%, rgba(88, 214, 141, 0.23), transparent 70%),
-    radial-gradient(42% 34% at 54% 96%, rgba(255, 178, 54, 0.25), transparent 72%),
-    radial-gradient(60% 26% at 50% -6%, rgba(255, 255, 255, 0.5), transparent 70%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.22) 100%);
+  /* 极光动态渐变：4 团大色块缓慢漂移，20s 循环，GPU 合成不耗电 */
+  background: linear-gradient(135deg, #e8f4ff 0%, #fce8f4 35%, #f0e8ff 65%, #e8fff4 100%);
+  background-size: 300% 300%;
+  animation: aurora-shift 22s ease-in-out infinite;
   background-color: var(--bg); /* 渐变兜底（老浏览器/极端 DPR） */
+}
+@keyframes aurora-shift {
+  0%, 100% { background-position: 0% 50%; }
+  25% { background-position: 50% 100%; }
+  50% { background-position: 100% 50%; }
+  75% { background-position: 50% 0%; }
 }
 /* 细颗粒：在打底之上、云朵/星星之下（负 z-index 子层 = 父背景之上、其余内容之下） */
 .backdrop::after {
@@ -247,14 +249,9 @@ const grainStyle = { "--grain": GRAIN };
 /* ---------- 暗色模式 ---------- */
 /* 水彩版：底色更沉、色斑降饱和压深（深底上低不透明度看不见）、颗粒略强（深色更容易显脏） */
 :root[data-theme="dark"] .backdrop {
-  background-image:
-    radial-gradient(58% 40% at 6% 4%, rgba(28, 176, 246, 0.24), transparent 68%),
-    radial-gradient(46% 36% at 92% 8%, rgba(255, 99, 132, 0.18), transparent 70%),
-    radial-gradient(52% 42% at 88% 46%, rgba(160, 120, 255, 0.26), transparent 72%),
-    radial-gradient(48% 40% at 12% 58%, rgba(88, 214, 141, 0.18), transparent 70%),
-    radial-gradient(42% 34% at 54% 96%, rgba(255, 178, 54, 0.18), transparent 72%),
-    radial-gradient(60% 26% at 50% -6%, rgba(28, 176, 246, 0.16), transparent 70%),
-    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.16) 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 35%, #4c1d95 65%, #0f2918 100%);
+  background-size: 300% 300%;
+  animation: aurora-shift 28s ease-in-out infinite;
 }
 :root[data-theme="dark"] .backdrop::after {
   opacity: 0.07;
@@ -292,6 +289,6 @@ const grainStyle = { "--grain": GRAIN };
 }
 /* 尊重系统"减少动态效果" */
 @media (prefers-reduced-motion: reduce) {
-  .cloud, .deco-star, .dot, .sky-sun { animation: none; }
+  .cloud, .deco-star, .dot, .sky-sun, .backdrop { animation: none; }
 }
 </style>
