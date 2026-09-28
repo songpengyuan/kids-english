@@ -198,9 +198,7 @@ function dayNum(date: string | null): string {
 </template>
 
 <style scoped>
-.streak {
-  align-items: center;
-}
+/* 顶层容器不设 align-items：继承 .view 的 stretch，HeaderBar 保持全宽（历史遗留 center 会把 header 收缩居中） */
 .streak-body {
   display: flex;
   flex-direction: column;
