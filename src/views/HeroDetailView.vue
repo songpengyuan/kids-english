@@ -156,7 +156,7 @@ function nextForm() {
 }
 
 function goBack() {
-  router.push("/treasure");
+  router.push("/me/treasure");
 }
 </script>
 

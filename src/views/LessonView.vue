@@ -195,7 +195,7 @@ const playPct = ref(0);
       @back-to-map="backToMap"
       @go-next-level="goNextLevel"
       @to-menu="toMenu"
-      @go-next-lesson="router.push('/lesson/' + (nextLesson?.id ?? ''))"
+      @go-next-lesson="router.push('/learn/lesson/' + (nextLesson?.id ?? ''))"
     />
 
   </div>

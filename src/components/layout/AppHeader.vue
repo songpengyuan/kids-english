@@ -47,7 +47,7 @@ const streak = useStreakStore();
           class="badge treasure-badge"
           aria-label="打开宝藏罐"
           title="宝藏罐：贝壳余额"
-          @click="router.push('/treasure')"
+          @click="router.push('/me/treasure')"
         >
           <ShellIcon />{{ rewards.shells }}
         </button>
@@ -57,7 +57,7 @@ const streak = useStreakStore();
           :class="{ done: streak.todayDone }"
           aria-label="打开连击日历"
           :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天，点击看连击日历' : '今日目标：复习 ' + streak.reviewed + '/' + streak.reviewGoal + ' 词 + 新学 ' + streak.newLevels + '/1 关，点击看连击日历'"
-          @click="router.push('/streak')"
+          @click="router.push('/me/streak')"
         >
           <PathIcon name="flame" class="k-ico flame-ico" />{{ streak.streak }}
         </button>

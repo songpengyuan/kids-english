@@ -45,8 +45,8 @@ async function bootHost(url: string): Promise<Host> {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: "/lesson/:id/:stage?", name: "lesson", component: { template: "<div />" } },
-      { path: "/quest/:id/:stage?", name: "quest", component: { template: "<div />" } },
+      { path: "/learn/lesson/:id/:stage?", name: "lesson", component: { template: "<div />" } },
+      { path: "/game/quest/:id/:stage?", name: "quest", component: { template: "<div />" } },
       { path: "/", name: "home", component: { template: "<div />" } }
     ]
   });
@@ -85,7 +85,7 @@ describe("useLessonFlow 引导（深链解析）", () => {
   afterEach(() => vi.useRealTimers());
 
   it("无 stage 直达：进菜单，稍后朗读课程标题", async () => {
-    const { flow } = await bootHost("/lesson/l4");
+    const { flow } = await bootHost("/learn/lesson/l4");
     vi.useFakeTimers();
     flow.boot();
     expect(flow.stage.value).toBe("menu");
@@ -94,7 +94,7 @@ describe("useLessonFlow 引导（深链解析）", () => {
   });
 
   it("query stage 深链：?stage=learn 直接进入学单词", async () => {
-    const { flow } = await bootHost("/lesson/l4?stage=learn");
+    const { flow } = await bootHost("/learn/lesson/l4?stage=learn");
     flow.boot();
     expect(flow.stage.value).toBe("learn");
     // 有直达 stage 时不朗读标题
@@ -102,13 +102,13 @@ describe("useLessonFlow 引导（深链解析）", () => {
   });
 
   it("子路径深链：#/lesson/l4/learn 直接进入学单词（P1-1）", async () => {
-    const { flow } = await bootHost("/lesson/l4/learn");
+    const { flow } = await bootHost("/learn/lesson/l4/learn");
     flow.boot();
     expect(flow.stage.value).toBe("learn");
   });
 
   it("URL 无 stage（#/lesson/l4）时 boot 幂等回菜单（防回退卡在玩法）", async () => {
-    const { flow } = await bootHost("/lesson/l4");
+    const { flow } = await bootHost("/learn/lesson/l4");
     flow.boot();
     flow.open(acts[0]);
     expect(flow.stage.value).toBe("learn");
@@ -118,13 +118,13 @@ describe("useLessonFlow 引导（深链解析）", () => {
   });
 
   it("子路径优先于 query：/lesson/l4/learn?stage=quiz → learn", async () => {
-    const { flow } = await bootHost("/lesson/l4/learn?stage=quiz");
+    const { flow } = await bootHost("/learn/lesson/l4/learn?stage=quiz");
     flow.boot();
     expect(flow.stage.value).toBe("learn");
   });
 
   it("闯关模式（#/quest/l4?step=quiz 独立路由）：跳过菜单直接进对应玩法", async () => {
-    const { flow } = await bootHost("/quest/l4?step=quiz");
+    const { flow } = await bootHost("/game/quest/l4?step=quiz");
     flow.boot();
     expect(flow.stage.value).toBe("quiz");
   });
@@ -137,7 +137,7 @@ describe("useLessonFlow 玩法迁移", () => {
   });
 
   it("open() 切换到玩法 stage 并触发触感反馈", async () => {
-    const { flow } = await bootHost("/lesson/l4");
+    const { flow } = await bootHost("/learn/lesson/l4");
     flow.boot();
     flow.open(acts[0]);
     expect(flow.stage.value).toBe("learn");
@@ -145,7 +145,7 @@ describe("useLessonFlow 玩法迁移", () => {
   });
 
   it("toMenu() 回菜单", async () => {
-    const { flow } = await bootHost("/lesson/l4");
+    const { flow } = await bootHost("/learn/lesson/l4");
     flow.boot();
     flow.open(acts[1]);
     flow.toMenu();
@@ -153,7 +153,7 @@ describe("useLessonFlow 玩法迁移", () => {
   });
 
   it("back()：自由模式返回学习主页（/learn）", async () => {
-    const { flow, router } = await bootHost("/lesson/l4");
+    const { flow, router } = await bootHost("/learn/lesson/l4");
     flow.boot();
     flow.back();
     await new Promise((r) => setTimeout(r, 0));
@@ -161,15 +161,15 @@ describe("useLessonFlow 玩法迁移", () => {
   });
 
   it("back()：玩法中先回本课菜单，URL 同步去题型段", async () => {
-    const { flow, router } = await bootHost("/lesson/l4");
+    const { flow, router } = await bootHost("/learn/lesson/l4");
     flow.boot();
     flow.open(acts[0]);
     await new Promise((r) => setTimeout(r, 0));
-    expect(router.currentRoute.value.path).toBe("/lesson/l4/" + acts[0].key);
+    expect(router.currentRoute.value.path).toBe("/learn/lesson/l4/" + acts[0].key);
     flow.back();
     await new Promise((r) => setTimeout(r, 0));
     expect(flow.stage.value).toBe("menu");
-    expect(router.currentRoute.value.path).toBe("/lesson/l4");
+    expect(router.currentRoute.value.path).toBe("/learn/lesson/l4");
   });
 });
 
@@ -180,7 +180,7 @@ describe("useLessonFlow 结算", () => {
   });
 
   it("自由模式满分结算：写 3 星、首通、双彩带大庆祝、累计今日学情", async () => {
-    const { flow } = await bootHost("/lesson/l4");
+    const { flow } = await bootHost("/learn/lesson/l4");
     flow.boot();
     flow.open(acts[0]);
     flow.afterGame(3);
@@ -197,7 +197,7 @@ describe("useLessonFlow 结算", () => {
   });
 
   it("重玩低星：markNewLevel(false)、小彩带庆祝", async () => {
-    const { flow } = await bootHost("/lesson/l4");
+    const { flow } = await bootHost("/learn/lesson/l4");
     flow.boot();
     // 首次通关先拿 3 星
     flow.open(acts[0]);
@@ -213,7 +213,7 @@ describe("useLessonFlow 结算", () => {
   });
 
   it("闯关模式结算：触发 quest.finish 并进大画面", async () => {
-    const { flow, wrapper } = await bootHost("/quest/l4?step=0");
+    const { flow, wrapper } = await bootHost("/game/quest/l4?step=0");
     flow.boot();
     flow.open(acts[0]);
     flow.afterGame(3);
@@ -223,7 +223,7 @@ describe("useLessonFlow 结算", () => {
   });
 
   it("afterSong 结算：进结算并累计今日学情（童谣星数由 SongView 内部记）", async () => {
-    const { flow } = await bootHost("/lesson/l4");
+    const { flow } = await bootHost("/learn/lesson/l4");
     flow.boot();
     flow.open(acts[2]);
     flow.afterSong();

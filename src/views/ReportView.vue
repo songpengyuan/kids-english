@@ -138,7 +138,7 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
 
 <template>
   <div class="report view">
-    <HeaderBar show-back back-label="返回首页" @back="router.push('/')">
+    <HeaderBar show-back back-label="返回" @back="router.push('/learn')">
       <template #title><PathIcon name="chart" class="title-ico" /> 家长报告</template>
       <template #right><span class="hint">{{ todayStr() }}</span></template>
     </HeaderBar>

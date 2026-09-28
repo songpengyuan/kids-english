@@ -99,7 +99,7 @@ async function introduce(formId: string) {
   if (rewards.isOwned(formId)) {
     const h = formById(formId)?.heroId;
     if (h) {
-      router.push(`/treasure/hero/${h}?form=${formId}`);
+      router.push(`/me/treasure/hero/${h}?form=${formId}`);
       return;
     }
   }
@@ -122,7 +122,7 @@ function buy(formId: string) {
 
 <template>
   <div class="treasure view">
-    <HeaderBar show-back back-label="返回首页" @back="router.push('/')">
+    <HeaderBar show-back back-label="返回" @back="router.push('/me')">
       <template #title><PathIcon name="gift" class="title-ico" /> 宝藏罐</template>
       <template #right>
         <div class="star-badge"><Star class="k-ico star-fill" />{{ rewards.totalStars }}</div>

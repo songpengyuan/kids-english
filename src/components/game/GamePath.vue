@@ -274,7 +274,7 @@ function enterLevel(lv: PathLevel) {
     chestOpen.value = true;
     return;
   }
-  router.push(`/quest/${lv.lessonId}?step=${lv.actKey}`);
+  router.push(`/game/quest/${lv.lessonId}?step=${lv.actKey}`);
 }
 
 /** 宝箱关卡打开状态（地图上直接弹开宝箱奖励层） */

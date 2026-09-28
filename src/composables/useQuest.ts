@@ -1,7 +1,7 @@
 /**
  * 闯关（Quest）状态（阶段 2-3：从 LessonView 抽取）。
  *
- * 游戏模式的"一课一关"玩法：独立路由 #/quest/:id?step=<玩法>，
+ * 游戏模式的"一课一关"玩法：独立路由 #/game/quest/:id?step=<玩法>，
  * 玩完直接进关卡完成画面，再走「下一关 / 返回地图」。
  *
  * 与 useLessonFlow 的关系：本 composable 只负责"闯关身份"（模式/序列/当前关/
@@ -49,7 +49,7 @@ export function useQuest(options: UseQuestOptions): UseQuest {
   const { lesson, activities, route } = options;
 
   /** 闯关身份：独立路由 #/quest/...（不再 ?mode=quest 参数） */
-  const questMode = computed(() => route.path.startsWith("/quest"));
+  const questMode = computed(() => route.path.includes("/quest"));
   const questSeq = computed(() => activities.value);
   const questIdx = ref(0);
   const questDone = ref(false);

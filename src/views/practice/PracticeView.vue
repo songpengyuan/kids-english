@@ -30,7 +30,7 @@ const cardsStyle = computed(() => ({
 function enter(l: Lesson) {
   // 点击卡片文字（课程英文标题）→ 朗读标题；进课程后由 LearnView 逐词发音
   speak(l.title, { ttsOnly: true });
-  router.push(`/lesson/${l.id}`);
+  router.push(`/learn/lesson/${l.id}`);
 }
 
 /* ---------- 快捷引导 ---------- */
@@ -47,7 +47,7 @@ const lastLessonObj = computed(() => {
 <template>
   <div class="practice">
     <div v-if="weakCount > 0 || lastLessonObj" class="quick-links anim-fade-up">
-      <button v-if="weakCount > 0" class="q-link review" @click="router.push('/review')">
+      <button v-if="weakCount > 0" class="q-link review" @click="router.push('/learn/review')">
         <BookOpenText class="k-ico" />今天该复习 {{ weakCount }} 个词
       </button>
       <button v-if="lastLessonObj" class="q-link" @click="enter(lastLessonObj)">

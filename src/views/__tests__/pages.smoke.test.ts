@@ -71,14 +71,37 @@ class RO {
 (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = RO;
 
 const routes = [
-  { path: "/learn", name: "learn", component: LearnView },
-  { path: "/me", name: "me", component: MyView },
-  { path: "/streak", name: "streak", component: StreakView },
-  { path: "/report", name: "report", component: ReportView },
-  { path: "/treasure", name: "treasure", component: TreasureView },
-  { path: "/review", name: "review", component: ReviewView },
-  { path: "/lesson/:id/:stage?", name: "lesson", component: LessonView },
-  { path: "/treasure/hero/:id", name: "hero-detail", component: HeroDetailView },
+  {
+    path: "/learn",
+    name: "learn",
+    component: LearnView,
+    children: [
+      { path: "lesson/:id/:stage?", name: "lesson", component: LessonView },
+      { path: "review", name: "review", component: ReviewView },
+    ],
+  },
+  {
+    path: "/game",
+    name: "game",
+    component: GameView,
+    children: [{ path: "quest/:id/:stage?", name: "quest", component: LessonView }],
+  },
+  {
+    path: "/me",
+    name: "me",
+    component: MyView,
+    children: [
+      { path: "streak", name: "streak", component: StreakView },
+      {
+        path: "treasure",
+        children: [
+          { path: "", name: "treasure", component: TreasureView },
+          { path: "hero/:id", name: "hero-detail", component: HeroDetailView },
+        ],
+      },
+      { path: "report", name: "report", component: ReportView },
+    ],
+  },
 ];
 
 async function mountPage(component: unknown, path: string, query: Record<string, string> = {}) {
@@ -123,7 +146,7 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   });
 
   it("连击日历（火焰详情页）", async () => {
-    const w = await mountPage(StreakView, "/streak");
+    const w = await mountPage(StreakView, "/me/streak");
     expect(w.text()).toContain("连击日历");
     expect(w.text()).toContain("天连击");
     expect(w.text()).toContain("本月已打卡");
@@ -131,39 +154,39 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   });
 
   it("家长报告", async () => {
-    const w = await mountPage(ReportView, "/report");
+    const w = await mountPage(ReportView, "/me/report");
     expect(w.text()).toContain("掌握度趋势");
     expect(w.text()).toContain("英雄图鉴");
     expect(errors).toEqual([]);
   });
 
   it("宝藏罐（英雄图鉴）", async () => {
-    const w = await mountPage(TreasureView, "/treasure");
+    const w = await mountPage(TreasureView, "/me/treasure");
     expect(w.text()).toContain("英雄图鉴");
     expect(w.text()).toContain("迪迦");
     expect(errors).toEqual([]);
   });
 
   it("到期复习", async () => {
-    const w = await mountPage(ReviewView, "/review");
+    const w = await mountPage(ReviewView, "/learn/review");
     expect(w.text()).toContain("到期复习");
     expect(errors).toEqual([]);
   });
 
   it("课程页（菜单）", async () => {
-    const w = await mountPage(LessonView, "/lesson/l4");
+    const w = await mountPage(LessonView, "/learn/lesson/l4");
     expect(w.find(".lesson").exists()).toBe(true);
   });
 
-  it("玩法直达子路径 /lesson/:id/:stage 能渲染（#/lesson/l4/learn）", async () => {
-    const w = await mountPage(LessonView, "/lesson/l4/learn");
+  it("玩法直达子路径 /learn/lesson/:id/:stage 能渲染（#/learn/lesson/l4/learn）", async () => {
+    const w = await mountPage(LessonView, "/learn/lesson/l4/learn");
     // 子路径直达应直接进入看图学词（而不是菜单）
     expect(w.text()).toContain("点图片听发音");
     expect(errors).toEqual([]);
   });
 
   it("角色详情页（宝藏库奥特曼）", async () => {
-    const w = await mountPage(HeroDetailView, "/treasure/hero/tiga");
+    const w = await mountPage(HeroDetailView, "/me/treasure/hero/tiga");
     expect(w.text()).toContain("迪迦");
     expect(w.text()).toContain("介绍");
     expect(w.text()).toContain("招牌技能");

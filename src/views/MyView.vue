@@ -157,19 +157,19 @@ function sayEntry(name: string, path: string) {
 
       <!-- 功能入口 -->
       <section class="entries anim-fade-up">
-        <button class="entry" @click="sayEntry('宝藏罐', '/treasure')">
+        <button class="entry" @click="sayEntry('宝藏罐', '/me/treasure')">
           <span class="en-ico"><PathIcon name="gift" /></span>
           <span class="en-cap">宝藏罐</span>
           <span class="en-desc">🐚 {{ rewards.shells }} · 图鉴 {{ heroDone }}</span>
           <ChevronRight class="k-ico en-arrow" />
         </button>
-        <button class="entry" @click="sayEntry('家长报告', '/report')">
+        <button class="entry" @click="sayEntry('家长报告', '/me/report')">
           <span class="en-ico"><PathIcon name="chart" /></span>
           <span class="en-cap">家长报告</span>
           <span class="en-desc">掌握度趋势 · 待巩固词</span>
           <ChevronRight class="k-ico en-arrow" />
         </button>
-        <button class="entry" @click="sayEntry('到期复习', '/review')">
+        <button class="entry" @click="sayEntry('到期复习', '/learn/review')">
           <span class="en-ico"><PathIcon name="review" /></span>
           <span class="en-cap">到期复习</span>
           <span class="en-desc" v-if="weakCount">今天有 {{ weakCount }} 个词到期</span>

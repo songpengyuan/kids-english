@@ -111,7 +111,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     stage.value = key;
     const lid = lesson.value?.id;
     if (!lid) return;
-    router.replace(quest.questMode.value ? `/quest/${lid}?step=${a.key}` : `/lesson/${lid}/${key}`);
+    router.replace(quest.questMode.value ? `/game/quest/${lid}?step=${a.key}` : `/learn/lesson/${lid}/${key}`);
   }
 
   /** 菜单卡片右上角的星星徽章：该玩法已获得的星数 */
@@ -190,7 +190,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
       // 玩法中：回本课菜单，URL 同步去掉题型段（/lesson/l4）
       stage.value = "menu";
       const lid = lesson.value?.id;
-      if (lid) router.replace(`/lesson/${lid}`);
+      if (lid) router.replace(`/learn/lesson/${lid}`);
       return;
     }
     router.push(quest.questMode.value ? "/game" : "/learn");
@@ -200,7 +200,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     stage.value = "menu";
     // 结算页"再选玩法"：URL 同步回菜单（/lesson/l4）
     const lid = lesson.value?.id;
-    if (lid && !quest.questMode.value) router.replace(`/lesson/${lid}`);
+    if (lid && !quest.questMode.value) router.replace(`/learn/lesson/${lid}`);
   }
 
   /** 下一课（当前课是最后一课则为 null，结算页隐藏该按钮） */
