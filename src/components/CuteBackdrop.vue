@@ -134,8 +134,7 @@ const grainStyle = { "--grain": GRAIN };
 
 /* ---------- 天空草地版（游戏闯关地图 #/game 路由） ---------- */
 .backdrop.sky {
-  background-image:
-    linear-gradient(180deg, #8ec8f5 0%, #cde9ff 42%, #eef7e0 78%, #d4e6b8 100%);
+  background: var(--bg);
 }
 .backdrop.sky::after {
   opacity: 0.03; /* 天空颗粒更轻，保持通透 */
@@ -247,10 +246,7 @@ const grainStyle = { "--grain": GRAIN };
 }
 /* 天空版：夜空渐变 + 月亮 + 暗丘 + 夜云 */
 :root[data-theme="dark"] .backdrop.sky {
-  background-image:
-    radial-gradient(70% 40% at 78% -6%, rgba(120, 100, 220, 0.24), transparent 70%),
-    radial-gradient(60% 36% at 8% 30%, rgba(60, 130, 210, 0.18), transparent 72%),
-    linear-gradient(180deg, #0d1325 0%, #1b2340 46%, #26304f 76%, #1a2b22 100%);
+  background: var(--bg);
 }
 :root[data-theme="dark"] .backdrop.sky::after {
   opacity: 0.06;
