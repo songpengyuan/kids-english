@@ -117,16 +117,8 @@ const grainStyle = { "--grain": GRAIN };
    * 色斑位置错落、半径不均，像水彩在纸上晕开。顺序：先写的在上层。
    * ⚠️ 全部用固定 rgba（不用 color-mix(var(--token))：scoped 样式下会被浏览器解析丢弃，
    *    导致整条 background-image 变 none —— 背景就只剩纯色）。 */
-  /* 极光动态渐变：4 团大色块缓慢漂移，20s 循环，GPU 合成不耗电 */
-  background: linear-gradient(135deg, #a8d8ff 0%, #ffc4e0 30%, #d4b8ff 60%, #a8f0d4 100%);
-  background-size: 300% 300%;
-  animation: aurora-shift 22s ease-in-out infinite;
-}
-@keyframes aurora-shift {
-  0%, 100% { background-position: 0% 50%; }
-  25% { background-position: 50% 100%; }
-  50% { background-position: 100% 50%; }
-  75% { background-position: 50% 0%; }
+  /* 底色与 header 一致，靠装饰层（星星/圆点/云朵）做小动态点缀 */
+  background: var(--bg);
 }
 /* 细颗粒：在打底之上、云朵/星星之下（负 z-index 子层 = 父背景之上、其余内容之下） */
 .backdrop::after {
@@ -248,9 +240,7 @@ const grainStyle = { "--grain": GRAIN };
 /* ---------- 暗色模式 ---------- */
 /* 水彩版：底色更沉、色斑降饱和压深（深底上低不透明度看不见）、颗粒略强（深色更容易显脏） */
 :root[data-theme="dark"] .backdrop {
-  background: linear-gradient(135deg, #1a1a3e 0%, #3d2b6e 30%, #6b3fa0 60%, #1a3a4e 100%);
-  background-size: 300% 300%;
-  animation: aurora-shift 28s ease-in-out infinite;
+  background: var(--bg);
 }
 :root[data-theme="dark"] .backdrop::after {
   opacity: 0.07;
