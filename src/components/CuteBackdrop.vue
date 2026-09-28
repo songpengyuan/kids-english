@@ -142,7 +142,7 @@ const grainStyle = { "--grain": GRAIN };
 /* 太阳：左上暖光 */
 .sky-sun {
   position: absolute;
-  top: 5%;
+  top: 14%;
   left: 8%;
   width: clamp(48px, 9vw, 80px);
   height: clamp(48px, 9vw, 80px);
