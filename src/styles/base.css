@@ -158,27 +158,20 @@ img {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding:
-    calc(var(--pad-y) + env(safe-area-inset-top))
-    calc(var(--pad-x) + env(safe-area-inset-right))
-    calc(var(--nav-h) + env(safe-area-inset-bottom))
-    calc(var(--pad-x) + env(safe-area-inset-left));
+  /* padding 只留底部导航高度，上下左右由各组件自己处理（header 全屏铺背景） */
+  padding: 0 0 calc(var(--nav-h) + env(safe-area-inset-bottom)) 0;
 }
 
-/* 手机横屏：高度极紧张，压缩外壳内边距但保留左右安全区（刘海在横屏时在左右） */
+/* 手机横屏：无底部导航，上下左右都不留 padding */
 @media (max-height: 480px) {
   #app {
-    padding:
-      calc(4px + env(safe-area-inset-top))
-      calc(var(--pad-x) + env(safe-area-inset-right))
-      calc(4px + env(safe-area-inset-bottom))
-      calc(var(--pad-x) + env(safe-area-inset-left));
+    padding: 0;
   }
 }
 
 /* 答题页（无底部导航）：取消 nav-h 预留的底部 padding，让玩法 footer 真正贴底 */
 html.no-bottom-nav #app {
-  padding-bottom: max(var(--pad-y), env(safe-area-inset-bottom));
+  padding-bottom: 0;
 }
 
 /* 平板竖屏：空间充裕，稍微放宽左右留白 */
@@ -199,6 +192,8 @@ html.no-bottom-nav #app {
   flex: 1;
   min-height: 0;
   gap: var(--gap-s);
+  /* 水平 padding：header 自己有，内容区自己带 */
+  padding: 0 calc(var(--pad-x) + env(safe-area-inset-right)) 0 calc(var(--pad-x) + env(safe-area-inset-left));
 }
 
 /* 居中排布的页面（结算、空状态等） */

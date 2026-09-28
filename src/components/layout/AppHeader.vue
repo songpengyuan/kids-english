@@ -73,8 +73,12 @@ const streak = useStreakStore();
   z-index: 30;
   flex: none;
   width: 100%;
-  padding: var(--gap-s) 0 var(--gap-xs);
-  background: var(--bar-bg, var(--bg));
+  padding:
+    calc(var(--gap-s) + env(safe-area-inset-top))
+    calc(var(--pad-x) + env(safe-area-inset-right))
+    var(--gap-xs)
+    calc(var(--pad-x) + env(safe-area-inset-left));
+  background: var(--bar-bg, transparent);
   -webkit-backdrop-filter: blur(var(--bar-blur, 14px));
   backdrop-filter: blur(var(--bar-blur, 14px));
   border-bottom: 1px solid var(--line, rgba(128, 128, 128, 0.16));

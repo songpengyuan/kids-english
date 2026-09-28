@@ -39,7 +39,11 @@ const emit = defineEmits<{ back: [] }>();
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding:
+    calc(10px + env(safe-area-inset-top))
+    calc(var(--pad-x) + env(safe-area-inset-right))
+    10px
+    calc(var(--pad-x) + env(safe-area-inset-left));
   min-height: 56px;
   box-sizing: border-box;
   /* 毛玻璃：半透明 + 模糊，让全站背景质感透上来，仍能遮住滚到下面的内容 */
