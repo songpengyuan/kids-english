@@ -342,7 +342,7 @@ function unitLesson(id: string) {
         <div
           v-if="it.type === 'unit'"
           class="gp-unit"
-          :class="{ 'is-stuck': stuckId === (it as GeoItem).lessonId }"
+          :class="['tone-' + (unitLesson((it as GeoItem).lessonId)?.tone || 'blue'), { 'is-stuck': stuckId === (it as GeoItem).lessonId }]"
           role="button"
           tabindex="0"
           :data-lesson-id="(it as GeoItem).lessonId"
@@ -449,15 +449,25 @@ function unitLesson(id: string) {
   background: transparent;
   transition: background var(--dur-base), box-shadow var(--dur-base), transform var(--dur-fast) var(--ease-out);
 }
+/* 课程横幅 tone：--tone 与关卡节点同源（主色 + 投影色） */
+.gp-unit.tone-blue { --tone: var(--c-blue); --tone-deep: var(--c-blue-deep); }
+.gp-unit.tone-orange { --tone: var(--c-orange); --tone-deep: var(--c-orange-deep); }
+.gp-unit.tone-purple { --tone: var(--c-purple); --tone-deep: var(--c-purple-deep); }
+.gp-unit.tone-pink { --tone: var(--c-pink); --tone-deep: var(--c-pink-deep); }
+.gp-unit.tone-green { --tone: var(--c-green); --tone-deep: var(--c-green-deep); }
+.gp-unit.tone-teal { --tone: var(--c-teal); --tone-deep: var(--c-teal-deep); }
+/* 吸顶：不用毛玻璃，改课程主题色淡底（滚过的关卡不透出），标题字 = 主题色 */
 .gp-unit.is-stuck {
-  background: rgba(255, 255, 255, 0.55);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  backdrop-filter: blur(14px) saturate(1.4);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
+  background: color-mix(in srgb, var(--tone) 16%, rgba(255, 255, 255, 0.92));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--tone) 30%, transparent),
+    0 8px 24px color-mix(in srgb, var(--tone) 14%, rgba(0, 0, 0, 0.1));
 }
 :root[data-theme="dark"] .gp-unit.is-stuck {
-  background: rgba(22, 24, 28, 0.55);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 24px rgba(0, 0, 0, 0.3);
+  background: color-mix(in srgb, var(--tone) 24%, rgba(22, 24, 28, 0.88));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--tone) 35%, transparent),
+    0 8px 24px rgba(0, 0, 0, 0.3);
 }
 .gp-unit:active {
   transform: scale(0.985);
@@ -466,21 +476,46 @@ function unitLesson(id: string) {
 .gp-canvas > .gp-unit:first-child {
   margin-top: 0;
 }
+/* 课程名：主题色；横幅内绝对居中（文案长时省略），进度计数靠右 */
 .u-name {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 72%;
+  color: var(--tone, var(--ink-1));
   font-weight: 800;
   font-size: 17px;
   line-height: 1;
-  flex: 1;
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+:root[data-theme="dark"] .u-name {
+  color: color-mix(in srgb, var(--tone) 78%, #fff);
+}
 .u-count {
+  margin-left: auto;
   font-weight: 800;
   font-size: 13px;
   opacity: 0.75;
   flex: none;
+}
+/* 常态（未吸顶）：横幅底部一条主题色分割线，把课程名与下方关卡分开；
+   吸顶成通栏色块后隐藏分割线 */
+.gp-unit::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--tone, var(--c-blue)) 38%, transparent);
+  opacity: 1;
+  transition: opacity var(--dur-base);
+}
+.gp-unit.is-stuck::after {
+  opacity: 0;
 }
 
 /* ---------- 已通关关卡：主色调跟随所属课程横幅（孩子一眼看出这组关卡属于哪门课） ---------- */
