@@ -72,14 +72,20 @@ function openChest() {
   reward.value = r;
   sfxCoin();
   if (r.formId) sfxSticker();
+  // 650ms：金光/光柱足够看完，又不让性急的孩子干等（原 1s 偏拖）
   later(() => {
     phase.value = "reward";
-  }, 1000);
+  }, 650);
 }
 
 function tapChest() {
   if (phase.value === "flying" || phase.value === "collected") return;
-  if (taps.value >= 3) return; // 已开箱，点宝箱不再响应
+  // 奖励展示阶段点宝箱 = 收取（孩子开箱后会继续戳宝箱，别给"没反应"的死区）
+  if (phase.value === "reward") {
+    collect();
+    return;
+  }
+  if (taps.value >= 3) return; // 开箱瞬间（open 阶段）不再响应
   taps.value++;
   sfxTap(); // 每次敲击：轻点音 + 触感
   shakeTick.value++; // 重触发晃动动画
@@ -142,7 +148,7 @@ async function collect() {
   const step = Math.ceil(reward.value.shells / n); // 每次递增步长，最后一次对齐余额
   await nextTick();
   for (let i = 0; i < n; i++) {
-    if (i > 0) await sleep(240); // 逐个小间隔
+    if (i > 0) await sleep(160); // 逐个小间隔（收紧节奏，重复开箱不拖）
     await flyOne(from, to, apex);
     shown.value = Math.min(shown.value + step, rewards.shells); // 数量随之增加
     sfxCoin(); // 落地：硬币"叮"
@@ -156,7 +162,7 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/** 单个宝石/贝壳沿抛物线飞行（rAF，丝滑 680ms） */
+/** 单个宝石/贝壳沿抛物线飞行（rAF，丝滑 560ms） */
 function flyOne(from, to, apex) {
   return new Promise((resolve) => {
     const el = flyEl.value;
@@ -165,7 +171,7 @@ function flyOne(from, to, apex) {
     el.style.left = from.x + "px";
     el.style.top = from.y + "px";
     const t0 = performance.now();
-    const dur = 680;
+    const dur = 560;
     function step(now) {
       const t = Math.min((now - t0) / dur, 1);
       const p = parabola(from, to, apex, t);
@@ -204,8 +210,8 @@ const cap = computed(() => {
       <span class="b-num">{{ shown }}</span>
     </div>
 
-    <!-- 跳过动画（三连击前）：奖励照常入账 -->
-    <button v-if="phase === 'closed' && taps === 0" class="skip-btn" @click="skip">
+    <!-- 跳过动画（整个敲击阶段都可见，敲到一半也能跳）：奖励照常入账 -->
+    <button v-if="phase === 'closed'" class="skip-btn" @click="skip">
       跳过
     </button>
 
@@ -403,7 +409,9 @@ const cap = computed(() => {
   cursor: pointer;
   touch-action: manipulation;
   z-index: 3;
-  animation: chest-bump 0.42s cubic-bezier(0.34, 1.4, 0.64, 1);
+  /* 入场弹一下 + 未开箱时循环轻微摇摆（"我还能点"的活性提示，防止静止死区） */
+  animation: chest-bump 0.42s cubic-bezier(0.34, 1.4, 0.64, 1),
+    chest-idle 2.4s ease-in-out 1s infinite;
 }
 /* 未开箱：每次敲击晃动 */
 @keyframes chest-bump {
@@ -411,6 +419,27 @@ const cap = computed(() => {
   25% { transform: rotate(-7deg) translateY(-4px); }
   55% { transform: rotate(6deg) translateY(-6px); }
   80% { transform: rotate(-3deg) translateY(-2px); }
+}
+/* 待机摇摆：幅度刻意小，是"呼吸感"不是"求关注" */
+@keyframes chest-idle {
+  0%, 100% { transform: rotate(0) scale(1); }
+  30% { transform: rotate(-2.4deg) scale(1.015); }
+  65% { transform: rotate(2.4deg) scale(1.02); }
+}
+/* 点我涟漪：未开箱时绕宝箱一圈圈扩散，第一次敲击前最强引导 */
+.chest:not(.opened)::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: 28px;
+  border: 3px solid rgba(255, 200, 90, 0.8);
+  opacity: 0;
+  pointer-events: none;
+  animation: tap-ring 1.8s ease-out 1.4s infinite;
+}
+@keyframes tap-ring {
+  0% { opacity: 0.85; transform: scale(0.94); }
+  70%, 100% { opacity: 0; transform: scale(1.14); }
 }
 /* 开箱后：宝箱弹跳一次 */
 .chest.opened {
@@ -701,4 +730,11 @@ const cap = computed(() => {
 .shells .r-ico { color: var(--on-tone); }
 .take .r-ico { color: var(--on-tone); }
 .collected .gift-ico { color: var(--green-dark); }
+
+/* 减少动态偏好：关掉装饰性大动画，保留开盖过渡与信息本身 */
+@media (prefers-reduced-motion: reduce) {
+  .chest, .chest::after, .flash, .glow, .beam, .spark, .reward, .hint {
+    animation: none !important;
+  }
+}
 </style>

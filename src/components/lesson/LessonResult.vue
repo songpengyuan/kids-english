@@ -5,7 +5,7 @@
  * - 星星展示（1~3 星渐次弹出）；
  * - 闯关模式：第 N 关完成大徽章 + 玩法名 + 重玩提示；
  * - 今日目标首次达成：连击火焰横幅；
- * - 开宝箱（ChestReward）统一挂载；
+ * - 开宝箱（ChestReward）统一挂载，25% 随机掉英雄卡片；
  * - 底部动作：返回地图/下一关（quest）、再选玩法/下一课（free），由父组件处理。
  */
 import { Star } from "@lucide/vue";
@@ -67,7 +67,8 @@ function nav(fn: () => void) {
       <div v-if="streakJustHit" class="streak-banner anim-pop">
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
-      <!-- 开宝箱已移到闯关地图（独立宝箱关卡）；闯关完成不再自动弹宝箱 -->
+      <!-- 普通关卡完成也开宝箱：与所有宝箱统一规则，25% 随机掉英雄卡片 -->
+      <ChestReward v-if="!chestDone" @done="chestDone = true" />
       <div class="btn-row">
         <button class="k-btn gray" @click="emit('backToMap')">返回闯关地图</button>
         <button v-if="nextLevel" class="k-btn" :disabled="navClicked" @click="nav(() => emit('goNextLevel'))">
