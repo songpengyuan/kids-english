@@ -73,7 +73,7 @@ function next() {
     <div class="speak-head">
       <span class="prog">{{ progressText }}</span>
       <span class="mode-tag">
-        <Mic class="k-ico" />{{ mode === "asr" ? "自动打分" : "录音回放" }}
+        <Mic class="k-ico" />{{ mode === "asr" ? "小耳朵打分" : "亲子跟读" }}
       </span>
     </div>
 

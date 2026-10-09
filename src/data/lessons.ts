@@ -447,17 +447,41 @@ const rawLessons: RawLesson[] = [
         "One little finger, one little finger, one little finger",
         "Tap tap tap!",
         "Point your finger up, point your finger down",
-        "Put it on your nose, nose!",
-        "",
-        "One little finger, one little finger, one little finger",
-        "Tap tap tap!",
-        "Point your finger up, point your finger down",
         "Put it on your head, head!",
         "",
         "One little finger, one little finger, one little finger",
         "Tap tap tap!",
         "Point your finger up, point your finger down",
-        "Put it on your chin, chin!"
+        "Put it on your nose, nose!",
+        "",
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your chin, chin!",
+        "",
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your arm, arm!",
+        "",
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your leg, leg!",
+        "",
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your foot, foot!",
+        "",
+        "Put it on your leg, leg!",
+        "Put it on your arm, arm!",
+        "Put it on your chin, chin!",
+        "Put it on your nose, nose!",
+        "Put it on your head, head!",
+        "",
+        "Now let's wave goodbye!",
+        "Goodbye!"
       ]
     },
     words: [
@@ -471,9 +495,10 @@ const rawLessons: RawLesson[] = [
     ],
     phrases: [
       { en: "Where is your finger?", zh: "你的手指在哪里？" },
-      { en: "Put it on your head!", zh: "放在你的头上！" },
-      { en: "Touch your nose.", zh: "摸摸你的鼻子。" },
-      { en: "This is my arm.", zh: "这是我的手臂。" }
+      { en: "This is my head.", zh: "这是我的头。" },
+      { en: "Put it on your nose.", zh: "把它放在鼻子上。" },
+      { en: "Point your finger up.", zh: "手指向上指。" },
+      { en: "Wave goodbye!", zh: "挥挥手说再见！" }
     ]
   }
 ];
