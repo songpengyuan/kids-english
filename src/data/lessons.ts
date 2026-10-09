@@ -440,7 +440,7 @@ const rawLessons: RawLesson[] = [
     tone: "teal",
     date: "2026-10-10",
     song: {
-      audio: null,
+      audio: "/lessons/l9/song.mp3",
       video: null,
       scene: "stage",
       lyrics: [
