@@ -454,9 +454,10 @@ onBeforeUnmount(() => {
           @pointerdown="onCardDown(w, 'word', $event)"
         >
           <template v-if="mode === 'word'">{{ w.en }}</template>
-          <!-- 听音模式：只显示喇叭，不显示单词（点一下先听发音） -->
+          <!-- 听音模式：喇叭 + 单词并排，点喇叭听发音的同时看到词形（音-形对应） -->
           <span v-else class="sound-wrap" :class="{ playing: playingId === w.id }">
             <Volume2 class="sound-ico" :aria-label="w.en" />
+            <span class="sound-word">{{ w.en }}</span>
             <span v-if="playingId === w.id" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
           </span>
         </div>
@@ -634,23 +635,32 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: clamp(4px, 1vw, 8px);
+  padding: 0 4px;
+  min-width: 0;
 }
 .sound-ico {
-  width: clamp(28px, 6vh, 46px);
-  height: clamp(28px, 6vh, 46px);
+  width: clamp(24px, 5vh, 40px);
+  height: clamp(24px, 5vh, 40px);
   color: var(--blue-dark);
+  flex: none;
 }
-/* 波纹跳动（与英雄详情/听音选词一致）：播放时喇叭右侧三根波纹交替起伏 */
+.sound-word {
+  font-size: clamp(12px, min(2.4vh, 2vw), 19px);
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+/* 波纹跳动（与英雄详情/听音选词一致）：播放时单词右侧三根波纹交替起伏 */
 .wave {
-  position: absolute;
-  right: -12px;
-  top: 50%;
-  transform: translateY(-50%);
   display: inline-flex;
   align-items: flex-end;
   gap: 2px;
   height: 12px;
   pointer-events: none;
+  flex: none;
 }
 .wave i {
   width: 3px;

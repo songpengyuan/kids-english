@@ -441,7 +441,7 @@ const rawLessons: RawLesson[] = [
     date: "2026-10-10",
     song: {
       audio: "/lessons/l9/song.mp3",
-      video: null,
+      video: "/lessons/l9/song.mp4",
       scene: "stage",
       lyrics: [
         "One little finger, one little finger, one little finger",
