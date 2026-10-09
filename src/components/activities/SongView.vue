@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, nextTick, onBeforeUnmount } from "vue";
+import { ref, computed, onBeforeUnmount } from "vue";
 import { bigCelebrate } from "../../services/effects";
 import { hapticTap } from "../../services/haptics";
 import { useProgressStore } from "../../stores/progress";
@@ -45,7 +45,6 @@ function setMode(m) {
 
 function play() {
   if (audioMissing.value) return;
-  userScrollAt = 0; // 重新播放时恢复自动跟随
   audioEl.value
     .play()
     .then(() => {
@@ -70,8 +69,6 @@ function onEnded() {
   watched.value = true;
   // 循环模式：回到开头继续唱，不结算、不离开本页
   if (loop.value) {
-    activeLine.value = -1;
-    userScrollAt = 0;
     if (lyricsEl.value) lyricsEl.value.scrollTo({ top: 0 });
     const a = audioEl.value;
     if (a) {
@@ -92,7 +89,6 @@ function onVideoEnded() {
 /** 收尾：停播、撒花、记进度、离开本页。循环模式下这是本页唯一的出口 */
 function finishSong() {
   pause();
-  activeLine.value = -1;
   bigCelebrate();
   progress.markSong(props.lesson.id);
   emit("song-done");
@@ -188,18 +184,10 @@ function applySeek(e) {
   const t = ratio * duration.value;
   a.currentTime = t;
   currentTime.value = t;
-  syncActiveLine(t, duration.value); // 拖动时高亮立刻跟上，不等 timeupdate
 }
 
-/* ---------- 歌词跟随播放滚动 ----------
- * 没有 LRC 时间戳，按音频进度把歌词行均匀映射：
- * progress = currentTime / duration → activeLine = floor(progress * 行数)。
- * 对儿歌这种节奏均匀的歌词，效果足够好。
- */
-const activeLine = ref(-1);
+/* ---------- 歌词：纯展示，手动滚动，不自动跟随播放 ---------- */
 const lyricsEl = ref(null);
-let autoScrollAt = 0; // 刚自动滚动的时刻，短暂忽略用户 scroll 事件，避免互相打架
-let userScrollAt = 0; // 用户最后一次手动滚动的时刻
 
 function onTimeUpdate() {
   const a = audioEl.value;
@@ -208,53 +196,6 @@ function onTimeUpdate() {
   if (a.buffered.length) buffered.value = a.buffered.end(a.buffered.length - 1);
   if (seeking.value) return; // 拖动中由 applySeek 负责同步，避免被回放进度打断
   currentTime.value = a.currentTime || 0;
-  syncActiveLine(a.currentTime, a.duration);
-}
-
-/**
- * 把播放进度映射到当前歌词行。
- * 有 gen-songs.py 生成的逐行时间轴时精确到行；没有（手工换过 mp3）就按比例映射。
- */
-function syncActiveLine(t, d) {
-  const lines = props.lesson.song.lyrics;
-  if (!lines.length) return;
-  const tl = props.lesson.song.timings?.timeline;
-  if (tl && tl.length === lines.length) {
-    let i = 0;
-    while (i < tl.length && tl[i] <= t) i++;
-    i--;
-    // 空行 = 段间，不点亮（孩子喘口气）
-    activeLine.value = i >= 0 && lines[i] ? i : -1;
-    return;
-  }
-  if (!d || !isFinite(d)) return;
-  const p = Math.min(0.98, Math.max(0, t / d - 0.02)) / 0.96;
-  let idx = Math.min(lines.length - 1, Math.floor(p * lines.length));
-  // 落在段落分隔空行上时，高亮移到接下来的第一句
-  while (idx < lines.length - 1 && !lines[idx]) idx++;
-  activeLine.value = lines[idx] ? idx : -1;
-}
-
-/** 高亮行变化 → 滚动到歌词面板中间；用户手动滚动后 4 秒内不打扰 */
-watch(activeLine, async (i) => {
-  if (i < 0 || mode.value !== "audio") return;
-  if (Date.now() - userScrollAt < 4000) return;
-  await nextTick();
-  const box = lyricsEl.value;
-  const el = box?.querySelector(".line.on");
-  if (!box || !el) return;
-  autoScrollAt = Date.now();
-  // scrollIntoView 在部分环境不滚动内部容器，手动算目标位置最稳
-  box.scrollTo({
-    top: el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2,
-    behavior: "smooth"
-  });
-});
-
-/** 用户手动滚动歌词 → 暂停自动跟随一小会儿 */
-function onLyricsScroll() {
-  if (Date.now() - autoScrollAt < 300) return; // 忽略自动滚动自己触发的事件
-  userScrollAt = Date.now();
 }
 
 </script>
@@ -314,7 +255,7 @@ function onLyricsScroll() {
         :lesson="lesson"
         :audio="audioEl"
         :playing="playing"
-        :line="activeLine"
+        :line="-1"
         :idle="audioMissing ? '童谣音频还没上传哦' : '点我开始唱吧'"
         @tap="playing ? pause() : play()"
       />
@@ -375,14 +316,13 @@ function onLyricsScroll() {
         class="lyrics view-body"
         :class="{ empty: !lesson.song.lyrics.length }"
         ref="lyricsEl"
-        @scroll="onLyricsScroll"
       >
         <template v-if="lesson.song.lyrics.length">
           <p
             v-for="(line, i) in lesson.song.lyrics"
             :key="i"
             class="line"
-            :class="{ blank: !line, on: i === activeLine }"
+            :class="{ blank: !line }"
           >
             {{ line }}
           </p>

@@ -61,7 +61,7 @@ function nav(fn: () => void) {
           <Star class="k-ico star-fill" />
         </span>
       </div>
-      <h2>{{ actName }} · 获得 {{ stars }} 颗星</h2>
+      <h2>{{ actName }} · 获得 <span class="star-num">{{ stars }}</span> 颗星</h2>
       <p v-if="stars < 3" class="quest-total-stars">重玩可拿满 3 星</p>
       <!-- 今日目标首次达成：连击火焰横幅 -->
       <div v-if="streakJustHit" class="streak-banner anim-pop">
@@ -90,7 +90,7 @@ function nav(fn: () => void) {
           <Star class="k-ico star-fill" />
         </span>
       </div>
-      <h2>真棒！获得 {{ stars }} 颗星</h2>
+      <h2>真棒！获得 <span class="star-num">{{ stars }}</span> 颗星</h2>
       <div v-if="streakJustHit" class="streak-banner anim-pop">
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
@@ -121,6 +121,16 @@ function nav(fn: () => void) {
   justify-content: center;
   color: var(--star-gold);
 }
+/* 中间的星抬高一档（多邻国式三星构图），拿到星的内芯飘浮 + 金光 */
+.star:nth-child(2) {
+  margin-top: -14px;
+}
+.star:not(.dim) {
+  filter: drop-shadow(0 4px 12px rgba(255, 193, 7, 0.45));
+}
+.star:not(.dim) .k-ico {
+  animation: float-y 2.4s ease-in-out 0.9s infinite;
+}
 .star .k-ico {
   width: 100%;
   height: 100%;
@@ -128,22 +138,29 @@ function nav(fn: () => void) {
 .star.dim {
   color: var(--star-dim);
 }
+.star-num {
+  color: var(--star-gold);
+  font-size: 1.2em;
+}
 .btn-row {
   display: flex;
   gap: var(--gap-s);
   flex-wrap: wrap;
   justify-content: center;
 }
+/* 关卡完成大徽章：暖金渐变（token 混色，暗色主题自动跟随） */
 .quest-done-badge {
   font-weight: 800;
   font-size: var(--fs-big);
   color: var(--ink);
-  background: var(--card-bg);
+  background: linear-gradient(180deg, var(--card-bg), color-mix(in srgb, var(--yellow) 20%, var(--card-bg)));
+  border: 3px solid color-mix(in srgb, var(--yellow) 70%, transparent);
   padding: 10px 22px;
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow-hard);
 }
 .quest-total-stars {
+  margin: 0;
   font-weight: 700;
   font-size: var(--fs-small);
   color: var(--ink-faint);
@@ -160,5 +177,40 @@ function nav(fn: () => void) {
 }
 .flame-ico {
   color: #ea580c;
+}
+
+/* 手机横屏（项目约定断点）：纵向空间珍贵，星星/徽章/按钮全线收紧 */
+@media (max-height: 480px) {
+  .stars {
+    gap: var(--gap-s);
+  }
+  .star {
+    width: 44px;
+    height: 44px;
+  }
+  .star:nth-child(2) {
+    margin-top: -8px;
+  }
+  .star-num {
+    font-size: 1.1em;
+  }
+  h2 {
+    margin: 2px 0;
+    font-size: var(--fs-body);
+  }
+  .quest-done-badge {
+    font-size: var(--fs-title);
+    padding: 6px 16px;
+    border-width: 2px;
+  }
+  .streak-banner {
+    padding: 5px 12px;
+    font-size: var(--fs-small);
+  }
+  .btn-row .k-btn {
+    min-height: 44px;
+    padding: 8px 14px;
+    font-size: var(--fs-small);
+  }
 }
 </style>

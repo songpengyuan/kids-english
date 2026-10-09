@@ -8,7 +8,7 @@ import type { Word } from "../../data/lessons";
 import { ChevronRight, Mic, RotateCcw, Square, ThumbsUp, Volume2 } from "@lucide/vue";
 
 const props = defineProps<{ words: Word[] }>();
-const emit = defineEmits(["done", "progress"]);
+const emit = defineEmits(["done", "progress", "total"]);
 
 const progress = useProgressStore();
 
@@ -52,10 +52,13 @@ const {
   retry,
 } = session;
 
-/** 词进度 → 顶栏进度条（多邻国式：跟读逐词有进度） */
+/** 词进度 → 顶栏进度条（多邻国式：跟读逐词有进度）；词总数同步上报显示 x/y */
 watch(
-  () => idx.value,
-  () => emit("progress", Math.round(((idx.value + 1) / total.value) * 100)),
+  [idx, total],
+  () => {
+    emit("total", total.value);
+    emit("progress", Math.round(((idx.value + 1) / total.value) * 100));
+  },
   { immediate: true }
 );
 

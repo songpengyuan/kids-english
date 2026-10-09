@@ -9,7 +9,7 @@ import { Volume2 } from "@lucide/vue";
 import LessonFooter from "./LessonFooter.vue";
 
 const props = defineProps<{ words: Word[] }>();
-const emit = defineEmits(["done", "progress"]);
+const emit = defineEmits(["done", "progress", "total"]);
 
 const progress = useProgressStore();
 const imgFail = ref<Record<string, boolean>>({});
@@ -33,6 +33,9 @@ const session = useQuizSession<Word>(() => props.words, {
 });
 
 const { q, total, picked, wrongPicks, locked, stars, pick, next: gotoNext, cleanup } = session;
+
+/** 题目总数上报 → 顶栏显示"x/y"（孩子知道一共要做几题） */
+watch(total, () => emit("total", total.value), { immediate: true });
 
 const selectedKey = ref<string | null>(null);
 

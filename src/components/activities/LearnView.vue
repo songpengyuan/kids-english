@@ -14,7 +14,7 @@ import { Check, MousePointerClick } from "@lucide/vue";
  * 星级 = 点读覆盖率（都点过发音 = 3 星），见 utils/learnSession。
  */
 const props = defineProps<{ words: Word[] }>();
-const emit = defineEmits(["done", "progress"]);
+const emit = defineEmits(["done", "progress", "total"]);
 
 const {
   stageEl,
@@ -32,10 +32,13 @@ const {
   stars,
 } = useLearnSession(computed(() => props.words));
 
-/** 页进度 → 顶栏进度条（多邻国式：学单词逐页有进度） */
+/** 页进度 → 顶栏进度条（多邻国式：学单词逐页有进度）；页总数同步上报显示 x/y */
 watch(
-  () => page.value,
-  () => emit("progress", Math.round(((page.value + 1) / total.value) * 100)),
+  [page, total],
+  () => {
+    emit("total", total.value);
+    emit("progress", Math.round(((page.value + 1) / total.value) * 100));
+  },
   { immediate: true }
 );
 

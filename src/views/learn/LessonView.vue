@@ -127,6 +127,26 @@ const isPlay = computed(() =>
 );
 /** 玩法进度（0-100），由 Learn/Quiz/Match/Speak 上报到顶栏进度条（多邻国式） */
 const playPct = ref(0);
+/** 本局总量（题数/页数/对数/词数）与已完成量 → 顶栏显示 x/y，孩子知道一共要做多少 */
+const playTotal = ref(0);
+const playCount = computed(() =>
+  playTotal.value ? Math.round((playPct.value / 100) * playTotal.value) : 0
+);
+
+/** 玩法页顶栏的段落式关卡进度条（多邻国式）：每段 = 本课一个玩法关卡。
+ *  - done：已获星（showStars > 0，与菜单星星徽章同源）填绿；
+ *  - cur：正在玩的玩法橙色脉冲（stage 与玩法 key 同名，song/talk 也适用）；
+ *  - todo：空心待完成。 */
+const playDone = computed(() => activities.value.filter((a) => showStars(a.key) > 0).length);
+function segState(key: string): "done" | "cur" | "todo" {
+  if (isPlay.value && key === stage.value) return "cur";
+  return showStars(key) > 0 ? "done" : "todo";
+}
+const levelTagAria = computed(() =>
+  questMode.value
+    ? `当前第 ${questLevel.value} 关，本课已完成 ${playDone.value} / ${activities.value.length} 个玩法`
+    : `本课已完成 ${playDone.value} / ${activities.value.length} 个玩法`
+);
 
 </script>
 
@@ -140,16 +160,27 @@ const playPct = ref(0);
       @back="back"
     >
       <template #title>
-        <!-- 玩法页：不显示课程标题；步骤型玩法（学/辨/连/读）把进度条上移到顶栏（多邻国式）。
-             童谣（song）用播放器自身进度、亲子对话（talk）自由探索，不进顶栏进度条。 -->
-        <div
-          v-if="isPlay && ['learn', 'quiz', 'match', 'speak'].includes(stage)"
-          class="hdr-progress"
-          role="progressbar"
-          :aria-valuenow="playPct"
-          aria-label="答题进度"
-        >
-          <div class="fill" :style="{ width: playPct + '%' }"></div>
+        <!-- 玩法页：不显示课程标题；段落式关卡进度条（每段 = 本课一个玩法关卡），
+             步骤型玩法（学/辨/连/读）再加单局答题进度条（多邻国式）。
+             童谣（song）用播放器自身进度、亲子对话（talk）自由探索，只显示段落进度。 -->
+        <div v-if="isPlay" class="hdr-play" role="img" :aria-label="levelTagAria">
+          <span
+            v-for="a in activities"
+            :key="a.key"
+            class="seg"
+            :class="segState(a.key)"
+          ></span>
+          <template v-if="['learn', 'quiz', 'match', 'speak'].includes(stage)">
+            <div
+              class="hdr-progress"
+              role="progressbar"
+              :aria-valuenow="playPct"
+              aria-label="答题进度"
+            >
+              <div class="fill" :style="{ width: playPct + '%' }"></div>
+            </div>
+            <span v-if="playTotal > 0" class="q-count" aria-hidden="true">{{ playCount }}/{{ playTotal }}</span>
+          </template>
         </div>
         <template v-else-if="!isPlay"
           ><span class="hdr-title-tap" role="button" tabindex="0" aria-label="朗读课程名" @click="sayTitle" @keydown.enter.prevent="sayTitle"
@@ -177,6 +208,7 @@ const playPct = ref(0);
       :words="lesson.words"
       @done="afterGame"
       @progress="playPct = $event"
+      @total="playTotal = $event"
     />
     <SongView v-else-if="stage === 'song'" :lesson="lesson" @song-done="afterSong" @back="toMenu" />
     <TalkView v-else-if="stage === 'talk'" :lesson="lesson" @done="afterGame" />
@@ -212,6 +244,38 @@ const playPct = ref(0);
 .hdr-title-tap:active {
   background: rgba(127, 127, 127, 0.14);
 }
+/* 玩法页顶栏：段落式关卡进度条 + （步骤型玩法）单局答题进度条 */
+.hdr-play {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.seg {
+  flex: none;
+  width: 15px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  border: 2px solid var(--line);
+  transition: background 0.25s, border-color 0.25s, transform 0.25s;
+}
+.seg.done {
+  background: var(--green);
+  border-color: var(--green);
+}
+.seg.cur {
+  background: var(--c-orange);
+  border-color: var(--c-orange);
+  animation: seg-pulse 1.2s ease-in-out infinite;
+}
+@keyframes seg-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.22); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seg.cur { animation: none; }
+}
 /* 顶栏进度条（听音选词）：细条紧跟 ✕（多邻国式） */
 .hdr-progress {
   flex: 1;
@@ -227,6 +291,15 @@ const playPct = ref(0);
   border-radius: 999px;
   background: var(--green);
   transition: width 0.35s ease;
+}
+/* 进度条右侧的 x/y 计数：等宽数字避免跳动 */
+.q-count {
+  flex: none;
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 </style>

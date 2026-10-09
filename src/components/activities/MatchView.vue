@@ -9,7 +9,7 @@ import { shuffleWith } from "../../utils/quizSession";
 import { BookOpenText, Link2, Volume2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
-const emit = defineEmits(["done", "progress"]);
+const emit = defineEmits(["done", "progress", "total"]);
 
 const progress = useProgressStore();
 
@@ -153,11 +153,12 @@ const totalPairs = computed(() => curGroup.value.length);
 const doneCount = computed(() => matched.size);
 const groupDone = computed(() => totalPairs.value > 0 && doneCount.value >= totalPairs.value);
 
-/** 组内配对进度 → 顶栏进度条（多邻国式：连线逐对推进） */
+/** 组内配对进度 → 顶栏进度条（多邻国式：连线逐对推进）；对数同步上报显示 x/y */
 watch(
   [doneCount, totalPairs],
   () => {
     if (totalPairs.value === 0) return;
+    emit("total", totalPairs.value);
     emit("progress", Math.round((doneCount.value / totalPairs.value) * 100));
   },
   { immediate: true }

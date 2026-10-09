@@ -431,6 +431,50 @@ const rawLessons: RawLesson[] = [
       { en: "A is for apple.", zh: "A 是 apple（苹果）。" },
       { en: "Let's sing ABC!", zh: "我们一起唱字母歌！" }
     ]
+  },
+  {
+    id: "l9",
+    title: "One Little Finger",
+    titleZh: "一根小手指",
+    emoji: "👆",
+    tone: "teal",
+    date: "2026-10-10",
+    song: {
+      audio: null,
+      video: null,
+      scene: "stage",
+      lyrics: [
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your nose, nose!",
+        "",
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your head, head!",
+        "",
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your chin, chin!"
+      ]
+    },
+    words: [
+      { id: "nose", en: "nose", zh: "鼻子", emoji: "👃" },
+      { id: "arm", en: "arm", zh: "手臂", emoji: "💪" },
+      { id: "leg", en: "leg", zh: "腿", emoji: "🦵" },
+      { id: "foot", en: "foot", zh: "脚", emoji: "🦶" },
+      { id: "chin", en: "chin", zh: "下巴", emoji: "😊" },
+      { id: "finger", en: "finger", zh: "手指", emoji: "👆" },
+      { id: "head", en: "head", zh: "头", emoji: "🧑" }
+    ],
+    phrases: [
+      { en: "Where is your finger?", zh: "你的手指在哪里？" },
+      { en: "Put it on your head!", zh: "放在你的头上！" },
+      { en: "Touch your nose.", zh: "摸摸你的鼻子。" },
+      { en: "This is my arm.", zh: "这是我的手臂。" }
+    ]
   }
 ];
 
