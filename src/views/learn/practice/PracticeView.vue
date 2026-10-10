@@ -6,7 +6,7 @@
  * 2026-09-28：课程列表从"翻页"改为"上下滚动"——后续课程会越加越多，
  * 滚动浏览比翻页轻松，也更贴近 App 首页"往下滑看全部课"的惯用节奏。
  */
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { activityKeys, getLesson, lessons, type Lesson } from "../../../data/lessons";
 import { useProgressStore } from "../../../stores/progress";
 import { useRouter } from "vue-router";
@@ -15,13 +15,16 @@ import { dueWords } from "../../../utils/reviewQueue";
 import { BookOpenText, Check } from "@lucide/vue";
 
 const progress = useProgressStore();
+/** 课程类型筛选：official=培训班课程，bonus=自定义加餐 */
+const typeTab = ref<"official" | "bonus">("official");
+const filteredLessons = computed(() => lessons.filter((l) => l.type === typeTab.value));
 const router = useRouter();
 
 /** 课程轮播：每页 4 课 2×2 十字排布（左右滑动 + 底部小点），移动端到超宽屏统一 */
 const PAGE_SIZE = 4;
 const pages = computed(() => {
-  const n = Math.ceil(lessons.length / PAGE_SIZE);
-  return Array.from({ length: n }, (_, i) => lessons.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE));
+  const n = Math.ceil(filteredLessons.value.length / PAGE_SIZE);
+  return Array.from({ length: n }, (_, i) => filteredLessons.value.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE));
 });
 const carouselEl = ref<HTMLDivElement | null>(null);
 const curPage = ref(0);
@@ -31,6 +34,7 @@ function recalcPage() {
   const max = pages.value.length - 1;
   curPage.value = Math.max(0, Math.min(max, Math.round(el.scrollLeft / el.clientWidth)));
 }
+watch(typeTab, () => { curPage.value = 0; carouselEl.value?.scrollTo({ left: 0 }); });
 function goPage(i: number) {
   const el = carouselEl.value;
   if (!el) return;
@@ -70,6 +74,12 @@ const lastLessonObj = computed(() => {
       <button v-if="weakCount > 0" class="q-link review" @click="router.push('/learn/review')">
         <BookOpenText class="k-ico" />今天该复习 {{ weakCount }} 个词
       </button>
+    </div>
+
+    <!-- 课程类型 tab -->
+    <div class="type-tabs">
+      <button :class="{ on: typeTab === 'official' }" @click="typeTab = 'official'">正式课</button>
+      <button :class="{ on: typeTab === 'bonus' }" @click="typeTab = 'bonus'">加餐</button>
     </div>
 
     <!-- 课程列表：左右轮播（一页 2 课），底部小点指示器 -->
@@ -163,6 +173,9 @@ const lastLessonObj = computed(() => {
   transform: translateY(calc(var(--press) - 1px));
 }
 /* 滚动列表：占满剩余高度，课多了往下滑 */
+.type-tabs { display: flex; gap: var(--gap-s); padding: 0 var(--pad-x); margin: var(--gap-s) 0; }
+.type-tabs button { flex: 1; padding: 10px 0; border-radius: var(--radius-pill); background: var(--card-bg); box-shadow: var(--shadow-hard); font-weight: 800; font-size: var(--fs-small); color: var(--ink-faint); }
+.type-tabs button.on { background: var(--yellow); color: var(--ink); }
 .stage {
   display: flex;
   flex-direction: column;
