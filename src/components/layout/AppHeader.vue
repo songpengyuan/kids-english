@@ -17,7 +17,7 @@ import ShellIcon from "../ShellIcon.vue";
 import { Star } from "@lucide/vue";
 import { speakZh } from "../../services/speech";
 
-const props = defineProps<{ title: string; icon?: string; showBack?: boolean }>();
+const props = defineProps<{ title: string; icon?: string; showBack?: boolean; hideBadges?: boolean }>();
 
 /** 顶栏标题点击即发音（认字）：学习/游戏闯关/我的 等 tab 名（中文，归音效开关） */
 function sayTitle() {
@@ -41,7 +41,7 @@ const streak = useStreakStore();
         <PathIcon v-if="icon" :name="icon" class="hdr-ico" />
         <span class="hdr-title" @click="sayTitle">{{ title }}</span>
       </div>
-      <div class="hdr-right">
+      <div v-if="!hideBadges" class="hdr-right">
         <!-- ⭐ 总星星 -->
         <div class="badge star-badge" title="我的星星总数">
           <Star class="k-ico star-fill" />{{ progress.totalStars }}

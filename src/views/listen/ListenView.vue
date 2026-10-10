@@ -106,7 +106,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 
 <template>
   <div class="listen view">
-    <AppHeader title="磨耳朵" icon="game" />
+    <AppHeader title="磨耳朵" icon="game" hide-badges />
     <div class="sub-tabs">
       <button :class="{ on: subTab === 'songs' }" @click="subTab = 'songs'"><Music class="k-ico" /> 歌曲</button>
       <button :class="{ on: subTab === 'videos' }" @click="subTab = 'videos'"><Video class="k-ico" /> 视频</button>
@@ -188,6 +188,8 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 
 <style scoped>
 .body { display: flex; flex-direction: column; width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(80px + var(--pad-y)); }
+.today-chip { text-align: center; font-weight: 800; font-size: 13px; color: var(--ink-soft); margin-top: 6px; }
+.today-chip b { color: var(--green); font-size: 16px; }
 .sub-tabs { display: flex; gap: var(--gap-s); padding: 0 var(--pad-x); margin-top: var(--gap-s); }
 .sub-tabs button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 0; border-radius: var(--radius-pill); background: var(--card-bg); box-shadow: var(--shadow-hard); font-weight: 800; font-size: var(--fs-small); color: var(--ink-faint); transition: all 0.2s; }
 .sub-tabs button.on { background: var(--yellow); color: var(--ink); }

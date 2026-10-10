@@ -47,7 +47,7 @@ function sayEntry(name: string, path: string) {
 
 <template>
   <div class="me view">
-    <AppHeader title="我的" icon="me" />
+    <AppHeader title="我的" icon="me" hide-badges />
     <div class="me-body view-body">
       <!-- 身份卡 -->
       <section class="profile card anim-pop" @click="sayProfile">
