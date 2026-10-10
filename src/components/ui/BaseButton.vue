@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-type Variant = "green" | "blue" | "orange" | "gray";
+import type { ButtonVariant } from "../../types";
 
 const props = withDefaults(defineProps<{
-  variant?: Variant;
+  variant?: ButtonVariant;
   disabled?: boolean;
   block?: boolean;
   size?: "md" | "lg";
