@@ -11,11 +11,10 @@ export interface MatchGroupRange {
 }
 
 /**
- * 每组几对：屏幕越小每组越少，避免中间单词列被挤到看不清。
- * 手机（窄屏/极小屏）2~4 对；平板与桌面 3~6 对。
+ * 每组几对：统一 3~5 对（孩子注意力窗口，太多会疲劳）。
  */
-export function matchGroupRange(isNarrow: boolean, sizeTier: string): MatchGroupRange {
-  return isNarrow || sizeTier === "tiny" ? { min: 2, max: 4 } : { min: 3, max: 6 };
+export function matchGroupRange(_isNarrow: boolean, _sizeTier: string): MatchGroupRange {
+  return { min: 3, max: 5 };
 }
 
 /** 打乱后按容量均衡分组（组数尽量少、每组尽量满） */
