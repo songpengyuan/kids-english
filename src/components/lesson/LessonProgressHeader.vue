@@ -24,20 +24,23 @@ const stepKeys = ["learn", "quiz", "match", "speak"];
 
 <template>
   <div class="hdr-play" role="img" aria-label="关卡进度">
-    <span
-      v-for="a in activities"
-      :key="a.key"
-      class="seg"
-      :class="{
-        done: hasStars(a.key),
-        cur: a.key === currentKey
-      }"
-    ></span>
-    <template v-if="stepKeys.includes(stage)">
-      <div class="hdr-progress" role="progressbar" :aria-valuenow="playPct" aria-label="答题进度">
-        <div class="fill" :style="{ width: playPct + '%' }"></div>
-      </div>
-      <span v-if="playTotal > 0" class="q-count">{{ Math.round((playPct / 100) * playTotal) }}/{{ playTotal }}</span>
+    <!-- 答题中：显示当前玩法的逐题圆点，做对一个亮一个 -->
+    <template v-if="stepKeys.includes(stage) && playTotal > 0">
+      <span
+        v-for="n in playTotal"
+        :key="n"
+        class="dot"
+        :class="{ done: n <= Math.round((playPct / 100) * playTotal), cur: n === Math.round((playPct / 100) * playTotal) + 1 }"
+      ></span>
+    </template>
+    <!-- 非答题页（菜单/童谣/亲子对话）：显示活动块进度 -->
+    <template v-else>
+      <span
+        v-for="a in activities"
+        :key="a.key"
+        class="seg"
+        :class="{ done: hasStars(a.key), cur: a.key === currentKey }"
+      ></span>
     </template>
   </div>
 </template>
@@ -62,6 +65,24 @@ const stepKeys = ["learn", "quiz", "match", "speak"];
   background: var(--green);
   border-color: var(--green);
 }
+.dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  border: 2px solid var(--line);
+  transition: background 0.25s, transform 0.25s;
+}
+.dot.done {
+  background: var(--green);
+  border-color: var(--green);
+}
+.dot.cur {
+  background: var(--c-orange);
+  border-color: var(--c-orange);
+  transform: scale(1.2);
+}
 .seg.cur {
   background: var(--c-orange);
   border-color: var(--c-orange);
@@ -74,27 +95,5 @@ const stepKeys = ["learn", "quiz", "match", "speak"];
 @media (prefers-reduced-motion: reduce) {
   .seg.cur { animation: none; }
 }
-.hdr-progress {
-  flex: 1;
-  min-width: 0;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--card-bg);
-  box-shadow: var(--shadow-hard);
-  overflow: hidden;
-}
-.hdr-progress .fill {
-  height: 100%;
-  border-radius: 999px;
-  background: var(--green);
-  transition: width 0.35s ease;
-}
-.q-count {
-  flex: none;
-  font-weight: 800;
-  font-size: var(--fs-small);
-  color: var(--ink-soft);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
+
 </style>
