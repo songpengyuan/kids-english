@@ -78,7 +78,7 @@ function seek(e: Event) {
 }
 onBeforeUnmount(() => { audio.value?.pause(); stopListenTimer(); });
 
-const progress = useProgressStore();
+const progStore = useProgressStore();
 let listenTimer: number | null = null;
 let lastTick = 0;
 function startListenTimer() {
@@ -88,7 +88,7 @@ function startListenTimer() {
     const now = Date.now();
     const sec = (now - lastTick) / 1000;
     lastTick = now;
-    progress.addDailyActivity(sec);
+    progStore.addDailyActivity(sec);
   }, 5000);
 }
 function stopListenTimer() {
