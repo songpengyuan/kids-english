@@ -44,11 +44,13 @@ const emit = defineEmits<{ (e: "close"): void }>();
 .drawer-title { margin: 0; font-weight: 900; font-size: 16px; color: var(--ink); }
 .drawer.dark .drawer-title { color: var(--player-text); }
 .drawer-close {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: var(--line); color: var(--ink);
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--tint); color: var(--ink-soft);
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px; flex: none;
+  font-size: 18px; flex: none;
+  transition: background 0.15s;
 }
+.drawer-close:active { background: var(--line); }
 .drawer.dark .drawer-close { background: rgba(255,255,255,0.15); color: #fff; }
 .drawer-body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
