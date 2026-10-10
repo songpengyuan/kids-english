@@ -4,6 +4,7 @@ import { lessons, asset } from "../../data/lessons";
 import AppHeader from "../../components/layout/AppHeader.vue";
 import { useProgressStore } from "../../stores/progress";
 import { Play, Pause, SkipBack, SkipForward, Music, Video, X, ChevronDown, Repeat, Repeat1, Shuffle, ListMusic } from "@lucide/vue";
+import BaseDrawer from "../../components/ui/BaseDrawer.vue";
 
 type SubTab = "songs" | "videos";
 const subTab = ref<SubTab>("songs");
@@ -165,26 +166,20 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
     </template>
 
     <!-- 播放列表抽屉 -->
-    <div v-if="showPlaylist" class="drawer-mask" @click.self="showPlaylist = false">
-      <div class="drawer">
-        <div class="drawer-head">
-          <p class="drawer-title">播放列表（{{ songList.length }}）</p>
-          <button class="drawer-close" @click="showPlaylist = false"><X class="k-ico" /></button>
-        </div>
-        <div class="drawer-list">
-          <button v-for="(s, i) in songList" :key="s.id" class="drawer-item"
-            :class="{ active: currentIdx === i }" @click="playSong(i); showPlaylist = false">
-            <span class="di-idx">{{ i + 1 }}</span>
-            <span class="di-emoji">{{ s.emoji }}</span>
-            <span class="di-info">
-              <span class="di-title">{{ s.title }}</span>
-              <span class="di-sub">{{ s.titleZh }}</span>
-            </span>
-            <span v-if="currentIdx === i && playing" class="eq"><i></i><i></i><i></i></span>
-          </button>
-        </div>
+    <BaseDrawer :open="showPlaylist" title="播放列表（{{ songList.length }}）" dark @close="showPlaylist = false">
+      <div class="drawer-list">
+        <button v-for="(s, i) in songList" :key="s.id" class="drawer-item"
+          :class="{ active: currentIdx === i }" @click="playSong(i); showPlaylist = false">
+          <span class="di-idx">{{ i + 1 }}</span>
+          <span class="di-emoji">{{ s.emoji }}</span>
+          <span class="di-info">
+            <span class="di-title">{{ s.title }}</span>
+            <span class="di-sub">{{ s.titleZh }}</span>
+          </span>
+          <span v-if="currentIdx === i && playing" class="eq"><i></i><i></i><i></i></span>
+        </button>
       </div>
-    </div>
+    </BaseDrawer>
 
     <!-- 视频播放 -->
     <div v-if="playingVideo" class="video-mask" @click.self="playingVideo = null">
@@ -240,22 +235,6 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .lp-btn.big .k-ico { width: 30px; height: 30px; }
 .lp-progress { width: 85%; max-width: 420px; margin: 0 auto 20px; accent-color: #4ade80; }
 
-/* 播放列表抽屉 */
-.drawer-mask { position: fixed; inset: 0; z-index: 95; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; }
-.drawer { width: 100%; max-width: 480px; margin: 0 auto; background: #1e293b; border-radius: 20px 20px 0 0; max-height: 70vh; display: flex; flex-direction: column; }
-.drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.drawer-title { margin: 0; color: #fff; font-weight: 900; font-size: 16px; }
-.drawer-close { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.15); color: #fff; display: flex; align-items: center; justify-content: center; }
-.drawer-close .k-ico { width: 18px; height: 18px; }
-.drawer-list { overflow-y: auto; padding: 8px 0; -webkit-overflow-scrolling: touch; }
-.drawer-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 20px; text-align: left; }
-.drawer-item:active { background: rgba(255,255,255,0.05); }
-.drawer-item.active .di-title { color: #4ade80; }
-.di-idx { width: 20px; text-align: center; color: rgba(255,255,255,0.3); font-weight: 700; font-size: 13px; flex: none; }
-.di-emoji { font-size: 24px; flex: none; }
-.di-info { flex: 1; min-width: 0; }
-.di-title { display: block; color: #fff; font-weight: 700; font-size: 15px; }
-.di-sub { display: block; color: rgba(255,255,255,0.4); font-size: 12px; }
 
 /* 视频 */
 .video-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-s); padding: var(--gap-s) var(--pad-x) 0; }
