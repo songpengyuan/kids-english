@@ -94,6 +94,12 @@ function startListenTimer() {
 function stopListenTimer() {
   if (listenTimer) { clearInterval(listenTimer); listenTimer = null; }
 }
+const expanded = ref(false);
+const currentLyrics = computed(() => {
+  if (!currentSong.value) return [];
+  const lesson = lessons.find((l) => l.id === currentSong.value!.id);
+  return lesson?.song?.lyrics ?? [];
+});
 const playingVideo = ref<{ src: string; titleZh: string; title: string } | null>(null);
 function playVideo(v: { src: string; titleZh: string; title: string }) { playingVideo.value = v; startListenTimer(); }
 </script>
@@ -157,6 +163,28 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
         </div>
       </template>
     </div>
+    <!-- 全屏播放器 -->
+    <div v-if="expanded && currentSong" class="full-player" @click.self="expanded = false">
+      <button class="fp-close" aria-label="收起" @click="expanded = false">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="fp-album tone-ico" :class="'tone-' + currentSong.tone">{{ currentSong.emoji }}</div>
+      <h2 class="fp-title">{{ currentSong.title }}</h2>
+      <p class="fp-sub">{{ currentSong.titleZh }}</p>
+      <div class="fp-lyrics">
+        <p v-for="(line, i) in currentLyrics" :key="i" class="fp-line" :class="{ active: Math.round(progress * currentLyrics.length) === i }">{{ line }}</p>
+        <p v-if="currentLyrics.length === 0" class="fp-line">🎵</p>
+      </div>
+      <div class="fp-controls">
+        <button class="fp-btn" :class="{ active: shuffleOn }" @click="shuffleOn = !shuffleOn"><Shuffle class="k-ico" /></button>
+        <button class="fp-btn" @click="prev"><SkipBack class="k-ico" /></button>
+        <button class="fp-btn big" @click="togglePlay"><Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" /></button>
+        <button class="fp-btn" @click="next"><SkipForward class="k-ico" /></button>
+        <button class="fp-btn" :class="{ active: repeatMode !== 'off' }" @click="toggleRepeat"><Repeat1 v-if="repeatMode === 'one'" class="k-ico" /><Repeat v-else class="k-ico" /></button>
+      </div>
+      <input class="fp-progress" type="range" :value="Math.round(progress * 100)" @input="seek" min="0" max="100" />
+    </div>
+
     <div v-if="playingVideo" class="video-mask" @click.self="playingVideo = null">
       <button class="video-close" @click="playingVideo = null"><X class="k-ico" /></button>
       <video :src="playingVideo.src" controls autoplay playsinline class="video-player" />
@@ -211,6 +239,22 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .video-close { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); color: #fff; display: flex; align-items: center; justify-content: center; }
 .video-player { max-width: 95vw; max-height: 70vh; border-radius: 8px; }
 .video-caption { color: #ccc; margin: 0; font-weight: 700; }
+.mp-clickable { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.full-player { position: fixed; inset: 0; z-index: 95; background: linear-gradient(180deg, #1e293b, #0f172a); display: flex; flex-direction: column; align-items: center; padding: 40px 24px 30px; }
+.fp-close { position: absolute; top: 14px; left: 14px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.15); color: #fff; display: flex; align-items: center; justify-content: center; }
+.fp-album { width: 180px; height: 180px; border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 96px; margin-top: 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+.fp-title { margin: 20px 0 4px; color: #fff; font-weight: 900; font-size: 22px; text-align: center; }
+.fp-sub { margin: 0; color: rgba(255,255,255,0.5); font-weight: 700; font-size: 14px; }
+.fp-lyrics { flex: 1; overflow-y: auto; width: 100%; max-width: 400px; margin-top: 20px; text-align: center; -webkit-overflow-scrolling: touch; }
+.fp-line { color: rgba(255,255,255,0.35); font-weight: 700; font-size: 16px; line-height: 2; transition: all 0.3s; }
+.fp-line.active { color: #fff; font-size: 18px; transform: scale(1.05); }
+.fp-controls { display: flex; align-items: center; gap: 16px; margin: 16px 0; }
+.fp-btn { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); }
+.fp-btn.big { width: 60px; height: 60px; background: #fff; color: #1e293b; }
+.fp-btn.active { color: #4ade80; }
+.fp-btn .k-ico { width: 22px; height: 22px; }
+.fp-btn.big .k-ico { width: 26px; height: 26px; }
+.fp-progress { width: 100%; max-width: 400px; accent-color: #4ade80; }
 .tone-blue { background: #dbeafe; } .tone-green { background: #d1fae5; } .tone-orange { background: #fed7aa; }
 .tone-purple { background: #e9d5ff; } .tone-pink { background: #fce7f3; } .tone-teal { background: #99f6e4; }
 </style>
