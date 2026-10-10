@@ -22,7 +22,7 @@ import { speak, speakZh } from "../services/speech";
 import { useCardsStore } from "../stores/cards";
 import { hapticTap } from "../services/haptics";
 
-export type LessonStage = "menu" | "learn" | "quiz" | "match" | "speak" | "song" | "talk" | "result";
+export type LessonStage = "menu" | "questMap" | "learn" | "quiz" | "match" | "speak" | "song" | "talk" | "result";
 
 /** 调试/兼容深链：?lesson=l4&stage=learn 直接进入玩法页 */
 const STAGES = ["learn", "quiz", "match", "speak", "song", "talk"];

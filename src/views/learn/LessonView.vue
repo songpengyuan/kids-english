@@ -124,6 +124,10 @@ const menuActs = computed(() =>
   activities.value.map((a) => ({ ...a, stars: showStars(a.key) }))
 );
 
+/** 从闯关地图点节点：直接开始该关 */
+function startFromMap(a: (typeof activities.value)[number]) {
+  open(a);
+}
 /** 点击玩法卡片：读中文玩法名 + 进入玩法 */
 function openSound(a: (typeof activities.value)[number]) {
   speakZh(a.name);
@@ -214,6 +218,13 @@ const playTotal = ref(0);
       @open-learn="openLearn"
       @open-quest="startQuest"
       @open-activity="openSound"
+    />
+
+    <!-- 课内闯关地图 -->
+    <LessonQuestMap
+      v-else-if="stage === 'questMap'"
+      :acts="menuActs"
+      @start="startFromMap"
     />
 
     <!-- 各玩法 -->
