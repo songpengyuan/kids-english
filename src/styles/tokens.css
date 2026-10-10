@@ -237,19 +237,19 @@
  * 组件内需要「按档位改变结构」时用它，纯样式微调用 @media。
  */
 
-/* ---------- 音乐播放器（跟随主题） ---------- */
---player-bg-1: var(--bg);
---player-bg-2: var(--bg);
---player-surface: var(--card-bg);
---player-text: var(--ink);
---player-text-soft: var(--ink-soft);
---player-text-faint: var(--ink-faint);
---player-accent: var(--green);
---player-btn: var(--green);
---player-btn-ink: #fff;
-
 /* ===== 动效 tokens（阶段 3-1：统一节奏，新增动效先查这里再写值） ===== */
 :root {
+  /* 音乐播放器（跟随主题，直接引用主题变量） */
+  --player-bg-1: var(--bg);
+  --player-bg-2: var(--bg);
+  --player-surface: var(--card-bg);
+  --player-text: var(--ink);
+  --player-text-soft: var(--ink-soft);
+  --player-text-faint: var(--ink-faint);
+  --player-accent: var(--green);
+  --player-btn: var(--green);
+  --player-btn-ink: #fff;
+
   /* 时长 */
   --dur-fast: 0.12s;   /* 触觉/按压反馈、点按弹缩 */
   --dur-base: 0.22s;   /* 普通 UI 过渡（hover/位移/显隐） */
