@@ -25,9 +25,17 @@ const SR: (new () => SRImpl) | null =
       null
     : null;
 
-/** 浏览器是否支持语音识别 API（不代表网络一定能用，真正失败在运行时捕获） */
+/** 浏览器是否支持语音识别 API。
+ *  iOS Safari 虽有 webkitSpeechRecognition 定义但实际不可用（需网络+手势，常静默失败），
+ *  直接排除，避免白白等 3 秒报错再降级。 */
 export function asrSupported(): boolean {
-  return !!SR;
+  if (!SR) return false;
+  // 排除 iOS Safari
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
+  if (isIOS || isSafari) return false;
+  return true;
 }
 
 export type RecognitionDone = (err: string | null, alternatives: string[]) => void;

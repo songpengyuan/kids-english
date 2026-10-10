@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { speak } from "../../services/speech";
 import { sfxCorrect, sfxWrong } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
@@ -27,6 +27,16 @@ const session = useSpeechSession(computed(() => props.words), {
     sfxWrong();
     progress.recordWord(w.lessonId, w.id, { wrong: 1 }); // 打回 stage 0 → 复习队列
   },
+});
+
+// 进入跟读页就预请求麦克风权限（在用户手势链外的 mount 阶段，部分浏览器会拒绝；
+// 但至少能提前暴露权限状态，避免孩子点麦克风时才弹窗卡住）
+onMounted(async () => {
+  try {
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch {
+    // 静默失败，用户点麦克风时再处理
+  }
 });
 
 const {
