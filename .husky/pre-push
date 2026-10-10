@@ -1,0 +1,6 @@
+#!/bin/bash
+echo "🔍 Pre-push checks..."
+pnpm type-check || exit 1
+npx vitest run --reporter=dot 2>&1 | tail -3
+GH_REPO=songpengyuan/kids-english pnpm build:ci || exit 1
+echo "✅ All checks passed, pushing..."
