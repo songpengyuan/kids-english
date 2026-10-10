@@ -9,7 +9,7 @@ import { shuffleWith } from "../../utils/quizSession";
 import { BookOpenText, Link2, Volume2 } from "@lucide/vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
-const emit = defineEmits(["done", "progress", "total"]);
+const emit = defineEmits(["done", "progress", "total", "page"]);
 
 const progress = useProgressStore();
 
@@ -158,8 +158,9 @@ watch(
   [doneCount, totalPairs],
   () => {
     if (totalPairs.value === 0) return;
-    emit("total", totalPairs.value);
-    emit("progress", Math.round((doneCount.value / totalPairs.value) * 100));
+    emit("total", groupCount.value);
+    emit("progress", Math.round(((groupIdx.value + (groupDone.value ? 1 : 0)) / groupCount.value) * 100));
+    emit("page", groupIdx.value);
   },
   { immediate: true }
 );
