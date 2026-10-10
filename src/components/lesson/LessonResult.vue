@@ -76,7 +76,7 @@ function nav(fn: () => void) {
       <ChestReward v-if="!chestDone" @done="chestDone = true" />
       <div class="btn-row">
         <BaseButton variant="green" @click="emit('backToMap')">返回闯关地图</BaseButton>
-        <button v-if="nextLevel" class="k-btn" :disabled="navClicked" @click="nav(() => emit('goNextLevel'))">
+        <BaseButton v-if="nextLevel" :disabled="navClicked" @click="nav(() => emit('goNextLevel'))">
           下一关：<PathIcon :name="nextLevel.actKey" /> {{ nextLevel.name }} →
         </button>
       </div>
@@ -112,7 +112,7 @@ function nav(fn: () => void) {
       <ChestReward v-if="!chestDone" @done="chestDone = true" />
       <div class="btn-row">
         <BaseButton variant="green" @click="emit('toMenu')">再选一个玩法</BaseButton>
-        <button v-if="nextLesson" class="k-btn gray" :disabled="navClicked" @click="nav(() => emit('goNextLesson'))">
+        <BaseButton v-if="nextLesson" variant="gray" :disabled="navClicked" @click="nav(() => emit('goNextLesson'))">
           下一课：<PathIcon :name="nextLesson.id" /> {{ nextLesson.title }}
         </button>
       </div>

@@ -170,12 +170,12 @@ function next() {
           <BaseButton variant="green" @click="hearExample">
             <Volume2 class="k-ico" />再听示范
           </BaseButton>
-          <button v-if="grade === 'retry'" class="k-btn orange" @click="retry">
+          <BaseButton v-if="grade === 'retry'" variant="orange" @click="retry">
             <Mic class="k-ico" />我再试试
-          </button>
-          <button v-else class="k-btn" @click="next">
+          </BaseButton>
+          <BaseButton v-else @click="next">
             继续<ChevronRight class="k-ico" />
-          </button>
+          </BaseButton>
         </div>
       </template>
       <template v-else>
@@ -189,12 +189,12 @@ function next() {
           <BaseButton variant="green" @click="hearExample">
             <Volume2 class="k-ico" />再听示范
           </BaseButton>
-          <button v-if="grade === 'retry'" class="k-btn orange" @click="retry">
+          <BaseButton v-if="grade === 'retry'" variant="orange" @click="retry">
             <Mic class="k-ico" />我再试试
-          </button>
-          <button v-else class="k-btn" @click="next">
+          </BaseButton>
+          <BaseButton v-else @click="next">
             继续<ChevronRight class="k-ico" />
-          </button>
+          </BaseButton>
         </div>
       </template>
     </div>

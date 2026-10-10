@@ -171,7 +171,7 @@ function replay() {
       </p>
       <p class="again ok" v-else>全部掌握啦，真棒！</p>
       <div class="btn-row">
-        <button v-if="againCount > 0" class="k-btn" @click="start">
+        <BaseButton v-if="againCount > 0" @click="start">
           <RotateCcw class="k-ico" />再练一次
         </button>
         <BaseButton variant="green" @click="router.push('/learn')">回学习</BaseButton>
