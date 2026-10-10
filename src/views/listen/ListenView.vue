@@ -120,23 +120,30 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
           </button>
         </div>
         <div v-if="currentSong" class="mini-player">
-          <div class="mp-album tone-ico" :class="'tone-' + currentSong.tone">{{ currentSong.emoji }}</div>
-          <div class="mp-info">
-            <p class="mp-title">{{ currentSong.titleZh }}</p>
-            <div class="mp-bar"><input type="range" :value="Math.round(progress * 100)" @input="seek" min="0" max="100" /></div>
+          <!-- 第一行：封面 + 标题 + 播放控制 -->
+          <div class="mp-row">
+            <div class="mp-album tone-ico" :class="'tone-' + currentSong.tone">{{ currentSong.emoji }}</div>
+            <div class="mp-info">
+              <p class="mp-title">{{ currentSong.title }}</p>
+              <p class="mp-sub">{{ currentSong.titleZh }}</p>
+            </div>
+            <button class="mp-btn" :class="{ active: shuffleOn }" @click="shuffleOn = !shuffleOn" title="随机">
+              <Shuffle class="k-ico" />
+            </button>
+            <button class="mp-btn" @click="prev"><SkipBack class="k-ico" /></button>
+            <button class="mp-btn big" @click="togglePlay">
+              <Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" />
+            </button>
+            <button class="mp-btn" @click="next"><SkipForward class="k-ico" /></button>
+            <button class="mp-btn" :class="{ active: repeatMode !== 'off' }" @click="toggleRepeat" title="循环">
+              <Repeat1 v-if="repeatMode === 'one'" class="k-ico" />
+              <Repeat v-else class="k-ico" />
+            </button>
           </div>
-          <button class="mp-btn" :class="{ active: shuffleOn }" @click="shuffleOn = !shuffleOn" title="随机">
-            <Shuffle class="k-ico" />
-          </button>
-          <button class="mp-btn" @click="prev"><SkipBack class="k-ico" /></button>
-          <button class="mp-btn big" @click="togglePlay">
-            <Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" />
-          </button>
-          <button class="mp-btn" @click="next"><SkipForward class="k-ico" /></button>
-          <button class="mp-btn" :class="{ active: repeatMode !== 'off' }" @click="toggleRepeat" title="循环">
-            <Repeat1 v-if="repeatMode === 'one'" class="k-ico" />
-            <Repeat v-else class="k-ico" />
-          </button>
+          <!-- 第二行：进度条 -->
+          <div class="mp-row mp-bar-row">
+            <input type="range" :value="Math.round(progress * 100)" @input="seek" min="0" max="100" />
+          </div>
         </div>
       </template>
       <template v-else>
@@ -180,16 +187,18 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .eq i:nth-child(2) { height: 16px; animation-delay: 0.2s; }
 .eq i:nth-child(3) { height: 7px; animation-delay: 0.4s; }
 @keyframes eq { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1.2); } }
-.mini-player { position: fixed; bottom: calc(64px + env(safe-area-inset-bottom)); left: 0; right: 0; max-width: 480px; margin-inline: var(--pad-x); z-index: 35; display: flex; align-items: center; gap: var(--gap-s); background: var(--card-bg); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,0.18); padding: 8px 12px; }
-.mp-album { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex: none; }
+.mini-player { position: fixed; bottom: calc(64px + env(safe-area-inset-bottom)); left: 0; right: 0; max-width: 480px; margin-inline: var(--pad-x); z-index: 35; background: var(--card-bg); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+.mp-row { display: flex; align-items: center; gap: 8px; }
+.mp-album { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex: none; }
 .mp-info { flex: 1; min-width: 0; }
-.mp-title { margin: 0; font-weight: 800; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mp-bar input { width: 100%; height: 4px; accent-color: var(--green); }
-.mp-btn { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex: none; }
-.mp-btn.big { width: 44px; height: 44px; background: var(--green); color: #fff; }
+.mp-title { margin: 0; font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-sub { margin: 1px 0 0; font-size: 11px; color: var(--ink-faint); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-bar-row input { width: 100%; height: 4px; accent-color: var(--green); }
+.mp-btn { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex: none; }
+.mp-btn.big { width: 42px; height: 42px; background: var(--green); color: #fff; }
 .mp-btn.active { color: var(--green); background: rgba(74, 222, 128, 0.15); }
-.mp-btn .k-ico { width: 20px; height: 20px; }
-.mp-btn.big .k-ico { width: 22px; height: 22px; }
+.mp-btn .k-ico { width: 18px; height: 18px; }
+.mp-btn.big .k-ico { width: 20px; height: 20px; }
 .video-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-s); padding: var(--gap-s) var(--pad-x) 0; }
 .video-card { position: relative; border-radius: var(--radius); padding: var(--gap-m); display: flex; flex-direction: column; align-items: center; gap: 4px; box-shadow: var(--shadow-hard); min-height: 120px; transition: transform 0.08s; }
 .video-card:active { transform: scale(0.96); }
