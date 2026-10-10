@@ -178,7 +178,17 @@ function sayEntry(name: string, path: string) {
         </button>
       </section>
 
-      <p class="foot" @click="sayCell('数据说明', '只保存在这台设备上，不会上传')">数据只保存在这台设备上，不会上传。{{ soundOn ? "" : "（已静音）" }}</p>
+      <!-- 资源小图例：星 / 贝壳 / 火焰分别代表什么（孩子和家长都能看懂） -->
+      <section class="legend anim-fade-up">
+        <span class="lg"><Star class="k-ico star-fill" />星星 = 学习奖励</span>
+        <span class="lg"><PathIcon name="shell" />贝壳 = 宝藏货币</span>
+        <span class="lg"><Flame class="k-ico flame" />火焰 = 连续学习天数</span>
+      </section>
+
+      <p class="foot" @click="sayCell('数据说明', '学习记录只存在这台设备上，不会上传')">
+        学习记录只存在这台设备上，爸爸妈妈放心～{{ soundOn ? "" : "（已静音）" }}
+      </p>
+      <p class="foot">建议家长陪同孩子学习，每次 10~15 分钟</p>
     </div>
   </div>
 </template>
@@ -446,3 +456,25 @@ function sayEntry(name: string, path: string) {
   margin: 0;
 }
 </style>
+
+
+/* 资源小图例 */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-xs);
+  justify-content: center;
+  width: 100%;
+}
+.lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  background: var(--card-bg);
+  border-radius: var(--radius-pill);
+  padding: 4px clamp(8px, 1.4vw, 14px);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft);
+}

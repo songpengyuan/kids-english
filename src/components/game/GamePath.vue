@@ -400,6 +400,11 @@ function unitLesson(id: string) {
               <PathIcon v-else :name="(it as GeoItem).level!.actKey" class="lv-ico" />
               <span v-if="(it as GeoItem).stars && (it as GeoItem).level!.actKey !== 'chest'" class="lv-star" aria-hidden="true">★{{ (it as GeoItem).stars }}</span>
             </button>
+            <!-- 全局第一个待玩关卡：黄色"从这里开始"引导（只显示一次，上下弹跳） -->
+            <span v-if="(it as GeoItem).level!.id === activeId" class="lv-guide" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="guide-chev"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              从这里开始
+            </span>
           <span class="lv-name">{{ (it as GeoItem).level!.name }}</span>
         </div>
       </template>
@@ -783,3 +788,34 @@ function unitLesson(id: string) {
   stroke: rgba(210, 210, 210, 0.14);
 }
 </style>
+
+/* active 关卡引导标签：黄色胶囊 + 下指箭头，上下弹跳提示"从这里开始" */
+.lv-guide {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(100% + 14px);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--yellow, #ffc800);
+  color: #6b4e00;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 5px 9px;
+  border-radius: 999px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: guide-bob 1.4s ease-in-out infinite;
+}
+.guide-chev {
+  width: 11px;
+  height: 11px;
+  flex: none;
+}
+@keyframes guide-bob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -6px); }
+}

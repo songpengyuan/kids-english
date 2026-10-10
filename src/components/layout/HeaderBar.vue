@@ -22,7 +22,8 @@ const emit = defineEmits<{ back: [] }>();
       :title="close ? '关闭' : backLabel || '返回'"
       @click="emit('back')"
     >
-      <PathIcon v-if="close" name="close" />
+      <!-- 答题页"退出"用房子图标（孩子一看就知道回菜单/主页，✕ 太抽象） -->
+      <PathIcon v-if="close" name="home" />
       <PathIcon v-else name="back" />
     </button>
     <div class="hdr-title"><slot name="title" /></div>

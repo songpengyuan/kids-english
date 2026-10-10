@@ -30,8 +30,8 @@ function prog(
 }
 
 describe("buildLevels", () => {
-  it("5 课 × (6 玩法 + 1 宝箱) = 35 关，chest 排在每课末尾", () => {
-    expect(LEVELS).toHaveLength(35);
+  it("6 课 × (6 玩法 + 1 宝箱) = 42 关，chest 排在每课末尾", () => {
+    expect(LEVELS).toHaveLength(42);
     const l4 = LEVELS.filter((l) => l.lessonId === "l4");
     expect(l4).toHaveLength(7);
     expect(l4.map((l) => l.actKey)).toEqual(["learn", "quiz", "match", "speak", "talk", "song", "chest"]);
@@ -126,7 +126,12 @@ describe("nextLevelAfter（玩法→玩法，跳过宝箱关）", () => {
     expect(n?.id).toBe("l5-learn");
   });
 
+  it("l8-song 后进入 l9（新增课程自动续接）", () => {
+    const n = nextLevelAfter("l8-song", LEVELS);
+    expect(n?.id).toBe("l9-learn");
+  });
+
   it("最后一课 song 后无下一关", () => {
-    expect(nextLevelAfter("l8-song", LEVELS)).toBeNull();
+    expect(nextLevelAfter("l9-song", LEVELS)).toBeNull();
   });
 });

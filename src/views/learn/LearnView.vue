@@ -15,8 +15,6 @@ defineOptions({ name: "LearnView" }); // KeepAlive include 需要稳定组件名
     <AppHeader title="学习" icon="free" />
 
     <PracticeView class="pv-slot" />
-
-    <p class="foot">建议家长陪同，每次 10~15 分钟</p>
   </div>
 </template>
 
@@ -27,14 +25,6 @@ defineOptions({ name: "LearnView" }); // KeepAlive include 需要稳定组件名
 .pv-slot {
   flex: 1;
   min-height: 0;
-}
-.foot {
-  text-align: center;
-  color: var(--ink-faint);
-  font-weight: 700;
-  font-size: var(--fs-small);
-  margin: 0;
-  flex: none;
 }
 @media (max-height: 480px) {
   .foot {

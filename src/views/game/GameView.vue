@@ -16,8 +16,6 @@ defineOptions({ name: "GameView" }); // KeepAlive include 需要稳定组件名
     <AppHeader title="游戏闯关" icon="game" />
 
     <GamePath class="gp-slot" />
-
-    <p class="foot">建议家长陪同，每次 10~15 分钟</p>
   </div>
 </template>
 
@@ -31,14 +29,6 @@ defineOptions({ name: "GameView" }); // KeepAlive include 需要稳定组件名
    *（CuteBackdrop 的 sky 主题，随 #/game 路由自动切换）提供；
    *  这里不再铺任何纹理/底色，避免与场景背景叠加。 */
   background: transparent;
-}
-.foot {
-  text-align: center;
-  color: var(--ink-faint);
-  font-weight: 700;
-  font-size: var(--fs-small);
-  margin: 0;
-  flex: none;
 }
 @media (max-height: 480px) {
   .foot {
