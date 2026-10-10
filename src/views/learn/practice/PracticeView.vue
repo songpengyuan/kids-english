@@ -66,24 +66,11 @@ const lastLessonObj = computed(() => {
 
 <template>
   <div class="practice">
-    <div v-if="weakCount > 0 || lastLessonObj" class="quick-links anim-fade-up">
+    <div v-if="weakCount > 0" class="quick-links anim-fade-up">
       <button v-if="weakCount > 0" class="q-link review" @click="router.push('/learn/review')">
         <BookOpenText class="k-ico" />今天该复习 {{ weakCount }} 个词
       </button>
-      <button v-if="lastLessonObj" class="q-link" @click="enter(lastLessonObj)">
-        ⏩ 继续：{{ lastLessonObj.emoji }} {{ lastLessonObj.titleZh }}
-      </button>
     </div>
-
-    <!-- 闯关地图入口 -->
-    <button class="game-map-entry anim-fade-up" @click="router.push('/game')">
-      <span class="gme-ico">🗺️</span>
-      <span class="gme-body">
-        <span class="gme-title">闯关地图</span>
-        <span class="gme-desc">沿路径通关，赢奥特曼卡片</span>
-      </span>
-      <span class="gme-arrow">›</span>
-    </button>
 
     <!-- 课程列表：左右轮播（一页 2 课），底部小点指示器 -->
     <div class="stage">
