@@ -5,9 +5,9 @@ import AppHeader from "../../components/layout/AppHeader.vue";
 import { useProgressStore } from "../../stores/progress";
 import { Play, Pause, SkipBack, SkipForward, Music, Video, X, ChevronDown, Repeat, Repeat1, Shuffle, ListMusic } from "@lucide/vue";
 import BaseDrawer from "../../components/ui/BaseDrawer.vue";
+import type { ListenSubTab, RepeatMode } from "../../types";
 
-type SubTab = "songs" | "videos";
-const subTab = ref<SubTab>("songs");
+const subTab = ref<ListenSubTab>("songs");
 const nowPlaying = ref(false);
 const showPlaylist = ref(false);
 
@@ -28,7 +28,7 @@ const audio = ref<HTMLAudioElement | null>(null);
 const currentIdx = ref(-1);
 const playing = ref(false);
 const progress = ref(0);
-const repeatMode = ref<"off"|"all"|"one">("off");
+const repeatMode = ref<RepeatMode>("off");
 const shuffleOn = ref(false);
 const currentSong = computed(() => currentIdx.value >= 0 ? songList.value[currentIdx.value] : null);
 
@@ -104,13 +104,13 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
   <div class="listen view">
     <!-- ===== 歌词全屏页 ===== -->
     <div v-if="nowPlaying && currentSong" class="lyrics-page">
-      <div class="lp-top">
-        <button class="lp-collapse" @click="nowPlaying = false"><ChevronDown class="k-ico" /></button>
+      <div class="lp-header">
+        <button class="lp-back" @click="nowPlaying = false"><ChevronDown class="k-ico" /></button>
+        <div class="lp-cover" :class="'tone-' + currentSong.tone">{{ currentSong.emoji }}</div>
         <div class="lp-title-area">
           <p class="lp-title">{{ currentSong.title }}</p>
           <p class="lp-sub">{{ currentSong.titleZh }}</p>
         </div>
-
       </div>
       <div class="lp-lyrics">
         <p v-for="(line, i) in currentLyrics" :key="i" class="lp-line" :class="{ active: Math.round(progress * currentLyrics.length) === i }">{{ line }}</p>
@@ -144,7 +144,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
           <div class="song-list">
             <button v-for="(s, i) in songList" :key="s.id" class="song-row"
               :class="{ active: currentIdx === i }" @click="playSong(i)">
-              <span class="sr-emoji tone-ico" :class="'tone-' + s.tone">{{ s.emoji }}</span>
+              <span class="sr-emoji" :class="'tone-' + s.tone">{{ s.emoji }}</span>
               <span class="sr-info">
                 <span class="sr-title">{{ s.title }}</span>
                 <span class="sr-sub">{{ s.titleZh }}</span>
@@ -168,7 +168,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
     </template>
 
     <!-- 播放列表抽屉 -->
-    <BaseDrawer :open="showPlaylist" title="播放列表（{{ songList.length }}）" @close="showPlaylist = false">
+    <BaseDrawer :open="showPlaylist" :title="`播放列表（${songList.length}）`" @close="showPlaylist = false">
       <div class="drawer-list">
         <button v-for="(s, i) in songList" :key="s.id" class="drawer-item"
           :class="{ active: currentIdx === i }" @click="playSong(i); showPlaylist = false">
@@ -194,8 +194,8 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 
 <style scoped>
 .body { display: flex; flex-direction: column; width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(80px + var(--pad-y)); }
-.today-chip { text-align: center; font-weight: 800; font-size: 13px; color: var(--ink-soft); margin-top: 6px; }
-.today-chip b { color: var(--green); font-size: 16px; }
+.today-chip { text-align: center; font-weight: 800; font-size: var(--fs-small); color: var(--ink-soft); margin-top: 6px; }
+.today-chip b { color: var(--green); font-size: var(--fs-body); }
 .sub-tabs { display: flex; gap: var(--gap-s); padding: 0 var(--pad-x); margin-top: var(--gap-s); }
 .sub-tabs button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 0; border-radius: var(--radius-pill); background: var(--card-bg); box-shadow: var(--shadow-hard); font-weight: 800; font-size: var(--fs-small); color: var(--ink-faint); transition: all 0.2s; }
 .sub-tabs button.on { background: var(--yellow); color: var(--ink); }
@@ -207,7 +207,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .sr-emoji { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; flex: none; }
 .sr-info { flex: 1; min-width: 0; }
 .sr-title { display: block; font-weight: 800; font-size: var(--fs-body); }
-.sr-sub { display: block; font-size: 12px; color: var(--ink-faint); font-weight: 700; }
+.sr-sub { display: block; font-size: var(--fs-small); color: var(--ink-faint); font-weight: 700; }
 .sr-play { color: var(--ink-faint); }
 .sr-play .k-ico { width: 22px; height: 22px; }
 .eq { display: flex; gap: 2px; align-items: flex-end; height: 18px; }
@@ -217,26 +217,53 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .eq i:nth-child(3) { height: 7px; animation-delay: 0.4s; }
 @keyframes eq { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1.2); } }
 
-/* 歌词全屏页 */
-.lyrics-page { position: fixed; inset: 0; z-index: 90; background: transparent; display: flex; flex-direction: column; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
-.lp-top { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
-.lp-collapse { width: 44px; height: 44px; border-radius: var(--radius-s); display: flex; align-items: center; justify-content: center; color: var(--ink-soft); background: var(--card-bg); box-shadow: var(--shadow-hard); }
-.lp-collapse .k-ico { width: 26px; height: 26px; }
-.lp-title-area { flex: 1; text-align: center; }
-.lp-title { margin: 0; color: var(--ink); font-weight: 900; font-size: 18px; }
-.lp-sub { margin: 2px 0 0; color: var(--ink-soft); font-weight: 700; font-size: 13px; }
-.lp-mode { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--green); }
-.lp-mode .k-ico { width: 20px; height: 20px; }
-.lp-lyrics { flex: 1; overflow-y: auto; margin: 0 var(--pad-x); padding: var(--gap-l) var(--gap-m); background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard); text-align: left; -webkit-overflow-scrolling: touch; }
-.lp-line { color: var(--ink-faint); font-weight: 700; font-size: 17px; line-height: 2.2; transition: all 0.3s; }
-.lp-line.active { color: var(--ink); font-size: 19px; font-weight: 900; }
-.lp-controls { display: flex; align-items: center; justify-content: center; gap: 32px; padding: 16px 0 8px; }
-.lp-btn { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); background: var(--card-bg); box-shadow: var(--shadow-soft); }
-.lp-btn.big { width: 64px; height: 64px; background: var(--green); color: #fff; box-shadow: 0 var(--press) 0 var(--green-dark); }
+/* ===== 歌词全屏页 ===== */
+.lyrics-page {
+  position: fixed; inset: 0; z-index: 90;
+  background: transparent;
+  display: flex; flex-direction: column;
+  padding: env(safe-area-inset-top) var(--pad-x) env(safe-area-inset-bottom);
+  gap: var(--gap-s);
+}
+.lp-header { display: flex; align-items: center; gap: var(--gap-m); padding: var(--gap-s) 0; }
+.lp-back {
+  width: var(--tap-min); height: var(--tap-min);
+  border-radius: var(--radius-s);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-soft); background: var(--card-bg); box-shadow: var(--shadow-hard);
+  flex: none;
+}
+.lp-back .k-ico { width: 26px; height: 26px; }
+.lp-cover {
+  width: 56px; height: 56px; border-radius: var(--radius-s);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; flex: none; box-shadow: var(--shadow-soft);
+}
+.lp-title-area { flex: 1; min-width: 0; }
+.lp-title { margin: 0; color: var(--ink); font-weight: 900; font-size: var(--fs-title); }
+.lp-sub { margin: 2px 0 0; color: var(--ink-soft); font-weight: 700; font-size: var(--fs-small); }
+.lp-lyrics {
+  flex: 1; overflow-y: auto;
+  padding: var(--gap-l) var(--gap-m);
+  background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard);
+  text-align: left; -webkit-overflow-scrolling: touch;
+}
+.lp-line { color: var(--ink-faint); font-weight: 700; font-size: var(--fs-body); line-height: 2.2; transition: all 0.3s; }
+.lp-line.active { color: var(--ink); font-weight: 900; }
+.lp-controls { display: flex; align-items: center; justify-content: center; gap: var(--gap-m); padding: var(--gap-s) 0; }
+.lp-btn {
+  width: var(--tap-min); height: var(--tap-min); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-soft); background: var(--card-bg); box-shadow: var(--shadow-soft);
+}
+.lp-btn.big {
+  width: calc(var(--tap-min) + 16px); height: calc(var(--tap-min) + 16px);
+  background: var(--green); color: #fff;
+  box-shadow: 0 var(--press) 0 var(--green-dark);
+}
 .lp-btn .k-ico { width: 26px; height: 26px; }
 .lp-btn.big .k-ico { width: 30px; height: 30px; }
-.lp-progress { width: 85%; max-width: 420px; margin: 0 auto 20px; accent-color: var(--player-accent); }
-
+.lp-progress { width: 100%; accent-color: var(--yellow); height: 6px; }
 
 /* 播放列表抽屉内容 */
 .drawer-list { padding: 8px 0; }
@@ -255,13 +282,11 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .video-card:active { transform: scale(0.96); }
 .vc-emoji { font-size: 44px; }
 .vc-name { font-weight: 900; font-size: var(--fs-body); }
-.vc-sub { font-size: 11px; color: var(--ink-faint); font-weight: 700; }
+.vc-sub { font-size: var(--fs-small); color: var(--ink-faint); font-weight: 700; }
 .vc-play { position: absolute; bottom: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,0.4); color: #fff; display: flex; align-items: center; justify-content: center; }
 .vc-play .k-ico { width: 14px; height: 14px; }
 .video-mask { position: fixed; inset: 0; z-index: 99; background: rgba(0,0,0,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--gap-s); }
 .video-close { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); color: #fff; display: flex; align-items: center; justify-content: center; }
 .video-player { max-width: 95vw; max-height: 70vh; border-radius: 8px; }
 .video-caption { color: #ccc; margin: 0; font-weight: 700; }
-.tone-blue { background: #dbeafe; } .tone-green { background: #d1fae5; } .tone-orange { background: #fed7aa; }
-.tone-purple { background: #e9d5ff; } .tone-pink { background: #fce7f3; } .tone-teal { background: #99f6e4; }
 </style>
