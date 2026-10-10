@@ -1,20 +1,16 @@
 <script setup lang="ts">
 /**
- * 课时菜单：3 个大入口卡片
- *   🎵 学童谣 / 📖 学单词 / ⚔️ 闯关挑战
- *
- * 闯关挑战 = quiz→match→speak→talk 线性串联，通关后给卡片奖励。
+ * 课时菜单：
+ *   上半：3 个大入口（学童谣/学单词/闯关挑战）
+ *   下半：单独玩法小卡片（听音选图/连一连/跟我读/亲子对话）
  */
 import { computed } from "vue";
 import { Star, Music, BookOpen, Swords } from "@lucide/vue";
 import type { QuestAct } from "../../composables/useQuest";
 
 const props = defineProps<{
-  /** 全部玩法（含 stars 徽章） */
   activities: (QuestAct & { stars?: number })[];
-  /** 课程进度 0-100 */
   progress: number;
-  /** 闯关完成度：已通关数 / 总数 */
   questDone: number;
   questTotal: number;
 }>();
@@ -22,24 +18,23 @@ const emit = defineEmits<{
   openSong: [];
   openLearn: [];
   openQuest: [];
+  openActivity: [a: QuestAct & { stars?: number }];
 }>();
 
-/* 计算各入口数据 */
 const songStars = computed(() => props.activities.find((a) => a.key === "song")?.stars ?? 0);
 const learnStars = computed(() => props.activities.find((a) => a.key === "learn")?.stars ?? 0);
 
-/* 闯关包含的玩法（去掉 song 和 learn，剩下的就是闯关关卡） */
-const questActs = computed(() =>
+/** 单独玩法（闯关包含的） */
+const soloActs = computed(() =>
   props.activities.filter((a) => !["song", "learn"].includes(a.key))
 );
 </script>
 
 <template>
   <div class="menu view-body">
-    <!-- 顶部进度条 -->
     <div class="bar"><div class="bar-fill" :style="{ width: progress + '%' }"></div></div>
 
-    <div class="cards">
+    <div class="top-cards">
       <!-- 学童谣 -->
       <button class="big-card tone-green anim-fade-up" @click="emit('openSong')">
         <span class="bk-ico"><Music class="k-ico" /></span>
@@ -60,17 +55,34 @@ const questActs = computed(() =>
         <span v-if="learnStars" class="mini-stars"><Star class="k-ico star-fill" />{{ learnStars }}</span>
       </button>
 
-      <!-- 闯关挑战（最醒目） -->
+      <!-- 闯关挑战 -->
       <button class="big-card quest tone-gold anim-fade-up" style="animation-delay: 0.16s" @click="emit('openQuest')">
         <span class="bk-ico"><Swords class="k-ico" /></span>
         <span class="bk-body">
           <span class="bk-name">⚔️ 闯关挑战</span>
           <span class="bk-desc">
             <template v-if="questDone >= questTotal">🎉 已通关，再玩一次！</template>
-            <template v-else>{{ questActs.length }}关 → 得奥特曼卡片</template>
+            <template v-else>{{ questTotal }}关 → 得奥特曼卡片</template>
           </span>
         </span>
         <span class="quest-progress">{{ questDone }}/{{ questTotal }}</span>
+      </button>
+    </div>
+
+    <!-- 单独玩法 -->
+    <div class="solo-label">单独练习</div>
+    <div class="solo-grid">
+      <button
+        v-for="(a, i) in soloActs"
+        :key="a.key"
+        class="solo-card anim-fade-up"
+        :class="'tone-' + a.tone"
+        :style="{ animationDelay: (0.2 + i * 0.06) + 's' }"
+        @click="emit('openActivity', a)"
+      >
+        <component :is="a.icon" class="k-ico" />
+        <span class="solo-name">{{ a.name }}</span>
+        <span v-if="a.stars" class="solo-stars">⭐{{ a.stars }}</span>
       </button>
     </div>
   </div>
@@ -97,13 +109,10 @@ const questActs = computed(() =>
   transition: width 0.5s;
 }
 
-.cards {
+.top-cards {
   display: flex;
   flex-direction: column;
   gap: var(--gap-s);
-  flex: 1;
-  min-height: 0;
-  justify-content: center;
 }
 
 .big-card {
@@ -111,51 +120,32 @@ const questActs = computed(() =>
   align-items: center;
   gap: var(--gap-s);
   border-radius: var(--radius);
-  padding: clamp(16px, 3vh, 28px) var(--gap-s);
+  padding: clamp(12px, 2.5vh, 20px) var(--gap-s);
   position: relative;
   transition: transform 0.08s;
 }
-.big-card:active {
-  transform: scale(0.98);
-}
+.big-card:active { transform: scale(0.98); }
 @media (hover: hover) and (pointer: fine) {
   .big-card:hover { transform: translateY(-2px); }
 }
 
-.bk-ico {
-  font-size: clamp(36px, 7vh, 56px);
-  line-height: 1;
-  flex: none;
-}
-.bk-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  text-align: left;
-}
-.bk-name {
-  font-size: clamp(18px, 3.5vh, 28px);
-  font-weight: 900;
-}
-.bk-desc {
-  font-size: clamp(12px, 2vh, 16px);
-  opacity: 0.9;
-  font-weight: 700;
-}
+.bk-ico { font-size: clamp(28px, 5vh, 40px); flex: none; }
+.bk-body { display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.bk-name { font-size: clamp(16px, 3vh, 22px); font-weight: 900; }
+.bk-desc { font-size: clamp(11px, 1.8vh, 14px); opacity: 0.9; font-weight: 700; }
 
-/* 闯关卡片：金色边框 + 闪光 */
 .quest {
   border: 3px solid var(--gold, #f0b429);
-  box-shadow: 0 4px 20px rgba(240, 180, 41, 0.3);
+  box-shadow: 0 4px 16px rgba(240, 180, 41, 0.3);
 }
 .quest-progress {
   margin-left: auto;
-  font-size: clamp(16px, 3vh, 24px);
+  font-size: clamp(14px, 2.5vh, 20px);
   font-weight: 900;
   color: var(--gold, #f0b429);
   background: rgba(240, 180, 41, 0.15);
   border-radius: var(--radius-pill);
-  padding: 4px 14px;
+  padding: 4px 12px;
   flex: none;
 }
 
@@ -164,12 +154,45 @@ const questActs = computed(() =>
   background: var(--overlay);
   color: var(--gold);
   border-radius: var(--radius-pill);
-  padding: 4px 12px;
-  font-size: clamp(12px, 2vh, 16px);
+  padding: 3px 10px;
+  font-size: clamp(11px, 1.8vh, 14px);
   font-weight: 800;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   flex: none;
+}
+
+/* 单独练习 */
+.solo-label {
+  font-size: clamp(12px, 2vh, 15px);
+  font-weight: 800;
+  color: var(--ink-faint);
+  margin-top: var(--gap-xs);
+}
+.solo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: var(--gap-s);
+}
+.solo-card {
+  border-radius: var(--radius);
+  padding: var(--gap-s);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  transition: transform 0.08s;
+}
+.solo-card:active { transform: scale(0.96); }
+.solo-card .k-ico { font-size: clamp(24px, 4vh, 32px); }
+.solo-name { font-size: clamp(12px, 2vh, 15px); font-weight: 800; }
+.solo-stars {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 10px;
+  font-weight: 800;
 }
 </style>

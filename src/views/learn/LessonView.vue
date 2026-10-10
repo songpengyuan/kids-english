@@ -241,6 +241,7 @@ const levelTagAria = computed(() =>
       @open-song="openSong"
       @open-learn="openLearn"
       @open-quest="startQuest"
+      @open-activity="openSound"
     />
 
     <!-- 各玩法 -->
