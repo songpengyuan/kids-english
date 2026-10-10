@@ -3,11 +3,12 @@ import { ref, computed, onBeforeUnmount } from "vue";
 import { lessons, asset } from "../../data/lessons";
 import AppHeader from "../../components/layout/AppHeader.vue";
 import { useProgressStore } from "../../stores/progress";
-import { Play, Pause, SkipBack, SkipForward, Music, Video, X, ChevronDown } from "@lucide/vue";
+import { Play, Pause, SkipBack, SkipForward, Music, Video, X, ChevronDown, Repeat, Repeat1, Shuffle, ListMusic } from "@lucide/vue";
 
 type SubTab = "songs" | "videos";
 const subTab = ref<SubTab>("songs");
-const nowPlaying = ref(false); // 是否展开歌词页
+const nowPlaying = ref(false);
+const showPlaylist = ref(false);
 
 const songList = computed(() =>
   lessons.filter((l) => l.song.audio).map((l) => ({
@@ -26,6 +27,8 @@ const audio = ref<HTMLAudioElement | null>(null);
 const currentIdx = ref(-1);
 const playing = ref(false);
 const progress = ref(0);
+const repeatMode = ref<"off"|"all"|"one">("off");
+const shuffleOn = ref(false);
 const currentSong = computed(() => currentIdx.value >= 0 ? songList.value[currentIdx.value] : null);
 
 const currentLyrics = computed(() => {
@@ -55,12 +58,24 @@ function togglePlay() {
   if (playing.value) { a.pause(); playing.value = false; } else { a.play(); playing.value = true; }
 }
 function next() {
+  if (repeatMode.value === "one") {
+    if (audio.value) { audio.value.currentTime = 0; audio.value.play(); }
+    return;
+  }
+  if (shuffleOn.value && songList.value.length > 1) {
+    let r; do { r = Math.floor(Math.random() * songList.value.length); } while (r === currentIdx.value);
+    playSong(r); return;
+  }
   if (currentIdx.value < songList.value.length - 1) playSong(currentIdx.value + 1);
+  else if (repeatMode.value === "all") playSong(0);
   else playing.value = false;
 }
 function prev() {
   if (audio.value && audio.value.currentTime > 3) { audio.value.currentTime = 0; return; }
   if (currentIdx.value > 0) playSong(currentIdx.value - 1);
+}
+function toggleRepeat() {
+  repeatMode.value = repeatMode.value === "off" ? "all" : repeatMode.value === "all" ? "one" : "off";
 }
 function seek(e: Event) {
   if (audio.value) audio.value.currentTime = (Number((e.target as HTMLInputElement).value) / 100) * (audio.value.duration || 0);
@@ -71,18 +86,13 @@ const progStore = useProgressStore();
 let listenTimer: number | null = null;
 let lastTick = 0;
 function startListenTimer() {
-  stopListenTimer();
-  lastTick = Date.now();
+  stopListenTimer(); lastTick = Date.now();
   listenTimer = window.setInterval(() => {
-    const now = Date.now();
-    const sec = (now - lastTick) / 1000;
-    lastTick = now;
+    const sec = (Date.now() - lastTick) / 1000; lastTick = Date.now();
     progStore.addDailyActivity(sec);
   }, 5000);
 }
-function stopListenTimer() {
-  if (listenTimer) { clearInterval(listenTimer); listenTimer = null; }
-}
+function stopListenTimer() { if (listenTimer) { clearInterval(listenTimer); listenTimer = null; } }
 
 const playingVideo = ref<{ src: string; titleZh: string; title: string } | null>(null);
 function playVideo(v: { src: string; titleZh: string; title: string }) { playingVideo.value = v; startListenTimer(); }
@@ -93,13 +103,17 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
     <!-- ===== 歌词全屏页 ===== -->
     <div v-if="nowPlaying && currentSong" class="lyrics-page">
       <div class="lp-top">
-        <button class="lp-collapse" @click="nowPlaying = false">
-          <ChevronDown class="k-ico" />
-        </button>
+        <button class="lp-collapse" @click="nowPlaying = false"><ChevronDown class="k-ico" /></button>
         <div class="lp-title-area">
           <p class="lp-title">{{ currentSong.title }}</p>
           <p class="lp-sub">{{ currentSong.titleZh }}</p>
         </div>
+        <button class="lp-mode" @click="toggleRepeat">
+          <Repeat1 v-if="repeatMode === 'one'" class="k-ico" />
+          <Repeat v-else-if="repeatMode === 'all'" class="k-ico" />
+          <Shuffle v-else-if="shuffleOn" class="k-ico" />
+          <Repeat v-else class="k-ico" style="opacity:0.4" />
+        </button>
       </div>
       <div class="lp-lyrics">
         <p v-for="(line, i) in currentLyrics" :key="i" class="lp-line" :class="{ active: Math.round(progress * currentLyrics.length) === i }">{{ line }}</p>
@@ -107,10 +121,9 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
       </div>
       <div class="lp-controls">
         <button class="lp-btn" @click="prev"><SkipBack class="k-ico" /></button>
-        <button class="lp-btn big" @click="togglePlay">
-          <Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" />
-        </button>
+        <button class="lp-btn big" @click="togglePlay"><Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" /></button>
         <button class="lp-btn" @click="next"><SkipForward class="k-ico" /></button>
+        <button class="lp-btn" @click="showPlaylist = true"><ListMusic class="k-ico" /></button>
       </div>
       <input class="lp-progress" type="range" :value="Math.round(progress * 100)" @input="seek" min="0" max="100" />
     </div>
@@ -149,19 +162,29 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
           </div>
         </template>
       </div>
-
-      <!-- 迷你播放器（列表页底部） -->
-      <div v-if="currentSong" class="mini-player" @click="nowPlaying = true">
-        <div class="mp-album tone-ico" :class="'tone-' + currentSong.tone">{{ currentSong.emoji }}</div>
-        <div class="mp-info">
-          <p class="mp-title">{{ currentSong.title }}</p>
-          <p class="mp-sub">{{ currentSong.titleZh }}</p>
-        </div>
-        <button class="mp-btn" @click.stop="togglePlay">
-          <Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" />
-        </button>
-      </div>
     </template>
+
+    <!-- 播放列表抽屉 -->
+    <div v-if="showPlaylist" class="drawer-mask" @click.self="showPlaylist = false">
+      <div class="drawer">
+        <div class="drawer-head">
+          <p class="drawer-title">播放列表（{{ songList.length }}）</p>
+          <button class="drawer-close" @click="showPlaylist = false"><X class="k-ico" /></button>
+        </div>
+        <div class="drawer-list">
+          <button v-for="(s, i) in songList" :key="s.id" class="drawer-item"
+            :class="{ active: currentIdx === i }" @click="playSong(i); showPlaylist = false">
+            <span class="di-idx">{{ i + 1 }}</span>
+            <span class="di-emoji">{{ s.emoji }}</span>
+            <span class="di-info">
+              <span class="di-title">{{ s.title }}</span>
+              <span class="di-sub">{{ s.titleZh }}</span>
+            </span>
+            <span v-if="currentIdx === i && playing" class="eq"><i></i><i></i><i></i></span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- 视频播放 -->
     <div v-if="playingVideo" class="video-mask" @click.self="playingVideo = null">
@@ -197,15 +220,6 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .eq i:nth-child(3) { height: 7px; animation-delay: 0.4s; }
 @keyframes eq { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1.2); } }
 
-/* 迷你播放器 */
-.mini-player { position: fixed; bottom: calc(64px + env(safe-area-inset-bottom)); left: 0; right: 0; max-width: 480px; margin-inline: var(--pad-x); z-index: 35; background: var(--card-bg); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
-.mp-album { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex: none; }
-.mp-info { flex: 1; min-width: 0; }
-.mp-title { margin: 0; font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mp-sub { margin: 1px 0 0; font-size: 11px; color: var(--ink-faint); font-weight: 700; }
-.mp-btn { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--green); color: #fff; flex: none; }
-.mp-btn .k-ico { width: 20px; height: 20px; }
-
 /* 歌词全屏页 */
 .lyrics-page { position: fixed; inset: 0; z-index: 90; background: linear-gradient(180deg, #1e293b, #0f172a); display: flex; flex-direction: column; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
 .lp-top { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
@@ -214,15 +228,34 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .lp-title-area { flex: 1; text-align: center; }
 .lp-title { margin: 0; color: #fff; font-weight: 900; font-size: 18px; }
 .lp-sub { margin: 2px 0 0; color: rgba(255,255,255,0.5); font-weight: 700; font-size: 13px; }
+.lp-mode { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #4ade80; }
+.lp-mode .k-ico { width: 20px; height: 20px; }
 .lp-lyrics { flex: 1; overflow-y: auto; padding: 20px 32px; text-align: left; -webkit-overflow-scrolling: touch; }
 .lp-line { color: rgba(255,255,255,0.3); font-weight: 700; font-size: 17px; line-height: 2.2; transition: all 0.3s; }
 .lp-line.active { color: #fff; font-size: 19px; font-weight: 900; }
-.lp-controls { display: flex; align-items: center; justify-content: center; gap: 40px; padding: 16px 0 8px; }
+.lp-controls { display: flex; align-items: center; justify-content: center; gap: 32px; padding: 16px 0 8px; }
 .lp-btn { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.8); }
 .lp-btn.big { width: 64px; height: 64px; background: #fff; color: #1e293b; }
 .lp-btn .k-ico { width: 26px; height: 26px; }
 .lp-btn.big .k-ico { width: 30px; height: 30px; }
 .lp-progress { width: 85%; max-width: 420px; margin: 0 auto 20px; accent-color: #4ade80; }
+
+/* 播放列表抽屉 */
+.drawer-mask { position: fixed; inset: 0; z-index: 95; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; }
+.drawer { width: 100%; max-width: 480px; margin: 0 auto; background: #1e293b; border-radius: 20px 20px 0 0; max-height: 70vh; display: flex; flex-direction: column; }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.drawer-title { margin: 0; color: #fff; font-weight: 900; font-size: 16px; }
+.drawer-close { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.15); color: #fff; display: flex; align-items: center; justify-content: center; }
+.drawer-close .k-ico { width: 18px; height: 18px; }
+.drawer-list { overflow-y: auto; padding: 8px 0; -webkit-overflow-scrolling: touch; }
+.drawer-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 20px; text-align: left; }
+.drawer-item:active { background: rgba(255,255,255,0.05); }
+.drawer-item.active .di-title { color: #4ade80; }
+.di-idx { width: 20px; text-align: center; color: rgba(255,255,255,0.3); font-weight: 700; font-size: 13px; flex: none; }
+.di-emoji { font-size: 24px; flex: none; }
+.di-info { flex: 1; min-width: 0; }
+.di-title { display: block; color: #fff; font-weight: 700; font-size: 15px; }
+.di-sub { display: block; color: rgba(255,255,255,0.4); font-size: 12px; }
 
 /* 视频 */
 .video-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-s); padding: var(--gap-s) var(--pad-x) 0; }
@@ -233,7 +266,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .vc-sub { font-size: 11px; color: var(--ink-faint); font-weight: 700; }
 .vc-play { position: absolute; bottom: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,0.4); color: #fff; display: flex; align-items: center; justify-content: center; }
 .vc-play .k-ico { width: 14px; height: 14px; }
-.video-mask { position: fixed; inset: 0; z-index: 95; background: rgba(0,0,0,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--gap-s); }
+.video-mask { position: fixed; inset: 0; z-index: 99; background: rgba(0,0,0,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--gap-s); }
 .video-close { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); color: #fff; display: flex; align-items: center; justify-content: center; }
 .video-player { max-width: 95vw; max-height: 70vh; border-radius: 8px; }
 .video-caption { color: #ccc; margin: 0; font-weight: 700; }
