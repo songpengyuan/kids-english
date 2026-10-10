@@ -2,7 +2,7 @@
 import { ref, computed, onBeforeUnmount } from "vue";
 import { lessons, asset } from "../../data/lessons";
 import AppHeader from "../../components/layout/AppHeader.vue";
-import { Play, Pause, SkipBack, SkipForward, Music, Video, X } from "@lucide/vue";
+import { Play, Pause, SkipBack, SkipForward, Music, Video, X, Repeat, Repeat1, Shuffle } from "@lucide/vue";
 
 type SubTab = "songs" | "videos";
 const subTab = ref<SubTab>("songs");
@@ -24,6 +24,8 @@ const audio = ref<HTMLAudioElement | null>(null);
 const currentIdx = ref(-1);
 const playing = ref(false);
 const progress = ref(0);
+const repeatMode = ref<"off"|"all"|"one">("off"); // 循环模式
+const shuffleOn = ref(false); // 随机播放
 const currentSong = computed(() => currentIdx.value >= 0 ? songList.value[currentIdx.value] : null);
 
 function ensureAudio() {
@@ -46,10 +48,30 @@ function togglePlay() {
   if (playing.value) { a.pause(); playing.value = false; } else { a.play(); playing.value = true; }
 }
 function next() {
+  // 单曲循环：重新播当前
+  if (repeatMode.value === "one") {
+    if (audio.value) { audio.value.currentTime = 0; audio.value.play(); }
+    return;
+  }
+  // 随机
+  if (shuffleOn.value) {
+    if (songList.value.length <= 1) return;
+    let r;
+    do { r = Math.floor(Math.random() * songList.value.length); } while (r === currentIdx.value);
+    playSong(r); return;
+  }
+  // 顺序
   if (currentIdx.value < songList.value.length - 1) playSong(currentIdx.value + 1);
+  else if (repeatMode.value === "all") playSong(0);
   else playing.value = false;
 }
-function prev() { if (currentIdx.value > 0) playSong(currentIdx.value - 1); }
+function prev() {
+  if (audio.value && audio.value.currentTime > 3) { audio.value.currentTime = 0; return; }
+  if (currentIdx.value > 0) playSong(currentIdx.value - 1);
+}
+function toggleRepeat() {
+  repeatMode.value = repeatMode.value === "off" ? "all" : repeatMode.value === "all" ? "one" : "off";
+}
 function seek(e: Event) {
   if (audio.value) audio.value.currentTime = (Number((e.target as HTMLInputElement).value) / 100) * (audio.value.duration || 0);
 }
@@ -86,11 +108,18 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
             <p class="mp-title">{{ currentSong.titleZh }}</p>
             <div class="mp-bar"><input type="range" :value="Math.round(progress * 100)" @input="seek" min="0" max="100" /></div>
           </div>
+          <button class="mp-btn" :class="{ active: shuffleOn }" @click="shuffleOn = !shuffleOn" title="随机">
+            <Shuffle class="k-ico" />
+          </button>
           <button class="mp-btn" @click="prev"><SkipBack class="k-ico" /></button>
           <button class="mp-btn big" @click="togglePlay">
             <Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" />
           </button>
           <button class="mp-btn" @click="next"><SkipForward class="k-ico" /></button>
+          <button class="mp-btn" :class="{ active: repeatMode !== 'off' }" @click="toggleRepeat" title="循环">
+            <Repeat1 v-if="repeatMode === 'one'" class="k-ico" />
+            <Repeat v-else class="k-ico" />
+          </button>
         </div>
       </template>
       <template v-else>
@@ -141,6 +170,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .mp-bar input { width: 100%; height: 4px; accent-color: var(--green); }
 .mp-btn { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex: none; }
 .mp-btn.big { width: 44px; height: 44px; background: var(--green); color: #fff; }
+.mp-btn.active { color: var(--green); background: rgba(74, 222, 128, 0.15); }
 .mp-btn .k-ico { width: 20px; height: 20px; }
 .mp-btn.big .k-ico { width: 22px; height: 22px; }
 .video-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-s); padding: var(--gap-s) var(--pad-x) 0; }
