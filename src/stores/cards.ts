@@ -54,9 +54,13 @@ export function drawCard(): Card {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+const KEY = "kids-cards";
+
 export const useCardsStore = defineStore("cards", () => {
   /** 已收集卡片 id 列表（含重复次数） */
-  const owned = ref<Record<string, number>>({});
+  const owned = ref<Record<string, number>>(
+    JSON.parse(localStorage.getItem(KEY) || "{}")
+  );
 
   /** 最近抽到的卡（用于结算页展示） */
   const lastCard = ref<Card | null>(null);
@@ -66,6 +70,7 @@ export const useCardsStore = defineStore("cards", () => {
     const card = drawCard();
     owned.value[card.id] = (owned.value[card.id] ?? 0) + 1;
     lastCard.value = card;
+    localStorage.setItem(KEY, JSON.stringify(owned.value));
     return card;
   }
 
@@ -79,6 +84,4 @@ export const useCardsStore = defineStore("cards", () => {
   const allCards = computed(() => CARD_POOL);
 
   return { owned, lastCard, collect, uniqueCount, totalCount, allCards };
-}, {
-  persist: { key: "kids-cards" }
 });
