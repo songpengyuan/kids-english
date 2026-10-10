@@ -142,7 +142,7 @@ function openLearn() {
 }
 /** 菜单：闯关挑战 */
 function startQuest() {
-  flow.startLessonQuest();
+  router.push("/game");
 }
 
 /** 闯关包含的玩法（去掉 song/learn） */
