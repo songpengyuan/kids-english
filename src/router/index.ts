@@ -50,8 +50,15 @@ export const router = createRouter({
       children: [
         // 空子路径承载学习主页（父容器无组件 → 顶层渲染，KeepAlive 可缓存）
         { path: "", name: "learn", component: LearnView, meta: { title: "丞丞ABC" } },
-        // 课程菜单 + 题目详情（stage 子路径：课 id + 题型标记，如 /learn/l4/learn）
-        { path: ":id/:stage?", name: "lesson", component: LessonView, meta: { title: "学习" } },
+        // 课程菜单（/learn/l9）
+        { path: ":id", name: "lesson", component: LessonView, meta: { title: "学习" } },
+        // 每种题型独立路由（/learn/l9/quiz、/learn/l9/match ...）
+        { path: ":id/learn", name: "lesson-learn", component: LessonView, meta: { title: "学单词" } },
+        { path: ":id/quiz", name: "lesson-quiz", component: LessonView, meta: { title: "听音选图" } },
+        { path: ":id/match", name: "lesson-match", component: LessonView, meta: { title: "连一连" } },
+        { path: ":id/speak", name: "lesson-speak", component: LessonView, meta: { title: "跟读" } },
+        { path: ":id/song", name: "lesson-song", component: LessonView, meta: { title: "唱童谣" } },
+        { path: ":id/talk", name: "lesson-talk", component: LessonView, meta: { title: "亲子对话" } },
         // 错词复习（学习闭环子页）
         { path: "review", name: "review", component: () => import("../views/learn/ReviewView.vue"), meta: { title: "错词复习" } },
       ],

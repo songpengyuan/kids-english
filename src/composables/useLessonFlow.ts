@@ -83,9 +83,12 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   /* ---------- 引导（路由解析） ---------- */
   function boot() {
     if (lesson.value) progress.setLastLesson(lesson.value.id);
-    // stage 子路径优先（#/learn/l4/learn），旧 query 深链（?stage=learn）兼容
+    // stage 来源：路由名（lesson-quiz → quiz）> params.stage > query.stage
+    const nameStage = typeof route.name === "string" && route.name.startsWith("lesson-")
+      ? route.name.slice("lesson-".length)
+      : "";
     const ps = typeof route.params.stage === "string" ? route.params.stage : "";
-    const s = ps || (typeof route.query.stage === "string" ? route.query.stage : "");
+    const s = nameStage || ps || (typeof route.query.stage === "string" ? route.query.stage : "");
     if (quest.questMode.value) {
       // 单关模式：地图点关卡直接开玩对应玩法（跳过菜单/关卡卡）
       const idx = quest.bootFromQuery();
