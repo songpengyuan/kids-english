@@ -257,16 +257,16 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .lp-header { display: flex; align-items: center; gap: var(--gap-m); padding: var(--gap-s) 0; }
 .lp-back {
   width: var(--tap-min); height: var(--tap-min);
-  border-radius: var(--radius-s);
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  color: var(--ink-soft); background: var(--card-bg); box-shadow: var(--shadow-hard);
+  color: var(--ink-soft); background: transparent;
   flex: none;
 }
-.lp-back .k-ico { width: 26px; height: 26px; }
+.lp-back .k-ico { width: 28px; height: 28px; }
 .lp-cover {
   width: 56px; height: 56px; border-radius: var(--radius-s);
   display: flex; align-items: center; justify-content: center;
-  font-size: 32px; flex: none; box-shadow: var(--shadow-soft);
+  font-size: 32px; flex: none;
 }
 .lp-title-area { flex: 1; min-width: 0; }
 .lp-title { margin: 0; color: var(--ink); font-weight: 900; font-size: var(--fs-title); }
