@@ -28,7 +28,7 @@ const audio = ref<HTMLAudioElement | null>(null);
 const currentIdx = ref(-1);
 const playing = ref(false);
 const progress = ref(0);
-const repeatMode = ref<RepeatMode>("off");
+const repeatMode = ref<RepeatMode>("all");
 const shuffleOn = ref(false);
 const currentSong = computed(() => currentIdx.value >= 0 ? songList.value[currentIdx.value] : null);
 
