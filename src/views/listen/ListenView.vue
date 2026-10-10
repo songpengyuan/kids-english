@@ -109,18 +109,19 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
           <p class="lp-title">{{ currentSong.title }}</p>
           <p class="lp-sub">{{ currentSong.titleZh }}</p>
         </div>
-        <button class="lp-mode" @click="toggleRepeat">
-          <Repeat1 v-if="repeatMode === 'one'" class="k-ico" />
-          <Repeat v-else-if="repeatMode === 'all'" class="k-ico" />
-          <Shuffle v-else-if="shuffleOn" class="k-ico" />
-          <Repeat v-else class="k-ico" style="opacity:0.4" />
-        </button>
+
       </div>
       <div class="lp-lyrics">
         <p v-for="(line, i) in currentLyrics" :key="i" class="lp-line" :class="{ active: Math.round(progress * currentLyrics.length) === i }">{{ line }}</p>
         <p v-if="currentLyrics.length === 0" class="lp-line">🎵</p>
       </div>
       <div class="lp-controls">
+        <button class="lp-btn" @click="toggleRepeat">
+          <Repeat1 v-if="repeatMode === 'one'" class="k-ico" />
+          <Repeat v-else-if="repeatMode === 'all'" class="k-ico" />
+          <Shuffle v-else-if="shuffleOn" class="k-ico" />
+          <Repeat v-else class="k-ico" style="opacity:0.4" />
+        </button>
         <button class="lp-btn" @click="prev"><SkipBack class="k-ico" /></button>
         <button class="lp-btn big" @click="togglePlay"><Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" /></button>
         <button class="lp-btn" @click="next"><SkipForward class="k-ico" /></button>
