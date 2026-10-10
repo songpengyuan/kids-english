@@ -19,6 +19,7 @@ import { lessons, type Lesson } from "../data/lessons";
 import type { QuestAct, UseQuest } from "./useQuest";
 import { bigCelebrate, celebrate } from "../services/effects";
 import { speak, speakZh } from "../services/speech";
+import { useCardsStore } from "../stores/cards";
 import { hapticTap } from "../services/haptics";
 
 export type LessonStage = "menu" | "learn" | "quiz" | "match" | "speak" | "song" | "talk" | "result";
@@ -52,6 +53,7 @@ export interface UseLessonFlow {
   streakJustHit: Ref<boolean>;
   lessonProgress: ComputedRef<number>;
   nextLesson: ComputedRef<Lesson | null>;
+  lessonQuest: Ref<boolean>;
   boot: () => void;
   open: (a: QuestAct) => void;
   showStars: (key: string) => number;
@@ -62,10 +64,14 @@ export interface UseLessonFlow {
   backToMap: () => void;
   goNextLevel: () => void;
   settleActivity: () => void;
+  startLessonQuest: () => void;
 }
 
 export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   const { lesson, activities, route, router, progress, streak, isNarrow, quest } = options;
+
+  /** 课内闯关模式：从菜单点"闯关挑战"进入，自动串联 quiz→match→speak→talk */
+  const lessonQuest = ref(false);
 
   const stage = ref<LessonStage>("menu");
   const lastStars = ref(0);
@@ -158,7 +164,25 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     // 今日目标：新学 1 关（首次通关）+ 复习到期词（复习页记）
     const first = streak.markNewLevel(firstTime);
     streakJustHit.value = first && streak.todayDone;
-    if (quest.questMode.value) {
+    if (lessonQuest.value) {
+      // 课内闯关：找下一个闯关玩法
+      const questActs = activities.value.filter((a) => !["song", "learn"].includes(a.key));
+      const curIdx = questActs.findIndex((a) => a.key === actKey || a.game === actKey);
+      const next = questActs[curIdx + 1];
+      if (next) {
+        celebrate();
+        speakZh("下一关，加油");
+        setTimeout(() => open(next), 800);
+      } else {
+        // 最后一关完成 → 通关结算 + 抽卡片
+        lessonQuest.value = false;
+        quest.finish();
+        useCardsStore().collect();
+        bigCelebrate();
+        speakZh("闯关完成，获得新卡片");
+        stage.value = "result";
+      }
+    } else if (quest.questMode.value) {
       finishQuestStep();
     } else {
       // 庆祝收敛：满分才双彩带大庆祝，其余用小彩带
@@ -209,12 +233,24 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     return i >= 0 ? lessons[i + 1] || null : null;
   });
 
+  /** 课内闯关：从菜单进入，自动串联后面的玩法 */
+  function startLessonQuest() {
+    lessonQuest.value = true;
+    quest.reset();
+    // 找到第一个闯关玩法（quiz）
+    const questActs = activities.value.filter((a) => !["song", "learn"].includes(a.key));
+    if (questActs.length) {
+      open(questActs[0]);
+    }
+  }
+
   return {
     stage,
     lastStars,
     streakJustHit,
     lessonProgress,
     nextLesson,
+    lessonQuest,
     boot,
     open,
     showStars,
@@ -224,6 +260,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     afterSong,
     backToMap,
     goNextLevel,
-    settleActivity
+    settleActivity,
+    startLessonQuest
   };
 }

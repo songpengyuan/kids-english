@@ -1,97 +1,76 @@
 <script setup lang="ts">
 /**
- * 课时菜单（从 LessonView 拆出的视图组件，2026-09-28 P1-4）。
+ * 课时菜单：3 个大入口卡片
+ *   🎵 学童谣 / 📖 学单词 / ⚔️ 闯关挑战
  *
- * 职责：一课内的玩法入口网格——进度条 + 玩法卡片（图标/名称/描述/已获星徽章）。
- * 数据与测量都在 useLessonFlow（actsStyle 按可用空间算列数，actsEl 是网格 DOM 引用），
- * 这里只负责渲染与点击上报，不持有任何课程状态。
+ * 闯关挑战 = quiz→match→speak→talk 线性串联，通关后给卡片奖励。
  */
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
-import { Star } from "@lucide/vue";
+import { computed } from "vue";
+import { Star, Music, BookOpen, Swords } from "@lucide/vue";
 import type { QuestAct } from "../../composables/useQuest";
-import { useViewport } from "../../composables/useViewport";
-import { pickColumns } from "../../utils/layout";
 
 const props = defineProps<{
-  /** 玩法清单（含图标/tone/名称/描述，由课时页组装） */
+  /** 全部玩法（含 stars 徽章） */
   activities: (QuestAct & { stars?: number })[];
-  /** 课程进度 0-100（顶栏课程进度条） */
+  /** 课程进度 0-100 */
   progress: number;
+  /** 闯关完成度：已通关数 / 总数 */
+  questDone: number;
+  questTotal: number;
 }>();
-const emit = defineEmits<{ open: [a: QuestAct] }>();
+const emit = defineEmits<{
+  openSong: [];
+  openLearn: [];
+  openQuest: [];
+}>();
 
-/* ---------- 玩法卡网格排布测量（原 useLessonFlow，内聚到菜单自身） ---------- */
-const GAP = 12;
-const MIN_W = 130;
-const MIN_H = 96;
-const { isNarrow } = useViewport();
-const actsEl = ref<HTMLDivElement | null>(null);
-const area = reactive({ w: 0, h: 0 });
-let ro: ResizeObserver | null = null;
-let raf: number | null = null;
+/* 计算各入口数据 */
+const songStars = computed(() => props.activities.find((a) => a.key === "song")?.stars ?? 0);
+const learnStars = computed(() => props.activities.find((a) => a.key === "learn")?.stars ?? 0);
 
-function measure() {
-  const el = actsEl.value;
-  if (!el) return;
-  const r = el.getBoundingClientRect();
-  area.w = r.width;
-  area.h = r.height;
-}
-function scheduleMeasure() {
-  if (raf) cancelAnimationFrame(raf);
-  raf = requestAnimationFrame(() => {
-    raf = null;
-    measure();
-  });
-}
-onMounted(() => {
-  measure();
-  ro = new ResizeObserver(scheduleMeasure);
-  if (actsEl.value) ro.observe(actsEl.value);
-});
-onBeforeUnmount(() => {
-  if (ro) ro.disconnect();
-  if (raf) cancelAnimationFrame(raf);
-});
-
-const actsStyle = computed(() => {
-  const cols =
-    !area.w || !area.h
-      ? isNarrow.value
-        ? 2
-        : 3
-      : pickColumns({
-          width: area.w,
-          height: area.h,
-          count: props.activities.length,
-          minCardW: MIN_W,
-          minCardH: MIN_H,
-          gap: GAP,
-          maxCols: isNarrow.value ? 2 : 5,
-          targetAspect: 1.25
-        }).cols;
-  return { "--cols": String(cols), "--grid-gap": `${GAP}px` };
-});
+/* 闯关包含的玩法（去掉 song 和 learn，剩下的就是闯关关卡） */
+const questActs = computed(() =>
+  props.activities.filter((a) => !["song", "learn"].includes(a.key))
+);
 </script>
 
 <template>
   <div class="menu view-body">
-    <div class="bar"><div class="bar-fill" :style="{ width: props.progress + '%' }"></div></div>
-    <div class="acts" ref="actsEl" :style="actsStyle">
-      <button
-        v-for="(a, i) in props.activities"
-        :key="a.key"
-        class="act anim-fade-up"
-        :class="'tone-' + a.tone"
-        :style="{ animationDelay: i * 0.08 + 's' }"
-        @click="emit('open', a)"
-      >
-        <component :is="a.icon" class="k-ico ico" />
-        <span class="nm">{{ a.name }}</span>
-        <span class="ds">{{ a.desc }}</span>
-        <span v-if="a.stars" class="mini-stars">
-          <Star class="k-ico star-fill" />{{ a.stars }}
+    <!-- 顶部进度条 -->
+    <div class="bar"><div class="bar-fill" :style="{ width: progress + '%' }"></div></div>
+
+    <div class="cards">
+      <!-- 学童谣 -->
+      <button class="big-card tone-green anim-fade-up" @click="emit('openSong')">
+        <span class="bk-ico"><Music class="k-ico" /></span>
+        <span class="bk-body">
+          <span class="bk-name">学童谣</span>
+          <span class="bk-desc">听歌看MV</span>
         </span>
+        <span v-if="songStars" class="mini-stars"><Star class="k-ico star-fill" />{{ songStars }}</span>
+      </button>
+
+      <!-- 学单词 -->
+      <button class="big-card tone-orange anim-fade-up" style="animation-delay: 0.08s" @click="emit('openLearn')">
+        <span class="bk-ico"><BookOpen class="k-ico" /></span>
+        <span class="bk-body">
+          <span class="bk-name">学单词</span>
+          <span class="bk-desc">看图听发音</span>
+        </span>
+        <span v-if="learnStars" class="mini-stars"><Star class="k-ico star-fill" />{{ learnStars }}</span>
+      </button>
+
+      <!-- 闯关挑战（最醒目） -->
+      <button class="big-card quest tone-gold anim-fade-up" style="animation-delay: 0.16s" @click="emit('openQuest')">
+        <span class="bk-ico"><Swords class="k-ico" /></span>
+        <span class="bk-body">
+          <span class="bk-name">⚔️ 闯关挑战</span>
+          <span class="bk-desc">
+            <template v-if="questDone >= questTotal">🎉 已通关，再玩一次！</template>
+            <template v-else>{{ questActs.length }}关 → 得奥特曼卡片</template>
+          </span>
+        </span>
+        <span class="quest-progress">{{ questDone }}/{{ questTotal }}</span>
       </button>
     </div>
   </div>
@@ -101,7 +80,6 @@ const actsStyle = computed(() => {
 .menu {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: var(--gap-s);
 }
 
@@ -119,74 +97,79 @@ const actsStyle = computed(() => {
   transition: width 0.5s;
 }
 
-/* 剩余空间全部给卡片网格，列数由 useLessonFlow 按可用尺寸算出 */
-.acts {
-  display: grid;
-  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
-  gap: var(--grid-gap, 12px);
-  width: 100%;
-  flex: 1;
-  min-height: 0;
-}
-/* 底色 / 立体投影 / 文字色由 .tone-* 统一注入（见 base.css），这里只管排布 */
-.act {
-  position: relative;
-  border-radius: var(--radius);
-  padding: var(--gap-xs) 4px;
+.cards {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  transition: transform 0.08s;
+  gap: var(--gap-s);
+  flex: 1;
   min-height: 0;
-  min-width: 0;
-  overflow: hidden;
+  justify-content: center;
 }
-.act .ico {
-  font-size: var(--fs-emoji-l);
+
+.big-card {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-s);
+  border-radius: var(--radius);
+  padding: clamp(16px, 3vh, 28px) var(--gap-s);
+  position: relative;
+  transition: transform 0.08s;
 }
-.act .nm {
-  font-size: clamp(14px, min(2.5vh, 2vw), 22px);
-  font-weight: 800;
-  white-space: nowrap;
+.big-card:active {
+  transform: scale(0.98);
 }
-.act .ds {
-  font-size: clamp(10px, min(1.6vh, 1.3vw), 14px);
-  opacity: 0.92;
+@media (hover: hover) and (pointer: fine) {
+  .big-card:hover { transform: translateY(-2px); }
+}
+
+.bk-ico {
+  font-size: clamp(36px, 7vh, 56px);
+  line-height: 1;
+  flex: none;
+}
+.bk-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+.bk-name {
+  font-size: clamp(18px, 3.5vh, 28px);
+  font-weight: 900;
+}
+.bk-desc {
+  font-size: clamp(12px, 2vh, 16px);
+  opacity: 0.9;
   font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
 }
+
+/* 闯关卡片：金色边框 + 闪光 */
+.quest {
+  border: 3px solid var(--gold, #f0b429);
+  box-shadow: 0 4px 20px rgba(240, 180, 41, 0.3);
+}
+.quest-progress {
+  margin-left: auto;
+  font-size: clamp(16px, 3vh, 24px);
+  font-weight: 900;
+  color: var(--gold, #f0b429);
+  background: rgba(240, 180, 41, 0.15);
+  border-radius: var(--radius-pill);
+  padding: 4px 14px;
+  flex: none;
+}
+
 .mini-stars {
-  position: absolute;
-  top: 6px;
-  right: 8px;
+  margin-left: auto;
   background: var(--overlay);
   color: var(--gold);
   border-radius: var(--radius-pill);
-  padding: 2px 8px;
-  font-size: clamp(10px, 1.7vh, 14px);
+  padding: 4px 12px;
+  font-size: clamp(12px, 2vh, 16px);
   font-weight: 800;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-}
-
-/* 桌面鼠标 hover：玩法卡轻微上浮 */
-@media (hover: hover) and (pointer: fine) {
-  .act:hover {
-    transform: translateY(-2px) scale(1.02);
-    filter: brightness(1.04);
-  }
-}
-
-/* 卡片太矮时，副标题会成为负担，藏掉换取主标题和图标的空间 */
-@media (max-height: 620px) {
-  .act .ds {
-    display: none;
-  }
+  gap: 4px;
+  flex: none;
 }
 </style>

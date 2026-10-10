@@ -1,9 +1,9 @@
 <script setup>
 /**
  * 底部导航（App 风格常驻三入口）：
- *   📖 学习（学习练习课程列表） / 🗺️ 游戏（闯关路径图） / 👤 我的（个人中心）
+ *   📖 学习（课程列表） / 👤 我的（个人中心）
  *
- * - 学习/游戏是独立路由：#/ 与 #/game（不再用 query 区分）。
+ * - 学习是独立路由：#/。
  * - 我的 tab 高亮覆盖其子页：/me、/treasure、/report、/review。
  * - 玩法页（/learn/:id）不渲染本组件（沉浸学习，见 App.vue）。
  */
@@ -16,7 +16,6 @@ const route = useRoute();
 const router = useRouter();
 
 const isHome = computed(() => route.name === "learn");
-const isGame = computed(() => route.name === "game");
 const isMe = computed(
   () =>
     route.name === "me" ||
@@ -31,11 +30,6 @@ function goPractice() {
   speakZh("学习");
   if (isHome.value) return;
   void router.push("/learn").catch(() => {});
-}
-function goGame() {
-  speakZh("游戏");
-  if (isGame.value) return;
-  void router.push("/game").catch(() => {});
 }
 function goMe() {
   speakZh("我的");
@@ -55,10 +49,6 @@ function goMe() {
     >
       <span class="bn-ico"><PathIcon name="free" /></span>
       <span class="bn-cap">学习</span>
-    </button>
-    <button role="tab" aria-label="游戏闯关" :aria-selected="isGame" :class="{ on: isGame }" @click="goGame">
-      <span class="bn-ico"><PathIcon name="game" /></span>
-      <span class="bn-cap">游戏</span>
     </button>
     <button role="tab" aria-label="我的" :aria-selected="isMe" :class="{ on: isMe }" @click="goMe">
       <span class="bn-ico"><PathIcon name="me" /></span>

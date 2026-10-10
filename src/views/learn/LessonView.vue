@@ -21,6 +21,7 @@ import { getLesson } from "../../data/lessons";
 import { speak, speakZh } from "../../services/speech";
 import { useProgressStore } from "../../stores/progress";
 import { useStreakStore } from "../../stores/streak";
+import { useCardsStore, type Card } from "../../stores/cards";
 import { useRoute, useRouter } from "vue-router";
 import { useViewport } from "../../composables/useViewport";
 import { useQuest, type QuestAct } from "../../composables/useQuest";
@@ -29,6 +30,7 @@ import { BookOpen, Headphones, Link2, MessageCircle, Mic, Music, Star } from "@l
 
 const progress = useProgressStore();
 const streak = useStreakStore();
+const cards = useCardsStore();
 const route = useRoute();
 const router = useRouter();
 const { isNarrow } = useViewport();
@@ -103,8 +105,18 @@ const {
   afterGame,
   afterSong,
   backToMap,
-  goNextLevel
+  goNextLevel,
+  startLessonQuest
 } = flow;
+
+// 结算页：课内通关有 lastCard 时展示卡片奖励
+watch(stage, (v) => {
+  if (v === "result" && cards.lastCard) {
+    rewardCard.value = cards.lastCard;
+  } else if (v !== "result") {
+    rewardCard.value = null;
+  }
+});
 
 /** 菜单数据：玩法 + 已获星徽章（星数来自进度，注入后交给 LessonMenu 纯渲染） */
 const menuActs = computed(() =>
@@ -116,6 +128,30 @@ function openSound(a: (typeof activities.value)[number]) {
   speakZh(a.name);
   open(a);
 }
+
+/** 菜单：学童谣 */
+function openSong() {
+  const song = activities.value.find((a) => a.key === "song");
+  if (song) { speakZh("唱童谣"); open(song); }
+}
+/** 菜单：学单词 */
+function openLearn() {
+  const learn = activities.value.find((a) => a.key === "learn");
+  if (learn) { speakZh("学单词"); open(learn); }
+}
+/** 菜单：闯关挑战 */
+function startQuest() {
+  flow.startLessonQuest();
+}
+
+/** 闯关包含的玩法（去掉 song/learn） */
+const questActs = computed(() =>
+  activities.value.filter((a) => !["song", "learn"].includes(a.key))
+);
+/** 闯关已完成数 */
+const questDoneCount = computed(() =>
+  questActs.value.filter((a) => showStars(a.key) > 0).length
+);
 /** 点击顶栏课程名：朗读英文标题 */
 function sayTitle() {
   if (lesson.value) speak(lesson.value.title, { ttsOnly: true });
@@ -127,6 +163,8 @@ const isPlay = computed(() =>
 );
 /** 玩法进度（0-100），由 Learn/Quiz/Match/Speak 上报到顶栏进度条（多邻国式） */
 const playPct = ref(0);
+/** 课内通关奖励卡片 */
+const rewardCard = ref<Card | null>(null);
 /** 本局总量（题数/页数/对数/词数）与已完成量 → 顶栏显示 x/y，孩子知道一共要做多少 */
 const playTotal = ref(0);
 const playCount = computed(() =>
@@ -193,12 +231,16 @@ const levelTagAria = computed(() =>
       </template>
     </HeaderBar>
 
-    <!-- 课时菜单（闯关模式无菜单，直接开玩；渲染在 LessonMenu） -->
+    <!-- 课时菜单：3 个大入口 -->
     <LessonMenu
       v-if="stage === 'menu' && !questMode"
       :activities="menuActs"
       :progress="lessonProgress"
-      @open="openSound"
+      :quest-done="questDoneCount"
+      :quest-total="questActs.length"
+      @open-song="openSong"
+      @open-learn="openLearn"
+      @open-quest="startQuest"
     />
 
     <!-- 各玩法 -->
@@ -219,6 +261,7 @@ const levelTagAria = computed(() =>
       v-else-if="stage === 'result'"
       :mode="questMode && questDone ? 'quest' : 'free'"
       :stars="lastStars"
+      :reward-card="rewardCard"
       :streak-just-hit="streakJustHit"
       :streak-days="streak.streak"
       :quest-level="questLevel"

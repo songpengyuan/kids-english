@@ -13,6 +13,8 @@ import { ref } from "vue";
 import PathIcon from "../PathIcon.vue";
 import ChestReward from "../rewards/ChestReward.vue";
 
+import type { Card } from "../../stores/cards";
+
 defineProps<{
   mode: "quest" | "free";
   stars: number;
@@ -22,6 +24,8 @@ defineProps<{
   actName?: string;
   nextLevel?: { actKey: string; name: string } | null;
   nextLesson?: { id: string; title: string } | null;
+  /** 课内通关奖励卡片 */
+  rewardCard?: Card | null;
 }>();
 
 const emit = defineEmits<{
@@ -91,6 +95,15 @@ function nav(fn: () => void) {
         </span>
       </div>
       <h2>真棒！获得 <span class="star-num">{{ stars }}</span> 颗星</h2>
+      <!-- 课内通关：奥特曼卡片奖励 -->
+      <div v-if="rewardCard" class="card-reward anim-pop">
+        <div class="card" :class="'rarity-' + rewardCard.rarity">
+          <div class="card-emoji">{{ rewardCard.emoji }}</div>
+          <div class="card-name">{{ rewardCard.name }}</div>
+          <div class="card-rarity">{{ rewardCard.rarity }}</div>
+        </div>
+        <p class="card-tip">🎉 获得新卡片！</p>
+      </div>
       <div v-if="streakJustHit" class="streak-banner anim-pop">
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
@@ -165,6 +178,54 @@ function nav(fn: () => void) {
   font-size: var(--fs-small);
   color: var(--ink-faint);
 }
+/* 奥特曼卡片奖励 */
+.card-reward {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.card {
+  width: clamp(120px, 22vh, 160px);
+  border-radius: var(--radius);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, #fff, #fef3c7);
+  border: 3px solid var(--gold, #f0b429);
+  box-shadow: 0 4px 20px rgba(240, 180, 41, 0.4);
+}
+.card.rarity-SR {
+  border-color: #a855f7;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
+  background: linear-gradient(180deg, #fff, #f3e8ff);
+}
+.card.rarity-SSR {
+  border-color: #f59e0b;
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
+  background: linear-gradient(180deg, #fffbeb, #fef3c7);
+}
+.card-emoji {
+  font-size: 48px;
+}
+.card-name {
+  font-weight: 900;
+  font-size: 14px;
+}
+.card-rarity {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gold, #f0b429);
+  background: rgba(240, 180, 41, 0.15);
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+}
+.card-tip {
+  margin: 0;
+  font-weight: 800;
+}
 .streak-banner {
   display: flex;
   align-items: center;
@@ -203,7 +264,55 @@ function nav(fn: () => void) {
     padding: 6px 16px;
     border-width: 2px;
   }
-  .streak-banner {
+  /* 奥特曼卡片奖励 */
+.card-reward {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.card {
+  width: clamp(120px, 22vh, 160px);
+  border-radius: var(--radius);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, #fff, #fef3c7);
+  border: 3px solid var(--gold, #f0b429);
+  box-shadow: 0 4px 20px rgba(240, 180, 41, 0.4);
+}
+.card.rarity-SR {
+  border-color: #a855f7;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
+  background: linear-gradient(180deg, #fff, #f3e8ff);
+}
+.card.rarity-SSR {
+  border-color: #f59e0b;
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
+  background: linear-gradient(180deg, #fffbeb, #fef3c7);
+}
+.card-emoji {
+  font-size: 48px;
+}
+.card-name {
+  font-weight: 900;
+  font-size: 14px;
+}
+.card-rarity {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gold, #f0b429);
+  background: rgba(240, 180, 41, 0.15);
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+}
+.card-tip {
+  margin: 0;
+  font-weight: 800;
+}
+.streak-banner {
     padding: 5px 12px;
     font-size: var(--fs-small);
   }
