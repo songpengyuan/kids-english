@@ -109,10 +109,10 @@ function next() {
       </div>
     </div>
 
-    <!-- 麦克风不可用提示 + 跳过 -->
+    <!-- 麦克风不可用：不阻塞，显示小提示 + 继续按钮 -->
     <div v-if="micBlocked" class="mic-blocked anim-pop">
-      <p class="blocked-tip">🎤 麦克风不可用<br/>请在浏览器设置中允许麦克风权限</p>
-      <BaseButton variant="green" @click="next">跳过这个词 →</BaseButton>
+      <p class="blocked-tip">🎤 麦克风不可用，听着读出来就好</p>
+      <BaseButton variant="green" @click="next">下一个<ChevronRight class="k-ico" /></BaseButton>
     </div>
 
     <!-- 麦克风按钮：点一下开始，再点一下结束 -->
