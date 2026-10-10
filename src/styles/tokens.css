@@ -237,16 +237,16 @@
  * 组件内需要「按档位改变结构」时用它，纯样式微调用 @media。
  */
 
-/* ---------- 音乐播放器（深色固定主题，不随暗黑模式切换） ---------- */
---player-bg-1: #1e293b;
---player-bg-2: #0f172a;
---player-surface: #1e293b;
---player-text: #ffffff;
---player-text-soft: rgba(255,255,255,0.5);
---player-text-faint: rgba(255,255,255,0.3);
---player-accent: #4ade80;
---player-btn: #ffffff;
---player-btn-ink: #1e293b;
+/* ---------- 音乐播放器（跟随主题） ---------- */
+--player-bg-1: var(--bg);
+--player-bg-2: var(--bg);
+--player-surface: var(--card-bg);
+--player-text: var(--ink);
+--player-text-soft: var(--ink-soft);
+--player-text-faint: var(--ink-faint);
+--player-accent: var(--green);
+--player-btn: var(--green);
+--player-btn-ink: #fff;
 
 /* ===== 动效 tokens（阶段 3-1：统一节奏，新增动效先查这里再写值） ===== */
 :root {

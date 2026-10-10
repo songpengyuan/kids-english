@@ -83,7 +83,7 @@ function finish() {
 
     <Pager :page="page" :total="total" hide-dots @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
 
-    <BaseButton variant="green" :disabled="!canFinish" @click="finish">
+    <BaseButton class="next" variant="green" :disabled="!canFinish" @click="finish">
       <template v-if="canFinish"><Check class="k-ico" />我都会啦</template>
       <template v-else-if="!isLast">看完所有图才能完成哦</template>
       <template v-else>还有 {{ remaining }} 个词没点过哦</template>

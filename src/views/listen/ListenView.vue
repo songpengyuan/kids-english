@@ -166,7 +166,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
     </template>
 
     <!-- 播放列表抽屉 -->
-    <BaseDrawer :open="showPlaylist" title="播放列表（{{ songList.length }}）" dark @close="showPlaylist = false">
+    <BaseDrawer :open="showPlaylist" title="播放列表（{{ songList.length }}）" @close="showPlaylist = false">
       <div class="drawer-list">
         <button v-for="(s, i) in songList" :key="s.id" class="drawer-item"
           :class="{ active: currentIdx === i }" @click="playSong(i); showPlaylist = false">
@@ -216,21 +216,21 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 @keyframes eq { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1.2); } }
 
 /* 歌词全屏页 */
-.lyrics-page { position: fixed; inset: 0; z-index: 90; background: linear-gradient(180deg, var(--player-bg-1), var(--player-bg-2)); display: flex; flex-direction: column; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+.lyrics-page { position: fixed; inset: 0; z-index: 90; background: var(--bg); display: flex; flex-direction: column; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
 .lp-top { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
-.lp-collapse { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.8); }
+.lp-collapse { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); background: var(--card-bg); box-shadow: var(--shadow-soft); }
 .lp-collapse .k-ico { width: 26px; height: 26px; }
 .lp-title-area { flex: 1; text-align: center; }
-.lp-title { margin: 0; color: var(--player-text); font-weight: 900; font-size: 18px; }
-.lp-sub { margin: 2px 0 0; color: var(--player-text-soft); font-weight: 700; font-size: 13px; }
-.lp-mode { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--player-accent); }
+.lp-title { margin: 0; color: var(--ink); font-weight: 900; font-size: 18px; }
+.lp-sub { margin: 2px 0 0; color: var(--ink-soft); font-weight: 700; font-size: 13px; }
+.lp-mode { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--green); }
 .lp-mode .k-ico { width: 20px; height: 20px; }
 .lp-lyrics { flex: 1; overflow-y: auto; padding: 20px 32px; text-align: left; -webkit-overflow-scrolling: touch; }
-.lp-line { color: var(--player-text-faint); font-weight: 700; font-size: 17px; line-height: 2.2; transition: all 0.3s; }
-.lp-line.active { color: var(--player-text); font-size: 19px; font-weight: 900; }
+.lp-line { color: var(--ink-faint); font-weight: 700; font-size: 17px; line-height: 2.2; transition: all 0.3s; }
+.lp-line.active { color: var(--ink); font-size: 19px; font-weight: 900; }
 .lp-controls { display: flex; align-items: center; justify-content: center; gap: 32px; padding: 16px 0 8px; }
-.lp-btn { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--player-text-soft); }
-.lp-btn.big { width: 64px; height: 64px; background: var(--player-btn); color: var(--player-btn-ink); }
+.lp-btn { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); }
+.lp-btn.big { width: 64px; height: 64px; background: var(--green); color: #fff; }
 .lp-btn .k-ico { width: 26px; height: 26px; }
 .lp-btn.big .k-ico { width: 30px; height: 30px; }
 .lp-progress { width: 85%; max-width: 420px; margin: 0 auto 20px; accent-color: var(--player-accent); }
@@ -239,13 +239,13 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 /* 播放列表抽屉内容 */
 .drawer-list { padding: 8px 0; }
 .drawer-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 20px; text-align: left; }
-.drawer-item:active { background: rgba(255,255,255,0.06); }
-.drawer-item.active .di-title { color: var(--player-accent); }
-.di-idx { width: 20px; text-align: center; color: var(--player-text-faint); font-weight: 700; font-size: 13px; flex: none; }
+.drawer-item:active { background: var(--tint-green); }
+.drawer-item.active .di-title { color: var(--green); }
+.di-idx { width: 20px; text-align: center; color: var(--ink-faint); font-weight: 700; font-size: 13px; flex: none; }
 .di-emoji { font-size: 24px; flex: none; }
 .di-info { flex: 1; min-width: 0; }
-.di-title { display: block; color: var(--player-text); font-weight: 700; font-size: 15px; }
-.di-sub { display: block; color: var(--player-text-soft); font-size: 12px; }
+.di-title { display: block; color: var(--ink); font-weight: 700; font-size: 15px; }
+.di-sub { display: block; color: var(--ink-faint); font-size: 12px; }
 
 /* 视频 */
 .video-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-s); padding: var(--gap-s) var(--pad-x) 0; }

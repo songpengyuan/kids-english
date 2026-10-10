@@ -340,12 +340,12 @@ function onTimeUpdate() {
     <p v-if="mode !== 'audio'" class="under-tip">跟着唱完一遍，就能领小星星啦</p>
 
     <!-- 收尾：完整听过一遍才可领星（循环模式下这是本页唯一出口） -->
-    <button v-if="canFinish" class="k-btn finish" data-haptic @click="finishSong">
+    <BaseButton v-if="canFinish" class="finish" @click="finishSong">
       <Sparkles class="k-ico" />领到小星星
-    </button>
-    <button v-else class="k-btn finish" disabled>
+    </BaseButton>
+    <BaseButton v-else class="finish" disabled>
       <Headphones class="k-ico" />听完一遍就能领星星
-    </button>
+    </BaseButton>
   </div>
 </template>
 
