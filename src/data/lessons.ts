@@ -96,12 +96,15 @@ export interface LessonSong {
   timings: SongTiming | null;
 }
 /** 课时（映射后：tone 兜底 + 资源路径化 + 词/句补全） */
+export type LessonType = "official" | "bonus";
+
 export interface Lesson {
   id: string;
   title: string;
   titleZh: string;
   emoji: string;
   tone: Tone;
+  type: LessonType;
   date?: string;
   song: LessonSong;
   words: Word[];
