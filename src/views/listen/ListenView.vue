@@ -78,8 +78,9 @@ function prev() {
 function toggleRepeat() {
   repeatMode.value = repeatMode.value === "off" ? "all" : repeatMode.value === "all" ? "one" : "off";
 }
-function seek(e: Event & { target: HTMLInputElement }) {
-  if (audio.value) audio.value.currentTime = (Number(e.target.value) / 100) * (audio.value.duration || 0);
+function seek(e: Event) {
+  const el = e.target as HTMLInputElement;
+  if (audio.value && el) audio.value.currentTime = (Number(el.value) / 100) * (audio.value.duration || 0);
 }
 onBeforeUnmount(() => { audio.value?.pause(); stopListenTimer(); });
 
