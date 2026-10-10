@@ -109,6 +109,7 @@
 |------|------|------|
 | `AppHeader` | `components/layout/AppHeader.vue` | 顶栏（标题+徽章+返回） |
 | `BottomNav` | `components/layout/BottomNav.vue` | 底部三tab |
+| `BaseButton` | `components/ui/BaseButton.vue` | 主按钮（variant: green/blue/orange/gray, block, size: lg） |
 | `BaseDrawer` | `components/ui/BaseDrawer.vue` | 底部抽屉（dark属性切深色） |
 | `AppDialog` | `components/ui/AppDialog.vue` | 居中弹窗 |
 | `ChestReward` | `components/rewards/ChestReward.vue` | 开宝箱 |
