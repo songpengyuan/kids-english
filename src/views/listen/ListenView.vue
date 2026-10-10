@@ -218,21 +218,21 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 @keyframes eq { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1.2); } }
 
 /* 歌词全屏页 */
-.lyrics-page { position: fixed; inset: 0; z-index: 90; background: var(--bg); display: flex; flex-direction: column; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+.lyrics-page { position: fixed; inset: 0; z-index: 90; background: transparent; display: flex; flex-direction: column; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
 .lp-top { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
-.lp-collapse { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); background: var(--card-bg); box-shadow: var(--shadow-soft); }
+.lp-collapse { width: 44px; height: 44px; border-radius: var(--radius-s); display: flex; align-items: center; justify-content: center; color: var(--ink-soft); background: var(--card-bg); box-shadow: var(--shadow-hard); }
 .lp-collapse .k-ico { width: 26px; height: 26px; }
 .lp-title-area { flex: 1; text-align: center; }
 .lp-title { margin: 0; color: var(--ink); font-weight: 900; font-size: 18px; }
 .lp-sub { margin: 2px 0 0; color: var(--ink-soft); font-weight: 700; font-size: 13px; }
 .lp-mode { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--green); }
 .lp-mode .k-ico { width: 20px; height: 20px; }
-.lp-lyrics { flex: 1; overflow-y: auto; padding: 20px 32px; text-align: left; -webkit-overflow-scrolling: touch; }
+.lp-lyrics { flex: 1; overflow-y: auto; margin: 0 var(--pad-x); padding: var(--gap-l) var(--gap-m); background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard); text-align: left; -webkit-overflow-scrolling: touch; }
 .lp-line { color: var(--ink-faint); font-weight: 700; font-size: 17px; line-height: 2.2; transition: all 0.3s; }
 .lp-line.active { color: var(--ink); font-size: 19px; font-weight: 900; }
 .lp-controls { display: flex; align-items: center; justify-content: center; gap: 32px; padding: 16px 0 8px; }
-.lp-btn { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); }
-.lp-btn.big { width: 64px; height: 64px; background: var(--green); color: #fff; }
+.lp-btn { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); background: var(--card-bg); box-shadow: var(--shadow-soft); }
+.lp-btn.big { width: 64px; height: 64px; background: var(--green); color: #fff; box-shadow: 0 var(--press) 0 var(--green-dark); }
 .lp-btn .k-ico { width: 26px; height: 26px; }
 .lp-btn.big .k-ico { width: 30px; height: 30px; }
 .lp-progress { width: 85%; max-width: 420px; margin: 0 auto 20px; accent-color: var(--player-accent); }
