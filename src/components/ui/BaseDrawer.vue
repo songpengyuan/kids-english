@@ -34,7 +34,7 @@ const emit = defineEmits<{ (e: "close"): void }>();
   max-height: 70vh;
   display: flex; flex-direction: column;
 }
-.drawer.dark { background: #1e293b; }
+.drawer.dark { background: var(--player-surface); }
 .drawer-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 20px 12px;
@@ -42,7 +42,7 @@ const emit = defineEmits<{ (e: "close"): void }>();
 }
 .drawer.dark .drawer-head { border-bottom-color: rgba(255,255,255,0.1); }
 .drawer-title { margin: 0; font-weight: 900; font-size: 16px; color: var(--ink); }
-.drawer.dark .drawer-title { color: #fff; }
+.drawer.dark .drawer-title { color: var(--player-text); }
 .drawer-close {
   width: 32px; height: 32px; border-radius: 50%;
   background: var(--line); color: var(--ink);
