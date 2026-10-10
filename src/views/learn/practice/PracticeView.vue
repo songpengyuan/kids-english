@@ -179,10 +179,12 @@ const lastLessonObj = computed(() => {
   min-height: 0;
   width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
+  overscroll-behavior: contain;
+  touch-action: pan-x;
   scrollbar-width: none;
 }
 .course-carousel::-webkit-scrollbar {
