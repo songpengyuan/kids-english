@@ -17,7 +17,15 @@ import { BookOpenText, Check } from "@lucide/vue";
 const progress = useProgressStore();
 /** 课程类型筛选：official=培训班课程，bonus=自定义加餐 */
 const typeTab = ref<"official" | "bonus">("official");
-const filteredLessons = computed(() => lessons.filter((l) => l.type === typeTab.value));
+/** 正式课显示顺序：音乐 → 水手 → 手指（培训班实际上课顺序） */
+const OFFICIAL_ORDER = ["l5", "l4", "l9"];
+const filteredLessons = computed(() => {
+  const list = lessons.filter((l) => l.type === typeTab.value);
+  if (typeTab.value === "official") {
+    return [...list].sort((a, b) => OFFICIAL_ORDER.indexOf(a.id) - OFFICIAL_ORDER.indexOf(b.id));
+  }
+  return list;
+});
 const router = useRouter();
 
 /** 课程轮播：每页 4 课 2×2 十字排布（左右滑动 + 底部小点），移动端到超宽屏统一 */
