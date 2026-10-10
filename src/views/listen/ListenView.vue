@@ -133,18 +133,11 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
               <p class="mp-title">{{ currentSong.title }}</p>
               <p class="mp-sub">{{ currentSong.titleZh }}</p>
             </div>
-            <button class="mp-btn" :class="{ active: shuffleOn }" @click="shuffleOn = !shuffleOn" title="随机">
-              <Shuffle class="k-ico" />
-            </button>
             <button class="mp-btn" @click="prev"><SkipBack class="k-ico" /></button>
             <button class="mp-btn big" @click="togglePlay">
               <Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" />
             </button>
             <button class="mp-btn" @click="next"><SkipForward class="k-ico" /></button>
-            <button class="mp-btn" :class="{ active: repeatMode !== 'off' }" @click="toggleRepeat" title="循环">
-              <Repeat1 v-if="repeatMode === 'one'" class="k-ico" />
-              <Repeat v-else class="k-ico" />
-            </button>
           </div>
           <!-- 第二行：进度条 -->
           <div class="mp-row mp-bar-row">
