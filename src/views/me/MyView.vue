@@ -11,6 +11,7 @@
 import { computed } from "vue";
 import { useProgressStore } from "../../stores/progress";
 import { useRewardsStore } from "../../stores/rewards";
+import { useCardsStore } from "../../stores/cards";
 import { FORM_TOTAL } from "../../data/heroes";
 import { useStreakStore } from "../../stores/streak";
 import { useRouter } from "vue-router";
@@ -26,6 +27,7 @@ import { speakZh } from "../../services/speech";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();
+const cards = useCardsStore();
 const streak = useStreakStore();
 const router = useRouter();
 
@@ -161,6 +163,12 @@ function sayEntry(name: string, path: string) {
           <span class="en-ico"><PathIcon name="gift" /></span>
           <span class="en-cap">宝藏罐</span>
           <span class="en-desc">🐚 {{ rewards.shells }} · 图鉴 {{ heroDone }}</span>
+          <ChevronRight class="k-ico en-arrow" />
+        </button>
+        <button class="entry" @click="sayEntry('我的卡片', '/me/cards')">
+          <span class="en-ico">🎴</span>
+          <span class="en-cap">我的卡片</span>
+          <span class="en-desc">{{ cards.uniqueCount }}/{{ cards.allCards.length }} 张</span>
           <ChevronRight class="k-ico en-arrow" />
         </button>
         <button class="entry" @click="sayEntry('家长报告', '/me/report')">
