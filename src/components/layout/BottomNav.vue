@@ -16,6 +16,7 @@ const route = useRoute();
 const router = useRouter();
 
 const isHome = computed(() => route.name === "learn");
+const isListen = computed(() => route.name === "listen");
 const isMe = computed(
   () =>
     route.name === "me" ||
@@ -30,6 +31,11 @@ function goPractice() {
   speakZh("学习");
   if (isHome.value) return;
   void router.push("/learn").catch(() => {});
+}
+function goListen() {
+  speakZh("磨耳朵");
+  if (isListen.value) return;
+  void router.push("/listen").catch(() => {});
 }
 function goMe() {
   speakZh("我的");
@@ -49,6 +55,10 @@ function goMe() {
     >
       <span class="bn-ico"><PathIcon name="free" /></span>
       <span class="bn-cap">学习</span>
+    </button>
+    <button role="tab" aria-label="磨耳朵" :aria-selected="isListen" :class="{ on: isListen }" @click="goListen">
+      <span class="bn-ico">🎧</span>
+      <span class="bn-cap">磨耳朵</span>
     </button>
     <button role="tab" aria-label="我的" :aria-selected="isMe" :class="{ on: isMe }" @click="goMe">
       <span class="bn-ico"><PathIcon name="me" /></span>

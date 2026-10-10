@@ -14,7 +14,7 @@ const streak = useStreakStore();
 /** 底部导航只在三个主 tab 显示：学习（/learn）/ 游戏（/game）/ 我的（/me）；
  *  宝藏罐/报告/复习/课程等子页面都隐藏，沉浸进入 */
 const showNav = computed(() =>
-  route.path === "/learn" || route.path === "/game" || route.path === "/me"
+  route.path === "/learn" || route.path === "/game" || route.path === "/listen" || route.path === "/me"
 );
 
 /** 答题页无底部导航：去掉 #app 预留的 nav-h 底部 padding，让 footer 真正贴底 */

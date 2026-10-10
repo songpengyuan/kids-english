@@ -75,6 +75,16 @@ const lastLessonObj = computed(() => {
       </button>
     </div>
 
+    <!-- 闯关地图入口 -->
+    <button class="game-map-entry anim-fade-up" @click="router.push('/game')">
+      <span class="gme-ico">🗺️</span>
+      <span class="gme-body">
+        <span class="gme-title">闯关地图</span>
+        <span class="gme-desc">沿路径通关，赢奥特曼卡片</span>
+      </span>
+      <span class="gme-arrow">›</span>
+    </button>
+
     <!-- 课程列表：左右轮播（一页 2 课），底部小点指示器 -->
     <div class="stage">
       <div
@@ -118,6 +128,20 @@ const lastLessonObj = computed(() => {
 </template>
 
 <style scoped>
+.game-map-entry {
+  display: flex; align-items: center; gap: var(--gap-m);
+  width: 100%; margin: 0 var(--pad-x);
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: var(--gap-m);
+  text-align: left;
+}
+.gme-ico { font-size: 36px; }
+.gme-body { flex: 1; }
+.gme-title { display: block; font-weight: 900; font-size: var(--fs-body); color: #92400e; }
+.gme-desc { display: block; font-size: 12px; font-weight: 700; color: #b45309; }
+.gme-arrow { font-size: 28px; font-weight: 900; color: #b45309; }
 .practice {
   display: flex;
   flex-direction: column;
