@@ -78,7 +78,7 @@ function nav(fn: () => void) {
         <BaseButton variant="green" @click="emit('backToMap')">返回闯关地图</BaseButton>
         <BaseButton v-if="nextLevel" :disabled="navClicked" @click="nav(() => emit('goNextLevel'))">
           下一关：<PathIcon :name="nextLevel.actKey" /> {{ nextLevel.name }} →
-        </button>
+        </BaseButton>
       </div>
     </template>
 
@@ -114,7 +114,7 @@ function nav(fn: () => void) {
         <BaseButton variant="green" @click="emit('toMenu')">再选一个玩法</BaseButton>
         <BaseButton v-if="nextLesson" variant="gray" :disabled="navClicked" @click="nav(() => emit('goNextLesson'))">
           下一课：<PathIcon :name="nextLesson.id" /> {{ nextLesson.title }}
-        </button>
+        </BaseButton>
       </div>
     </template>
   </div>
