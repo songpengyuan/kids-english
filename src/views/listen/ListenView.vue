@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount } from "vue";
+import { ref, computed, onBeforeUnmount, watch } from "vue";
 import { lessons, asset } from "../../data/lessons";
 import AppHeader from "../../components/layout/AppHeader.vue";
 import { useProgressStore } from "../../stores/progress";
@@ -82,7 +82,10 @@ function seek(e: Event) {
   const el = e.target as HTMLInputElement;
   if (audio.value && el) audio.value.currentTime = (Number(el.value) / 100) * (audio.value.duration || 0);
 }
-onBeforeUnmount(() => { audio.value?.pause(); stopListenTimer(); });
+watch(nowPlaying, (v) => {
+  document.documentElement.classList.toggle("hide-nav", v);
+});
+onBeforeUnmount(() => { audio.value?.pause(); stopListenTimer(); document.documentElement.classList.remove("hide-nav"); });
 
 const progStore = useProgressStore();
 let listenTimer: number | null = null;
