@@ -90,6 +90,7 @@ export const router = createRouter({
         },
         { path: "report", name: "report", component: () => import("../views/me/ReportView.vue"), meta: { title: "家长报告" } },
         { path: "cards", name: "cards", component: () => import("../views/me/CardsView.vue"), meta: { title: "我的卡片" } },
+        { path: "parent", name: "parent", component: () => import("../views/me/ParentView.vue"), meta: { title: "家长中心" } },
       ],
     },
 
