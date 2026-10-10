@@ -112,8 +112,8 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
             :class="{ active: currentIdx === i }" @click="playSong(i)">
             <span class="sr-emoji tone-ico" :class="'tone-' + s.tone">{{ s.emoji }}</span>
             <span class="sr-info">
-              <span class="sr-title">{{ s.titleZh }}</span>
-              <span class="sr-sub">{{ s.title }}</span>
+              <span class="sr-title">{{ s.title }}</span>
+              <span class="sr-sub">{{ s.titleZh }}</span>
             </span>
             <span v-if="currentIdx === i && playing" class="eq"><i></i><i></i><i></i></span>
             <span v-else class="sr-play"><Play class="k-ico" /></span>
@@ -143,8 +143,8 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
         <div class="video-grid">
           <button v-for="v in videoList" :key="v.id" class="video-card" :class="'tone-' + v.tone" @click="playVideo(v)">
             <span class="vc-emoji">{{ v.emoji }}</span>
-            <span class="vc-name">{{ v.titleZh }}</span>
-            <span class="vc-sub">{{ v.title }}</span>
+            <span class="vc-name">{{ v.title }}</span>
+            <span class="vc-sub">{{ v.titleZh }}</span>
             <span class="vc-play"><Play class="k-ico" /></span>
           </button>
         </div>
