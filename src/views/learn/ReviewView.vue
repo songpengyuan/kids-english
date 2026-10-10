@@ -173,7 +173,7 @@ function replay() {
       <div class="btn-row">
         <BaseButton v-if="againCount > 0" @click="start">
           <RotateCcw class="k-ico" />再练一次
-        </button>
+        </BaseButton>
         <BaseButton variant="green" @click="router.push('/learn')">回学习</BaseButton>
       </div>
     </div>
