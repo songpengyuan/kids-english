@@ -485,13 +485,13 @@ const rawLessons: RawLesson[] = [
       ]
     },
     words: [
-      { id: "nose", en: "nose", zh: "鼻子", emoji: "👃" },
-      { id: "arm", en: "arm", zh: "手臂", emoji: "💪" },
-      { id: "leg", en: "leg", zh: "腿", emoji: "🦵" },
-      { id: "foot", en: "foot", zh: "脚", emoji: "🦶" },
-      { id: "chin", en: "chin", zh: "下巴", emoji: "😊" },
-      { id: "finger", en: "finger", zh: "手指", emoji: "👆" },
-      { id: "head", en: "head", zh: "头", emoji: "🧑" }
+      { id: "nose", en: "nose", zh: "鼻子", emoji: "👃", image: "/lessons/l9/words/nose.png" },
+      { id: "arm", en: "arm", zh: "手臂", emoji: "💪", image: "/lessons/l9/words/arm.png" },
+      { id: "leg", en: "leg", zh: "腿", emoji: "🦵", image: "/lessons/l9/words/leg.png" },
+      { id: "foot", en: "foot", zh: "脚", emoji: "🦶", image: "/lessons/l9/words/foot.png" },
+      { id: "chin", en: "chin", zh: "下巴", emoji: "😊", image: "/lessons/l9/words/chin.png" },
+      { id: "finger", en: "finger", zh: "手指", emoji: "👆", image: "/lessons/l9/words/finger.png" },
+      { id: "head", en: "head", zh: "头", emoji: "🧑", image: "/lessons/l9/words/head.png" }
     ],
     phrases: [
       { en: "Where is your finger?", zh: "你的手指在哪里？" },
