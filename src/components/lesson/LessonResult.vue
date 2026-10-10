@@ -14,6 +14,7 @@ import PathIcon from "../PathIcon.vue";
 import ChestReward from "../rewards/ChestReward.vue";
 
 import type { Card } from "../../stores/cards";
+import BaseButton from "../ui/BaseButton.vue";
 
 defineProps<{
   mode: "quest" | "free";
@@ -74,7 +75,7 @@ function nav(fn: () => void) {
       <!-- 普通关卡完成也开宝箱：与所有宝箱统一规则，25% 随机掉英雄卡片 -->
       <ChestReward v-if="!chestDone" @done="chestDone = true" />
       <div class="btn-row">
-        <button class="k-btn gray" @click="emit('backToMap')">返回闯关地图</button>
+        <BaseButton variant="green" @click="emit('backToMap')">返回闯关地图</BaseButton>
         <button v-if="nextLevel" class="k-btn" :disabled="navClicked" @click="nav(() => emit('goNextLevel'))">
           下一关：<PathIcon :name="nextLevel.actKey" /> {{ nextLevel.name }} →
         </button>
@@ -110,7 +111,7 @@ function nav(fn: () => void) {
       <!-- 收取完成（或点关闭）就卸载，避免卡在"已收进宝藏罐"那一屏 -->
       <ChestReward v-if="!chestDone" @done="chestDone = true" />
       <div class="btn-row">
-        <button class="k-btn" @click="emit('toMenu')">再选一个玩法</button>
+        <BaseButton variant="green" @click="emit('toMenu')">再选一个玩法</BaseButton>
         <button v-if="nextLesson" class="k-btn gray" :disabled="navClicked" @click="nav(() => emit('goNextLesson'))">
           下一课：<PathIcon :name="nextLesson.id" /> {{ nextLesson.title }}
         </button>

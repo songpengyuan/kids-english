@@ -6,6 +6,7 @@ import { celebrate, bigCelebrate, sfxCorrect } from "../../services/effects";
 import { useLearnSession } from "../../composables/useLearnSession";
 import type { Word } from "../../data/lessons";
 import { Check, MousePointerClick } from "@lucide/vue";
+import BaseButton from "../ui/BaseButton.vue";
 
 /**
  * 看图学词（点读）—— 逻辑在 composables/useLearnSession，这里只做渲染与音效。
@@ -82,11 +83,11 @@ function finish() {
 
     <Pager :page="page" :total="total" hide-dots @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
 
-    <button class="k-btn next" :disabled="!canFinish" @click="finish">
+    <BaseButton variant="green" :disabled="!canFinish" @click="finish">
       <template v-if="canFinish"><Check class="k-ico" />我都会啦</template>
       <template v-else-if="!isLast">看完所有图才能完成哦</template>
       <template v-else>还有 {{ remaining }} 个词没点过哦</template>
-    </button>
+    </BaseButton>
   </div>
 </template>
 

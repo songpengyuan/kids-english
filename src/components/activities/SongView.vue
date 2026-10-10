@@ -5,6 +5,7 @@ import { hapticTap } from "../../services/haptics";
 import { useProgressStore } from "../../stores/progress";
 import { Clapperboard, Headphones, Music, Pause, Play, Repeat, Sparkles } from "@lucide/vue";
 import SongStage from "./SongStage.vue";
+import BaseButton from "../ui/BaseButton.vue";
 
 const progress = useProgressStore();
 

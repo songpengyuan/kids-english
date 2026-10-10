@@ -26,6 +26,7 @@ import { useRewardsStore } from "../../stores/rewards";
 import { parabola } from "../../utils/flyCurve";
 import { formById } from "../../data/heroes";
 import ShellIcon from "../ShellIcon.vue";
+import BaseButton from "../ui/BaseButton.vue";
 
 const rewards = useRewardsStore();
 
@@ -272,7 +273,7 @@ const cap = computed(() => {
         <p class="won-name">{{ wonForm.heroName }} · {{ wonForm.name }}</p>
         <p class="won-en">{{ wonForm.heroEn }}, {{ wonForm.en }}</p>
       </div>
-      <button class="k-btn take" @click="collect">收取 <span class="shell-emoji"><ShellIcon /></span></button>
+      <BaseButton variant="green" @click="collect">收取 <span class="shell-emoji"><ShellIcon /></span></BaseButton>
     </div>
     <p v-if="phase === 'collected'" class="cap collected">
       <PathIcon name="gift" class="gift-ico" /> 已收进宝藏罐！

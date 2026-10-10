@@ -22,6 +22,7 @@ import { useViewport } from "../../composables/useViewport";
 import { Check, RotateCcw, Volume2 } from "@lucide/vue";
 import HeaderBar from "../../components/layout/HeaderBar.vue";
 import PathIcon from "../../components/PathIcon.vue";
+import BaseButton from "../../components/ui/BaseButton.vue";
 
 const progress = useProgressStore();
 const streak = useStreakStore();
@@ -121,7 +122,7 @@ function replay() {
         <template v-if="unmasteredCount > 0">还有 {{ unmasteredCount }} 个词在排队，明天见～</template>
         <template v-else>先回首页学一课吧！</template>
       </p>
-      <button class="k-btn" @click="router.push('/learn')">回学习</button>
+      <BaseButton variant="green" @click="router.push('/learn')">回学习</BaseButton>
     </div>
 
     <!-- 出题 -->
@@ -173,7 +174,7 @@ function replay() {
         <button v-if="againCount > 0" class="k-btn" @click="start">
           <RotateCcw class="k-ico" />再练一次
         </button>
-        <button class="k-btn gray" @click="router.push('/learn')">回学习</button>
+        <BaseButton variant="green" @click="router.push('/learn')">回学习</BaseButton>
       </div>
     </div>
   </div>

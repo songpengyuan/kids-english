@@ -6,6 +6,7 @@ import { useProgressStore } from "../../stores/progress";
 import { useSpeechSession } from "../../composables/useSpeechSession";
 import type { Word } from "../../data/lessons";
 import { ChevronRight, Mic, RotateCcw, Square, ThumbsUp, Volume2 } from "@lucide/vue";
+import BaseButton from "../ui/BaseButton.vue";
 
 const props = defineProps<{ words: Word[] }>();
 const emit = defineEmits(["done", "progress", "total"]);
@@ -111,7 +112,7 @@ function next() {
     <!-- 麦克风不可用提示 + 跳过 -->
     <div v-if="micBlocked" class="mic-blocked anim-pop">
       <p class="blocked-tip">🎤 麦克风不可用<br/>请在浏览器设置中允许麦克风权限</p>
-      <button class="k-btn" @click="next">跳过这个词 →</button>
+      <BaseButton variant="green" @click="next">跳过这个词 →</BaseButton>
     </div>
 
     <!-- 麦克风按钮：点一下开始，再点一下结束 -->
@@ -149,15 +150,15 @@ function next() {
         </button>
         <p class="judge-q">读得准不准？</p>
         <div class="btn-row">
-          <button class="k-btn gray" @click="replayRec">
+          <BaseButton variant="green" @click="replayRec">
             <Volume2 class="k-ico" />再听一遍
-          </button>
-          <button class="k-btn green" @click="parentJudge(true)">
+          </BaseButton>
+          <BaseButton variant="green" @click="parentJudge(true)">
             <ThumbsUp class="k-ico" />读得棒
-          </button>
-          <button class="k-btn orange" @click="parentJudge(false)">
+          </BaseButton>
+          <BaseButton variant="green" @click="parentJudge(false)">
             <RotateCcw class="k-ico" />再试一次
-          </button>
+          </BaseButton>
         </div>
       </template>
       <template v-else-if="mode === 'record'">
@@ -166,9 +167,9 @@ function next() {
           <span v-else class="retry-hint"><RotateCcw class="k-ico" />再试一次吧，先听一遍示范</span>
         </p>
         <div class="btn-row">
-          <button class="k-btn gray" @click="hearExample">
+          <BaseButton variant="green" @click="hearExample">
             <Volume2 class="k-ico" />再听示范
-          </button>
+          </BaseButton>
           <button v-if="grade === 'retry'" class="k-btn orange" @click="retry">
             <Mic class="k-ico" />我再试试
           </button>
@@ -185,9 +186,9 @@ function next() {
         </p>
         <p v-if="heard" class="heard">小耳朵听到的是："{{ heard }}"</p>
         <div class="btn-row">
-          <button class="k-btn gray" @click="hearExample">
+          <BaseButton variant="green" @click="hearExample">
             <Volume2 class="k-ico" />再听示范
-          </button>
+          </BaseButton>
           <button v-if="grade === 'retry'" class="k-btn orange" @click="retry">
             <Mic class="k-ico" />我再试试
           </button>

@@ -6,6 +6,7 @@ import { sfxCorrect } from "../../services/effects";
 import { Check, Star, Volume2 } from "@lucide/vue";
 import AppDialog from "../ui/AppDialog.vue";
 import LessonFooter from "./LessonFooter.vue";
+import BaseButton from "../ui/BaseButton.vue";
 
 const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["done"]);
@@ -110,7 +111,7 @@ function finish() {
           <li><b>2</b> 再点下面的单词，把它填进句子里</li>
         </ol>
         <p class="g-note">每句话都听过一遍，就能点亮"我会说啦"</p>
-        <button class="k-btn" @click="close">知道了，开始玩！</button>
+        <BaseButton variant="green" @click="close">知道了，开始玩！</BaseButton>
       </template>
     </AppDialog>
 
