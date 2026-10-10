@@ -10,10 +10,10 @@ function seeded(seed = 7) {
 }
 
 describe("matchGroupRange", () => {
-  it("窄屏/极小屏 2~4 对，其余 3~6 对", () => {
-    expect(matchGroupRange(true, "wide")).toEqual({ min: 2, max: 4 });
-    expect(matchGroupRange(false, "tiny")).toEqual({ min: 2, max: 4 });
-    expect(matchGroupRange(false, "wide")).toEqual({ min: 3, max: 6 });
+  it("统一 3~5 对", () => {
+    expect(matchGroupRange(true, "wide")).toEqual({ min: 3, max: 5 });
+    expect(matchGroupRange(false, "tiny")).toEqual({ min: 3, max: 5 });
+    expect(matchGroupRange(false, "wide")).toEqual({ min: 3, max: 5 });
   });
 });
 
@@ -21,23 +21,17 @@ describe("buildMatchGroups", () => {
   const words = Array.from({ length: 9 }, (_, i) => ({ id: `w${i}` }));
 
   it("分组不丢词、每组不超过上限、组数最少", () => {
-    const groups = buildMatchGroups(words, { min: 3, max: 6 }, seeded());
+    const groups = buildMatchGroups(words, { min: 3, max: 5 }, seeded());
     expect(groups.flat().map((w) => w.id).sort()).toEqual(words.map((w) => w.id).sort());
-    expect(groups).toHaveLength(2); // 9 个词 → 2 组（5 + 4），而不是 3 组
+    expect(groups).toHaveLength(2); // 9 个词 → 2 组（5 + 4）
     for (const g of groups) {
-      expect(g.length).toBeLessThanOrEqual(6);
+      expect(g.length).toBeLessThanOrEqual(5);
       expect(g.length).toBeGreaterThanOrEqual(3);
     }
   });
 
   it("词数不超上限时只有一组", () => {
-    expect(buildMatchGroups(words.slice(0, 5), { min: 3, max: 6 }, seeded())).toHaveLength(1);
-  });
-
-  it("小屏用 2~4 的分组口径（9 词 → 3 组）", () => {
-    const groups = buildMatchGroups(words, { min: 2, max: 4 }, seeded());
-    expect(groups).toHaveLength(3);
-    for (const g of groups) expect(g.length).toBeLessThanOrEqual(4);
+    expect(buildMatchGroups(words.slice(0, 5), { min: 3, max: 5 }, seeded())).toHaveLength(1);
   });
 });
 
