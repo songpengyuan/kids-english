@@ -79,6 +79,7 @@ export const router = createRouter({
       path: "/listen",
       children: [
         { path: "", name: "listen", component: () => import("../views/listen/ListenView.vue"), meta: { title: "磨耳朵" } },
+        { path: "song/:id", name: "song-detail", component: () => import("../views/listen/SongDetailView.vue"), meta: { title: "歌曲" } },
       ],
     },
 

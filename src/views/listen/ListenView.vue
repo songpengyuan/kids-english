@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeUnmount } from "vue";
+import { useRouter } from "vue-router";
 import { lessons, asset } from "../../data/lessons";
 import AppHeader from "../../components/layout/AppHeader.vue";
 import { useProgressStore } from "../../stores/progress";
 import { Play, Pause, SkipBack, SkipForward, Music, Video, X, Repeat, Repeat1, Shuffle } from "@lucide/vue";
 
 type SubTab = "songs" | "videos";
+const router = useRouter();
 const subTab = ref<SubTab>("songs");
 
 const songList = computed(() =>
@@ -115,7 +117,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
       <template v-if="subTab === 'songs'">
         <div class="song-list">
           <button v-for="(s, i) in songList" :key="s.id" class="song-row"
-            :class="{ active: currentIdx === i }" @click="playSong(i)">
+            :class="{ active: currentIdx === i }" @click="router.push(`/listen/song/${s.id}`)">
             <span class="sr-emoji tone-ico" :class="'tone-' + s.tone">{{ s.emoji }}</span>
             <span class="sr-info">
               <span class="sr-title">{{ s.title }}</span>
@@ -124,25 +126,6 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
             <span v-if="currentIdx === i && playing" class="eq"><i></i><i></i><i></i></span>
             <span v-else class="sr-play"><Play class="k-ico" /></span>
           </button>
-        </div>
-        <div v-if="currentSong" class="mini-player">
-          <!-- 第一行：封面 + 标题 + 播放控制 -->
-          <div class="mp-row">
-            <div class="mp-album tone-ico" :class="'tone-' + currentSong.tone">{{ currentSong.emoji }}</div>
-            <div class="mp-info">
-              <p class="mp-title">{{ currentSong.title }}</p>
-              <p class="mp-sub">{{ currentSong.titleZh }}</p>
-            </div>
-            <button class="mp-btn" @click="prev"><SkipBack class="k-ico" /></button>
-            <button class="mp-btn big" @click="togglePlay">
-              <Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" />
-            </button>
-            <button class="mp-btn" @click="next"><SkipForward class="k-ico" /></button>
-          </div>
-          <!-- 第二行：进度条 -->
-          <div class="mp-row mp-bar-row">
-            <input type="range" :value="Math.round(progress * 100)" @input="seek" min="0" max="100" />
-          </div>
         </div>
       </template>
       <template v-else>
