@@ -546,7 +546,16 @@ git push origin main      # 触发 GitHub Actions deploy.yml → Pages 自动发
 **网络问题处理（github.com 直连不稳定，最高频的坑）**：
 
 - 症状：`Failed to connect to github.com port 443 after …` / `Recv failure: Operation timed out`。
-- 处理：
+- **根治方案（推荐）：走 SSH（22 端口），绕过 443 封锁**：
+  ```bash
+  # 首次：生成 SSH key 并加到 GitHub Settings → SSH Keys
+  ssh-keygen -t ed25519 -C "your@email" -f ~/.ssh/id_ed25519 -N ""
+  cat ~/.ssh/id_ed25519.pub  # 复制到 GitHub
+  # 切远程到 SSH
+  git remote set-url origin git@github.com:songpengyuan/kids-english.git
+  ```
+  之后 `git push` 走 22 端口，不再卡 443。
+- 临时处理：
   1. 先确认 commit 已落盘（`git log --oneline -3`）——push 失败**代码不丢**，只是没上远程。
   2. 稍等后重试：`sleep 5~30 && git push origin main`，最多 2~3 次，不无限重试。
   3. **报 fatal 不一定真的失败**：本项目出现过 push 报连接错误、实际已推送成功的情况。
