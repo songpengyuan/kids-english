@@ -35,6 +35,7 @@ const {
   grade,
   heard,
   canRecord,
+  micBlocked,
   recordHint,
   recAudio,
   recUrl,
@@ -97,8 +98,14 @@ function next() {
       </div>
     </div>
 
+    <!-- 麦克风不可用提示 + 跳过 -->
+    <div v-if="micBlocked" class="mic-blocked anim-pop">
+      <p class="blocked-tip">🎤 麦克风不可用<br/>请在浏览器设置中允许麦克风权限</p>
+      <button class="k-btn" @click="next">跳过这个词 →</button>
+    </div>
+
     <!-- 麦克风按钮：点一下开始，再点一下结束 -->
-    <div class="mic-zone" v-if="status !== 'feedback' || mode === 'asr'">
+    <div class="mic-zone" v-else-if="status !== 'feedback' || mode === 'asr'">
       <button
         class="mic"
         :class="{ live: status === 'listening' }"
@@ -363,6 +370,20 @@ function next() {
     height: 22px;
   }
 }
+.mic-blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-s);
+  padding: var(--gap-m);
+}
+.blocked-tip {
+  text-align: center;
+  font-weight: 700;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin: 0;
+}
 .mic-label {
   margin: 0;
   font-weight: 800;
@@ -489,7 +510,21 @@ function next() {
   .waves {
     height: 16px;
   }
-  .mic-label {
+  .mic-blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-s);
+  padding: var(--gap-m);
+}
+.blocked-tip {
+  text-align: center;
+  font-weight: 700;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin: 0;
+}
+.mic-label {
     display: none;
   }
   .feedback {

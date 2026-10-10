@@ -45,6 +45,8 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
   const firstAttemptOk = ref(0);
   const attempts = ref(0);
   const canRecord = recorderSupported();
+  /** 麦克风权限被拒/不可用 → 显示跳过按钮 */
+  const micBlocked = ref(false);
   const recordHint = ref("");
   const recAudio = ref<HTMLAudioElement | null>(null);
   const recUrl = ref("");
@@ -86,6 +88,7 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
       if (recognizer !== my) return; // 已被新的尝试取代
       recognizer = null;
       if (err === "not-allowed" || err === "service-not-allowed") {
+        micBlocked.value = true;
         fallbackToRecord("麦克风权限被拒绝");
         return;
       }
@@ -140,7 +143,8 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
       await recorder.start();
     } catch {
       status.value = "idle";
-      recordHint.value = "无法访问麦克风，请检查权限";
+      micBlocked.value = true;
+      recordHint.value = "麦克风不可用";
       hooks.onMicError?.();
       return;
     }
@@ -237,6 +241,7 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
     attempts,
     firstAttemptOk,
     canRecord,
+    micBlocked,
     recordHint,
     recAudio,
     recUrl,
