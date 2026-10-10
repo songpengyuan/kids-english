@@ -17,7 +17,7 @@ import ShellIcon from "../ShellIcon.vue";
 import { Star } from "@lucide/vue";
 import { speakZh } from "../../services/speech";
 
-const props = defineProps<{ title: string; icon?: string }>();
+const props = defineProps<{ title: string; icon?: string; showBack?: boolean }>();
 
 /** 顶栏标题点击即发音（认字）：学习/游戏闯关/我的 等 tab 名（中文，归音效开关） */
 function sayTitle() {
@@ -25,6 +25,7 @@ function sayTitle() {
 }
 
 const router = useRouter();
+function goBack() { router.back(); }
 const progress = useProgressStore();
 const rewards = useRewardsStore();
 const streak = useStreakStore();
@@ -34,6 +35,9 @@ const streak = useStreakStore();
   <header class="app-hdr anim-fade-up">
     <div class="hdr-row">
       <div class="hdr-left">
+        <button v-if="showBack" class="hdr-back" aria-label="返回" @click="goBack">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        </button>
         <PathIcon v-if="icon" :name="icon" class="hdr-ico" />
         <span class="hdr-title" @click="sayTitle">{{ title }}</span>
       </div>
@@ -90,6 +94,8 @@ const streak = useStreakStore();
   gap: var(--gap-s);
   width: 100%;
 }
+.hdr-back { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); margin-right: 2px; flex: none; }
+.hdr-back:active { background: var(--line); }
 .hdr-left {
   display: inline-flex;
   align-items: center;

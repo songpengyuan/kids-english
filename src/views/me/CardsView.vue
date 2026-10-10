@@ -10,7 +10,7 @@ const cards = useCardsStore();
 
 <template>
   <div class="cards view">
-    <AppHeader title="我的卡片" icon="me" />
+    <AppHeader title="我的卡片" icon="me" show-back />
     <div class="cards-body view-body">
       <p class="summary">已收集 {{ cards.uniqueCount }} / {{ cards.allCards.length }} 张</p>
       <div class="grid">

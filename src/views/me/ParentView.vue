@@ -27,7 +27,7 @@ function go(path: string) { router.push(path); }
 
 <template>
   <div class="parent view">
-    <AppHeader title="家长中心" icon="me" />
+    <AppHeader title="家长中心" icon="me" show-back />
     <div class="body view-body">
       <!-- 家长报告 -->
       <button class="entry" @click="go('/me/report')">

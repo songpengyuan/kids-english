@@ -2,6 +2,7 @@
 import { ref, computed, onBeforeUnmount } from "vue";
 import { lessons, asset } from "../../data/lessons";
 import AppHeader from "../../components/layout/AppHeader.vue";
+import { useProgressStore } from "../../stores/progress";
 import { Play, Pause, SkipBack, SkipForward, Music, Video, X, Repeat, Repeat1, Shuffle } from "@lucide/vue";
 
 type SubTab = "songs" | "videos";
@@ -41,7 +42,7 @@ function ensureAudio() {
 function playSong(idx: number) {
   const a = ensureAudio(); const s = songList.value[idx]; if (!s) return;
   if (currentIdx.value === idx) { togglePlay(); return; }
-  currentIdx.value = idx; a.src = s.src; a.play(); playing.value = true;
+  currentIdx.value = idx; a.src = s.src; a.play(); playing.value = true; startListenTimer();
 }
 function togglePlay() {
   const a = ensureAudio(); if (!a.src) return;
@@ -75,10 +76,26 @@ function toggleRepeat() {
 function seek(e: Event) {
   if (audio.value) audio.value.currentTime = (Number((e.target as HTMLInputElement).value) / 100) * (audio.value.duration || 0);
 }
-onBeforeUnmount(() => audio.value?.pause());
+onBeforeUnmount(() => { audio.value?.pause(); stopListenTimer(); });
 
+const progress = useProgressStore();
+let listenTimer: number | null = null;
+let lastTick = 0;
+function startListenTimer() {
+  stopListenTimer();
+  lastTick = Date.now();
+  listenTimer = window.setInterval(() => {
+    const now = Date.now();
+    const sec = (now - lastTick) / 1000;
+    lastTick = now;
+    progress.addDailyActivity(sec);
+  }, 5000);
+}
+function stopListenTimer() {
+  if (listenTimer) { clearInterval(listenTimer); listenTimer = null; }
+}
 const playingVideo = ref<{ src: string; titleZh: string; title: string } | null>(null);
-function playVideo(v: { src: string; titleZh: string; title: string }) { playingVideo.value = v; }
+function playVideo(v: { src: string; titleZh: string; title: string }) { playingVideo.value = v; startListenTimer(); }
 </script>
 
 <template>
