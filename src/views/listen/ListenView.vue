@@ -28,6 +28,7 @@ const audio = ref<HTMLAudioElement | null>(null);
 const currentIdx = ref(-1);
 const playing = ref(false);
 const progress = ref(0);
+const duration = ref(0);
 const repeatMode = ref<RepeatMode>("all");
 const shuffleOn = ref(false);
 const currentSong = computed(() => currentIdx.value >= 0 ? songList.value[currentIdx.value] : null);
@@ -42,7 +43,10 @@ function ensureAudio() {
   if (!audio.value) {
     audio.value = new Audio();
     audio.value.addEventListener("timeupdate", () => {
-      if (audio.value?.duration) progress.value = audio.value.currentTime / audio.value.duration;
+      if (audio.value?.duration) {
+        progress.value = audio.value.currentTime / audio.value.duration;
+        duration.value = audio.value.duration;
+      }
     });
     audio.value.addEventListener("ended", next);
   }
@@ -87,6 +91,12 @@ function prev() {
 }
 function toggleRepeat() {
   repeatMode.value = repeatMode.value === "off" ? "all" : repeatMode.value === "all" ? "one" : "off";
+}
+function formatTime(sec: number) {
+  if (!sec || !isFinite(sec)) return "0:00";
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 function seek(e: Event) {
   const el = e.target as HTMLInputElement;
@@ -141,7 +151,11 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
         <button class="lp-btn" @click="next"><SkipForward class="k-ico" /></button>
         <button class="lp-btn" @click="showPlaylist = true"><ListMusic class="k-ico" /></button>
       </div>
-      <input class="lp-progress" type="range" :value="Math.round(progress * 100)" @input="seek" min="0" max="100" />
+      <div class="lp-progress-row">
+        <span class="lp-time">{{ formatTime(progress * duration) }}</span>
+        <input class="lp-progress" type="range" :value="Math.round(progress * 100)" @input="seek" min="0" max="100" />
+        <span class="lp-time">{{ formatTime(duration) }}</span>
+      </div>
     </div>
 
     <!-- ===== 列表页 ===== -->
@@ -237,7 +251,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
   position: fixed; inset: 0; z-index: 90;
   background: transparent;
   display: flex; flex-direction: column;
-  padding: env(safe-area-inset-top) var(--pad-x) env(safe-area-inset-bottom);
+  padding: env(safe-area-inset-top) var(--pad-x) 0;
   gap: var(--gap-s);
 }
 .lp-header { display: flex; align-items: center; gap: var(--gap-m); padding: var(--gap-s) 0; }
@@ -278,7 +292,9 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 }
 .lp-btn .k-ico { width: 26px; height: 26px; }
 .lp-btn.big .k-ico { width: 30px; height: 30px; }
-.lp-progress { width: 100%; accent-color: var(--yellow); height: 6px; }
+.lp-progress-row { display: flex; align-items: center; gap: var(--gap-s); padding: 0 var(--pad-x) calc(20px + env(safe-area-inset-bottom)); }
+.lp-progress { flex: 1; accent-color: var(--yellow); height: 6px; }
+.lp-time { font-size: 11px; font-weight: 700; color: var(--ink-faint); min-width: 36px; text-align: center; }
 
 /* 播放列表抽屉内容 */
 .drawer-list { padding: 8px 0; }
