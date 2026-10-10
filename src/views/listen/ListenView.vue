@@ -50,9 +50,19 @@ function ensureAudio() {
 }
 function playSong(idx: number) {
   const a = ensureAudio(); const s = songList.value[idx]; if (!s) return;
-  if (currentIdx.value === idx) { togglePlay(); return; }
   currentIdx.value = idx; a.src = s.src; a.play(); playing.value = true;
   nowPlaying.value = true; startListenTimer();
+}
+/** 点整行：进入歌词页（如果是当前曲就直接展开，不切歌） */
+function enterLyrics(idx: number) {
+  if (currentIdx.value === idx) { nowPlaying.value = true; return; }
+  playSong(idx);
+}
+/** 点右侧按钮：只切播放/暂停，不进歌词页 */
+function toggleRow(i: number, e: Event) {
+  e.stopPropagation();
+  if (currentIdx.value !== i) { playSong(i); return; }
+  togglePlay();
 }
 function togglePlay() {
   const a = ensureAudio(); if (!a.src) return;
@@ -145,16 +155,18 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
       <div class="body view-body">
         <template v-if="subTab === 'songs'">
           <div class="song-list">
-            <button v-for="(s, i) in songList" :key="s.id" class="song-row"
-              :class="{ active: currentIdx === i }" @click="playSong(i)">
+            <div v-for="(s, i) in songList" :key="s.id" class="song-row"
+              :class="{ active: currentIdx === i }" @click="enterLyrics(i)">
               <span class="sr-emoji" :class="'tone-' + s.tone">{{ s.emoji }}</span>
               <span class="sr-info">
                 <span class="sr-title">{{ s.title }}</span>
                 <span class="sr-sub">{{ s.titleZh }}</span>
               </span>
-              <span v-if="currentIdx === i && playing" class="eq"><i></i><i></i><i></i></span>
+              <button v-if="currentIdx === i" class="sr-play" @click="toggleRow(i, $event)">
+                <Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" />
+              </button>
               <span v-else class="sr-play"><Play class="k-ico" /></span>
-            </button>
+            </div>
           </div>
         </template>
         <template v-else>
