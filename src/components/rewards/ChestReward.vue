@@ -238,18 +238,23 @@ const cap = computed(() => {
       <div class="keyhole"></div>
     </div>
 
-    <!-- 三个点击 icon：敲一次高亮一个 -->
+    <!-- 三个向上箭头：点一个点亮一个，宝箱晃动 -->
     <div class="tap-hints">
-      <span
+      <button
         v-for="i in 3"
         :key="i"
-        class="hint"
-        :class="{ on: taps >= i }"
-        :style="{ animationDelay: (i - 1) * 0.08 + 's' }"
+        class="arrow"
+        :class="{ on: taps >= i, locked: taps < i - 1 }"
+        :disabled="taps >= i"
+        :style="{ animationDelay: (i - 1) * 0.1 + 's' }"
+        :aria-label="`敲第 ${i} 下`"
+        @click.stop="tapChest"
       >
-        <ShellIcon v-if="i === 1" class="h-ico" />
-        <PathIcon v-else :name="['sticker', 'gift'][i - 2]" class="h-ico" />
-      </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19V5" />
+          <path d="M5 12l7-7 7 7" />
+        </svg>
+      </button>
     </div>
 
     <p v-if="cap" class="cap">{{ cap }}</p>
@@ -563,37 +568,41 @@ const cap = computed(() => {
   100% { transform: translate(calc(var(--x) * 0.6), -190px) scale(0.5); opacity: 0; }
 }
 
-/* ---------- 三个点击 icon ---------- */
+/* ---------- 三个向上箭头 ---------- */
 .tap-hints {
   display: flex;
   gap: var(--gap-m);
   margin-top: 2px;
 }
-.hint {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
+.arrow {
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background: var(--card-bg);
   border: 3px solid var(--line);
   color: var(--ink-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
   transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-  animation: hint-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  animation: arrow-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
 }
-.hint .h-ico {
-  width: 24px;
-  height: 24px;
+.arrow svg {
+  width: 26px;
+  height: 26px;
 }
-.hint.on {
+.arrow.on {
   border-color: var(--c-orange);
   background: linear-gradient(180deg, #fff3d6, #ffe3a8);
   color: var(--c-orange);
-  transform: translateY(-3px) scale(1.08);
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12), 0 0 14px 2px rgba(255, 200, 90, 0.4);
+  transform: translateY(-6px);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12), 0 0 16px 2px rgba(255, 200, 90, 0.5);
 }
-@keyframes hint-pop {
+.arrow:disabled {
+  cursor: default;
+}
+@keyframes arrow-pop {
   from { transform: scale(0.3); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
