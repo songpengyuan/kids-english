@@ -513,8 +513,12 @@ export interface SongTiming {
 }
 const songTimingsMap = songTimings as unknown as Record<string, SongTiming | null>;
 
+/** 自定义课（非培训班教材）：颜色/数字/字母 */
+const BONUS_IDS = new Set(["l6", "l7", "l8"]);
+
 export const lessons: Lesson[] = rawLessons.map((lesson) => ({
   ...lesson,
+  type: BONUS_IDS.has(lesson.id) ? "bonus" : "official",
   // 缺失时兜底成蓝色，避免 class 变成 tone-undefined 导致卡片没有底色
   tone: lesson.tone || "blue",
   song: {
