@@ -236,6 +236,17 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .lp-progress { width: 85%; max-width: 420px; margin: 0 auto 20px; accent-color: #4ade80; }
 
 
+/* 播放列表抽屉内容 */
+.drawer-list { padding: 8px 0; }
+.drawer-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 20px; text-align: left; }
+.drawer-item:active { background: rgba(255,255,255,0.05); }
+.drawer-item.active .di-title { color: #4ade80; }
+.di-idx { width: 20px; text-align: center; color: rgba(255,255,255,0.3); font-weight: 700; font-size: 13px; flex: none; }
+.di-emoji { font-size: 24px; flex: none; }
+.di-info { flex: 1; min-width: 0; }
+.di-title { display: block; color: #fff; font-weight: 700; font-size: 15px; }
+.di-sub { display: block; color: rgba(255,255,255,0.4); font-size: 12px; }
+
 /* 视频 */
 .video-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-s); padding: var(--gap-s) var(--pad-x) 0; }
 .video-card { position: relative; border-radius: var(--radius); padding: var(--gap-m); display: flex; flex-direction: column; align-items: center; gap: 4px; box-shadow: var(--shadow-hard); min-height: 120px; transition: transform 0.08s; }
