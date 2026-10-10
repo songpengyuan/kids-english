@@ -12,13 +12,13 @@ const nowPlaying = ref(false);
 const showPlaylist = ref(false);
 
 const songList = computed(() =>
-  lessons.filter((l) => l.song.audio).map((l) => ({
+  lessons.filter((l) => l.song.audio && !["l6", "l7", "l8"].includes(l.id)).map((l) => ({
     id: l.id, title: l.title, titleZh: l.titleZh, emoji: l.emoji,
     tone: l.tone ?? "blue", src: asset(l.song.audio)!,
   }))
 );
 const videoList = computed(() =>
-  lessons.filter((l) => l.song.video).map((l) => ({
+  lessons.filter((l) => l.song.video && !["l6", "l7", "l8"].includes(l.id)).map((l) => ({
     id: l.id, title: l.title, titleZh: l.titleZh, emoji: l.emoji,
     tone: l.tone ?? "blue", src: asset(l.song.video)!,
   }))
