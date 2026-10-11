@@ -19,6 +19,7 @@ const session = useQuizSession<Word>(() => props.words, {
   onCorrect: (w) => {
     sfxCorrect();
     speak(w.en, { lessonId: w.lessonId, wordId: w.id });
+    speak("太棒了");
     progress.recordWord(w.lessonId, w.id, { correct: 1 });
   },
   onWrong: (picked) => {
@@ -61,7 +62,8 @@ function replay() {
 function onPick(opt: Word) {
   if (locked.value) return;
   if (wrongPicks.value.has(opt.id)) return;
-  // 点了直接判对错，不用再点检查
+  // 点了就发音
+  speak(opt.en, { lessonId: opt.lessonId, wordId: opt.id });
   pick(opt);
 }
 

@@ -70,7 +70,7 @@ function onClick(c: MenuCard) {
         :key="c.key"
         class="card anim-fade-up"
         :class="['tone-' + c.tone, { quest: c.quest }]"
-        :style="{ animationDelay: (i * 0.06) + 's' }"
+        :style="{ animationDelay: (i * 0.06) + 's', gridColumn: c.quest ? 'span 2' : 'span 1' }"
         @click="onClick(c)"
       >
         <component :is="c.icon" class="card-ico" />
