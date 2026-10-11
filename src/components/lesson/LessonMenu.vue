@@ -40,8 +40,8 @@ const cards = computed<MenuCard[]>(() => {
     { key: "learn", name: "学单词", desc: "看图听发音", tone: "orange", icon: BookOpen, stars: learnStars.value },
     {
       key: "quest", name: "闯关挑战", tone: "gold", icon: Swords, quest: true,
-      desc: questDone.value >= questTotal.value ? "已通关" : `${questTotal.value}关`,
-      questText: `${questDone.value}/${questTotal.value}`,
+      desc: props.questDone >= props.questTotal ? "已通关" : `${props.questTotal}关`,
+      questText: `${props.questDone}/${props.questTotal}`,
     },
   ];
   // 其余玩法
