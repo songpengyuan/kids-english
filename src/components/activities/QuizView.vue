@@ -59,38 +59,17 @@ function replay() {
 }
 
 function onPick(opt: Word) {
-  if (locked.value) {
-    pick(opt);
-    return;
-  }
+  if (locked.value) return;
   if (wrongPicks.value.has(opt.id)) return;
-  // 再次点同一个 = 取消选中，不发音
-  if (selectedKey.value === opt.id) {
-    selectedKey.value = null;
-    return;
-  }
-  // 选中新选项：蓝色高亮 + 朗读这个单词
-  selectedKey.value = opt.id;
-  sfxTap();
-  speak(opt.en, { lessonId: opt.lessonId, wordId: opt.id });
-}
-
-function check() {
-  if (!selectedKey.value || locked.value) return;
-  const opt = q.value.options.find((o) => o.id === selectedKey.value);
-  if (!opt) return;
-  const result = pick(opt);
-  if (result === "wrong") selectedKey.value = null;
+  // 点了直接判对错，不用再点检查
+  pick(opt);
 }
 
 function onFooterButton() {
-  if (locked.value) {
-    selectedKey.value = null;
-    const r = gotoNext();
-    if (r.done) emit("done", r.stars);
-  } else {
-    check();
-  }
+  if (!locked.value) return;
+  selectedKey.value = null;
+  const r = gotoNext();
+  if (r.done) emit("done", r.stars);
 }
 
 watch(
@@ -113,7 +92,7 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
       <Volume2 class="k-ico" />
       <span v-if="speaking" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
     </button>
-    <p class="tip">听一听，选一张正确的图片，然后点检查</p>
+    <p class="tip">听一听，点正确的图片</p>
 
     <div class="options view-body">
       <div
@@ -123,8 +102,7 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
         data-haptic
         :class="{
           right: locked && opt.id === q.target.id,
-          wrong: wrongPicks.has(opt.id),
-          selected: !locked && selectedKey === opt.id
+          wrong: wrongPicks.has(opt.id)
         }"
         @click="onPick(opt)"
       >
@@ -142,11 +120,11 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
     </div>
 
     <LessonFooter
-      :feedback="locked ? 'success' : wrongPicks.size ? 'error' : null"
+      v-if="locked"
+      feedback="success"
       feedback-text="太棒了！"
-      :button-text="locked ? '继续' : '检查'"
-      :button-disabled="locked ? false : !selectedKey"
-      :show-arrow="locked"
+      button-text="继续"
+      :show-arrow="true"
       @button="onFooterButton"
     />
   </div>
