@@ -142,7 +142,7 @@ function next() {
     <div v-if="status === 'feedback'" class="feedback anim-fade-up">
       <template v-if="mode === 'record' && grade === ''">
         <!-- 松手后自动播放回放：不展示进度条（小朋友无需看到），读完可直接复读/判定/再试 -->
-        <audio ref="recAudio" :src="recUrl" autoplay class="replay"></audio>
+        <audio ref="recAudio" :src="recUrl" class="replay"></audio>
         <!-- 醒目的回放按钮：大圆喇叭，点一下重听自己的录音 -->
         <button class="replay-btn anim-pop" @click="replayRec" aria-label="回放录音">
           <Volume2 class="k-ico" />
