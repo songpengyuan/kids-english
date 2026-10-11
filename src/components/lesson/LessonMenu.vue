@@ -69,20 +69,21 @@ const soloActs = computed(() =>
       </button>
     </div>
 
-    <!-- 单独玩法 -->
-    <div class="solo-label">单独练习</div>
-    <div class="solo-grid">
+    <!-- 单独玩法：和上面统一大卡片风格 -->
+    <div class="top-cards">
       <button
         v-for="(a, i) in soloActs"
         :key="a.key"
-        class="solo-card anim-fade-up"
+        class="big-card anim-fade-up"
         :class="'tone-' + a.tone"
         :style="{ animationDelay: (0.2 + i * 0.06) + 's' }"
         @click="emit('openActivity', a)"
       >
-        <component :is="a.icon" class="k-ico" />
-        <span class="solo-name">{{ a.name }}</span>
-        <span v-if="a.stars" class="solo-stars">⭐{{ a.stars }}</span>
+        <span class="bk-ico"><component :is="a.icon" class="k-ico" /></span>
+        <span class="bk-body">
+          <span class="bk-name">{{ a.name }}</span>
+        </span>
+        <span v-if="a.stars" class="mini-stars"><Star class="k-ico star-fill" />{{ a.stars }}</span>
       </button>
     </div>
   </div>
@@ -163,36 +164,5 @@ const soloActs = computed(() =>
   flex: none;
 }
 
-/* 单独练习 */
-.solo-label {
-  font-size: clamp(12px, 2vh, 15px);
-  font-weight: 800;
-  color: var(--ink-faint);
-  margin-top: var(--gap-xs);
-}
-.solo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: var(--gap-s);
-}
-.solo-card {
-  border-radius: var(--radius);
-  padding: var(--gap-s);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  position: relative;
-  transition: transform 0.08s;
-}
-.solo-card:active { transform: scale(0.96); }
-.solo-card .k-ico { font-size: clamp(24px, 4vh, 32px); }
-.solo-name { font-size: clamp(12px, 2vh, 15px); font-weight: 800; }
-.solo-stars {
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  font-size: 10px;
-  font-weight: 800;
-}
+
 </style>
