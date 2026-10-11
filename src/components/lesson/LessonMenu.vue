@@ -38,17 +38,16 @@ const cards = computed<MenuCard[]>(() => {
   const list: MenuCard[] = [
     { key: "song", name: "学童谣", desc: "听歌看MV", tone: "green", icon: Music, stars: songStars.value },
     { key: "learn", name: "学单词", desc: "看图听发音", tone: "orange", icon: BookOpen, stars: learnStars.value },
-    {
-      key: "quest", name: "闯关挑战", tone: "gold", icon: Swords, quest: true,
-      desc: props.questDone >= props.questTotal ? "已通关" : `${props.questTotal}关`,
-      questText: `${props.questDone}/${props.questTotal}`,
-    },
   ];
-  // 其余玩法
   for (const a of props.activities) {
     if (["song", "learn", "quest"].includes(a.key)) continue;
     list.push({ key: a.key, name: a.name, tone: a.tone, icon: a.icon, stars: a.stars });
   }
+  list.push({
+    key: "quest", name: "闯关挑战", tone: "gold", icon: Swords, quest: true,
+    desc: props.questDone >= props.questTotal ? "已通关" : `${props.questTotal}关`,
+    questText: `${props.questDone}/${props.questTotal}`,
+  });
   return list;
 });
 
