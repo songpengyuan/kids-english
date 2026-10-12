@@ -96,7 +96,8 @@ button {
 .tone-orange,
 .tone-purple,
 .tone-pink,
-.tone-teal {
+.tone-teal,
+.tone-gold {
   background-image: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.18),
@@ -131,13 +132,20 @@ button {
   --tone: var(--c-teal);
   --tone-deep: var(--c-teal-deep);
 }
+.tone-gold {
+  --tone: var(--c-gold);
+  --tone-deep: var(--c-gold-deep);
+  /* 金底配深棕字：金色卡片辨识度最高，文字也更清晰（其它卡片是白字） */
+  --on-tone: #4d3200;
+}
 /* 按下：整体下沉 --press 并轻微收拢，投影随之收平（所有彩色卡片一致的手感） */
 .tone-blue:active,
 .tone-green:active,
 .tone-orange:active,
 .tone-purple:active,
 .tone-pink:active,
-.tone-teal:active {
+.tone-teal:active,
+.tone-gold:active {
   transform: translateY(calc(var(--press) - 1px)) scale(0.97);
   box-shadow: var(--sticker), 0 1px 0 var(--tone-deep);
 }

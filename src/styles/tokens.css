@@ -59,6 +59,8 @@
   --c-pink-deep: #d94f7e;
   --c-teal: #14b8a6;
   --c-teal-deep: #0e9285;
+  --c-gold: #f6b93b;
+  --c-gold-deep: #cf9a1f;
   /* 彩色卡片上的文字色 */
   --on-tone: #ffffff;
 
@@ -186,6 +188,8 @@
   --c-pink-deep: #9c4263;
   --c-teal: #19988a;
   --c-teal-deep: #127267;
+  --c-gold: #b8902f;
+  --c-gold-deep: #8f6f1f;
   /* 基调偏暖白，纯白在深底上过大反差反而刺眼 */
   --on-tone: #fdf7ee;
 
