@@ -44,6 +44,10 @@ const wonImgFailed = ref(false);
 const wonImg = computed(() => (wonImgFailed.value ? wonForm.value?.fallback : wonForm.value?.image));
 /** 顶部徽标当前显示数（收取动画前 = 入账前旧值，收取时逐个 +1 到新值） */
 const shown = ref(0);
+/** 中间展示区剩余贝壳数（开箱后 = 本次掉落数；收取时逐个 -1，与右上 +1 对应） */
+const panelShown = ref(0);
+/** 展示区贝壳元素（飞行源点：每轮取"将要消失"的那枚的坐标） */
+const shellEls = ref([]);
 /** 徽标脉冲重触发计数 */
 const pulseTick = ref(0);
 /** 宝箱晃动重触发计数 */
@@ -66,11 +70,13 @@ onBeforeUnmount(() => {
 function openChest() {
   const oldShells = rewards.shells;
   shown.value = oldShells; // 徽标先显示旧余额，收取时递增
+  panelShown.value = 0; // 开箱瞬间先清空，入账后填充展示区
   sfxChestOpen();
   bigCelebrate();
   const r = rewards.rollChest();
   rewards.grant(r);
   reward.value = r;
+  panelShown.value = r.shells; // 展示区出现对应的贝壳/海螺（宝箱替换成奖励）
   sfxCoin();
   if (r.formId) sfxSticker();
   // 650ms：金光/光柱足够看完，又不让性急的孩子干等（原 1s 偏拖）
@@ -134,26 +140,25 @@ async function collect() {
   if (phase.value !== "reward" || !reward.value) return;
   phase.value = "flying";
   sfxCollect();
-  const src = chestEl.value?.getBoundingClientRect();
   const dst = badgeEl.value?.getBoundingClientRect();
-  if (!src || !dst) {
+  if (!dst) {
     phase.value = "collected";
     emit("done");
     return;
   }
-  const from = { x: src.left + src.width / 2, y: src.top + src.height * 0.45 };
   const to = { x: dst.left + dst.width / 2, y: dst.top + dst.height / 2 };
-  const apex = Math.max(140, Math.abs(from.y - to.y) * 0.55); // 上抛弧度随距离增大
-
-  const n = Math.min(reward.value.shells, 5); // 贝壳逐个飞入（最多 5 个节奏感）
-  const step = Math.ceil(reward.value.shells / n); // 每次递增步长，最后一次对齐余额
-  await nextTick();
-  for (let i = 0; i < n; i++) {
-    if (i > 0) await sleep(160); // 逐个小间隔（收紧节奏，重复开箱不拖）
+  // 展示区的贝壳逐个飞向右上角徽标：右上 +1、展示区 -1，飞完对齐余额
+  while (panelShown.value > 0) {
+    const src = shellEls.value[panelShown.value - 1]?.getBoundingClientRect();
+    if (!src) break;
+    const from = { x: src.left + src.width / 2, y: src.top + src.height / 2 };
+    const apex = Math.max(140, Math.abs(from.y - to.y) * 0.55); // 上抛弧度随距离增大
     await flyOne(from, to, apex);
-    shown.value = Math.min(shown.value + step, rewards.shells); // 数量随之增加
+    shown.value = Math.min(shown.value + 1, rewards.shells); // 右上数量 +1
+    panelShown.value -= 1; // 展示区数量 -1（贝壳少一枚）
     sfxCoin(); // 落地：硬币"叮"
     pulseTick.value++; // 徽标接收脉冲
+    if (panelShown.value > 0) await sleep(160); // 逐个小间隔（收紧节奏，重复开箱不拖）
   }
   phase.value = "collected";
   emit("done");
@@ -221,6 +226,7 @@ const cap = computed(() => {
     <div v-if="phase === 'open' || phase === 'reward'" class="glow"></div>
 
     <div
+      v-if="phase === 'closed' || phase === 'open'"
       ref="chestEl"
       class="chest"
       data-haptic="true"
@@ -260,11 +266,20 @@ const cap = computed(() => {
 
     <p v-if="cap" class="cap">{{ cap }}</p>
 
-    <!-- 奖励展示 + 收取 -->
-    <div v-if="phase === 'reward' && reward" class="reward">
+    <!-- 奖励展示 + 收取：flying 阶段面板保留，贝壳逐个飞走、数量逐个减少 -->
+    <div v-if="(phase === 'reward' || phase === 'flying') && reward" class="reward">
       <p class="got">获得</p>
       <div class="rewards">
-        <span class="shells anim-pop"><ShellIcon /> ×{{ reward.shells }}</span>
+        <!-- 宝箱替换出现对应的贝壳/海螺：开箱后展示区排着 N 枚贝壳，收取时逐枚飞走 -->
+        <div class="shell-row" aria-label="本次获得的贝壳">
+          <span
+            v-for="i in panelShown"
+            :key="'sh' + i"
+            :ref="(el) => { if (el) shellEls[i - 1] = el; }"
+            class="shell-item anim-pop"
+          ><ShellIcon /></span>
+        </div>
+        <span class="shells anim-pop">×{{ panelShown }}</span>
       </div>
       <!-- 掉到形态：新形态单独高光展示（图片 + 角色·形态名） -->
       <div v-if="wonForm" class="won anim-pop" :style="{ '--tone': wonForm.color }">
@@ -273,7 +288,10 @@ const cap = computed(() => {
         <p class="won-name">{{ wonForm.heroName }} · {{ wonForm.name }}</p>
         <p class="won-en">{{ wonForm.heroEn }}, {{ wonForm.en }}</p>
       </div>
-      <BaseButton variant="green" @click="collect">收取 <span class="shell-emoji"><ShellIcon /></span></BaseButton>
+      <BaseButton variant="green" :disabled="phase === 'flying'" @click="collect">
+        {{ phase === 'flying' ? '收取中…' : '收取' }}
+        <span class="shell-emoji"><ShellIcon /></span>
+      </BaseButton>
     </div>
     <p v-if="phase === 'collected'" class="cap collected">
       <PathIcon name="gift" class="gift-ico" /> 已收进宝藏罐！
@@ -661,6 +679,28 @@ const cap = computed(() => {
   box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.15);
 }
 .shells { background: var(--c-orange); }
+/* 展示区贝壳队列：开箱后"宝箱替换出现"的奖励本体，逐个排开 */
+.shell-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+}
+.shell-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(30px, 6.5vh, 42px);
+  height: clamp(30px, 6.5vh, 42px);
+  border-radius: 50%;
+  background: linear-gradient(160deg, #ffd87a, #f0a63a);
+  color: #6b4e00;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18), inset 0 2px 0 rgba(255, 255, 255, 0.45);
+  font-size: clamp(18px, 3.4vh, 24px);
+  animation-delay: calc(var(--i, 0) * 0.05s);
+}
+.shell-item:last-child { animation-delay: 0.15s; }
 
 /* 掉到的形态：一张带主色描边的小卡（新形态高光） */
 .won {

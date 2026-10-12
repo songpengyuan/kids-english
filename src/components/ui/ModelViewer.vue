@@ -1,30 +1,38 @@
 <script setup lang="ts">
 /**
- * 3D 英雄展示组件
- * 使用 <model-viewer> 渲染 GLB 模型，支持自动旋转和待机动画。
- * 模型文件放在 public/models/ 下。
+ * 3D 模型展示组件（封装 <model-viewer>）
  */
 import "@google/model-viewer";
+import { computed } from "vue";
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   src?: string;
   alt?: string;
   autoRotate?: boolean;
+  exposure?: number;
 }>(), {
-  src: "/models/ultraseven.glb",
-  alt: "3D 英雄",
+  src: "",
+  alt: "3D 模型",
   autoRotate: true,
+  exposure: 1.2,
+});
+
+const resolvedSrc = computed(() => {
+  if (!props.src) return `${import.meta.env.BASE_URL}models/ultraseven.glb`;
+  if (props.src.startsWith("http") || props.src.startsWith("/")) return props.src;
+  return `${import.meta.env.BASE_URL}${props.src}`;
 });
 </script>
 
 <template>
   <model-viewer
-    :src="src"
+    :src="resolvedSrc"
     :alt="alt"
     :auto-rotate="autoRotate"
     camera-controls
     shadow-intensity="1"
-    exposure="1"
+    :exposure="exposure"
+    tone-mapping="neutral"
   ></model-viewer>
 </template>
 

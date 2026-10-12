@@ -65,7 +65,16 @@ export default defineConfig(({ mode }) => {
     )
   }
   return {
-    plugins: [vue(), kidsPwa()],
+    plugins: [
+      vue({
+        template: {
+          compilerOptions: {
+            isCustomElement: (tag) => tag === 'model-viewer',
+          },
+        },
+      }),
+      kidsPwa(),
+    ],
     // base 优先级：显式 BASE_PATH（自定义域名/任意部署路径）> GH_REPO（GitHub Pages 项目子路径）> 根路径 "/"
     // sw.js 已用 self.registration.scope 自适应任意部署路径，静态资源只需这里定前缀
     base:
