@@ -235,9 +235,11 @@ const cap = computed(() => {
     </button>
 
     <!-- 顶部贝壳徽标：收取动画的目标（fixed 右上，接收时脉冲 + 数字递增） -->
-    <div ref="badgeEl" class="shell-badge" :class="{ pulsing: phase === 'flying' }" :key="'pulse-' + pulseTick">
+    <div ref="badgeEl" class="shell-badge" :class="{ pulsing: phase === 'flying' }">
       <span class="shell-emoji b-ico"><ShellIcon /></span>
-      <span class="b-num">{{ shown }}</span>
+      <span class="b-num" :key="'num-' + pulseTick">{{ shown }}</span>
+      <!-- 每枚贝壳入账：从徽标位置"长出"新数字（放大弹出 + 上飘淡出，真实感） -->
+      <span v-if="pulseTick" :key="'pop-' + pulseTick" class="b-pop" aria-hidden="true">{{ shown }}</span>
     </div>
 
     <!-- 跳过动画（整个敲击阶段都可见，敲到一半也能跳）：奖励照常入账 -->
@@ -393,6 +395,34 @@ const cap = computed(() => {
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow-hard);
   transform-origin: center;
+}
+/* 入账数字生长：从徽标中心放大弹出、上飘淡出（贝壳飞入时"长出"新数字） */
+.b-pop {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  transform: translateX(-50%);
+  font-weight: 900;
+  font-size: clamp(20px, 4.4vh, 30px);
+  color: var(--yellow, #ffd87a);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  white-space: nowrap;
+  animation: b-pop 0.7s cubic-bezier(0.22, 1.4, 0.36, 1) forwards;
+}
+@keyframes b-pop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.3) translateY(6px);
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.25) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1) translateY(-14px);
+  }
 }
 .shell-badge .b-ico {
   width: 16px;
