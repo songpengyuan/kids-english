@@ -20,14 +20,11 @@ import { speak, speakZh, stopSpeaking } from "../../services/speech";
 import { sfxTap } from "../../services/effects";
 import HeaderBar from "../../components/layout/HeaderBar.vue";
 import PathIcon from "../../components/PathIcon.vue";
-import ModelViewer from "../../components/ui/ModelViewer.vue";
 import { ZoomIn } from "@lucide/vue";
 
 const route = useRoute();
 const router = useRouter();
 const rewards = useRewardsStore();
-
-const use3D = ref(false);
 
 const hero = computed(() => HEROES.find((h) => h.id === route.params.id) || null);
 
@@ -267,10 +264,6 @@ function hasFacts(): boolean {
     <div class="hd-body">
       <!-- 形象大图：多姿势左右滑动轮播（小点/箭头指示）；点"放大看"进全屏查看器 -->
       <div class="hero-stage" :style="{ '--tone': currentForm.color }">
-        <!-- 3D 模式 -->
-        <ModelViewer v-if="use3D" src="/models/ultraseven.glb" :alt="hero.name" class="mv-3d" />
-        <!-- 2D 图片轮播 -->
-        <template v-else>
         <div class="pose-view">
           <div ref="poseEl" class="pose-strip" @scroll.passive="syncPose">
             <figure v-for="(src, i) in poses" :key="src" class="pose-cell" :class="{ sil: !rewards.isOwned(currentForm.id) }">
@@ -278,8 +271,7 @@ function hasFacts(): boolean {
             </figure>
           </div>
         </div>
-        </template>
-        <button class="pose-arrow prev" v-if="!use3D && poses.length > 1" aria-label="上一张" @click="stepPose(-1)">
+        <button v-if="poses.length > 1" class="pose-arrow prev" aria-label="上一张" @click="stepPose(-1)">
           <PathIcon name="chevron-left" />
         </button>
         <button v-if="poses.length > 1" class="pose-arrow next" aria-label="下一张" @click="stepPose(1)">
@@ -287,9 +279,6 @@ function hasFacts(): boolean {
         </button>
         <button class="zoom-hint" aria-label="放大查看图片" @click="openZoom">
           🔍 放大看
-        </button>
-        <button class="toggle-3d" :class="{ on: use3D }" aria-label="切换3D模型" @click="use3D = !use3D">
-          {{ use3D ? "2D" : "3D" }}
         </button>
         <span class="form-tag">{{ currentForm.name }}</span>
         <div v-if="poses.length > 1" class="pose-dots" role="tablist" :aria-label="`${hero.name}${currentForm.name}的姿势`">
@@ -657,27 +646,6 @@ function hasFacts(): boolean {
 }
 .zoom-hint:active {
   transform: translateY(1px) scale(0.97);
-}
-.toggle-3d {
-  position: absolute;
-  left: 10px;
-  bottom: 10px;
-  padding: 7px 14px;
-  border-radius: var(--radius-pill, 999px);
-  background: var(--card-bg);
-  color: var(--ink);
-  font-weight: 900;
-  font-size: 13px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
-  cursor: pointer;
-}
-.toggle-3d.on {
-  background: var(--green);
-  color: #fff;
-}
-.mv-3d {
-  width: 100%;
-  height: 100%;
 }
 
 /* 形态切换淡入淡出 */

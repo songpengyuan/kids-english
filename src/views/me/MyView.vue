@@ -83,6 +83,11 @@ function sayEntry(name: string, path: string) {
           <span class="kc-name">奥特曼卡片</span>
           <span class="kc-desc">{{ cards.uniqueCount }}/{{ cards.allCards.length }} 张</span>
         </button>
+        <button class="kid-card model3d anim-fade-up" style="animation-delay:0.16s" @click="sayEntry('3D英雄', '/me/model3d')">
+          <span class="kc-emoji">🧑‍🚀</span>
+          <span class="kc-name">3D 英雄</span>
+          <span class="kc-desc">拖动看看</span>
+        </button>
       </section>
 
       <!-- 到期复习 -->
@@ -127,6 +132,7 @@ function sayEntry(name: string, path: string) {
 .kid-card:active { transform: scale(0.96); }
 .kid-card.treasure { background: linear-gradient(180deg, #fef3c7, #fde68a); }
 .kid-card.cards { background: linear-gradient(180deg, #dbeafe, #bfdbfe); }
+.kid-card.model3d { background: linear-gradient(180deg, #e9d5ff, #ddd6fe); }
 .kc-emoji { font-size: 48px; }
 .kc-name { font-weight: 900; font-size: var(--fs-body); }
 .kc-desc { font-weight: 800; font-size: var(--fs-small); color: var(--ink-soft); }
