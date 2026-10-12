@@ -141,18 +141,15 @@ function next() {
     <!-- 反馈 -->
     <div v-if="status === 'feedback'" class="feedback anim-fade-up">
       <template v-if="mode === 'record' && grade === ''">
-        <!-- 松手后自动播放回放：不展示进度条（小朋友无需看到），读完可直接复读/判定/再试 -->
+        <!-- 停止录音已自动回放一次；这里只保留一个醒目的二次回放入口（无进度条，小朋友无需看到） -->
         <audio ref="recAudio" :src="recUrl" class="replay"></audio>
-        <!-- 醒目的回放按钮：大圆喇叭，点一下重听自己的录音 -->
-        <button class="replay-btn anim-pop" @click="replayRec" aria-label="回放录音">
+        <!-- 大圆喇叭：想再听一次自己的发音就点它 -->
+        <button class="replay-btn anim-pop" @click="replayRec" aria-label="再听一遍">
           <Volume2 class="k-ico" />
-          <span class="replay-label">听一听我读的</span>
+          <span class="replay-label">再听一遍</span>
         </button>
         <p class="judge-q">读得准不准？</p>
         <div class="btn-row">
-          <BaseButton variant="green" @click="replayRec">
-            <Volume2 class="k-ico" />再听一遍
-          </BaseButton>
           <BaseButton variant="green" @click="parentJudge(true)">
             <ThumbsUp class="k-ico" />读得棒
           </BaseButton>

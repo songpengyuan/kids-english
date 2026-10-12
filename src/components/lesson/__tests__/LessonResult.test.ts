@@ -29,7 +29,7 @@ describe("LessonResult 星星", () => {
       expect(fill.exists()).toBe(true);
     }
     // 逐星延迟递增：--d = n * 0.28s（浮点精度用容差比较）
-    const delays = stars.map((s) => parseFloat(s.element.style.getPropertyValue("--d")));
+    const delays = stars.map((s) => parseFloat((s.element as HTMLElement).style.getPropertyValue("--d")));
     expect(delays[0]).toBeCloseTo(0.28, 4);
     expect(delays[1]).toBeCloseTo(0.56, 4);
     expect(delays[2]).toBeCloseTo(0.84, 4);
@@ -41,7 +41,7 @@ describe("LessonResult 星星", () => {
     expect(stars[0].classes()).not.toContain("dim");
     expect(stars[1].classes()).toContain("dim");
     expect(stars[2].classes()).toContain("dim");
-    expect(stars[1].element.style.getPropertyValue("--d")).toBe("0.56s");
+    expect((stars[1].element as HTMLElement).style.getPropertyValue("--d")).toBe("0.56s");
   });
 
   it("结算标题带星数", () => {

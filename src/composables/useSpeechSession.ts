@@ -8,7 +8,7 @@
  * 组件只负责渲染与音效；这里的副作用（掌握度落库、音效）通过 hooks 注入，
  * 便于单测与复用。
  */
-import { computed, onBeforeUnmount, ref, type Ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, type Ref } from "vue";
 import { speak } from "../services/speech";
 import {
   asrSupported,
@@ -162,6 +162,19 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
       recUrl.value = url;
       grade.value = ""; // 等家长判定
       status.value = "feedback";
+      // 停止录音后自动回放一次自己的发音（家长判定前先听一遍）
+      autoReplay();
+    });
+  }
+
+  /** 自动回放：等 <audio> 元素渲染并挂上 src 后再播一次 */
+  function autoReplay() {
+    nextTick(() => {
+      const a = recAudio.value;
+      if (a) {
+        a.currentTime = 0;
+        a.play().catch(() => {});
+      }
     });
   }
 
