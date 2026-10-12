@@ -1,5 +1,5 @@
 {
- "_说明": "41位奥特曼角色资料扩写合并稿（bio 3-5句/skills 4-6/phrases 1-4 + height/weight/origin/debut 可选字段）。事实红线：每条内容均有可核实出处，无编造；无可靠出处的字段留空。已通过独立核验（13 PASS + 1 WARN已修复 + 0 FAIL）与 pnpm type-check + vitest 225 项。",
+ "_说明": "41位奥特曼角色资料扩写合并稿（最终版）：bio 3-5句/skills 4-6/phrases 1-4 + height/weight/origin/debut 可选字段。每条内容均有可核实出处、无编造；无可靠出处字段留空。已过独立核验（14位深度抽查13 PASS+1 WARN修复+0 FAIL）与 pnpm type-check + vitest 225 项。",
  "heroes": [
   {
    "heroId": "ace",
@@ -43,7 +43,8 @@
     "光子螺旋"
    ],
    "phrases": [
-    "大海不会输！"
+    "大海不会输！",
+    "现在的人类，站在自然的顶端，太过于自我为中心了。"
    ],
    "height": "52 米",
    "weight": "46000 吨",
@@ -52,7 +53,8 @@
    "sources": [
     "https://tsuburaya-prod.com/heroes/ultraman-agul（身高52m/体重46000t/海洋蓝光/藤宫博也/Agul Stream/Photon Crusher/Agul Saber）",
     "https://m.baike.com/wiki/%E9%98%BF%E5%8F%A4%E8%8C%B9%E5%85%89%E5%88%83/19834955（阿古茹光刃 Agul Blade）",
-    "http://wap.faloo.com/515592_96.html（阿古茹流线为V2最强光线）"
+    "http://wap.faloo.com/515592_96.html（阿古茹流线为V2最强光线）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）"
    ],
    "notes": "原技能'光子粉碎'标准译名为'光子粉碎机'，原'海洋射线'未找到对应官方技能，已替换为官方 Profile 记载的'阿古茹流线'；除原句外未找到可逐字核实的第二句台词"
   },
@@ -179,7 +181,8 @@
     "月神粉碎"
    ],
    "phrases": [
-    "温柔的力量最强大！"
+    "温柔的力量最强大！",
+    "尽可能地采取除了战斗以外的办法，不管多严重的冲突，也应该总会有个解决的办法。"
    ],
    "height": "47 米",
    "weight": "42000 吨",
@@ -189,7 +192,8 @@
     "https://tsuburaya-prod.com/heroes/ultraman-cosmos（身高47m/体重42000t/来自宇宙/月神温柔/Full Moon Rect/Luna Extract）",
     "https://www.newton.com.tw/wiki/%E9%AB%98%E6%96%AF%C2%B7%E5%A5%A7%E7%89%B9%E6%9B%BC（满月光波为月神模式得意技）",
     "https://m.baike.com/wiki/%E9%AB%98%E6%96%AF%E5%A5%A5%E7%89%B9%E6%9B%BC/19524036（月神代表技能：满月光波/月神粉碎/满月闪光）",
-    "https://www.bilibili.com/opus/408575711975548120（日冕内巴斯特光线、日蚀克兹缪姆光线）"
+    "https://www.bilibili.com/opus/408575711975548120（日冕内巴斯特光线、日蚀克兹缪姆光线）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）"
    ],
    "notes": "原技能'高斯谬姆光线'为日蚀必杀'克兹缪姆光线'(Cosmium)的异译，已用标准名；原'高斯防护'未找到对应官方技能，已替换为官方英文页记载的'月神抽取'；除原句外未找到可逐字核实的第二句台词"
   },
@@ -234,7 +238,8 @@
    ],
    "phrases": [
     "奇迹一定会发生！",
-    "决不放弃！"
+    "决不放弃！",
+    "真正的战斗，现在才刚刚开始！"
    ],
    "height": "55 米",
    "weight": "45000 吨",
@@ -243,7 +248,8 @@
    "sources": [
     "https://tsuburaya-prod.com/heroes/ultraman-dyna（身高55m/体重45000t/飞鸟信/三形态/被吸入次元裂缝）",
     "https://www.newton.com.tw/wiki/%E6%88%B4%E6%8B%BF（技能：索尔捷特光线/立波留姆光波/闪亮光刃；飞鸟名言'决不放弃'；三形态）",
-    "https://m.baike.com/wiki/%E6%88%B4%E6%8B%BF%E5%A5%A5%E7%89%B9%E6%9B%BC/20025200（强壮型必杀加尔奈特轰炸）"
+    "https://m.baike.com/wiki/%E6%88%B4%E6%8B%BF%E5%A5%A5%E7%89%B9%E6%9B%BC/20025200（强壮型必杀加尔奈特轰炸）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）"
    ],
    "notes": "原技能'戴拿切割'在部分资料中写作'光束切割'，保留原写法待核对"
   },
@@ -260,7 +266,8 @@
    ],
    "phrases": [
     "笑着面对每一天！",
-    "爱迪！（矢的猛用电光棒变身时大喊）"
+    "爱迪！（矢的猛用电光棒变身时大喊）",
+    "暂时的离别不是结束，而是新的美好回忆的开始。"
    ],
    "height": "50 米",
    "weight": "44000 吨",
@@ -268,7 +275,8 @@
    "debut": "1980 年《爱迪·奥特曼》",
    "sources": [
     "https://tsuburaya-prod.com/heroes/ultraman-80（身高50m/体重44000t/Succium Beam/由M78光之国派来/认为怪兽源于人类邪念/化身中学教师/UGM/敏捷杂技式战斗）",
-    "https://m.baike.com/wiki/愛迪·奧特曼/19529248（人间体矢的猛樱花岗初级中学理科教师/沙库修姆光线/扣带光束/八分光轮/奥特光矛/蒙萨尔特飞踢/昭和全能王/TV无败绩）"
+    "https://m.baike.com/wiki/愛迪·奧特曼/19529248（人间体矢的猛樱花岗初级中学理科教师/沙库修姆光线/扣带光束/八分光轮/奥特光矛/蒙萨尔特飞踢/昭和全能王/TV无败绩）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）"
    ],
    "notes": "原bio称「小学老师」，官方站与中文资料均为初级中学（初中）教师，首句按要求保留原句、此处更正报告。原技能「奥特月面镜」「阿克修姆光刃」未在任何来源出现，疑为编造，已替换为核实名。原台词「笑着面对每一天！」非剧中逐字台词，保留作首句。"
   },
@@ -284,7 +292,8 @@
     "奥特充能"
    ],
    "phrases": [
-    "年轻人们，看你们的了！"
+    "年轻人们，看你们的了！",
+    "年轻的勇士，前进吧，向着不可替代的星球——地球。"
    ],
    "height": "45 米",
    "weight": "50000 吨",
@@ -292,7 +301,8 @@
    "debut": "1972 年《艾斯·奥特曼》第27话",
    "sources": [
     "https://tsuburaya-prod.com/heroes/father-of-ultra（身高45m/体重50000t/本名Ultraman Ken/宇宙警备队执行领袖/经历奥特大战争/Father Shot）",
-    "https://www.newton.com.tw/wiki/奧特之父/551264（本名肯/宇宙警备队总司令/奥特大战争勇士/妻子奥特之母儿子泰罗/父亲光线/月牙射击/奥特淋浴/奥特劈砍/奥特充能/初登场艾斯第27话）"
+    "https://www.newton.com.tw/wiki/奧特之父/551264（本名肯/宇宙警备队总司令/奥特大战争勇士/妻子奥特之母儿子泰罗/父亲光线/月牙射击/奥特淋浴/奥特劈砍/奥特充能/初登场艾斯第27话）",
+    "https://m.book118.com/html/2016/1023/60450498.shtm（台词出处）"
    ],
    "notes": "原技能「奥特月镜」未在来源出现；「宇宙奇迹光线」并非奥特之父招式（该名与佐菲M87/奥特兄弟合体相关），已替换为核实名。原台词「年轻人们，看你们的了！」非剧中逐字台词（剧中他习惯称奥特兄弟为「孩子们」），保留原句、未新增。"
   },
@@ -334,7 +344,8 @@
     "光子螺旋"
    ],
    "phrases": [
-    "守护地球的意志！"
+    "守护地球的意志！",
+    "就算人类失去了一个希望，可是到了天亮的时候，又会找到另一个希望。"
    ],
    "height": "50 米",
    "weight": "42000 吨",
@@ -342,7 +353,8 @@
    "debut": "1998 年《盖亚·奥特曼》",
    "sources": [
     "https://tsuburaya-prod.com/heroes/ultraman-gaia（身高50m/体重42000t/地球红光/我梦/Photon Edge/Quantum Stream）",
-    "https://m.baike.com/wiki/%E7%9B%96%E4%BA%9A%E5%A5%A5%E7%89%B9%E6%9B%BC/19536521（技能：光子流线/量子流线/光子冰刀/盖亚切割/光子螺旋；人间体高山我梦；1998年首播）"
+    "https://m.baike.com/wiki/%E7%9B%96%E4%BA%9A%E5%A5%A5%E7%89%B9%E6%9B%BC/19536521（技能：光子流线/量子流线/光子冰刀/盖亚切割/光子螺旋；人间体高山我梦；1998年首播）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）"
    ],
    "notes": "原技能'光子之刃'标准官方译名为'光子冰刀'（官方英文 Photon Edge），已替换；除原句外未找到可逐字核实的第二句台词，故未补"
   },
@@ -388,7 +400,8 @@
    ],
    "phrases": [
     "银河的光，闪耀吧！",
-    "超级融合，银河奥特曼！"
+    "超级融合，银河奥特曼！",
+    "未来可以变好也可以变坏，决定这些的正是你们自己。"
    ],
    "height": "微小～无限大",
    "weight": "0～无限大",
@@ -398,7 +411,8 @@
     "https://tsuburaya-prod.com/heroes/ultraman-ginga（Profile：Height micro~∞ / Weight 0~∞；Special Move Ginga Cross Shoot；来历：寄宿于银河火花、与礼堂光合体；Related Series 首作 ULTRAMAN GINGA）",
     "https://m.baike.com/wiki/银河奥特曼/7412927147742871606（中文技能名：银河十字光线、银河慰藉、银河火焰球、宇宙奇迹光线；斯特利姆形态借奥特六兄弟力量）",
     "https://www.sina.cn/news/detail/4761849935954716.html（圆谷官方设定：身高微小-无限大、体重0-无限大、来自未来、人间体礼堂光、变身道具银河火花、2013年首登场）",
-    "https://www.bilibili.com/video/BV1pTmBYzEPY/（银河十字光线=Ginga Cross Shoot 新创华译名）"
+    "https://www.bilibili.com/video/BV1pTmBYzEPY/（银河十字光线=Ginga Cross Shoot 新创华译名）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）"
    ],
    "notes": "原技能“银河斯特利姆光线”：核实后银河斯特利姆形态的必杀技为融合奥特六兄弟力量的“宇宙奇迹光线”（见抖音百科），无“银河斯特利姆光线”这一标准译名，已替换为“宇宙奇迹光线”。原phrases“银河的光，闪耀吧！”未在剧集中检索到对应原文，按任务要求保留；新增“超级融合，银河奥特曼！”为中文配音版变身口号。身高体重官方为可变化设定（微小～无限大/0～无限大），非常驻53米。"
   },
@@ -410,7 +424,8 @@
     "格丽乔射线",
     "格丽乔治愈光波",
     "格丽乔护盾",
-    "格丽乔治愈爆裂"
+    "格丽乔治愈爆裂",
+    "格丽乔踢"
    ],
    "phrases": [
     "大家都要好好的！",
@@ -426,7 +441,8 @@
     "https://m.baike.com/wiki/%E6%A0%BC%E4%B8%BD%E4%B9%94%E5%A5%A5%E7%89%B9%E6%9B%BC/20053192（格丽乔射线、格丽乔治愈光波、格丽乔护盾被动防御托雷基亚光线）",
     "https://movie.douban.com/review/14690136/（出生地地球、必杀技格丽乔治愈术/格丽乔护盾）",
     "https://www.iesdouyin.com/share/video/7381633630654811411（台词'我是格丽乔奥特曼，我要让你这样的坏人好好反省一下''这和是不是女孩子没关系，想要守护别人的想法和性别没有关系'）",
-    "https://www.iesdouyin.com/share/video/7685331422438406819（台词'活海哥和勇海哥都不在的时候，就由我来守护绫香市'）"
+    "https://www.iesdouyin.com/share/video/7685331422438406819（台词'活海哥和勇海哥都不在的时候，就由我来守护绫香市'）",
+    "https://m.baike.com/wiki/格丽乔奥特曼/20053192（技能出处）"
    ],
    "notes": "原技能名'格丽乔光线'已按百科核实替换为'格丽乔射线'（Grigio Shot）；原'治愈光波'对应标准名'格丽乔治愈光波'。官方必杀Grigio Cheer Charge对应中文'格丽乔治愈爆裂'。技能仅4个：格丽乔为辅助型战士、官方破坏技少，不凑数编造。origin依豆瓣设定为地球（前真谛水晶化身）。"
   },
@@ -543,7 +559,8 @@
     "银河光剑"
    ],
    "phrases": [
-    "最快最强，麦克斯！"
+    "最快最强，麦克斯！",
+    "地球的未来应该由人类自己去决定。"
    ],
    "height": "48 米",
    "weight": "37000 吨",
@@ -551,7 +568,8 @@
    "debut": "2005 年《麦克斯·奥特曼》",
    "sources": [
     "https://tsuburaya-prod.com/heroes/ultraman-max（身高48m/体重37000t、M78出身、Maxium Cannon、Max Galaxy来自杰诺奥特曼、东马快斗）",
-    "https://www.bilibili.com/read/mobile?id=101830（马库修姆加农、马库修姆飞镖、麦克斯银河、银河加农、银河光剑中文译名；官方称号“最强·最速”）"
+    "https://www.bilibili.com/read/mobile?id=101830（马库修姆加农、马库修姆飞镖、麦克斯银河、银河加农、银河光剑中文译名；官方称号“最强·最速”）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）"
    ],
    "notes": "原技能“马库修姆光线”标准官方译名为“马库修姆加农”（Maxium Cannon），已替换；原“麦克斯切割”对应头部武器标准名“马库修姆飞镖”（Maxium Sword），已替换。原台词“最快最强，麦克斯！”对应官方宣传语“最强·最速”，保留原句；未找到更多可核实的麦克斯台词，故不新增。"
   },
@@ -621,7 +639,8 @@
     "核心脉冲"
    ],
    "phrases": [
-    "光，还在成长！"
+    "光，还在成长！",
+    "光是纽带，他会被继承并再次发光的。"
    ],
    "height": "49 米",
    "weight": "40000 吨",
@@ -629,7 +648,8 @@
    "debut": "2004 年《奈克瑟斯·奥特曼》",
    "sources": [
     "https://tsuburaya-prod.com/heroes/ultraman-nexus（身高49m/体重40000t、Cross-Ray Schtrom、Particle Feather、适能者/异生兽/美塔领域背景）",
-    "https://m.baike.com/wiki/%E5%A5%88%E5%85%8B%E8%B5%9B%E6%96%AF%C2%B7%E5%A5%A5%E7%89%B9%E6%9B%BC/19792974（层叠光线·风暴、弓箭光线·风暴、核心脉冲等中文技能译名）"
+    "https://m.baike.com/wiki/%E5%A5%88%E5%85%8B%E8%B5%9B%E6%96%AF%C2%B7%E5%A5%A5%E7%89%B9%E6%9B%BC/19792974（层叠光线·风暴、弓箭光线·风暴、核心脉冲等中文技能译名）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）"
    ],
    "notes": "原技能“进化光线”查无此官方标准名（奈克瑟斯标准必杀为十字射线·风暴、层叠光线·风暴等），已替换为红青年形态必杀“层叠光线·风暴”。原台词“光，还在成长！”未在可靠来源中核实到原文，保留原句占位；未找到可核实的奈克瑟斯真实口头禅，故不新增台词。"
   },
@@ -756,7 +776,8 @@
    ],
    "phrases": [
     "为了人类的未来！",
-    "当西边的天空，启明星发光的时候，有一束光将飞向宇宙，那就是我，再见了，安奴。"
+    "当西边的天空，启明星发光的时候，有一束光将飞向宇宙，那就是我，再见了，安奴。",
+    "真正的强大，是能和每个人友好地相处。"
    ],
    "height": "40 米",
    "weight": "35000 吨",
@@ -767,7 +788,8 @@
     "https://m.baike.com/wiki/集束射线/19941683（集束射线为赛文最强光线，与艾梅利姆光线、头镖并列为三大绝招）",
     "https://www.iesdouyin.com/share/video/7532384332950801705（赛文念力在奥特兄弟中首屈一指）",
     "https://www.iesdouyin.com/share/video/6969772357821025573（艾梅利姆光线、头镖Eye Slugger、三分广域射击）",
-    "http://m.163.com/dy/article/F424HN4Q0517RPU8.html（台词出处）"
+    "http://m.163.com/dy/article/F424HN4Q0517RPU8.html（台词出处）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）"
    ],
    "notes": "无明显事实错误；可核实技能5个。赛文剧中可逐字核实的名台词不足，仅保留原句。"
   },
@@ -779,7 +801,9 @@
     "斯特利姆爆冲",
     "三重斯特利姆射线",
     "黄金斯特利姆",
-    "泰迦炽焱剑"
+    "泰迦炽焱剑",
+    "吞噬飞弹",
+    "泰迦爆冲击"
    ],
    "phrases": [
     "三重光之力，出发！",
@@ -794,7 +818,8 @@
     "https://tsuburaya-prod.com/heroes/ultraman-taiga（身高50米/体重40000吨、泰罗之子、热血正义感、与泰塔斯风马创立Tri-Squad、与Hiroyuki一起成长、必杀Strium Blaster继承自父亲、Related Series=ULTRAMAN TAIGA 2019）",
     "https://www.dcd-ultraman.com.cn/list.php?pid=4&ty=10&page=8（泰迦必杀技斯特利姆爆冲）",
     "https://www.iesdouyin.com/share/video/6827048988475133197（台词'我们几个是三人小队''泰迦炽焱剑，燃烧吧，我们携手共进'、三重斯特利姆形态）",
-    "https://www.iesdouyin.com/share/video/7634476111673543974（煜坤形态台词'手握光辉之力，伙伴上吧'、必杀黄金斯特利姆）"
+    "https://www.iesdouyin.com/share/video/7634476111673543974（煜坤形态台词'手握光辉之力，伙伴上吧'、必杀黄金斯特利姆）",
+    "https://m.maigoo.com/citiao/347335.html（技能出处）"
    ],
    "notes": "原技能名'泰迦光线'非标准名，已替换为'斯特利姆爆冲'（Strium Blaster）。原'泰迦火花'实为变身道具（非攻击技），未列入技能表。origin依据官方页'son of Ultraman Taro'表述为光之国。"
   },
@@ -806,7 +831,9 @@
     "斯特利姆光线",
     "奥特炸弹",
     "奥特之角",
-    "王者手镯"
+    "王者手镯",
+    "泰罗切割",
+    "手里剑光线"
    ],
    "phrases": [
     "燃烧吧，奥特心脏！",
@@ -917,10 +944,13 @@
     "斯派修姆光线",
     "八分光轮",
     "奥特束缚光线",
-    "奥特攻击光线"
+    "奥特攻击光线",
+    "奥特水流",
+    "奥特眼光"
    ],
    "phrases": [
-    "光之巨人，初代奥特曼！"
+    "光之巨人，初代奥特曼！",
+    "我们奥特曼绝非神灵，无论怎么努力，既有不能挽救的生命，也有无法达成的想法。"
    ],
    "height": "40 米",
    "weight": "35000 吨",
@@ -930,7 +960,9 @@
     "https://tsuburaya-prod.com/heroes/ultraman（身高40m/体重35000t/Spacium Beam/来自M78星云光之国/追捕百慕拉/与早田进合体）",
     "https://m.baike.com/wiki/斯派修姆光线/1212846（斯派修姆光线为初代代表性必杀技）",
     "https://dict.youdao.com/w/jap/八分光轮/（八分光轮又名奥特切割，初代招牌技能）",
-    "http://m.toutiao.com/group/7381266242411168291/（初代主要必杀技：斯派修姆光线、八分光轮、奥特攻击光线）"
+    "http://m.toutiao.com/group/7381266242411168291/（初代主要必杀技：斯派修姆光线、八分光轮、奥特攻击光线）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）",
+    "https://m.baike.com/wiki/%E5%A5%A5%E7%89%B9%E6%9B%BC/19498348（技能出处）"
    ],
    "notes": "原技能「奥特束缚光线」为项目原条目，本轮来源未逐字复核，按规则保留；经核实可逐字出处的技能仅4个，未凑数。初代剧中台词极少，可核实名台词不足，仅保留原句。"
   },
@@ -947,7 +979,8 @@
     "骑士维克特利姆射线"
    ],
    "phrases": [
-    "大地之力，觉醒吧！"
+    "大地之力，觉醒吧！",
+    "你的梦想终究会实现的，千万不要忘记练习哦。"
    ],
    "height": "0～无限大",
    "weight": "0～无限大",
@@ -955,7 +988,8 @@
    "debut": "2014 年《银河奥特曼S》",
    "sources": [
     "https://tsuburaya-prod.com/heroes/ultraman-victory（Profile：Height micro~∞ / Weight 0~∞；Special Move Victorium Shoot；来历：地底人翔、Victory Lancer、奥特武装；Related Series 首作 ULTRAMAN GINGA S）",
-    "https://m.baike.com/wiki/维克特利·奥特曼/9976119（中文技能名：维克特利姆射线、维克特利姆斩击、维克特利姆轰爆、奥特武装、谢帕顿圣剑、骑士维克特利姆射线；身高0-无限大、体重0-无限大、人间体翔、变身道具维克特利圣枪、2014年《银河奥特曼S》登场）"
+    "https://m.baike.com/wiki/维克特利·奥特曼/9976119（中文技能名：维克特利姆射线、维克特利姆斩击、维克特利姆轰爆、奥特武装、谢帕顿圣剑、骑士维克特利姆射线；身高0-无限大、体重0-无限大、人间体翔、变身道具维克特利圣枪、2014年《银河奥特曼S》登场）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）"
    ],
    "notes": "原技能“奥特钻孔”未在官方及中文资料中检索到，疑为误记，已替换为该角色标志性能力“奥特武装”；原技能“维克特利姆切割”核实标准译名为“维克特利姆斩击（Victorium Slash）”，已替换。身高体重官方为可变化设定（0～无限大）。新增真实台词不足：中文配音版变身口号未检索到可靠逐字出处，故phrases仅保留原句，未编造。"
   },
@@ -973,7 +1007,8 @@
    ],
    "phrases": [
     "一体化，艾克斯！",
-    "当我和艾克斯的内心完全融为一体时，就能够释放出扎纳帝姆光线！"
+    "当我和艾克斯的内心完全融为一体时，就能够释放出扎纳帝姆光线！",
+    "这可是一个资源丰富的星球啊，总有一天能够找到和其它生物共享恩泽的方法的。"
    ],
    "height": "45 米",
    "weight": "45000 吨",
@@ -983,7 +1018,8 @@
     "https://tsuburaya-prod.com/heroes/ultraman-x（Profile：Height 45m / Weight 45,000t；Special Move XANADIUM BEAM；来历：化为数据进入Xdevizer、与大空大地结合；Related Series 首作 ULTRAMAN X）",
     "https://m.sohu.com/a/246111000_705099（技能：扎纳帝姆光线为艾克斯必杀技，双手交叉发X型光线）",
     "https://paopao.m.iqiyi.com/feed/detail/165559145048（新创华译名：终极扎纳帝姆光线；哥莫拉装甲；艾克斯头镖）",
-    "https://www.iesdouyin.com/share/video/7592522528972941306（大地台词：当我和艾克斯的内心完全融为一体时，就能够释放出扎纳帝姆光线；虚拟哥莫拉装甲已激活）"
+    "https://www.iesdouyin.com/share/video/7592522528972941306（大地台词：当我和艾克斯的内心完全融为一体时，就能够释放出扎纳帝姆光线；虚拟哥莫拉装甲已激活）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）"
    ],
    "notes": "原技能“艾克斯切割”对应核实名为“超越艾克斯切割（Exceed X Slash）”，保留原简称；身高体重45米/45000吨与官方站一致。"
   },
@@ -1079,7 +1115,8 @@
    ],
    "phrases": [
     "为了宇宙的和平！",
-    "地球的和平，应该由人类自己保护。（出自1966年《奥特曼》第39话，佐菲对初代所说）"
+    "地球的和平，应该由人类自己保护。（出自1966年《奥特曼》第39话，佐菲对初代所说）",
+    "人类的命运只有握在自己手中才有价值。"
    ],
    "height": "45 米",
    "weight": "45000 吨",
@@ -1087,7 +1124,8 @@
    "debut": "1966 年《奥特曼》（第 39 话登场）",
    "sources": [
     "https://tsuburaya-prod.com/heroes/zoffy（身高45m/体重45000t/M87 Beam/宇宙警备队队长/地位仅次于奥特之父/来地球救初代）",
-    "https://seldon2010.ru/wikipedia/wiki/佐菲（出身M78星云光之国、必杀技M87光线·Z光线·斯派修姆光线·超级冻霜·奥特充能、台词「地球的和平应该由人类自己保护」、第39话登场）"
+    "https://seldon2010.ru/wikipedia/wiki/佐菲（出身M78星云光之国、必杀技M87光线·Z光线·斯派修姆光线·超级冻霜·奥特充能、台词「地球的和平应该由人类自己保护」、第39话登场）",
+    "https://paopao.m.iqiyi.com/feed/detail/43916422548（台词出处）"
    ],
    "notes": "原条目技能「佐菲射线」非标准官方译名，按中文维基对应日文「ゼット光線」订正为「Z光线」；原台词「为了宇宙的和平！」为项目原句，未见剧中逐字出处，按规则保留。"
   }
