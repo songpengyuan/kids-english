@@ -271,8 +271,8 @@ const cap = computed(() => {
       <div class="keyhole"></div>
     </div>
 
-    <!-- 三个向上箭头（仅开箱阶段）：点一个点亮一个，宝箱晃动；开盖后进入收取页不再显示 -->
-    <div v-if="phase === 'open'" class="tap-hints">
+    <!-- 三个向上箭头（未开箱阶段就显示）：点一下屏幕高亮一个，点满 3 次开箱；开盖后进入收取页不再显示 -->
+    <div v-if="phase === 'closed' || phase === 'open'" class="tap-hints">
       <button
         v-for="i in 3"
         :key="i"
