@@ -32,6 +32,22 @@ for (const l of lessons) {
   }
 }
 
+/* ---------- 发音策略开关 ---------- */
+/**
+ * 是否优先使用预生成 mp3（神经网络童声）。
+ * 2026-10-12 策略调整：**当前关闭**——所有发音先直接走原生 TTS，提升发音效率
+ * （省去 mp3 加载等待，点哪即读、进题即播，不再有 3s 超时窗口）。
+ * mp3 文件保留在 public/lessons/<课>/audio/，降级逻辑未删；后续需要更自然的
+ * 童声时调 `setPrerecordedEnabled(true)` 即回切（仍带 3s 未播放→TTS 兜底）。
+ */
+let prerecordedEnabled = false;
+export function setPrerecordedEnabled(v: boolean): void {
+  prerecordedEnabled = v;
+}
+export function isPrerecordedEnabled(): boolean {
+  return prerecordedEnabled;
+}
+
 let curAudio: HTMLAudioElement | null = null;
 
 /**
@@ -235,7 +251,8 @@ export async function speak(
     let src = null;
     if (lessonId && wordId) src = wordAudioByKey[`${lessonId}:${wordId}`];
     if (!src) src = wordAudioByEn[text];
-    if (src && (await playAudio(src, { timeoutMs }))) return;
+    // 发音策略开关关闭时跳过 mp3，直接原生 TTS（提升发音效率）
+    if (prerecordedEnabled && src && (await playAudio(src, { timeoutMs }))) return;
     await speakWithTTS(text, { rate, lang });
   } finally {
     speaking.value = false;

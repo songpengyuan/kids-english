@@ -48,7 +48,7 @@ vi.hoisted(() => {
   };
 });
 
-import { speak, speakZh, stopSpeaking } from "../speech";
+import { speak, speakZh, stopSpeaking, setPrerecordedEnabled } from "../speech";
 import { setSoundOn } from "../sound";
 
 const cap = () => (globalThis as any).__ttsCaptured as { u: any; at: number }[];
@@ -169,10 +169,12 @@ describe("speech: mp3 3s 超时降级（声音系统重构 2026-10-12）", () =>
   beforeEach(() => {
     cap().length = 0;
     FakeAudio.instances.length = 0;
+    setPrerecordedEnabled(true); // 该组用例测的是"mp3 优先"链路
     vi.stubGlobal("Audio", FakeAudio);
     vi.useFakeTimers();
   });
   afterEach(() => {
+    setPrerecordedEnabled(false);
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
@@ -184,6 +186,16 @@ describe("speech: mp3 3s 超时降级（声音系统重构 2026-10-12）", () =>
     await vi.advanceTimersByTimeAsync(3100);
     await p;
     // 超时降级：TTS 兜底发出声音
+    expect(cap().map((x) => x.u.text)).toContain("blue");
+  });
+
+  it("默认（开关关闭）：直接原生 TTS，不创建 mp3 Audio、无加载等待（2026-10-12 发音效率策略）", async () => {
+    setPrerecordedEnabled(false);
+    const p = speak("blue", { lessonId: "l4", wordId: "blue" });
+    await vi.advanceTimersByTimeAsync(200);
+    await p;
+    // 跳过 mp3：不创建 Audio，直接 TTS 发声
+    expect(FakeAudio.instances).toHaveLength(0);
     expect(cap().map((x) => x.u.text)).toContain("blue");
   });
 
