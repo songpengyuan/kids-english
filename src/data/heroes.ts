@@ -104,6 +104,14 @@ export interface HeroDetail {
   skills: string[];
   /** 常用语 / 口头禅（中文） */
   phrases: string[];
+  /** 身高（官方设定，如"53 米"）——没有可靠出处的字段留空，不编造 */
+  height?: string;
+  /** 体重（官方设定，如"45000 吨"） */
+  weight?: string;
+  /** 出身地 / 来历（官方设定，如"M78 星云·光之国"） */
+  origin?: string;
+  /** 首次登场（如"1966 年《奥特曼》"） */
+  debut?: string;
 }
 
 interface HeroSeed {

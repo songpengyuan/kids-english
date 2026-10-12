@@ -20,11 +20,14 @@ import { speak, speakZh, stopSpeaking } from "../../services/speech";
 import { sfxTap } from "../../services/effects";
 import HeaderBar from "../../components/layout/HeaderBar.vue";
 import PathIcon from "../../components/PathIcon.vue";
+import ModelViewer from "../../components/ui/ModelViewer.vue";
 import { ZoomIn } from "@lucide/vue";
 
 const route = useRoute();
 const router = useRouter();
 const rewards = useRewardsStore();
+
+const use3D = ref(false);
 
 const hero = computed(() => HEROES.find((h) => h.id === route.params.id) || null);
 
@@ -211,6 +214,23 @@ function nextForm() {
 function goBack() {
   router.push("/me/treasure");
 }
+
+/** 小档案朗读文案：把有值的字段拼成一句孩子听得懂的话 */
+function factsText(): string {
+  const d = detail.value;
+  if (!d) return "";
+  const parts: string[] = [];
+  if (d.origin) parts.push(`来自${d.origin}`);
+  if (d.height) parts.push(`身高${d.height}`);
+  if (d.weight) parts.push(`体重${d.weight}`);
+  if (d.debut) parts.push(`首次登场是${d.debut}`);
+  return parts.join("。");
+}
+/** 小档案是否有内容（决定卡片显不显示） */
+function hasFacts(): boolean {
+  const d = detail.value;
+  return !!d && !!(d.origin || d.height || d.weight || d.debut);
+}
 </script>
 
 <template>
@@ -247,6 +267,10 @@ function goBack() {
     <div class="hd-body">
       <!-- 形象大图：多姿势左右滑动轮播（小点/箭头指示）；点"放大看"进全屏查看器 -->
       <div class="hero-stage" :style="{ '--tone': currentForm.color }">
+        <!-- 3D 模式 -->
+        <ModelViewer v-if="use3D" src="/models/ultraseven.glb" :alt="hero.name" class="mv-3d" />
+        <!-- 2D 图片轮播 -->
+        <template v-else>
         <div class="pose-view">
           <div ref="poseEl" class="pose-strip" @scroll.passive="syncPose">
             <figure v-for="(src, i) in poses" :key="src" class="pose-cell" :class="{ sil: !rewards.isOwned(currentForm.id) }">
@@ -254,7 +278,8 @@ function goBack() {
             </figure>
           </div>
         </div>
-        <button v-if="poses.length > 1" class="pose-arrow prev" aria-label="上一张" @click="stepPose(-1)">
+        </template>
+        <button class="pose-arrow prev" v-if="!use3D && poses.length > 1" aria-label="上一张" @click="stepPose(-1)">
           <PathIcon name="chevron-left" />
         </button>
         <button v-if="poses.length > 1" class="pose-arrow next" aria-label="下一张" @click="stepPose(1)">
@@ -262,6 +287,9 @@ function goBack() {
         </button>
         <button class="zoom-hint" aria-label="放大查看图片" @click="openZoom">
           🔍 放大看
+        </button>
+        <button class="toggle-3d" :class="{ on: use3D }" aria-label="切换3D模型" @click="use3D = !use3D">
+          {{ use3D ? "2D" : "3D" }}
         </button>
         <span class="form-tag">{{ currentForm.name }}</span>
         <div v-if="poses.length > 1" class="pose-dots" role="tablist" :aria-label="`${hero.name}${currentForm.name}的姿势`">
@@ -311,6 +339,31 @@ function goBack() {
         <p class="bio">{{ detail.bio }}</p>
         <span class="tap-hint">
           <PathIcon name="volume" />{{ speaking === "bio" ? "再点一下停止" : "点一点听介绍" }}
+        </span>
+      </section>
+
+      <!-- 小档案：身高/体重/出身地/首次登场（有值才显示，点卡朗读） -->
+      <section
+        v-if="hasFacts()"
+        class="hd-card facts"
+        :class="{ speaking: speaking === 'facts' }"
+        role="button"
+        tabindex="0"
+        @click="sayZh('facts', factsText())"
+        @keydown.enter.prevent="sayZh('facts', factsText())"
+      >
+        <h2 class="hd-h2">
+          <PathIcon name="volume" />小档案
+          <span v-if="speaking === 'facts'" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
+        </h2>
+        <dl class="fact-rows">
+          <div v-if="detail?.origin" class="fact-row"><dt>出身地</dt><dd>{{ detail?.origin }}</dd></div>
+          <div v-if="detail?.height" class="fact-row"><dt>身高</dt><dd>{{ detail?.height }}</dd></div>
+          <div v-if="detail?.weight" class="fact-row"><dt>体重</dt><dd>{{ detail?.weight }}</dd></div>
+          <div v-if="detail?.debut" class="fact-row"><dt>首次登场</dt><dd>{{ detail?.debut }}</dd></div>
+        </dl>
+        <span class="tap-hint">
+          <PathIcon name="volume" />{{ speaking === "facts" ? "再点一下停止" : "点一点听档案" }}
         </span>
       </section>
 
@@ -605,6 +658,27 @@ function goBack() {
 .zoom-hint:active {
   transform: translateY(1px) scale(0.97);
 }
+.toggle-3d {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--card-bg);
+  color: var(--ink);
+  font-weight: 900;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+}
+.toggle-3d.on {
+  background: var(--green);
+  color: #fff;
+}
+.mv-3d {
+  width: 100%;
+  height: 100%;
+}
 
 /* 形态切换淡入淡出 */
 .form-fade-enter-active,
@@ -696,6 +770,30 @@ function goBack() {
   gap: 4px;
   font-size: 12px;
   opacity: 0.55;
+}
+.fact-rows {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fact-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.fact-row dt {
+  flex: none;
+  min-width: 64px;
+  font-weight: 800;
+  color: var(--gold, #f0b429);
+}
+.fact-row dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .chips {

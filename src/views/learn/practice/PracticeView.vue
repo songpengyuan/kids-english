@@ -11,6 +11,7 @@ import { activityKeys, getLesson, lessons, type Lesson } from "../../../data/les
 import { useProgressStore } from "../../../stores/progress";
 import { useRouter } from "vue-router";
 import { speak } from "../../../services/speech";
+import SpeakText from "../../../components/ui/SpeakText.vue";
 import { dueWords } from "../../../utils/reviewQueue";
 import { BookOpenText, Check } from "@lucide/vue";
 
@@ -108,7 +109,8 @@ const lastLessonObj = computed(() => {
             @click="enter(l)"
           >
             <span class="big-emoji anim-float">{{ l.emoji }}</span>
-            <span class="lt">{{ l.title }}</span>
+            <!-- 课程标题可点读（听英文课程名）；SpeakText span 形态自带 stopPropagation，点标题只听发音不进课 -->
+            <span class="lt"><SpeakText :text="l.title" tts-only /></span>
             <span class="card-done" v-if="progress.isCompleted(l.id, activityKeys(l))">
               <Check class="k-ico" />全部通关
             </span>

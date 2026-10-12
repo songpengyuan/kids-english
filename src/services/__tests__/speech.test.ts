@@ -136,3 +136,65 @@ describe("speech: Chrome 竞态（点了 A 却听到 B）回归", () => {
     expect(cap().filter((x) => x.u.text === "旧内容")).toHaveLength(0);
   });
 });
+
+describe("speech: mp3 3s 超时降级（声音系统重构 2026-10-12）", () => {
+  /**
+   * 挂起不发声的 Audio 假类：play() 永悬、不发 playing/timeupdate/error，
+   * 模拟"mp3 加载卡住/404 未触发 onerror"场景；可手动 triggerPlaying 模拟正常出声。
+   */
+  class FakeAudio {
+    static instances: FakeAudio[] = [];
+    src = "";
+    onended: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    listeners: Record<string, (() => void)[]> = {};
+    constructor() {
+      FakeAudio.instances.push(this);
+    }
+    addEventListener(type: string, fn: () => void) {
+      (this.listeners[type] ||= []).push(fn);
+    }
+    play() {
+      // 永不 resolve、不触发任何事件（= 资源挂起）
+      return new Promise(() => {});
+    }
+    pause() {
+      /* noop */
+    }
+    triggerPlaying() {
+      for (const fn of this.listeners.playing || []) fn();
+    }
+  }
+
+  beforeEach(() => {
+    cap().length = 0;
+    FakeAudio.instances.length = 0;
+    vi.stubGlobal("Audio", FakeAudio);
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("mp3 3 秒内未开始播放 → 降级原生 TTS（不再 10s 无条件算成功）", async () => {
+    // l4 的 blue 在注册表有预生成 mp3（asset 拼接路径，不判存在）→ 走 playAudio
+    const p = speak("blue", { lessonId: "l4", wordId: "blue" });
+    // 播放链路在 60ms 延迟 speak 前，需要先推进过 playAudio 超时窗口
+    await vi.advanceTimersByTimeAsync(3100);
+    await p;
+    // 超时降级：TTS 兜底发出声音
+    expect(cap().map((x) => x.u.text)).toContain("blue");
+  });
+
+  it("mp3 3 秒内开始播放 → 保持 mp3，不降级 TTS", async () => {
+    const p = speak("blue", { lessonId: "l4", wordId: "blue" });
+    // 1s 内开始出声（playing 触发）
+    await vi.advanceTimersByTimeAsync(100);
+    FakeAudio.instances[0]?.triggerPlaying();
+    await vi.advanceTimersByTimeAsync(4000);
+    await p;
+    // 已开始播放：全程不降级到 TTS
+    expect(cap()).toHaveLength(0);
+  });
+});

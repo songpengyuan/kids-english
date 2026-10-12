@@ -14,6 +14,7 @@
  * （zh → zh-CN/zh-TW/zh，en → en-US/en），匹配不到就不指定音色、交给浏览器按 lang
  * 用默认音色读。此前写死英文音色导致中文朗读要么怪音要么无声。
  */
+import { ref } from "vue";
 import { lessons } from "../data/lessons";
 import { soundEnabled } from "./sound";
 
@@ -33,28 +34,56 @@ for (const l of lessons) {
 
 let curAudio: HTMLAudioElement | null = null;
 
-/** 播放音频文件；成功结束返回 true，出错返回 false（让调用方回退 TTS） */
-function playAudio(src: string): Promise<boolean> {
+/**
+ * 播放音频文件。
+ * 成功（开始出声）返回 true，失败/超时返回 false（让调用方回退 TTS）。
+ *
+ * 超时语义（2026-10-12 声音系统重构）：
+ * - 监听 `playing`/`timeupdate`（首次出声）作为"播放成功"信号；
+ * - **timeoutMs 内未开始出声 → resolve(false) 降级 TTS**（此前是 10s 无条件
+ *   resolve(true)，慢资源/404 时孩子干等且根本不降级）。
+ * - onerror / play() 被拒 → resolve(false)；onended（播完）→ resolve(true)。
+ */
+function playAudio(src: string, { timeoutMs = 3000 }: { timeoutMs?: number } = {}): Promise<boolean> {
   return new Promise((resolve) => {
     if (curAudio) {
       curAudio.pause();
       curAudio = null;
     }
     let settled = false;
+    let started = false;
+    let timeoutId: number | null = null;
     const done = (ok: boolean) => {
       if (!settled) {
         settled = true;
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
         resolve(ok);
       }
     };
+    const markStarted = () => {
+      if (started || settled) return;
+      started = true;
+      done(true); // 开始出声即视为成功；后续自然播到 onended
+    };
     const a = new Audio();
     curAudio = a;
+    a.addEventListener("playing", markStarted);
+    // Safari/部分环境 playing 可能不触发：timeupdate（实际有进度）兜底
+    a.addEventListener("timeupdate", markStarted);
     a.onended = () => done(true);
     a.onerror = () => done(false);
+    // 加载超时：timeoutMs 内没开始出声 → 降级（调用方走 TTS）
+    timeoutId = window.setTimeout(() => {
+      if (!started) {
+        a.pause();
+        done(false);
+      }
+    }, timeoutMs);
     a.src = src;
     a.play().catch(() => done(false));
-    // 兜底：被 stopSpeaking 掐断时 onended/onerror 可能都不触发，超时放行避免调用方 await 挂死
-    window.setTimeout(() => done(true), 10000);
   });
 }
 
@@ -143,6 +172,7 @@ function speakWithTTS(text: string, { rate = 0.85, lang = "en-US" }: { rate?: nu
 
 /** 立即停止一切朗读（mp3 + TTS），供"再点一下停止"类交互使用 */
 export function stopSpeaking(): void {
+  speaking.value = false; // 复位朗读中状态（组件波浪动画立即停）
   if (curAudio) {
     curAudio.pause();
     curAudio = null;
@@ -165,13 +195,20 @@ export function stopSpeaking(): void {
 
 /* ---------- 对外接口 ---------- */
 /**
- * 朗读一个英文词/句。
+ * 当前是否有朗读在进行（响应式：供统一点读组件 SpeakText 显示波浪动画）。
+ * 覆盖 mp3 播放 + TTS 整条链路；stopSpeaking 掐断时同步复位。
+ */
+export const speaking = ref(false);
+
+/**
+ * 朗读一个英文词/句（统一入口）。
  * @param text 要朗读的文本（通常是单词的 en）
  * @param opts.rate      语速（TTS 用）
  * @param opts.lang      语言（TTS 用）
  * @param opts.lessonId  词所属课时 id（可选；提供后按精确键查预生成发音）
  * @param opts.wordId    词 id（可选；与 lessonId 成对使用）
  * @param opts.ttsOnly   跳过预生成 mp3，直接用系统自带 TTS（适合课程名等整句/短语）
+ * @param opts.timeoutMs mp3 加载超时（默认 3000ms：3 秒内未开始出声 → 降级 TTS）
  */
 export interface SpeakOptions {
   rate?: number;
@@ -180,22 +217,45 @@ export interface SpeakOptions {
   wordId?: string | null;
   /** 跳过预生成 mp3，直接用系统自带 TTS（适合课程名等整句/短语，避免误命中单词音频） */
   ttsOnly?: boolean;
+  /** mp3 加载超时（ms）；默认 3000 */
+  timeoutMs?: number;
 }
 
 export async function speak(
   text: string,
-  { rate = 0.85, lang = "en-US", lessonId = null, wordId = null, ttsOnly = false }: SpeakOptions = {}
+  { rate = 0.85, lang = "en-US", lessonId = null, wordId = null, ttsOnly = false, timeoutMs = 3000 }: SpeakOptions = {}
 ): Promise<void> {
   stopSpeaking(); // 统一打断上一条（mp3/TTS/挂起的延迟发声），保证"点哪读哪"
-  if (ttsOnly) {
+  speaking.value = true;
+  try {
+    if (ttsOnly) {
+      await speakWithTTS(text, { rate, lang });
+      return;
+    }
+    let src = null;
+    if (lessonId && wordId) src = wordAudioByKey[`${lessonId}:${wordId}`];
+    if (!src) src = wordAudioByEn[text];
+    if (src && (await playAudio(src, { timeoutMs }))) return;
     await speakWithTTS(text, { rate, lang });
-    return;
+  } finally {
+    speaking.value = false;
   }
-  let src = null;
-  if (lessonId && wordId) src = wordAudioByKey[`${lessonId}:${wordId}`];
-  if (!src) src = wordAudioByEn[text];
-  if (src && (await playAudio(src))) return;
-  await speakWithTTS(text, { rate, lang });
+}
+
+/** 朗读单词（语义化别名，统一走 speak 的 mp3→3s→TTS 链路） */
+export function speakWord(
+  text: string,
+  opts: { lessonId?: string | null; wordId?: string | null; rate?: number; lang?: string; timeoutMs?: number } = {}
+): Promise<void> {
+  return speak(text, opts);
+}
+
+/** 朗读文案（整句/短语，默认 ttsOnly 不误命中单词音频；也可带 lessonId/wordId 走 mp3） */
+export function speakText(
+  text: string,
+  opts: { rate?: number; lang?: string; ttsOnly?: boolean; timeoutMs?: number } = {}
+): Promise<void> {
+  return speak(text, { ttsOnly: true, ...opts });
 }
 
 export interface SpeakZhOptions {
