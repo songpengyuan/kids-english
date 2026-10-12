@@ -194,6 +194,30 @@ function flyOne(from, to, apex) {
 }
 
 const opened = computed(() => taps.value >= 3);
+
+/**
+ * 贝壳山形排布：顶层 1 枚，逐层 +1（金字塔），直到放完。
+ * 6 枚 → 3-2-1；5 枚 → 2-2-1；4 枚 → 2-1-1；3 枚 → 2-1。
+ */
+const shellRows = computed(() => {
+  const n = panelShown.value;
+  const rows = [];
+  let rem = n;
+  let level = 1;
+  while (rem > 0) {
+    const cur = Math.min(level, rem);
+    rows.push(cur);
+    rem -= cur;
+    level++;
+  }
+  return rows;
+});
+/** 第 ri 行首个贝壳的全局序号（0-based 偏移） */
+function rowOffset(ri) {
+  let acc = 0;
+  for (let i = 0; i < ri; i++) acc += shellRows.value[i];
+  return acc;
+}
 const cap = computed(() => {
   if (phase.value === "collected") return "";
   if (taps.value === 0) return "完成啦！点三下开宝箱";
@@ -245,8 +269,8 @@ const cap = computed(() => {
       <div class="keyhole"></div>
     </div>
 
-    <!-- 三个向上箭头：点一个点亮一个，宝箱晃动 -->
-    <div class="tap-hints">
+    <!-- 三个向上箭头（仅开箱阶段）：点一个点亮一个，宝箱晃动；开盖后进入收取页不再显示 -->
+    <div v-if="phase === 'open'" class="tap-hints">
       <button
         v-for="i in 3"
         :key="i"
@@ -264,22 +288,24 @@ const cap = computed(() => {
       </button>
     </div>
 
-    <p v-if="cap" class="cap">{{ cap }}</p>
+    <p v-if="cap && phase !== 'reward' && phase !== 'flying'" class="cap">{{ cap }}</p>
 
     <!-- 奖励展示 + 收取：flying 阶段面板保留，贝壳逐个飞走、数量逐个减少 -->
     <div v-if="(phase === 'reward' || phase === 'flying') && reward" class="reward">
       <p class="got">获得</p>
       <div class="rewards">
-        <!-- 宝箱替换出现对应的贝壳/海螺：开箱后展示区排着 N 枚贝壳，收取时逐枚飞走 -->
-        <div class="shell-row" aria-label="本次获得的贝壳">
-          <span
-            v-for="i in panelShown"
-            :key="'sh' + i"
-            :ref="(el) => { if (el) shellEls[i - 1] = el; }"
-            class="shell-item anim-pop"
-          ><ShellIcon /></span>
+        <!-- 宝箱替换出现对应的贝壳/海螺：山形（金字塔）排列，收取时逐枚飞走 -->
+        <div class="shell-rows" aria-label="本次获得的贝壳">
+          <div v-for="(row, ri) in shellRows" :key="'r' + ri" class="shell-row">
+            <span
+              v-for="(j, ci) in row"
+              :key="'sh' + (rowOffset(ri) + ci + 1)"
+              :ref="(el) => { if (el) shellEls[rowOffset(ri) + ci] = el; }"
+              class="shell-item anim-pop"
+              :style="{ '--i': rowOffset(ri) + ci }"
+            ><ShellIcon /></span>
+          </div>
         </div>
-        <span class="shells anim-pop">×{{ panelShown }}</span>
       </div>
       <!-- 掉到形态：新形态单独高光展示（图片 + 角色·形态名） -->
       <div v-if="wonForm" class="won anim-pop" :style="{ '--tone': wonForm.color }">
@@ -291,6 +317,7 @@ const cap = computed(() => {
       <BaseButton variant="green" :disabled="phase === 'flying'" @click="collect">
         {{ phase === 'flying' ? '收取中…' : '收取' }}
         <span class="shell-emoji"><ShellIcon /></span>
+        <span class="cnt">×{{ panelShown }}</span>
       </BaseButton>
     </div>
     <p v-if="phase === 'collected'" class="cap collected">
@@ -640,7 +667,8 @@ const cap = computed(() => {
   align-items: center;
   gap: var(--gap-s);
   background: var(--card-bg);
-  border: 3px solid var(--yellow);
+  /* 与开箱阶段的黄色宝箱氛围区分：收取页用绿色"收获"边框 */
+  border: 3px solid var(--green, #2eaf5a);
   border-radius: var(--radius);
   padding: var(--gap-m);
   min-width: min(78vw, 300px);
@@ -666,26 +694,31 @@ const cap = computed(() => {
 }
 .rewards {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--gap-s);
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
-.shells {
-  font-weight: 800;
-  font-size: var(--fs-body);
-  color: var(--on-tone);
-  padding: var(--gap-xs) var(--gap-m);
-  border-radius: var(--radius-pill);
-  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.15);
+/* 贝壳山形：纵向堆叠、每层居中，底层最宽呈小山 */
+.shell-rows {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
-.shells { background: var(--c-orange); }
-/* 展示区贝壳队列：开箱后"宝箱替换出现"的奖励本体，逐个排开 */
 .shell-row {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
   gap: 6px;
-  min-height: 34px;
+}
+/* 收取按钮上的 ×N 计数（随收取递减） */
+.cnt {
+  font-weight: 900;
+  font-size: var(--fs-body);
+  color: #6b4e00;
+  background: linear-gradient(160deg, #ffd87a, #f0a63a);
+  padding: 1px 8px;
+  border-radius: 999px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
 }
 .shell-item {
   display: inline-flex;
