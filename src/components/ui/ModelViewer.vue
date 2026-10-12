@@ -9,10 +9,12 @@ const props = withDefaults(defineProps<{
   src?: string;
   alt?: string;
   autoRotate?: boolean;
+  cameraOrbit?: string;
 }>(), {
   src: "",
   alt: "3D 模型",
   autoRotate: true,
+  cameraOrbit: "0deg 75deg 4.5m",
 });
 
 const loaded = ref(false);
@@ -39,7 +41,7 @@ onMounted(() => {
       shadow-intensity="1"
       exposure="1.2"
       tone-mapping="neutral"
-      camera-orbit="0deg 75deg 4.5m"
+      :camera-orbit="cameraOrbit"
       field-of-view="30deg"
       environment-image="neutral"
     ></model-viewer>
