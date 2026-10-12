@@ -39,7 +39,7 @@ onMounted(() => {
       shadow-intensity="1"
       exposure="1.2"
       tone-mapping="neutral"
-      camera-orbit="0deg 75deg 2.5m"
+      camera-orbit="0deg 75deg 4.5m"
       field-of-view="30deg"
       environment-image="neutral"
     ></model-viewer>
