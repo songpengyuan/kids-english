@@ -9,7 +9,8 @@
  *
  *   #/learn（学习域）
  *     ├─ /learn                         学习主页（父容器空 path 子路由，顶层渲染）
- *     ├─ /learn/:id/:stage?             课程菜单 + 题目详情（课 id + 题型标记）
+ *     ├─ /learn/:id                     课程菜单（父路由带组件）
+ *     │   └─ /learn/:id/learn|quiz|...  题型子路由（二级，继承父组件，仅声明 name/meta）
  *     └─ /learn/review                  错词复习（学习闭环：学 → 错 → 复习）
  *   #/game（游戏域）
  *     ├─ /game                          游戏闯关地图
@@ -51,14 +52,25 @@ export const router = createRouter({
         // 空子路径承载学习主页（父容器无组件 → 顶层渲染，KeepAlive 可缓存）
         { path: "", name: "learn", component: LearnView, meta: { title: "丞丞ABC" } },
         // 课程菜单（/learn/l9）
-        { path: ":id", name: "lesson", component: LessonView, meta: { title: "学习" } },
-        // 每种题型独立路由（/learn/l9/quiz、/learn/l9/match ...）
-        { path: ":id/learn", name: "lesson-learn", component: LessonView, meta: { title: "学单词" } },
-        { path: ":id/quiz", name: "lesson-quiz", component: LessonView, meta: { title: "听音选图" } },
-        { path: ":id/match", name: "lesson-match", component: LessonView, meta: { title: "连一连" } },
-        { path: ":id/speak", name: "lesson-speak", component: LessonView, meta: { title: "跟读" } },
-        { path: ":id/song", name: "lesson-song", component: LessonView, meta: { title: "唱童谣" } },
-        { path: ":id/talk", name: "lesson-talk", component: LessonView, meta: { title: "亲子对话" } },
+        // 题型独立子路由（/learn/l9/quiz …）：父路由带组件、子路由只声明
+        // name/path/meta（无组件，继承父 LessonView 渲染）——URL 与旧版一致，
+        // 但层级语义更清晰：菜单是父、题型是子（二级路由，对应 views 逐层组织）。
+        {
+          path: ":id",
+          name: "lesson",
+          component: LessonView,
+          meta: { title: "学习" },
+          children: [
+            // 子路由与父共用 LessonView：实际渲染由父组件按 route.name 分发题型
+            //（父 LessonView 模板无 <router-view>，子组件不会重复渲染）。
+            { path: "learn", name: "lesson-learn", component: LessonView, meta: { title: "学单词", stage: "learn" } },
+            { path: "quiz", name: "lesson-quiz", component: LessonView, meta: { title: "听音选图", stage: "quiz" } },
+            { path: "match", name: "lesson-match", component: LessonView, meta: { title: "连一连", stage: "match" } },
+            { path: "speak", name: "lesson-speak", component: LessonView, meta: { title: "跟读", stage: "speak" } },
+            { path: "song", name: "lesson-song", component: LessonView, meta: { title: "唱童谣", stage: "song" } },
+            { path: "talk", name: "lesson-talk", component: LessonView, meta: { title: "亲子对话", stage: "talk" } },
+          ],
+        },
         // 错词复习（学习闭环子页）
         { path: "review", name: "review", component: () => import("../views/learn/ReviewView.vue"), meta: { title: "错词复习" } },
       ],

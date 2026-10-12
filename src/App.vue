@@ -11,7 +11,8 @@ const router = useRouter();
 const route = useRoute();
 const streak = useStreakStore();
 
-/** 底部导航只在三个主 tab 显示：学习（/learn）/ 游戏（/game）/ 我的（/me）；
+/** 底部导航只在三个主 tab 显示：学习（/learn）/ 磨耳朵（/listen）/ 我的（/me）；
+ *  游戏入口在学习页右上角按钮（#/game 无底部导航，沉浸闯关，顶栏返回可回学习）；
  *  宝藏罐/报告/复习/课程等子页面都隐藏，沉浸进入 */
 const showNav = computed(() =>
   route.path === "/learn" || route.path === "/listen" || route.path === "/me"

@@ -8,7 +8,7 @@
  * 本组件只保留：课时解析、玩法清单（依赖 phrases）、composable 装配与模板。
  */
 import { computed, onMounted, ref, watch } from "vue";
-import LearnView from "../../components/activities/LearnView.vue";
+import LearnStage from "../../components/activities/LearnStage.vue";
 import QuizView from "../../components/activities/QuizView.vue";
 import MatchView from "../../components/activities/MatchView.vue";
 import SongView from "../../components/activities/SongView.vue";
@@ -85,10 +85,10 @@ const flow = useLessonFlow({
 
 // 首次进入：解析深链（?stage= / ?mode=quest&step=）
 onMounted(flow.boot);
-// 同一路由组件变参（换课 / 下一关 ?step= / 玩法子路径 :stage / 回退无 stage）不重挂载 → watch 重置
+// 同一路由组件变参（换课 / 题型子路由 / 下一关 ?step= / 回退无 stage）不重挂载 → watch 重置
 // boot() 幂等：有 stage 直达玩法、无 stage 回菜单并朗读标题
 watch(
-  () => [route.params.id, route.params.stage, route.path, route.query.step],
+  () => [route.params.id, route.name, route.path, route.query.step],
   () => flow.boot()
 );
 
@@ -230,7 +230,7 @@ const playTotal = ref(0);
     <!-- 各玩法 -->
     <component
       v-else-if="stage === 'learn' || stage === 'quiz' || stage === 'match' || stage === 'speak'"
-      :is="stage === 'learn' ? LearnView : stage === 'quiz' ? QuizView : stage === 'match' ? MatchView : SpeakView"
+      :is="stage === 'learn' ? LearnStage : stage === 'quiz' ? QuizView : stage === 'match' ? MatchView : SpeakView"
       :words="lesson.words"
       @done="afterGame"
       @progress="playPct = $event"

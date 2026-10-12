@@ -48,8 +48,8 @@ export interface UseQuest {
 export function useQuest(options: UseQuestOptions): UseQuest {
   const { lesson, activities, route } = options;
 
-  /** 闯关身份：独立路由 #/quest/...（不再 ?mode=quest 参数） */
-  const questMode = computed(() => route.path.includes("/quest"));
+  /** 闯关身份：独立路由 #/game/quest/...（不再 ?mode=quest 参数）；按路由名判定而非 path 前缀 */
+  const questMode = computed(() => route.name === "quest");
   const questSeq = computed(() => activities.value);
   const questIdx = ref(0);
   const questDone = ref(false);

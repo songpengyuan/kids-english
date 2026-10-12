@@ -66,6 +66,8 @@ const streak = useStreakStore();
           <PathIcon name="flame" class="k-ico flame-ico" />{{ streak.streak }}
         </button>
       </div>
+      <!-- 页面级右侧操作位（组件库沉淀：顶栏预留 action 插槽，页面按需注入，如学习页右上角"游戏"入口） -->
+      <slot name="action" />
     </div>
   </header>
 </template>

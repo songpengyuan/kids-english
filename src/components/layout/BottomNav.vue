@@ -1,9 +1,9 @@
 <script setup>
 /**
  * 底部导航（App 风格常驻三入口）：
- *   📖 学习（课程列表） / 👤 我的（个人中心）
+ *   📖 学习（课程列表） / 🎧 磨耳朵 / 👤 我的（个人中心）
  *
- * - 学习是独立路由：#/。
+ * - 学习是独立路由 #/learn；游戏入口收在学习页右上角按钮（非底部主 tab）。
  * - 我的 tab 高亮覆盖其子页：/me、/treasure、/report、/review。
  * - 玩法页（/learn/:id）不渲染本组件（沉浸学习，见 App.vue）。
  */
@@ -49,8 +49,8 @@ function goMe() {
     <button
       role="tab"
       aria-label="学习"
-      :aria-selected="isHome && !isGame"
-      :class="{ on: isHome && !isGame }"
+      :aria-selected="isHome"
+      :class="{ on: isHome }"
       @click="goPractice"
     >
       <span class="bn-ico"><PathIcon name="free" /></span>

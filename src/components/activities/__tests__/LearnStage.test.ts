@@ -17,7 +17,7 @@ vi.mock("../../../services/effects", () => ({
   bigCelebrate: vi.fn(),
 }));
 
-import LearnView from "../LearnView.vue";
+import LearnStage from "../LearnStage.vue";
 import { speak } from "../../../services/speech";
 
 /** jsdom 没有 ResizeObserver / 真实布局尺寸，桩掉后组件走保守兜底（每页 4 张） */
@@ -37,7 +37,7 @@ const words = ["a", "b", "c", "d", "e"].map((id) => ({
   lessonId: "l4",
 })) as never;
 
-describe("LearnView（点读覆盖率星级 + 全点过才能完成）", () => {
+describe("LearnStage（点读覆盖率星级 + 全点过才能完成）", () => {
   beforeEach(() => {
     localStorage.clear();
     setActivePinia(createPinia());
@@ -45,7 +45,7 @@ describe("LearnView（点读覆盖率星级 + 全点过才能完成）", () => {
   });
 
   it("未到末页时完成按钮禁用；翻到末页但没点完 → 仍禁用并提示还差几个", async () => {
-    const wrapper = mount(LearnView, { props: { words }, global: { plugins: [createPinia()] } });
+    const wrapper = mount(LearnStage, { props: { words }, global: { plugins: [createPinia()] } });
     expect(wrapper.find(".next").attributes("disabled")).toBeDefined();
     await wrapper.find('[aria-label="下一页"]').trigger("click");
     // 末页（第 2 页，1 个词）还没点 → 不能完成
@@ -54,7 +54,7 @@ describe("LearnView（点读覆盖率星级 + 全点过才能完成）", () => {
   });
 
   it("每个词都点过发音 → 按钮可点（'我都会啦'）并记 3 星", async () => {
-    const wrapper = mount(LearnView, { props: { words }, global: { plugins: [createPinia()] } });
+    const wrapper = mount(LearnStage, { props: { words }, global: { plugins: [createPinia()] } });
     for (const el of wrapper.findAll(".word")) await el.trigger("click"); // 第 1 页 4 个
     await wrapper.find('[aria-label="下一页"]').trigger("click");
     for (const el of wrapper.findAll(".word")) await el.trigger("click"); // 第 2 页 1 个
@@ -65,7 +65,7 @@ describe("LearnView（点读覆盖率星级 + 全点过才能完成）", () => {
   });
 
   it("只翻页不点读 → 完成按钮一直禁用，点完成无效果", async () => {
-    const wrapper = mount(LearnView, { props: { words }, global: { plugins: [createPinia()] } });
+    const wrapper = mount(LearnStage, { props: { words }, global: { plugins: [createPinia()] } });
     await wrapper.find('[aria-label="下一页"]').trigger("click");
     expect(wrapper.find(".next").attributes("disabled")).toBeDefined();
     await wrapper.find(".next").trigger("click"); // disabled 按钮不触发
@@ -73,7 +73,7 @@ describe("LearnView（点读覆盖率星级 + 全点过才能完成）", () => {
   });
 
   it("重复点同一个词只算一次点读：只点 1 个词无法完成", async () => {
-    const wrapper = mount(LearnView, { props: { words }, global: { plugins: [createPinia()] } });
+    const wrapper = mount(LearnStage, { props: { words }, global: { plugins: [createPinia()] } });
     const first = wrapper.findAll(".word")[0];
     await first.trigger("click");
     await first.trigger("click");
@@ -84,7 +84,7 @@ describe("LearnView（点读覆盖率星级 + 全点过才能完成）", () => {
   });
 
   it("点过的词显示'已听过'角标，且仍可再点听发音", async () => {
-    const wrapper = mount(LearnView, { props: { words }, global: { plugins: [createPinia()] } });
+    const wrapper = mount(LearnStage, { props: { words }, global: { plugins: [createPinia()] } });
     const first = wrapper.findAll(".word")[0];
     await first.trigger("click");
     expect(wrapper.find(".word-card .marked").exists()).toBe(true);

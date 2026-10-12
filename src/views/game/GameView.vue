@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * 游戏闯关首页：独立路由 #/game（不再由首页 ?mode=game 参数指向）。
+ * 游戏闯关首页：独立路由 #/game（入口在学习页右上角"游戏"按钮）。
  * 多邻国式关卡路径图；滚动条贴最右缘（slot 宽度向右扩展一个 --pad-x）。
  * KeepAlive 缓存整页（App.vue include="LearnView,GameView"），
  * 返回本页时 GamePath 的 onActivated 对比关卡状态触发解锁动效。
+ * 顶栏带返回（游戏非底部主 tab，从学习页进入，返回即回学习）。
  */
 import AppHeader from "../../components/layout/AppHeader.vue";
 import GamePath from "../../components/game/GamePath.vue";
@@ -13,7 +14,7 @@ defineOptions({ name: "GameView" }); // KeepAlive include 需要稳定组件名
 
 <template>
   <div class="game view">
-    <AppHeader title="游戏闯关" icon="game" />
+    <AppHeader title="游戏闯关" icon="game" show-back />
 
     <GamePath class="gp-slot" />
   </div>

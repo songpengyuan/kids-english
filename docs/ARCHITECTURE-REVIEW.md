@@ -85,3 +85,37 @@
 - 状态管理不引外部库（Pinia 够用）；不引入状态持久化中间件（本地存储直写已满足）。
 - 不做多语言 i18n 框架（当前产品单语种；文案集中在组件内，未来可抽 `src/i18n/` 但不必现在做）。
 - 不引入 CSS 框架/Tailwind（tokens.css 变量体系已覆盖）。
+
+---
+
+# 二次评审（2026-10-12）
+
+> 范围：业务扩张至 4 域（学习/游戏/磨耳朵/我的）+ 宝藏图鉴 + 闯关地图后的**路由与导航信息架构**复审。
+> 触发：游戏模式无主导航入口、`App.vue`/`BottomNav` 注释与实现不一致、命名同名冲突。
+
+## 1. 本轮结论（已落地）
+
+| 项 | 决策 | 落地 |
+|---|---|---|
+| 底部导航 | **维持 学习/磨耳朵/我的** 三主 tab；游戏**不做主 tab** | BottomNav 注释与模板同步 |
+| 游戏入口 | 收在**学习页右上角"游戏"按钮**（金色胶囊，AppHeader 新增 `action` 插槽），进入 `#/game` 沉浸闯关，顶栏返回回学习 | AppHeader `slot name="action"`；LearnView/GameView |
+| 学习域题型 | 从参数式 `:id/:stage?` 升级为**显式二级子路由**：`:id` 父路由（菜单）+ 6 个题型子路由（`/learn/l4/quiz` 等，URL 不变） | router/index.ts 嵌套；guard.test/pages.smoke mock 同步 |
+| 命名消歧 | `components/activities/LearnView.vue` → **`LearnStage.vue`**（与 `views/learn/LearnView.vue` 消除同名） | git mv + 引用/测试同步 |
+| 闯关身份 | `path.includes('/quest')` → **`route.name === 'quest'`** | useQuest.ts |
+
+## 2. 本轮发现的经验教训（沉淀）
+
+1. **"注释与实现不一致"是改版残留的信号**：`App.vue` 写"学习/游戏/我的"，`BottomNav` 模板还引用**未定义的 `isGame`**（学习 tab 高亮条件 `isHome && !isGame` 恒真）——导航中途改版没清干净。规则：**改导航结构时，同步搜索注释、aria 逻辑、已删除 tab 的残留变量**（本轮用 `grep isGame` 一次性定位）。
+2. **主 tab 数量 = 产品信息架构决策，不能静默漂移**：三入口从"自由/游戏/我的"漂到"学习/磨耳朵/我的"期间，游戏入口消失了。规则：**非主 tab 的功能必须有一个显式、可发现的一级入口**（本轮：学习页右上角按钮），否则核心玩法会被"藏起来"。
+3. **vue-router 嵌套"父带组件 + 子继承"的类型处理**：父路由带组件时，无组件的子路由不满足 `RouteRecordRaw` 类型联合；本项目子路由与父**共用 LessonView**（父按 `route.name` 分发题型，父模板无 `<router-view>` 故子不重复渲染）。规则：**子路由写 `component`（与父同组件）+ 注释说明分发机制**；若未来给 LessonView 加 `<router-view>` 必须同步改造。
+4. **AppHeader 预留页面级操作位**：顶栏从"三 tab 共用、右侧固定徽章"扩展出 `action` 插槽——页面级入口（游戏）不污染三 tab 共用组件，组件库化沉淀（见 COMPONENT-LIBRARY.md 目录约定）。
+
+## 3. 保持不动的好设计（勿回退）
+
+- 四域子路由承载、6 题型独立 path（深链/分享友好）、KeepAlive 双壳缓存（LearnView/GameView）、懒加载 + SW 预缓存、旧路径迁移守卫（beforeEach）——均已达标。
+- `pathLevels.ts` 作为 GamePath 与 LessonView 共享的关卡序列单源（高内聚低耦合典范）。
+
+## 4. 遗留可选（未做，触发再做）
+
+- `progress` store 436 行（课程进度/每日目标/星级混一店）——玩法类型 >8 或出现跨页共享状态时按"每日目标/课程进度"拆分。
+- 6 题型共用 `LessonView`（现 274 行编排壳）——题型再增时拆按题型子组件（`components/lesson/stages/`）。

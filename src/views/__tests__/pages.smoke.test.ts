@@ -76,7 +76,19 @@ const routes = [
     name: "learn",
     component: LearnView,
     children: [
-      { path: ":id/:stage?", name: "lesson", component: LessonView },
+      {
+        path: ":id",
+        name: "lesson",
+        component: LessonView,
+        children: [
+          { path: "learn", name: "lesson-learn", component: LessonView },
+          { path: "quiz", name: "lesson-quiz", component: LessonView },
+          { path: "match", name: "lesson-match", component: LessonView },
+          { path: "speak", name: "lesson-speak", component: LessonView },
+          { path: "song", name: "lesson-song", component: LessonView },
+          { path: "talk", name: "lesson-talk", component: LessonView },
+        ],
+      },
       { path: "review", name: "review", component: ReviewView },
     ],
   },
