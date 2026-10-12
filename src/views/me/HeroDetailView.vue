@@ -228,6 +228,18 @@ function hasFacts(): boolean {
   const d = detail.value;
   return !!d && !!(d.origin || d.height || d.weight || d.debut);
 }
+
+/* ---------- 翻转卡片：正面形象+名字，背面资料 ---------- */
+/** 是否翻到背面（详情资料） */
+const flipped = ref(false);
+
+/** 翻转（开/关）：带提示音；翻转时停朗读，避免"正面读着、背面翻开"串台 */
+function toggleFlip(open = !flipped.value) {
+  sfxTap();
+  flipped.value = open;
+  stopSpeaking();
+  speaking.value = null;
+}
 </script>
 
 <template>
@@ -261,7 +273,11 @@ function hasFacts(): boolean {
       </template>
     </HeaderBar>
 
-    <div class="hd-body">
+    <div class="flip-scene">
+      <div class="flip-card" :class="{ flipped }">
+        <!-- 正面：形象 + 名字 + 详情按钮 -->
+        <div class="flip-face front">
+          <div class="face-scroll">
       <!-- 形象大图：多姿势左右滑动轮播（小点/箭头指示）；点"放大看"进全屏查看器 -->
       <div class="hero-stage" :style="{ '--tone': currentForm.color }">
         <div class="pose-view">
@@ -311,6 +327,37 @@ function hasFacts(): boolean {
         </button>
       </div>
 
+      <!-- 名字：大字可点朗读 -->
+      <div
+        class="front-name"
+        :class="{ speaking: speaking === 'hero' }"
+        role="button"
+        tabindex="0"
+        aria-label="朗读角色名"
+        @click="sayHero"
+        @keydown.enter.prevent="sayHero"
+      >
+        <span class="fn-cn">{{ hero.name }}</span>
+        <span class="fn-en">{{ hero.en }}</span>
+        <PathIcon name="volume" class="fn-vol" />
+        <span v-if="speaking === 'hero'" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
+      </div>
+
+      <!-- 详情按钮：翻到背面看介绍/技能/常用语 -->
+      <button class="detail-btn" @click="toggleFlip(true)">
+        <PathIcon name="book" />查看详情
+      </button>
+          </div>
+        </div>
+
+        <!-- 背面：介绍 / 小档案 / 技能 / 常用语（可滚动） -->
+        <div class="flip-face back">
+          <div class="back-top">
+            <button class="back-front" @click="toggleFlip(false)"><PathIcon name="back" />返回</button>
+            <span class="back-title">{{ hero.name }} · 资料</span>
+          </div>
+          <div class="face-scroll">
+          <div class="back-body">
       <!-- 简介：点卡朗读；朗读中高亮 -->
       <section
         v-if="detail"
@@ -388,7 +435,14 @@ function hasFacts(): boolean {
             <span v-if="speaking === `q-${p}`" class="wave mini" aria-hidden="true"><i></i><i></i><i></i></span>
           </button>
         </div>
-      </section>
+          </section>
+
+          <!-- 翻回正面 -->
+          <button class="back-btn" @click="toggleFlip(false)"><PathIcon name="back" />翻回正面</button>
+          </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 全屏图片查看器 -->
@@ -455,6 +509,186 @@ function hasFacts(): boolean {
   gap: 0;
 }
 
+/* ---------- 翻转卡片 ---------- */
+.flip-scene {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  perspective: 1200px;
+}
+.flip-card {
+  position: absolute;
+  inset: 0;
+}
+/* 3D 翻转：两面各自 rotateY，翻转中点（0.275s=动画一半）切换可见性。
+   不依赖 backface-visibility（部分渲染内核不可靠），视觉等效 3D 翻卡。 */
+.flip-face {
+  position: absolute;
+  inset: 0;
+  transition:
+    transform 0.55s cubic-bezier(0.4, 0.12, 0.2, 1),
+    visibility 0s linear 0.275s;
+}
+.flip-face.back {
+  transform: rotateY(180deg);
+  visibility: hidden;
+}
+.flip-card.flipped .flip-face.front {
+  transform: rotateY(180deg);
+  visibility: hidden;
+}
+.flip-card.flipped .flip-face.back {
+  transform: rotateY(0deg);
+  visibility: visible;
+}
+/* 翻转面自身不设 overflow（否则打断 preserve-3d，backface 失效两面同时可见）；
+   滚动交给内部 .face-scroll */
+.flip-face.front,
+.flip-face.back {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.flip-face.front {
+  padding: var(--gap-s) var(--gap-s) var(--gap-m);
+}
+.face-scroll {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* 正面内容垂直居中 */
+.flip-face.front .face-scroll {
+  justify-content: center;
+}
+.back-top {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 6px;
+}
+.back-front {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--card-bg);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 14px;
+  box-shadow: var(--shadow-hard);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.back-front:active {
+  transform: translateY(2px);
+}
+.back-title {
+  font-weight: 900;
+  font-size: 15px;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.back-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-s);
+  padding: var(--gap-s) var(--gap-s) var(--gap-m);
+}
+.back-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 auto var(--gap-m);
+  padding: 12px 32px;
+  border: none;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--card-bg);
+  color: var(--ink);
+  font-weight: 900;
+  font-size: 16px;
+  box-shadow: var(--shadow-hard);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.back-btn:active {
+  transform: translateY(2px);
+}
+
+/* ---------- 正面：名字 + 详情按钮 ---------- */
+.front-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 4px 12px;
+  margin: -4px -12px;
+  transition: background 0.15s;
+}
+.front-name:active {
+  background: rgba(127, 127, 127, 0.14);
+}
+.front-name.speaking {
+  background: color-mix(in srgb, var(--gold, #f0b429) 16%, transparent);
+}
+.fn-cn {
+  font-size: clamp(26px, 6vw, 34px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+.fn-en {
+  font-size: 15px;
+  font-weight: 800;
+  opacity: 0.6;
+}
+.fn-vol {
+  color: var(--gold, #f0b429);
+  font-size: 20px;
+}
+.detail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 30px;
+  border: none;
+  border-radius: var(--radius-pill, 999px);
+  background: linear-gradient(180deg, #ffd54f, #f0a724);
+  color: #5b4300;
+  font-size: 17px;
+  font-weight: 900;
+  box-shadow:
+    0 4px 0 rgba(160, 110, 10, 0.55),
+    0 8px 18px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+}
+.detail-btn:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 rgba(160, 110, 10, 0.55),
+    0 4px 10px rgba(0, 0, 0, 0.15);
+}
+.detail-btn .path-icon {
+  font-size: 20px;
+}
+
 /* ---------- 顶栏标题（可点朗读） ---------- */
 .hd-zoom {
   display: inline-flex;
@@ -498,19 +732,11 @@ function hasFacts(): boolean {
   opacity: 0.65;
 }
 
-.hd-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--gap-s);
-  overflow-y: auto;
-  padding: var(--gap-s) var(--gap-s) var(--gap-m);
-}
-
 /* ---------- 大图舞台 ---------- */
 .hero-stage {
   position: relative;
-  width: min(72vw, 420px);
+  flex: none;
+  width: min(72vw, 44vh, 420px);
   aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
@@ -666,6 +892,7 @@ function hasFacts(): boolean {
 
 /* ---------- 形态缩略 ---------- */
 .form-thumbs {
+  flex: none;
   display: flex;
   gap: 10px;
   padding: 2px;
