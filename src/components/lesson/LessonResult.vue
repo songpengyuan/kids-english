@@ -59,9 +59,9 @@ function nav(fn: () => void) {
         <span
           v-for="n in 3"
           :key="n"
-          class="star anim-pop"
+          class="star"
           :class="{ dim: n > stars }"
-          :style="{ animationDelay: n * 0.2 + 's' }"
+          :style="{ '--d': n * 0.28 + 's' }"
         >
           <Star class="k-ico star-fill" />
         </span>
@@ -88,9 +88,9 @@ function nav(fn: () => void) {
         <span
           v-for="n in 3"
           :key="n"
-          class="star anim-pop"
+          class="star"
           :class="{ dim: n > stars }"
-          :style="{ animationDelay: n * 0.2 + 's' }"
+          :style="{ '--d': n * 0.28 + 's' }"
         >
           <Star class="k-ico star-fill" />
         </span>
@@ -126,34 +126,101 @@ function nav(fn: () => void) {
   gap: var(--gap-m);
   justify-content: center;
   align-items: center;
+  margin: 6px 0 4px;
 }
 .star {
-  width: clamp(52px, 11vh, 72px);
-  height: clamp(52px, 11vh, 72px);
+  position: relative;
+  width: clamp(56px, 12vh, 80px);
+  height: clamp(56px, 12vh, 80px);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--star-gold);
+  /* 星星实心金色（原 --star-gold 未定义导致深色，这里直接给值） */
+  color: #ffb020;
 }
-/* 中间的星抬高一档（多邻国式三星构图），拿到星的内芯飘浮 + 金光 */
-.star:nth-child(2) {
-  margin-top: -14px;
+/* 拿到手的星：金色实心 + 光晕 + 逐个弹出（第 1/2/3 颗错峰 0.28s 出现） */
+.star-fill {
+  fill: currentColor;
 }
 .star:not(.dim) {
-  filter: drop-shadow(0 4px 12px rgba(255, 193, 7, 0.45));
+  filter: drop-shadow(0 4px 14px rgba(255, 176, 32, 0.5));
 }
-.star:not(.dim) .k-ico {
-  animation: float-y 2.4s ease-in-out 0.9s infinite;
+.star:not(.dim) .star-fill {
+  animation: star-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: var(--d);
+}
+.star:not(.dim)::after {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 193, 7, 0.4), transparent 62%);
+  animation: star-glow 0.6s ease both;
+  animation-delay: var(--d);
+}
+/* 没拿到的星：淡灰，也要逐个淡入但不出光 */
+.star.dim {
+  color: #d8d0be;
+  filter: none;
+}
+.star.dim .star-fill {
+  animation: star-fade 0.45s ease both;
+  animation-delay: var(--d);
+}
+/* 中间的星抬高一档（多邻国式三星构图） */
+.star:nth-child(2) {
+  margin-top: -14px;
 }
 .star .k-ico {
   width: 100%;
   height: 100%;
 }
-.star.dim {
-  color: var(--star-dim);
+/* 逐星入场：从小旋转弹出 + 定型后轻微悬浮 */
+@keyframes star-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-30deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.25) rotate(6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+@keyframes star-glow {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+}
+@keyframes star-fade {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.star:not(.dim) .star-fill {
+  animation: star-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    float-y 2.4s ease-in-out 0.9s infinite;
 }
 .star-num {
-  color: var(--star-gold);
+  color: #ffb020;
   font-size: 1.2em;
 }
 .btn-row {
