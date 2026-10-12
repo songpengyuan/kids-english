@@ -119,3 +119,40 @@
 
 - `progress` store 436 行（课程进度/每日目标/星级混一店）——玩法类型 >8 或出现跨页共享状态时按"每日目标/课程进度"拆分。
 - 6 题型共用 `LessonView`（现 274 行编排壳）——题型再增时拆按题型子组件（`components/lesson/stages/`）。
+
+# 三次评审：声音系统重构（2026-10-12）
+
+> 动因（用户诉求）：① 点到的文字都要发音，抽象一个声音组件读单词和文案；② 听音选图等进题即播；③ 预生成 mp3 3 秒内没播放就降级原生 TTS。
+
+## 1. 现状诊断
+- ✅ 已有：数据层单词 `audio` 自动拼接 `public/lessons/<课>/audio/<词id>.mp3`（69 个神经网络童声 mp3）；`speech.ts` MP3 优先→失败回退 TTS、TTS 竞态修复（seq 版本号+60ms 延迟防“点 A 听 B”）、`stopSpeaking` 统一打断、`speakZh` 静音语义。
+- ❌ 三个问题：
+  1. **播放兜底语义 bug 级**：`playAudio` 10s 后**无条件 `resolve(true)`**——慢资源/404 时孩子干等且不降级 TTS，与“3s 没播换原生”诉求相反；
+  2. **发音调用散落 ~20 处**（各玩法各自 import speak、各自维护 speaking 状态、各自传参），无统一组件；
+  3. **进题自动播各自为政**（只有 QuizView 350ms 读题）。
+
+## 2. 落地内容（已全部完成并推送）
+### A. 服务层（src/services/speech.ts）
+- `playAudio` 改为：监听 `playing`/`timeupdate`（首次出声=成功）；**`timeoutMs`（默认 3000ms）内未开始出声 → resolve(false) 降级 TTS**；onerror/play() 被拒 → 降级；移除 10s 无条件成功兜底。
+- 统一入口：`speak`（保留签名，内置 3s 语义）+ `speakWord`（单词语义化别名）+ `speakText`（文案，默认 ttsOnly）。
+- 导出响应式 `speaking` 状态（`stopSpeaking` 同步复位）。
+
+### B. 统一点读组件（src/components/ui/SpeakText.vue，props 配置化）
+- props：`text` / `zh` / `lessonId` / `wordId` / `ttsOnly` / `rate` / `lang` / `as`(span|button) / `timeoutMs` / `bypassMute`。
+- 点击即读、再点打断重读；朗读波浪动画（局部 active，不全局闪烁）；span 形态自带 stopPropagation（点标题不触发宿主点击）；aria-label/aria-pressed。
+- 已接入：**学习页课程卡标题点读**（点标题听英文课程名，点卡片进课）。
+
+### C. 玩法接入
+- 听音选图进题自动播已纳入统一链路（350ms 读题，自动获得 3s 降级）。
+- LearnStage 单词卡 / Match 词卡 / Talk 句子 / Review 选项的现有点读**保持组件自带逻辑**（标记/连线/选对错），通过服务层统一入口自动获得 3s 降级——避免组件包裹破坏玩法语义。
+- 页面自动朗读（角色介绍/技能名/导航提示）保持服务调用，不组件化（合理边界）。
+
+## 3. 验证
+- 测试 **224/224**（新增 5 个 SpeakText 组件用例 + 2 个 3s 降级用例：超时未播→降级 TTS / 3s 内开始播→不降级）。
+- type-check 0、生产构建绿。
+- 浏览器实测：学习页课程卡标题点读发声 ✓；quiz 进题自动播创建 mp3 Audio ✓；Audio.play 被拒（模拟自动播被拦/资源失败）→ **3s 内降级原生 TTS 出声** ✓。
+
+## 4. 经验教训（沉淀）
+1. **“超时兜底”必须区分“成功放行”与“失败降级”**：旧实现 10s 无条件 `resolve(true)` 把失败伪装成成功，调用方永远不降级——超时兜底默认应走降级路径，成功信号只来自真实事件（playing/onend）。
+2. **统一点读入口要 props 配置化**：同一个“点文字发音”有 10 种变体（单词带定位/不带、纯文案、中文、语速、是否绕过静音……），组件把变体收敛为 props，页面只需声明意图。
+3. **组件化与业务语义的边界**：WordCard 点读带着“标记已点/统计/入场动画”业务逻辑，强包 SpeakText 会破坏玩法；组件用于“纯点读文字”，带业务逻辑的点读保持服务层调用——先探结构再定边界。
