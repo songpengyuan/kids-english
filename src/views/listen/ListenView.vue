@@ -9,6 +9,11 @@ import SafeBottom from "../../components/layout/SafeBottom.vue";
 import type { ListenSubTab, RepeatMode } from "../../types";
 
 const subTab = ref<ListenSubTab>("songs");
+function switchTab(t: ListenSubTab) {
+  subTab.value = t;
+  nowPlaying.value = false;
+  playingVideo.value = null;
+}
 const nowPlaying = ref(false);
 const showPlaylist = ref(false);
 
@@ -170,8 +175,8 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
       <AppHeader title="磨耳朵" icon="game" hide-badges />
       <div class="today-chip">今天磨了 <b>{{ Math.floor(progStore.todayStats.durationSec / 60) }}</b> 分钟</div>
       <div class="sub-tabs">
-        <button :class="{ on: subTab === 'songs' }" @click="subTab = 'songs'"><Music class="k-ico" /> 歌曲</button>
-        <button :class="{ on: subTab === 'videos' }" @click="subTab = 'videos'"><Video class="k-ico" /> 视频</button>
+        <button :class="{ on: subTab === 'songs' }" @click="switchTab('songs')"><Music class="k-ico" /> 歌曲</button>
+        <button :class="{ on: subTab === 'videos' }" @click="switchTab('videos')"><Video class="k-ico" /> 视频</button>
       </div>
       <div class="body view-body">
         <template v-if="subTab === 'songs'">
@@ -226,7 +231,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
     <!-- 视频播放 -->
     <div v-if="playingVideo" class="video-mask" @click.self="playingVideo = null">
       <button class="video-close" @click="playingVideo = null"><X class="k-ico" /></button>
-      <video :src="playingVideo.src" controls autoplay playsinline class="video-player" />
+      <video :src="playingVideo.src" controls autoplay playsinline preload="auto" class="video-player" />
       <p class="video-caption">{{ playingVideo.titleZh }} · {{ playingVideo.title }}</p>
     </div>
   </div>
