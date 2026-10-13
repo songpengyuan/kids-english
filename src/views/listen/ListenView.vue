@@ -133,8 +133,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 <template>
   <div class="listen view">
     <!-- ===== 歌词全屏页 ===== -->
-    <Transition name="lyrics-slide">
-    <div v-if="nowPlaying && currentSong" class="lyrics-page">
+    <div v-if="nowPlaying && currentSong" class="lyrics-page" :class="{ 'anim-in': nowPlaying }">
       <div class="lp-header">
         <button class="lp-back" @click="nowPlaying = false"><ChevronDown class="k-ico" /></button>
         <div class="lp-cover" :class="'tone-' + currentSong.tone">{{ currentSong.emoji }}</div>
@@ -165,7 +164,6 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
         <span class="lp-time">{{ formatTime(duration) }}</span>
       </SafeBottom>
     </div>
-    </Transition>
 
     <!-- ===== 列表页 ===== -->
     <template v-else>
@@ -335,16 +333,11 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .video-player { max-width: 95vw; max-height: 70vh; border-radius: 8px; }
 .video-caption { color: #ccc; margin: 0; font-weight: 700; }
 
-.lyrics-slide-enter-active,
-.lyrics-slide-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
+.lyrics-page.anim-in {
+  animation: lyrics-up 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.lyrics-slide-enter-from {
-  opacity: 0;
-  transform: translateY(20%);
-}
-.lyrics-slide-leave-to {
-  opacity: 0;
-  transform: translateY(20%);
+@keyframes lyrics-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
