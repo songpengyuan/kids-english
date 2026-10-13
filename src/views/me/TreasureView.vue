@@ -14,8 +14,7 @@
  * 数据流单向：本页只调 rewards store 的 buyForm，不改其它状态。
  */
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router";
-import {
+import { useRouter } from "vue-router";import {
   ALL_FORMS,
   formById,
   ERA_INFO,
@@ -39,6 +38,9 @@ defineOptions({ name: "TreasureView" }); // KeepAlive include 需要稳定组件
 
 const rewards = useRewardsStore();
 const router = useRouter();
+
+/** 顶部 tab：owned=只看已兑换获得，all=看全部英雄图鉴 */
+const viewTab = ref<"owned" | "all">("owned");
 
 /** 卡片条目 = 形态数据 + 它属于哪个角色（单形态角色的卡上直接显示角色名） */
 interface CardEntry {
@@ -68,29 +70,35 @@ function toCard(f: (typeof ALL_FORMS)[number]): AlbumForm {
 
 /** 图鉴：世代 → 角色 → 形态（三级；41 位角色不分段会太长） */
 const album = computed(() =>
-  heroesByEra().map(({ era, heroes }) => ({
-    era,
-    ...ERA_INFO[era],
-    /** 单形态角色（昭和居多）→ 紧凑卡网格，省掉一屏一屏的空行 */
-    singles: heroes
-      .filter((h) => h.forms.length === 1)
-      .map<CardEntry>((h) => ({ key: h.id, heroName: h.name, form: toCard(ALL_FORMS.find((x) => x.id === h.forms[0].id)!) })),
-    /** 多形态角色 → 一个角色一段，形态并排 */
-    groups: heroes
-      .filter((h) => h.forms.length > 1)
-      .map((hero) => ({
-        id: hero.id,
-        name: hero.name,
-        en: hero.en,
-        owned: hero.forms.filter((f) => rewards.isOwned(f.id)).length,
-        total: hero.forms.length,
-        forms: hero.forms.map<CardEntry>((f) => ({
-          key: f.id,
-          heroName: hero.name,
-          form: toCard(ALL_FORMS.find((x) => x.id === f.id)!),
-        })),
-      })),
-  }))
+  heroesByEra().map(({ era, heroes }) => {
+    const onlyOwned = viewTab.value === "owned";
+    const filterOwned = (c: CardEntry) => !onlyOwned || c.form.owned;
+    return {
+      era,
+      ...ERA_INFO[era],
+      singles: heroes
+        .filter((h) => h.forms.length === 1)
+        .map<CardEntry>((h) => ({ key: h.id, heroName: h.name, form: toCard(ALL_FORMS.find((x) => x.id === h.forms[0].id)!) }))
+        .filter(filterOwned),
+      groups: heroes
+        .filter((h) => h.forms.length > 1)
+        .map((hero) => ({
+          id: hero.id,
+          name: hero.name,
+          en: hero.en,
+          owned: hero.forms.filter((f) => rewards.isOwned(f.id)).length,
+          total: hero.forms.length,
+          forms: hero.forms
+            .map<CardEntry>((f) => ({
+              key: f.id,
+              heroName: hero.name,
+              form: toCard(ALL_FORMS.find((x) => x.id === f.id)!),
+            }))
+            .filter(filterOwned),
+        }))
+        .filter((g) => g.forms.length > 0),
+    };
+  })
 );
 
 /** 点卡片：已收集 → 进角色详情页；未收集 → 发音介绍（英文读完再接中文，不掐断） */
@@ -147,6 +155,15 @@ function buy(formId: string) {
           <span class="album-progress">
             {{ rewards.ownedCount }} / {{ FORM_TOTAL }} 个形态 · {{ HERO_TOTAL }} 位角色（{{ rewards.albumPct }}%）
           </span>
+        </div>
+
+        <div class="t-tabs">
+          <button :class="{ on: viewTab === 'owned' }" @click="viewTab = 'owned'">我获得的</button>
+          <button :class="{ on: viewTab === 'all' }" @click="viewTab = 'all'">全部英雄</button>
+        </div>
+
+        <div v-if="viewTab === 'owned' && rewards.ownedCount === 0" class="empty-hint">
+          还没有获得英雄，去闯关攒贝壳兑换吧！
         </div>
 
         <!-- 世代 → 角色 → 形态 -->
@@ -339,5 +356,36 @@ function buy(formId: string) {
 .forms.mini {
   /* 紧凑卡：手机 ~3 列 / 平板 ~6 列 */
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+}
+
+.t-tabs {
+  display: flex;
+  gap: 8px;
+  background: var(--line);
+  border-radius: var(--radius-pill, 999px);
+  padding: 4px;
+}
+.t-tabs button {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.t-tabs button.on {
+  background: var(--card-bg);
+  color: var(--ink);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.empty-hint {
+  text-align: center;
+  padding: 24px 0;
+  color: var(--ink-faint);
+  font-weight: 700;
 }
 </style>

@@ -21,7 +21,7 @@ export const MAX_FORM_STARS = 3;
 /** 旧贴纸的回收价（贝壳）：按当年售价折算，老数据不亏 */
 export const LEGACY_STICKER_REFUND = 20;
 /** 开箱直接掉落未收集形态的概率 */
-export const CHEST_FORM_CHANCE = 0.25;
+export const CHEST_FORM_CHANCE = 0;
 
 /** 一次开箱的结果 */
 export interface ChestRoll {
