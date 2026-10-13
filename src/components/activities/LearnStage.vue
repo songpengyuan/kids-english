@@ -7,6 +7,7 @@ import { useLearnSession } from "../../composables/useLearnSession";
 import type { Word } from "../../data/lessons";
 import { Check, MousePointerClick } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
+import SafeBottom from "../layout/SafeBottom.vue";
 
 /**
  * 看图学词（点读）—— 逻辑在 composables/useLearnSession，这里只做渲染与音效。
@@ -81,13 +82,15 @@ function finish() {
       </div>
     </div>
 
-    <Pager :page="page" :total="total" hide-dots @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
-
-    <BaseButton class="next" variant="green" :disabled="!canFinish" @click="finish">
-      <template v-if="canFinish"><Check class="k-ico" />我都会啦</template>
-      <template v-else-if="!isLast">看完所有图才能完成哦</template>
-      <template v-else>还有 {{ remaining }} 个词没点过哦</template>
-    </BaseButton>
+    <!-- 贴底操作区：统一底部安全容器（Home 条防遮挡 + 呼吸间距） -->
+    <SafeBottom class="next-zone" :gap="24">
+      <Pager :page="page" :total="total" hide-dots @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
+      <BaseButton class="next" variant="green" :disabled="!canFinish" @click="finish">
+        <template v-if="canFinish"><Check class="k-ico" />我都会啦</template>
+        <template v-else-if="!isLast">看完所有图才能完成哦</template>
+        <template v-else>还有 {{ remaining }} 个词没点过哦</template>
+      </BaseButton>
+    </SafeBottom>
   </div>
 </template>
 
@@ -136,5 +139,12 @@ function finish() {
   width: 100%;
   max-width: 460px;
   margin: 0 auto;
+}
+
+/* 贴底操作区：SafeBottom 内纵向排列（Pager 与完成按钮保持呼吸间距） */
+.next-zone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-s);
 }
 </style>

@@ -160,6 +160,8 @@ async function collect() {
     pulseTick.value++; // 徽标接收脉冲
     if (panelShown.value > 0) await sleep(160); // 逐个小间隔（收紧节奏，重复开箱不拖）
   }
+  // 最后一枚飞完：稍作停留（徽标数字生长 + 叮声看完）再收尾，避免秒切页面
+  await sleep(650);
   phase.value = "collected";
   emit("done");
 }

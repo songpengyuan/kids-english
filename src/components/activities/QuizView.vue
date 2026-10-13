@@ -16,15 +16,18 @@ const imgFail = ref<Record<string, boolean>>({});
 
 const session = useQuizSession<Word>(() => props.words, {
   onProgress: (p) => emit("progress", p),
-  onCorrect: (w) => {
+  onCorrect: async (w) => {
     sfxCorrect();
-    speak(w.en, { lessonId: w.lessonId, wordId: w.id });
-    speak("太棒了");
     progress.recordWord(w.lessonId, w.id, { correct: 1 });
+    // 答对先完整播放正确单词读音，再播"太棒了"（串行不互相打断）
+    await speak(w.en, { lessonId: w.lessonId, wordId: w.id });
+    await speak("太棒了");
   },
-  onWrong: (picked) => {
+  onWrong: async (picked) => {
     sfxWrong();
     progress.recordWord(picked.lessonId, picked.id, { wrong: 1 });
+    // 点错也播放所点单词的读音（孩子知道自己点的是什么）
+    await speak(picked.en, { lessonId: picked.lessonId, wordId: picked.id });
   },
   onExplore: (w) => {
     sfxTap();
@@ -62,8 +65,7 @@ function replay() {
 function onPick(opt: Word) {
   if (locked.value) return;
   if (wrongPicks.value.has(opt.id)) return;
-  // 点了就发音
-  speak(opt.en, { lessonId: opt.lessonId, wordId: opt.id });
+  // 发音统一交给 pick 回调（答对：先单词音再"太棒了"；答错：单词音）——避免互相打断
   pick(opt);
 }
 
@@ -123,9 +125,8 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
 
     <LessonFooter
       v-if="locked"
-      feedback="success"
-      feedback-text="太棒了！"
-      button-text="继续"
+      :feedback="null"
+      button-text="太棒了！"
       :show-arrow="true"
       @button="onFooterButton"
     />
