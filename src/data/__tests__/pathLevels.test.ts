@@ -17,9 +17,12 @@ import {
   levelDone,
   nextLevelAfter,
 } from "../pathLevels";
+import { lessons } from "../lessons";
 import type { LessonProgress } from "../../stores/progress";
 
 const LEVELS = buildLevels();
+/** 课程数量会随老师新课增量（l4~l10…），断言按 lessons 动态计算，加课无需改本文件 */
+const LAST_LESSON = lessons[lessons.length - 1];
 
 /** 构造一课进度：给定玩法完成情况与 completed 数组 */
 function prog(
@@ -30,8 +33,8 @@ function prog(
 }
 
 describe("buildLevels", () => {
-  it("6 课 × (6 玩法 + 1 宝箱) = 42 关，chest 排在每课末尾", () => {
-    expect(LEVELS).toHaveLength(42);
+  it("N 课 × (6 玩法 + 1 宝箱)，chest 排在每课末尾", () => {
+    expect(LEVELS).toHaveLength(lessons.length * 7);
     const l4 = LEVELS.filter((l) => l.lessonId === "l4");
     expect(l4).toHaveLength(7);
     expect(l4.map((l) => l.actKey)).toEqual(["learn", "quiz", "match", "speak", "talk", "song", "chest"]);
@@ -132,6 +135,6 @@ describe("nextLevelAfter（玩法→玩法，跳过宝箱关）", () => {
   });
 
   it("最后一课 song 后无下一关", () => {
-    expect(nextLevelAfter("l9-song", LEVELS)).toBeNull();
+    expect(nextLevelAfter(`${LAST_LESSON.id}-song`, LEVELS)).toBeNull();
   });
 });
