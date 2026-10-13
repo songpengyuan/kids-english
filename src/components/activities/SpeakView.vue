@@ -238,8 +238,8 @@ function next() {
 }
 .pic {
   /* 同时受高和宽约束：iPad 横屏不至于过大，手机竖屏也不会占满整屏 */
-  width: clamp(88px, min(32vh, 24vw), 240px);
-  height: clamp(88px, min(32vh, 24vw), 240px);
+  width: clamp(110px, min(40vh, 30vw), 300px);
+  height: clamp(110px, min(40vh, 30vw), 300px);
   flex: none;
   background: var(--card-bg);
   border-radius: var(--radius);
@@ -272,7 +272,7 @@ function next() {
   max-width: 100%;
 }
 .word {
-  font-size: clamp(24px, min(5vh, 4.2vw), 42px);
+  font-size: clamp(30px, min(6vh, 5.4vw), 52px);
   background: none;
   font-weight: 800;
   color: var(--ink);

@@ -22,11 +22,10 @@ interface ModelItem {
 }
 
 const MODELS: ModelItem[] = [
-  { key: "astro", name: "宇航员", emoji: "🧑‍🚀", src: "/models/ultraseven.glb", orbit: "0deg 75deg 4.5m" },
-  { key: "robot", name: "小机器人", emoji: "🤖", src: "/models/RobotExpressive.glb", orbit: "0deg 75deg 2.8m" },
-  { key: "horse", name: "小马", emoji: "🐴", src: "/models/Horse.glb", orbit: "0deg 75deg 3m" },
-  { key: "helmet", name: "钢铁头盔", emoji: "🪖", src: "/models/Helmet.glb", orbit: "0deg 75deg 0.4m" },
-  { key: "avocado", name: "牛油果", emoji: "🥑", src: "/models/Avocado.glb", orbit: "0deg 75deg 1.5m" },
+  { key: "astro", name: "宇航员", emoji: "🧑‍🚀", src: "models/ultraseven.glb", orbit: "0deg 75deg 4.5m" },
+  { key: "robot", name: "小机器人", emoji: "🤖", src: "models/RobotExpressive.glb", orbit: "0deg 75deg 2.8m" },
+  { key: "horse", name: "小马", emoji: "🐴", src: "models/Horse.glb", orbit: "0deg 75deg 3m" },
+  { key: "helmet", name: "钢铁头盔", emoji: "🪖", src: "models/Helmet.glb", orbit: "0deg 75deg 0.4m" },
 ];
 
 const active = ref(0);
