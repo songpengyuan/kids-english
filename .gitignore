@@ -30,3 +30,8 @@ public/heroes/fetch-report.tsv
 # 下载过程中的临时文件
 public/heroes/.tmp-download
 public/heroes/.tmp-download.fb
+
+# server
+server/.env
+server/.venv
+server/__pycache__/
