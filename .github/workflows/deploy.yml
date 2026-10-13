@@ -45,10 +45,13 @@ jobs:
       # 产物 rsync 上传到服务器（入站方向，不受服务器访问 GitHub 慢影响）。
       # 需先在 repo 配置 Actions secret DEPLOY_KEY（部署密钥私钥）。
       - name: Deploy to Huawei server (rsync)
-        if: ${{ secrets.DEPLOY_KEY != '' }}
         env:
           DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
         run: |
+          if [ -z "$DEPLOY_KEY" ]; then
+            echo "::warning::未配置 DEPLOY_KEY secret，跳过服务器部署"
+            exit 0
+          fi
           mkdir -p ~/.ssh
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
