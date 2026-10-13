@@ -80,17 +80,13 @@ describe("rewards store · 开箱", () => {
     setActivePinia(createPinia());
   });
 
-  it("贝壳 3~6；命中掉落时给一个还没收集的形态", () => {
+  it("开箱固定给贝壳（无概率掉落，形态走任务/兑换解锁）", () => {
     const r = useRewardsStore();
-    // rng 依次：贝壳(0 → 3)、掉落判定(0.1 < 25% 命中)、挑形态(0 → 第一个未收集)
-    const roll = r.rollChest(seq([0, 0.1, 0]));
+    // rng 依次：贝壳(0 → 3)、掉落判定(0.9 即使 < 旧概率也永不命中，CHEST_FORM_CHANCE=0)
+    const roll = r.rollChest(seq([0, 0.9, 0]));
     expect(roll.shells).toBe(3);
-    expect(roll.formId).toBe(ALL_FORMS[0].id);
-    expect(roll.isNew).toBe(true);
-    r.grant(roll);
-    expect(r.shells).toBe(3);
-    expect(r.starsOf(ALL_FORMS[0].id)).toBe(1);
-    expect(r.chestsOpened).toBe(1);
+    expect(roll.formId).toBeNull();
+    expect(roll.isNew).toBe(false);
   });
 
   it("没命中掉落时只给贝壳", () => {
@@ -101,15 +97,16 @@ describe("rewards store · 开箱", () => {
     expect(roll.formId).toBeNull();
   });
 
-  it("集齐全部形态后不再掉新形态，改为给已收集形态升星", () => {
+  it("集齐全部形态后开箱仍只给贝壳（不重复掉落，星级靠任务/兑换提升）", () => {
     const r = useRewardsStore();
     for (const f of ALL_FORMS) r.grant({ shells: 0, formId: f.id, isNew: true });
     expect(r.ownedCount).toBe(FORM_TOTAL);
     expect(r.allOwned()).toBe(true);
     expect(r.albumPct).toBe(100);
     const roll = r.rollChest(seq([0, 0.1, 0]));
+    expect(roll.shells).toBe(3);
+    expect(roll.formId).toBeNull();
     expect(roll.isNew).toBe(false);
-    expect(roll.formId).not.toBeNull();
   });
 
   it("形态全部满星后开箱不再掉形态（只给贝壳）", () => {
