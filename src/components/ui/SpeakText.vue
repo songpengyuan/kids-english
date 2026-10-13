@@ -141,6 +141,10 @@ function onSpanClick(e: MouseEvent) {
 .spk.on {
   background: rgba(28, 176, 246, 0.14);
 }
+/* 暗黑：14% 蓝在深底上几乎不可见，提亮选中态 */
+:root[data-theme="dark"] .spk.on {
+  background: rgba(28, 176, 246, 0.32);
+}
 /* 朗读波浪：三根跳动小竖条（与玩法页一致的语言） */
 .spk-wave {
   display: inline-flex;

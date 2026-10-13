@@ -186,6 +186,11 @@ onBeforeUnmount(() => clearInterval(noteTimer));
   box-shadow: 0 3px 0 rgba(120, 180, 220, 0.35);
   animation: drift linear infinite;
 }
+/* 暗黑：纯白云在深底上刺眼，降透明度成夜云 */
+:root[data-theme="dark"] .cloud {
+  background: rgba(235, 240, 250, 0.16);
+  box-shadow: 0 3px 0 rgba(150, 190, 230, 0.18);
+}
 .cloud.c1 { top: 12%; left: 6%; animation-duration: 26s; }
 .cloud.c2 { top: 24%; left: 55%; animation-duration: 34s; transform: scale(0.72); }
 .cloud.c3 { top: 7%; left: 34%; animation-duration: 44s; transform: scale(0.5); }
