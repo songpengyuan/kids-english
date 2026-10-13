@@ -21,6 +21,7 @@
  *   </LessonFooter>
  */
 import { ChevronRight } from "@lucide/vue";
+import SafeBottom from "../layout/SafeBottom.vue";
 
 const props = defineProps<{
   /** 反馈类型：success 绿色胶囊 / error 红色文字 / null 不显示（占位撑高） */
@@ -36,7 +37,7 @@ const emit = defineEmits<{ button: [] }>();
 </script>
 
 <template>
-  <div class="lf">
+  <SafeBottom class="lf" :gap="28">
     <!-- 反馈胶囊：success 绿色边框 / error 红色文字 / 无反馈时占位撑高防跳 -->
     <div class="lf-feedback">
       <p v-if="feedback === 'success'" class="lf-pill success anim-pop">
@@ -67,20 +68,23 @@ const emit = defineEmits<{ button: [] }>();
         <ChevronRight v-if="showArrow !== false" class="lf-arrow" />
       </slot>
     </button>
-  </div>
+  </SafeBottom>
 </template>
 
 <style scoped>
 .lf {
-  margin-top: auto;
   width: 100%;
   max-width: 560px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--gap-s);
-  padding: var(--gap-l) var(--gap-m) max(28px, env(safe-area-inset-bottom));
+  /* 底部间距交给 SafeBottom（不用 padding 简写，避免覆盖安全区） */
+  padding-top: var(--gap-l);
+  padding-left: var(--gap-m);
+  padding-right: var(--gap-m);
   flex: none;
+  /* 推底与底部安全间距由 SafeBottom 容器统一提供 */
 }
 
 /* ---------- 反馈胶囊 ---------- */
@@ -162,8 +166,12 @@ const emit = defineEmits<{ button: [] }>();
 /* 横屏矮屏：收紧上下间距 */
 @media (max-height: 480px) {
   .lf {
-    padding: var(--gap-s) var(--gap-m) max(12px, env(safe-area-inset-bottom));
+    padding-top: var(--gap-s);
+    padding-left: var(--gap-m);
+    padding-right: var(--gap-m);
     gap: var(--gap-xs);
+    /* 横屏矮屏：收紧底部呼吸间距 */
+    --safe-gap: 12px;
   }
   .lf-pill.success {
     font-size: var(--fs-body);

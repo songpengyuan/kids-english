@@ -7,6 +7,7 @@ import { useSpeechSession } from "../../composables/useSpeechSession";
 import type { Word } from "../../data/lessons";
 import { ChevronRight, Mic, RotateCcw, Square, ThumbsUp, Volume2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
+import SafeBottom from "../layout/SafeBottom.vue";
 
 const props = defineProps<{ words: Word[] }>();
 const emit = defineEmits(["done", "progress", "total"]);
@@ -116,7 +117,7 @@ function next() {
     </div>
 
     <!-- 麦克风按钮：点一下开始，再点一下结束 -->
-    <div class="mic-zone" v-else-if="status !== 'feedback' || mode === 'asr'">
+    <SafeBottom class="mic-zone" :gap="28" v-else-if="status !== 'feedback' || mode === 'asr'">
       <button
         class="mic"
         :class="{ live: status === 'listening' }"
@@ -136,10 +137,10 @@ function next() {
             : "点一下开始说话"
         }}
       </p>
-    </div>
+    </SafeBottom>
 
     <!-- 反馈 -->
-    <div v-if="status === 'feedback'" class="feedback anim-fade-up">
+    <SafeBottom v-if="status === 'feedback'" class="feedback anim-fade-up" :gap="28">
       <template v-if="mode === 'record' && grade === ''">
         <!-- 停止录音已自动回放一次；这里只保留一个醒目的二次回放入口（无进度条，小朋友无需看到） -->
         <audio ref="recAudio" :src="recUrl" class="replay"></audio>
@@ -194,7 +195,7 @@ function next() {
           </BaseButton>
         </div>
       </template>
-    </div>
+    </SafeBottom>
   </div>
 </template>
 
@@ -296,9 +297,7 @@ function next() {
   align-items: center;
   gap: var(--gap-xs);
   flex: none;
-  /* 录音按钮靠下：贴近屏幕底部，孩子拇指好按（图片/单词在上部可更大） */
-  margin-top: auto;
-  padding-bottom: max(28px, env(safe-area-inset-bottom));
+  /* 推底与底部安全间距（Home 指示条防遮挡）由 SafeBottom 容器统一提供 */
 }
 .mic {
   width: clamp(72px, min(17vh, 12vw), 124px);
@@ -432,18 +431,21 @@ function next() {
 }
 
 .feedback {
-  margin-top: auto;
   width: 100%;
   max-width: 500px;
   flex: none;
   background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
-  padding: clamp(10px, 1.6vh, 16px) clamp(10px, 1.6vw, 16px) max(28px, env(safe-area-inset-bottom));
+  /* 底部间距交给 SafeBottom（不用 padding 简写，避免覆盖安全区） */
+  padding-top: clamp(10px, 1.6vh, 16px);
+  padding-left: clamp(10px, 1.6vw, 16px);
+  padding-right: clamp(10px, 1.6vw, 16px);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--gap-xs);
+  /* 推底与底部安全间距由 SafeBottom 容器统一提供 */
 }
 .verdict {
   margin: 0;

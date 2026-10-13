@@ -5,6 +5,7 @@ import AppHeader from "../../components/layout/AppHeader.vue";
 import { useProgressStore } from "../../stores/progress";
 import { Play, Pause, SkipBack, SkipForward, Music, Video, X, ChevronDown, Repeat, Repeat1, Shuffle, ListMusic } from "@lucide/vue";
 import BaseDrawer from "../../components/ui/BaseDrawer.vue";
+import SafeBottom from "../../components/layout/SafeBottom.vue";
 import type { ListenSubTab, RepeatMode } from "../../types";
 
 const subTab = ref<ListenSubTab>("songs");
@@ -151,11 +152,11 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
         <button class="lp-btn" @click="next"><SkipForward class="k-ico" /></button>
         <button class="lp-btn" @click="showPlaylist = true"><ListMusic class="k-ico" /></button>
       </div>
-      <div class="lp-progress-row">
+      <SafeBottom class="lp-progress-row" :gap="20">
         <span class="lp-time">{{ formatTime(progress * duration) }}</span>
         <input class="lp-progress" type="range" :value="Math.round(progress * 100)" @input="seek" min="0" max="100" />
         <span class="lp-time">{{ formatTime(duration) }}</span>
-      </div>
+      </SafeBottom>
     </div>
 
     <!-- ===== 列表页 ===== -->
@@ -292,7 +293,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 }
 .lp-btn .k-ico { width: 26px; height: 26px; }
 .lp-btn.big .k-ico { width: 30px; height: 30px; }
-.lp-progress-row { display: flex; align-items: center; gap: var(--gap-s); padding: 0 var(--pad-x) calc(20px + env(safe-area-inset-bottom)); }
+.lp-progress-row { display: flex; align-items: center; gap: var(--gap-s); padding-left: var(--pad-x); padding-right: var(--pad-x); /* 底部安全间距由 SafeBottom 统一提供 */ }
 .lp-progress { flex: 1; accent-color: var(--yellow); height: 6px; }
 .lp-time { font-size: 11px; font-weight: 700; color: var(--ink-faint); min-width: 36px; text-align: center; }
 
