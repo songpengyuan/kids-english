@@ -224,6 +224,8 @@ html.hide-nav .bottom-nav {
   flex: 1;
   min-height: 0;
   width: 100%;
+  /* 全局统一底部安全区（iPhone Home Indicator 不挡最后一个按钮） */
+  padding-bottom: max(var(--gap-m), env(safe-area-inset-bottom));
 }
 
 /* ---------- 顶栏 ---------- */
