@@ -132,6 +132,43 @@ async function sayZh(key: string, text: string) {
   if (speaking.value === key) speaking.value = null;
 }
 
+/* ---------- 招牌技能：点整卡依次朗读全部（孩子少点几下） ---------- */
+/** 整卡朗读当前技能（null=未在读） */
+const skillReading = ref<string | null>(null);
+
+/** 点整卡 → 从第一个技能依次读完；再点一下停止 */
+async function sayAllSkills() {
+  const list = detail.value?.skills ?? [];
+  if (!list.length) return;
+  sfxTap();
+  if (skillReading.value) {
+    stopSpeaking();
+    skillReading.value = null;
+    return;
+  }
+  stopSpeaking();
+  skillReading.value = list[0] ?? null;
+  for (const s of list) {
+    if (!skillReading.value) return; // 被用户停止/打断
+    skillReading.value = s;
+    await speakZh(s, 1, { bypassMute: true });
+  }
+  skillReading.value = null;
+}
+
+function onSkillsCardClick() {
+  void sayAllSkills();
+}
+
+/** chip 点击：打断整卡朗读，只读当前技能 */
+function onChipClick(s: string) {
+  if (skillReading.value) {
+    stopSpeaking();
+    skillReading.value = null;
+  }
+  sayZh(`sk-${s}`, s);
+}
+
 /** 角色名：英文读完再接中文（串联不掐断；中途被其它朗读打断则放弃后半段） */
 async function sayHero() {
   const h = hero.value;
@@ -403,19 +440,29 @@ function toggleFlip(open = !flipped.value) {
         </span>
       </section>
 
-      <!-- 招牌技能：点 chip 朗读；朗读中高亮 -->
-      <section v-if="detail" class="hd-card">
-        <h2 class="hd-h2">招牌技能</h2>
+      <!-- 招牌技能：点整卡依次朗读全部（当前技能高亮）；点单个 chip 只读它 -->
+      <section
+        v-if="detail"
+        class="hd-card skills-card"
+        :class="{ speaking: !!skillReading }"
+        @click="onSkillsCardClick"
+      >
+        <h2 class="hd-h2">
+          招牌技能
+          <span class="tap-hint">
+            <PathIcon name="volume" />{{ skillReading ? "再点一下停止" : "点这里听全部" }}
+          </span>
+        </h2>
         <div class="chips">
           <button
             v-for="s in detail.skills"
             :key="`sk-${s}`"
             class="chip"
-            :class="{ speaking: speaking === `sk-${s}` }"
-            @click="sayZh(`sk-${s}`, s)"
+            :class="{ speaking: speaking === `sk-${s}` || skillReading === s }"
+            @click.stop="onChipClick(s)"
           >
             <PathIcon name="sparkles" />{{ s }}
-            <span v-if="speaking === `sk-${s}`" class="wave mini" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span v-if="speaking === `sk-${s}` || skillReading === s" class="wave mini" aria-hidden="true"><i></i><i></i><i></i></span>
           </button>
         </div>
       </section>
@@ -933,6 +980,13 @@ function toggleFlip(open = !flipped.value) {
   flex-direction: column;
   gap: 8px;
   transition: box-shadow 0.15s;
+}
+/* 招牌技能整卡可点：点一下依次读完所有技能 */
+.skills-card {
+  cursor: pointer;
+}
+.skills-card:active {
+  transform: translateY(1px);
 }
 .hd-h2 {
   display: flex;
