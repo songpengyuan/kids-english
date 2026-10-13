@@ -146,7 +146,9 @@ function openLearn() {
 }
 /** 菜单：闯关挑战 */
 function startQuest() {
-  router.push("/game");
+  // 当前课游戏地图：只显示这一课的关卡
+  const id = route.params.id as string;
+  router.push(`/game/lesson/${id}`);
 }
 
 /** 闯关包含的玩法（去掉 song/learn） */

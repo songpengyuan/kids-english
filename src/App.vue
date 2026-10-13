@@ -63,7 +63,7 @@ onMounted(() => {
   <!-- 缓存两个首页级页面（自由 #/ + 游戏 #/game）：
        返回游戏页时 GamePath 的 onActivated 对比关卡状态触发解锁动效 -->
   <router-view v-slot="{ Component }">
-    <KeepAlive include="LearnView,GameView">
+    <KeepAlive include="LearnView,GameView,GameLessonView">
       <component :is="Component" />
     </KeepAlive>
   </router-view>

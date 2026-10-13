@@ -10,13 +10,18 @@ import AppHeader from "../../components/layout/AppHeader.vue";
 import PathIcon from "../../components/PathIcon.vue";
 import PracticeView from "./practice/PracticeView.vue";
 import { speakZh } from "../../services/speech";
+import { useProgressStore } from "../../stores/progress";
+import { lessons } from "../../data/lessons";
 
 defineOptions({ name: "LearnView" }); // KeepAlive include 需要稳定组件名
 
 const router = useRouter();
+const progress = useProgressStore();
 function goGame() {
   speakZh("游戏闯关");
-  void router.push("/game");
+  // 当前课游戏地图（只显示这一课的关卡）；多课总地图 #/game 入口暂搁置
+  const id = progress.lastLesson || lessons[0]?.id || "l4";
+  void router.push(`/game/lesson/${id}`);
 }
 </script>
 

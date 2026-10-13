@@ -83,6 +83,8 @@ export const router = createRouter({
         { path: "", name: "game", component: GameView, meta: { title: "游戏闯关" } },
         // 闯关玩法（地图点关卡 → /game/quest/:id?step=玩法）
         { path: "quest/:id/:stage?", name: "quest", component: () => import("../views/game/QuestView.vue"), meta: { title: "闯关" } },
+        // 当前课游戏地图（只显示这一课的关卡；多课总地图入口暂搁置）
+        { path: "lesson/:id", name: "game-lesson", component: () => import("../views/game/GameLessonView.vue"), meta: { title: "游戏闯关" } },
       ],
     },
 

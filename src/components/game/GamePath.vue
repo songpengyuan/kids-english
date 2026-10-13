@@ -42,11 +42,16 @@ import { marginBefore, overhangOf } from "../../utils/pathGeometry";
 const router = useRouter();
 const progress = useProgressStore();
 
-const levels = buildLevels();
-const states = computed(() => computeStates(levels, progress.progress));
+/** 单课模式：只显示指定课的关卡（多课地图传空则全课） */
+const props = defineProps<{ lessonId?: string }>();
+const allLevels = buildLevels();
+const levels = computed(() =>
+  props.lessonId ? allLevels.filter((lv) => lv.lessonId === props.lessonId) : allLevels
+);
+const states = computed(() => computeStates(levels.value, progress.progress));
 
 /** 当前关卡（第一个 active）——键盘 Enter 直达 */
-const activeLevel = computed(() => currentLevel(levels, states.value));
+const activeLevel = computed(() => currentLevel(levels.value, states.value));
 /** 当前关 id（自动定位用） */
 const activeId = computed(() => activeLevel.value?.id ?? "");
 
@@ -66,16 +71,16 @@ interface GeoItem extends PathGeoItem {
 
 /** 整图几何（课名横幅 + 关卡节点纵向坐标），横向 x 由 snakeNodes 按宽度铺列 */
 const geo = computed<GeoItem[]>(() => {
-  const geom = buildPathGeometry(lessons, levels);
+  const geom = buildPathGeometry(props.lessonId ? lessons.filter((l) => l.id === props.lessonId) : lessons, levels.value);
   return geom.map((g) => {
     if (g.type === "unit") {
       return {
         ...g,
         done: lessonDoneCount(g.lessonId, progress.progress),
-        total: levels.filter((lv) => lv.lessonId === g.lessonId && lv.actKey !== "chest").length,
+        total: levels.value.filter((lv) => lv.lessonId === g.lessonId && lv.actKey !== "chest").length,
       } as GeoItem;
     }
-    const lv = levels.find((l) => l.lessonId === g.lessonId && l.actKey === g.activityKey);
+    const lv = levels.value.find((l) => l.lessonId === g.lessonId && l.actKey === g.activityKey);
     return {
       ...g,
       level: lv,
@@ -95,16 +100,16 @@ let ro: ResizeObserver | null = null;
  *  文档流布局下垂直间距由 CSS margin 控制（ROW_H），y 仅作曲线采样参数 */
 const layout = computed<GeoItem[]>(() => {
   const width = w.value;
-  const lessonIds = [...new Set(levels.map((lv) => lv.lessonId))];
+  const lessonIds = [...new Set(levels.value.map((lv) => lv.lessonId))];
   const nodesByLesson = new Map<string, ReturnType<typeof snakeNodes>>();
   for (const lid of lessonIds) {
-    const lvs = levels.filter((lv) => lv.lessonId === lid);
+    const lvs = levels.value.filter((lv) => lv.lessonId === lid);
     nodesByLesson.set(lid, snakeNodes(width, lvs.length, 0, 100));
   }
   const withX = geo.value.map((it) => {
     if (it.type === "unit") return { ...it, x: width / 2, y: 0 };
     const arr = nodesByLesson.get(it.level!.lessonId)!;
-    const idx = levels.filter((lv) => lv.lessonId === it.level!.lessonId).findIndex((lv) => lv.id === it.level!.id);
+    const idx = levels.value.filter((lv) => lv.lessonId === it.level!.lessonId).findIndex((lv) => lv.id === it.level!.id);
     return { ...it, x: arr[idx].x, y: 0 };
   });
   // 纵向节奏：按"上一项是横幅还是关卡 + 两关各自有没有环"动态给 margin，
@@ -204,7 +209,7 @@ onBeforeUnmount(() => {
 onActivated(() => {
   requestAnimationFrame(updateStuck);
   const flash = new Set<string>();
-  levels.forEach((lv) => {
+  levels.value.forEach((lv) => {
     if (snapshotBefore[lv.id] === "locked" && states.value[lv.id] !== "locked") flash.add(lv.id);
   });
   if (flash.size) flashIds.value = flash;
@@ -302,7 +307,7 @@ function ringOf(lv: GeoItem): number {
 
 /** 点击课程横幅 → 朗读课程标题并进该课第一关 */
 function enterUnit(it: GeoItem) {
-  const first = levels.find((lv) => lv.lessonId === it.lessonId);
+  const first = levels.value.find((lv) => lv.lessonId === it.lessonId);
   if (!first) return;
   const st = states.value[first.id];
   if (st === "locked") {

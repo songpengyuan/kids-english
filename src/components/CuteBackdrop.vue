@@ -27,7 +27,7 @@ import { Star } from "@lucide/vue";
 
 const route = useRoute();
 /** 游戏闯关地图页：只 #/game（独立路由）切天空场景；quest 关卡内保持水彩，答题更专注。 */
-const isSky = computed(() => route.path === "/game");
+const isSky = computed(() => route.path.startsWith("/game"));
 
 const stars = [
   { top: "12%", left: "6%", s: 1, d: 0 },
