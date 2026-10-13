@@ -211,6 +211,10 @@ html.hide-nav .bottom-nav {
 
 /* 居中排布的页面（结算、空状态等） */
 .view-center {
+  /* 缺 display:flex 时 align/justify 无效（LessonResult 曾因此整块偏左上），补上后
+     所有结算/空态页内容真正水平+垂直居中 */
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }

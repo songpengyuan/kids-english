@@ -63,10 +63,16 @@ function enterLyrics(idx: number) {
   if (currentIdx.value === idx) { nowPlaying.value = true; return; }
   playSong(idx);
 }
-/** 点右侧按钮：只切播放/暂停，不进歌词页 */
+/** 点右侧按钮：只切播放/暂停，不进歌词页（列表内直接播放，标题旁声波 eq 显示当前曲） */
 function toggleRow(i: number, e: Event) {
   e.stopPropagation();
-  if (currentIdx.value !== i) { playSong(i); return; }
+  if (currentIdx.value !== i) {
+    // 与 playSong 的区别：不设 nowPlaying，留在列表页；点整行 enterLyrics 才进歌词页
+    const a = ensureAudio(); const s = songList.value[i]; if (!s) return;
+    currentIdx.value = i; a.src = s.src; void a.play(); playing.value = true;
+    startListenTimer();
+    return;
+  }
   togglePlay();
 }
 function togglePlay() {
@@ -127,6 +133,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 <template>
   <div class="listen view">
     <!-- ===== 歌词全屏页 ===== -->
+    <Transition name="lyrics-slide">
     <div v-if="nowPlaying && currentSong" class="lyrics-page">
       <div class="lp-header">
         <button class="lp-back" @click="nowPlaying = false"><ChevronDown class="k-ico" /></button>
@@ -158,6 +165,7 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
         <span class="lp-time">{{ formatTime(duration) }}</span>
       </SafeBottom>
     </div>
+    </Transition>
 
     <!-- ===== 列表页 ===== -->
     <template v-else>
@@ -174,7 +182,11 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
               :class="{ active: currentIdx === i }" @click="enterLyrics(i)">
               <span class="sr-emoji" :class="'tone-' + s.tone">{{ s.emoji }}</span>
               <span class="sr-info">
-                <span class="sr-title">{{ s.title }}</span>
+                <span class="sr-title-row">
+                  <span class="sr-title">{{ s.title }}</span>
+                  <!-- 正在播放：标题旁动态声波（孩子一眼看出哪首在唱） -->
+                  <span v-if="currentIdx === i && playing" class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
+                </span>
                 <span class="sr-sub">{{ s.titleZh }}</span>
               </span>
               <button v-if="currentIdx === i" class="sr-play" @click="toggleRow(i, $event)">
@@ -236,7 +248,8 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .song-row.active { box-shadow: var(--shadow-hard), inset 0 0 0 2px var(--yellow); }
 .sr-emoji { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; flex: none; }
 .sr-info { flex: 1; min-width: 0; }
-.sr-title { display: block; font-weight: 800; font-size: var(--fs-body); }
+.sr-title-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.sr-title { display: block; font-weight: 800; font-size: var(--fs-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sr-sub { display: block; font-size: var(--fs-small); color: var(--ink-faint); font-weight: 700; }
 .sr-play { color: var(--ink-faint); }
 .sr-play .k-ico { width: 22px; height: 22px; }
@@ -321,4 +334,17 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
 .video-close { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); color: #fff; display: flex; align-items: center; justify-content: center; }
 .video-player { max-width: 95vw; max-height: 70vh; border-radius: 8px; }
 .video-caption { color: #ccc; margin: 0; font-weight: 700; }
+
+.lyrics-slide-enter-active,
+.lyrics-slide-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.lyrics-slide-enter-from {
+  opacity: 0;
+  transform: translateY(20%);
+}
+.lyrics-slide-leave-to {
+  opacity: 0;
+  transform: translateY(20%);
+}
 </style>
