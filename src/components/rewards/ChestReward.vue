@@ -196,11 +196,18 @@ function flyOne(from, to, apex) {
 const opened = computed(() => taps.value >= 3);
 
 /**
+ * 本次掉落总数（开箱后固定）。收取过程固定渲染全部贝壳、已飞走的原地隐藏——
+ * 剩余贝壳保持原位不动，不会因数量减少重新排列。
+ */
+const totalShells = computed(() => reward.value?.shells ?? 0);
+
+/**
  * 贝壳山形排布：顶层 1 枚，逐层 +1（金字塔），直到放完。
+ * 基于固定总数计算，收取过程中布局不变。
  * 6 枚 → 3-2-1；5 枚 → 2-2-1；4 枚 → 2-1-1；3 枚 → 2-1。
  */
 const shellRows = computed(() => {
-  const n = panelShown.value;
+  const n = totalShells.value;
   const rows = [];
   let rem = n;
   let level = 1;
@@ -304,6 +311,7 @@ const cap = computed(() => {
               :key="'sh' + (rowOffset(ri) + ci + 1)"
               :ref="(el) => { if (el) shellEls[rowOffset(ri) + ci] = el; }"
               class="shell-item anim-pop"
+              :class="{ gone: rowOffset(ri) + ci + 1 > panelShown }"
               :style="{ '--i': rowOffset(ri) + ci }"
             ><ShellIcon /></span>
           </div>
@@ -754,6 +762,7 @@ const cap = computed(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: opacity 0.25s ease;
   width: clamp(30px, 6.5vh, 42px);
   height: clamp(30px, 6.5vh, 42px);
   border-radius: 50%;
@@ -762,6 +771,17 @@ const cap = computed(() => {
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18), inset 0 2px 0 rgba(255, 255, 255, 0.45);
   font-size: clamp(18px, 3.4vh, 24px);
   animation-delay: calc(var(--i, 0) * 0.05s);
+}
+/* 已飞走的贝壳：原地缩小消失，不改变 flex 布局 → 剩余贝壳保持原位 */
+.shell-item.gone {
+  opacity: 0;
+  animation: shell-gone 0.3s ease forwards;
+}
+@keyframes shell-gone {
+  to {
+    opacity: 0;
+    transform: scale(0.15);
+  }
 }
 .shell-item:last-child { animation-delay: 0.15s; }
 
