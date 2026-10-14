@@ -23,8 +23,8 @@ export interface QuestAct {
 }
 
 export interface UseQuestOptions {
-  /** 当前课时（路由 :id 解析） */
-  lesson: ComputedRef<{ id: string } | null>;
+  /** 当前课时（路由 :id 解析；Ref 兼容 computed 与可变引用） */
+  lesson: Ref<{ id: string } | null>;
   /** 玩法序列（依赖 lesson.phrases 动态生成） */
   activities: ComputedRef<QuestAct[]>;
   route: RouteLocationNormalizedLoadedGeneric;

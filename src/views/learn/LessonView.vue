@@ -18,7 +18,8 @@ import HeaderBar from "../../components/layout/HeaderBar.vue";
 import LessonResult from "../../components/lesson/LessonResult.vue";
 import LessonMenu from "../../components/lesson/LessonMenu.vue";
 import LessonProgressHeader from "../../components/lesson/LessonProgressHeader.vue";
-import { getLesson } from "../../data/lessons";
+import { getLesson as getLocalLesson, type Lesson } from "../../data/lessons";
+import { useContentStore } from "../../stores/content";
 import { speak, speakZh } from "../../services/speech";
 import { useProgressStore } from "../../stores/progress";
 import { useStreakStore } from "../../stores/streak";
@@ -32,12 +33,27 @@ import { BookOpen, Headphones, Link2, MessageCircle, Mic, Music, Star } from "@l
 const progress = useProgressStore();
 const streak = useStreakStore();
 const cards = useCardsStore();
+const content = useContentStore();
 const route = useRoute();
 const router = useRouter();
 const { isNarrow } = useViewport();
 
-/** 当前课时（由路由 :id 解析，hash 深链 #/learn/l4 可直达） */
-const lesson = computed(() => getLesson(typeof route.params.id === "string" ? route.params.id : "") || null);
+const lessonId = computed(() => (typeof route.params.id === "string" ? route.params.id : ""));
+/**
+ * 当前课时（#/learn/l4 深链可直达）。
+ * 数据源：本地静态同步渲染（秒开兜底），挂载后由后端内容 API 异步覆盖
+ * —— 加课不发版后，远端详情（歌词时间轴/词表）为准，离线/后端挂时本地兜底。
+ */
+const lesson = ref<Lesson | null>(getLocalLesson(lessonId.value));
+watch(
+  lessonId,
+  async (id) => {
+    lesson.value = getLocalLesson(id) ?? null;
+    const l = await content.getLesson(id);
+    if (l) lesson.value = l;
+  },
+  { immediate: true },
+);
 
 /**
  * 玩法清单。

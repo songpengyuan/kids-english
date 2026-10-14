@@ -60,12 +60,23 @@ export const useContentStore = defineStore("content", () => {
   /** 数据源标记：remote=已从后端拉取成功；local=本地静态 */
   const source = ref<"local" | "remote">("local");
 
-  /** 当前可用的课程全量（对齐 src/data/lessons 的语义，未远端化时即本地数据） */
-  const lessons = computed<Lesson[]>(() =>
-    Object.keys(detailCache.value).length
-      ? Object.values(detailCache.value).sort((a, b) => a.id.localeCompare(b.id))
-      : localLessons,
-  );
+  /**
+   * 当前可用的课程全量（远端详情为准、本地补缺口）。
+   *
+   * 合并策略：远端预取有部分失败（网络抖动）时，用本地静态数据补齐缺失课程，
+   * 绝不因部分失败而丢课；后端新增课程（本地没有）也会自动并入。
+   * 排序：按课程数字序（l4,l5,…,l10），与本地 lessons 语义一致。
+   */
+  const lessons = computed<Lesson[]>(() => {
+    if (!Object.keys(detailCache.value).length) return localLessons;
+    const merged = new Map(localLessons.map((l) => [l.id, l]));
+    for (const [id, lesson] of Object.entries(detailCache.value)) {
+      merged.set(id, lesson);
+    }
+    return [...merged.values()].sort(
+      (a, b) => Number(a.id.replace(/\D/g, "")) - Number(b.id.replace(/\D/g, "")),
+    );
+  });
 
   /** 课程概要列表（若远端列表已加载用远端，否则由本地推导） */
   const lessonList = computed<LessonSummary[]>(() => {
