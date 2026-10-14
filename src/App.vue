@@ -5,11 +5,17 @@ import CuteBackdrop from "./components/CuteBackdrop.vue";
 import BottomNav from "./components/layout/BottomNav.vue";
 import { getLesson } from "./data/lessons";
 import { useStreakStore } from "./stores/streak";
+import { useAuthStore } from "./stores/auth";
+import { useContentStore } from "./stores/content";
+import { useProgressStore } from "./stores/progress";
 import { initPWA, applyUpdateIfIdle } from "./services/pwa";
 
 const router = useRouter();
 const route = useRoute();
 const streak = useStreakStore();
+const auth = useAuthStore();
+const content = useContentStore();
+const progress = useProgressStore();
 
 /** 底部导航只在三个主 tab 显示：学习（/learn）/ 磨耳朵（/listen）/ 我的（/me）；
  *  游戏入口在学习页右上角按钮（#/game 无底部导航，沉浸闯关，顶栏返回可回学习）；
@@ -44,6 +50,13 @@ onMounted(() => {
   }
   // 「在首页 = 可安全刷新」：有新版本时首页静默刷新，玩法中不打断
   initPWA(() => location.hash === "" || location.hash === "#/");
+  // 云模式初始化：恢复登录 → 拉取课程内容 + 同步学习进度（失败静默，保持本地模式）
+  auth.restore().then((ok) => {
+    if (ok) {
+      content.loadFromServer();
+      progress.syncFromServer();
+    }
+  });
   // 回首页时若有挂起的版本更新，正好是安全刷新时机
   router.afterEach((to) => {
     if (to.name === "home") applyUpdateIfIdle();

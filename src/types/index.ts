@@ -23,3 +23,22 @@ export type SpeakGrade = "perfect" | "good" | "retry";
 
 /** 卡片稀有度 */
 export type CardRarity = "N" | "R" | "SR" | "SSR";
+
+/** 孩子档案（后端返回） */
+export interface Child {
+  id: number;
+  name: string;
+  avatar?: string | null;
+}
+
+/** 课程概要（内容 API 列表项） */
+export interface LessonSummary {
+  id: string;
+  order_no: number;
+  title: string;
+  title_zh: string;
+  emoji: string;
+  tone: string;
+  type: string;
+  date?: string | null;
+}
