@@ -1,8 +1,10 @@
 """SQLite 连接与建表（P0：单机起步，可平滑迁 PostgreSQL）。"""
+import os
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent.parent / "kids.db"
+# 测试可用环境变量 KIDS_DB_PATH 指向临时库，避免污染真实数据
+DB_PATH = Path(os.environ.get("KIDS_DB_PATH", Path(__file__).resolve().parent.parent / "kids.db"))
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS families (

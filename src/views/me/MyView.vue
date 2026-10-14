@@ -13,6 +13,7 @@ import { useRewardsStore } from "../../stores/rewards";
 import { FORM_TOTAL } from "../../data/heroes";
 import { useStreakStore } from "../../stores/streak";
 import { useCardsStore } from "../../stores/cards";
+import { useAuthStore } from "../../stores/auth";
 import { useRouter } from "vue-router";
 import { lessons } from "../../data/lessons";
 import { dueWords } from "../../utils/reviewQueue";
@@ -24,7 +25,12 @@ const progress = useProgressStore();
 const rewards = useRewardsStore();
 const streak = useStreakStore();
 const cards = useCardsStore();
+const auth = useAuthStore();
 const router = useRouter();
+
+/** 身份卡：云模式登录后显示当前孩子（未登录保持"丞丞的学习小屋"） */
+const kidName = computed(() => auth.currentChild?.name ?? "丞丞");
+const kidAvatar = computed(() => auth.currentChild?.avatar ?? "🦊");
 
 const allWords = lessons.flatMap((l) => l.words);
 const weakCount = computed(() => dueWords(progress.getReviewQueue(), allWords).length);
@@ -37,7 +43,7 @@ const goalPct = computed(() => {
 });
 
 function sayProfile() {
-  speakZh(`丞丞的学习小屋，${progress.totalStars} 颗星，${streak.streak} 天连击`);
+  speakZh(`${kidName.value}的学习小屋，${progress.totalStars} 颗星，${streak.streak} 天连击`);
 }
 function sayEntry(name: string, path: string) {
   speakZh(name);
@@ -51,9 +57,9 @@ function sayEntry(name: string, path: string) {
     <div class="me-body view-body">
       <!-- 身份卡 -->
       <section class="profile card anim-pop" @click="sayProfile">
-        <span class="pf-emoji">🦊</span>
+        <span class="pf-emoji">{{ kidAvatar }}</span>
         <div class="pf-info">
-          <p class="pf-name">丞丞的学习小屋</p>
+          <p class="pf-name">{{ kidName }}的学习小屋</p>
           <p class="pf-sub">
             <span class="pf-star"><Star class="k-ico star-fill" />{{ progress.totalStars }} 颗星</span>
             <span class="pf-flame"><Flame class="k-ico flame" />{{ streak.streak }} 天连击</span>
