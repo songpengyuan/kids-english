@@ -8,7 +8,6 @@
  */
 import { ref, computed, onBeforeUnmount } from "vue";
 import { lessons, asset } from "../../data/lessons";
-import AppHeader from "../../components/layout/AppHeader.vue";
 import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
 import { Play, Pause, SkipBack, SkipForward, Music, Video, X, ChevronDown, Repeat, Repeat1, Shuffle, ListMusic } from "@lucide/vue";
@@ -96,10 +95,9 @@ onBeforeUnmount(() => {
       </SafeBottom>
     </div>
 
-    <!-- ===== 列表页 ===== -->
+    <!-- ===== 列表页（无顶部 header） ===== -->
     <template v-else>
-      <AppHeader title="磨耳朵" icon="game" hide-badges />
-      <div class="today-chip">今天磨了 <b>{{ Math.floor(progStore.todayStats.durationSec / 60) }}</b> 分钟</div>
+      <div class="today-chip">今天磨了 <b>{{ Math.floor((progStore.todayStats.listenSec ?? 0) / 60) }}</b> 分钟</div>
       <div class="sub-tabs">
         <button :class="{ on: subTab === 'songs' }" @click="switchTab('songs')"><Music class="k-ico" /> 歌曲</button>
         <button :class="{ on: subTab === 'videos' }" @click="switchTab('videos')"><Video class="k-ico" /> 视频</button>
@@ -165,7 +163,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .body { display: flex; flex-direction: column; width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(80px + var(--pad-y)); }
-.today-chip { text-align: center; font-weight: 800; font-size: var(--fs-small); color: var(--ink-soft); margin-top: 6px; }
+.today-chip { text-align: center; font-weight: 800; font-size: var(--fs-small); color: var(--ink-soft); margin-top: max(8px, env(safe-area-inset-top)); }
 .today-chip b { color: var(--green); font-size: var(--fs-body); }
 .sub-tabs { display: flex; gap: var(--gap-s); padding: 0 var(--pad-x); margin-top: var(--gap-s); }
 .sub-tabs button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 0; border-radius: var(--radius-pill); background: var(--card-bg); box-shadow: var(--shadow-hard); font-weight: 800; font-size: var(--fs-small); color: var(--ink-faint); transition: all 0.2s; }

@@ -17,7 +17,6 @@ import { useAuthStore } from "../../stores/auth";
 import { useRoute, useRouter } from "vue-router";
 import { lessons } from "../../data/lessons";
 import { dueWords } from "../../utils/reviewQueue";
-import AppHeader from "../../components/layout/AppHeader.vue";
 import ParentGate from "../../components/gate/ParentGate.vue";
 import { ChevronRight, Flame, Star, Shield } from "@lucide/vue";
 import { speakZh } from "../../services/speech";
@@ -103,22 +102,10 @@ function sayEntry(name: string, path: string) {
 
 <template>
   <div class="me view">
-    <AppHeader title="我的" icon="me" hide-badges />
+    <!-- 无顶部 header（汽水音乐式） -->
     <div class="me-body view-body">
-      <!-- 身份卡 -->
-      <section class="profile card anim-pop" @click="sayProfile">
-        <span class="pf-emoji">{{ kidAvatar }}</span>
-        <div class="pf-info">
-          <p class="pf-name">{{ kidName }}的学习小屋</p>
-          <p class="pf-sub">
-            <span class="pf-star"><Star class="k-ico star-fill" />{{ progress.totalStars }} 颗星</span>
-            <span class="pf-flame"><Flame class="k-ico flame" />{{ streak.streak }} 天连击</span>
-          </p>
-        </div>
-      </section>
-
-      <!-- 今日学习 / 磨耳朵时长（汽水音乐式；点击卡片进学习日历） -->
-      <section class="today-card anim-fade-up" @click="sayToday">
+      <!-- 今日学习 / 磨耳朵时长（汽水音乐式：总时长大数字置顶，点击进学习日历） -->
+      <section class="today-card anim-pop" @click="sayToday">
         <div class="tc-head">
           <h3>今日学习</h3>
           <ChevronRight class="k-ico tc-arrow" />
@@ -135,6 +122,18 @@ function sayEntry(name: string, path: string) {
           </div>
         </div>
         <p class="tc-foot">点我看看每天的学习情况</p>
+      </section>
+
+      <!-- 身份卡 -->
+      <section class="profile card anim-fade-up" @click="sayProfile">
+        <span class="pf-emoji">{{ kidAvatar }}</span>
+        <div class="pf-info">
+          <p class="pf-name">{{ kidName }}的学习小屋</p>
+          <p class="pf-sub">
+            <span class="pf-star"><Star class="k-ico star-fill" />{{ progress.totalStars }} 颗星</span>
+            <span class="pf-flame"><Flame class="k-ico flame" />{{ streak.streak }} 天连击</span>
+          </p>
+        </div>
       </section>
 
       <!-- 今日目标 -->
@@ -188,7 +187,7 @@ function sayEntry(name: string, path: string) {
 </template>
 
 <style scoped>
-.me-body { display: flex; flex-direction: column; gap: var(--gap-s); width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: var(--pad-y); }
+.me-body { display: flex; flex-direction: column; gap: var(--gap-s); width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: max(var(--gap-m), env(safe-area-inset-top)) 0 var(--pad-y); }
 .card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: var(--gap-m); }
 .profile { display: flex; align-items: center; gap: var(--gap-m); border-left: 8px solid var(--yellow); }
 .pf-emoji { font-size: var(--fs-emoji-xl); }
