@@ -57,22 +57,41 @@ function go(path: string) { router.push(path); }
 /** 登录/注册提交；成功后拉课程内容 + 同步进度（进入云模式） */
 async function submit() {
   error.value = "";
-  if (!form.familyName.trim() || form.passcode.length < 4) {
-    error.value = "家庭名/邮箱和口令都要填，口令至少 4 位";
+  const phone = form.familyName.trim();
+  if (!/^1\d{10}$/.test(phone)) {
+    error.value = "请输入 11 位手机号";
+    return;
+  }
+  if (form.passcode.length < 4) {
+    error.value = "口令至少 4 位";
     return;
   }
   busy.value = true;
   try {
-    const ok = mode.value === "login"
-      ? await auth.login(form.familyName.trim(), form.passcode)
-      : await auth.register(form.familyName.trim(), form.passcode, form.email.trim() || undefined);
+    // 手机号即账号：先尝试登录，不存在则自动注册
+    let ok = await auth.login(phone, form.passcode);
+    if (!ok && mode.value === "register") {
+      ok = await auth.register(phone, form.passcode);
+    }
     if (ok) {
       content.loadFromServer();
       progress.syncFromServer();
       rewards.syncFromServer();
     }
   } catch (e) {
-    error.value = (e as Error).message;
+    // 登录失败且未注册 → 自动注册
+    if (mode.value === "register") {
+      try {
+        await auth.register(phone, form.passcode);
+        content.loadFromServer();
+        progress.syncFromServer();
+        rewards.syncFromServer();
+      } catch (e2) {
+        error.value = (e2 as Error).message;
+      }
+    } else {
+      error.value = (e as Error).message;
+    }
   } finally {
     busy.value = false;
   }
@@ -179,22 +198,20 @@ function sayFamily() {
           <span v-if="loggedIn" class="f-badge">云同步中</span>
         </h3>
 
-        <!-- 未登录：注册/登录表单 -->
+        <!-- 未登录：手机号 + 口令登录 -->
         <template v-if="!loggedIn">
           <div class="f-mode">
             <button :class="{ on: mode === 'login' }" @click="mode = 'login'; error = ''">登录</button>
-            <button :class="{ on: mode === 'register' }" @click="mode = 'register'; error = ''">注册新家庭</button>
+            <button :class="{ on: mode === 'register' }" @click="mode = 'register'; error = ''">注册</button>
           </div>
-          <input v-model="form.familyName" class="f-input"
-            :placeholder="mode === 'login' ? '家庭名或邮箱' : '家庭名（如：橙子家）'" maxlength="40" />
-          <input v-if="mode === 'register'" v-model="form.email" class="f-input" type="email"
-            placeholder="家长邮箱（选填，全局唯一）" maxlength="50" />
-          <input v-model="form.passcode" class="f-input" type="password" placeholder="口令（至少 4 位）" maxlength="20"
+          <input v-model="form.familyName" class="f-input" type="tel"
+            placeholder="手机号（11 位）" maxlength="11" inputmode="numeric" />
+          <input v-model="form.passcode" class="f-input" type="password" placeholder="口令" maxlength="20"
             @keyup.enter="submit" />
           <button class="f-submit" :disabled="busy" @click="submit">
-            {{ busy ? "请稍候…" : mode === "login" ? "登录并同步进度" : "创建家庭" }}
+            {{ busy ? "请稍候…" : "登录并同步进度" }}
           </button>
-          <p class="f-tip">注册后孩子的进度会云端同步，换设备不丢；不注册也能用（仅存本机）。</p>
+          <p class="f-tip">手机号即账号；第一次输入自动注册。不登录也能用（仅存本机）。</p>
         </template>
 
         <!-- 已登录：家庭信息 + 孩子管理 -->
