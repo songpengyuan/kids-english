@@ -517,42 +517,31 @@ function onTimeUpdate() {
 
 /* 歌词：固定高度窗口，始终可滚（KTV 式跟随 + 手动滑动均可） */
 .lyrics {
-  position: relative; /* 让行 offsetTop 相对本容器，自动滚动按此计算 */
-  flex: 0 1 auto; /* 覆盖 view-body 的 flex:1：不撑满剩余高度 */
-  max-height: min(44vh, 420px); /* 限高 → 内容必然溢出，滚动区才有存在的意义 */
-  min-height: 96px;
-  margin-block: auto; /* 剩余空间里垂直居中，上下留白对称 */
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
-  padding: var(--gap-m) var(--gap-l);
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain; /* 滑到头不带动整页回弹 */
+  overscroll-behavior: contain;
   text-align: center;
+  padding: var(--gap-m) var(--pad-x);
+  mask-image: linear-gradient(180deg, transparent, #000 15%, #000 85%, transparent);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 15%, #000 85%, transparent);
 }
-.lyrics::-webkit-scrollbar {
-  display: none; /* 儿童界面不显示滚动条，滚动提示交给可见的溢出行 */
-}
-.lyrics {
-  scrollbar-width: none;
-}
+.lyrics::-webkit-scrollbar { display: none; }
+.lyrics { scrollbar-width: none; }
 .line {
   margin: 0;
-  font-size: clamp(15px, min(2.8vh, 2.2vw), 22px);
-  font-weight: 700;
-  color: var(--ink-soft);
-  line-height: 1.5;
+  font-size: clamp(18px, min(3.5vh, 3vw), 26px);
+  font-weight: 800;
+  color: var(--ink-faint);
+  line-height: 1.8;
   transition: color 0.2s, transform 0.2s;
 }
-.line.blank {
-  height: var(--gap-m);
-}
-/* 当前演唱行：品牌绿 + 微放大 */
+.line.blank { height: var(--gap-m); }
 .line.on {
-  color: var(--green-dark);
-  transform: scale(1.06);
-  font-weight: 800;
+  color: var(--ink);
+  transform: scale(1.05);
 }
 
 .play-btn {
