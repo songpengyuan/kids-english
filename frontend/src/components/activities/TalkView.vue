@@ -23,7 +23,7 @@ import SafeBottom from "../layout/SafeBottom.vue";
 import LessonFooter from "./LessonFooter.vue";
 
 const props = defineProps<{ lesson: Lesson }>();
-const emit = defineEmits(["done"]);
+const emit = defineEmits(["done", "idx"]);
 
 const words = computed(() => props.lesson.words ?? []);
 const phrases = computed<Phrase[]>(() => props.lesson.phrases ?? []);
@@ -113,7 +113,8 @@ const { idx: dlgIdx, cur, status, grade, heard, mode, micBlocked, stars, recAudi
 
 /** 轮次切换 → 家长发出问句消息 + 自动朗读（孩子先听再回答） */
 let questionTimer: ReturnType<typeof setTimeout> | null = null;
-watch(dlgIdx, () => {
+watch(dlgIdx, (v) => {
+  emit("idx", v);
   if (questionPhrase.value) {
     if (questionTimer) clearTimeout(questionTimer);
     questionTimer = window.setTimeout(() => {
@@ -163,11 +164,6 @@ function finish() {
 
 <template>
   <div class="talk view">
-    <!-- 轮次条：最顶部居中 -->
-    <div class="chat-head">
-      <span class="ch-round">第 {{ dlgIdx + 1 }} / {{ words.length }} 轮</span>
-    </div>
-
     <!-- 对话流：家长消息（左） ⇄ 孩子消息（右），微信气泡样式 -->
     <div class="chat-msgs" ref="msgBox">
       <div

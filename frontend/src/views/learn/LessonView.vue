@@ -190,6 +190,8 @@ const playPct = ref(0);
 const rewardCard = ref<Card | null>(null);
 /** 本局总量（题数/页数/对数/词数）与已完成量 → 顶栏显示 x/y，孩子知道一共要做多少 */
 const playTotal = ref(0);
+/** 亲子对话当前轮次 */
+const talkIdx = ref(0);
 </script>
 
 
@@ -202,11 +204,14 @@ const playTotal = ref(0);
       @back="back"
     >
       <template #title>
-        <!-- 玩法页：不显示课程标题；段落式关卡进度条（每段 = 本课一个玩法关卡），
-             步骤型玩法（学/辨/连/读）再加单局答题进度条（多邻国式）。
-             童谣（song）用播放器自身进度、亲子对话（talk）自由探索，只显示段落进度。 -->
+        <!-- 亲子对话：中间一条进度条 -->
+        <div v-if="stage === 'talk'" class="talk-progress">
+          <div class="tp-track">
+            <div class="tp-fill" :style="{ width: ((talkIdx + 1) / (lesson.words?.length || 1)) * 100 + '%' }"></div>
+          </div>
+        </div>
         <LessonProgressHeader
-          v-if="isPlay && stage !== 'talk'"
+          v-else-if="isPlay"
           :activities="activities"
           :stage="stage"
           :play-pct="playPct"
@@ -214,14 +219,15 @@ const playTotal = ref(0);
           :current-key="stage"
           :has-stars="(k) => showStars(k) > 0"
         />
-        <template v-else-if="!isPlay"
+        <template v-else
           ><span class="hdr-title-tap" role="button" tabindex="0" aria-label="朗读课程名" @click="sayTitle" @keydown.enter.prevent="sayTitle"
             >{{ lesson.emoji }} {{ lesson.title }}</span
           ></template
         >
       </template>
       <template #right>
-        <div class="star-badge" role="img" aria-label="已获得星星"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</div>
+        <span v-if="stage === 'talk'" class="talk-round">第 {{ talkIdx + 1 }}/{{ lesson.words?.length || 0 }} 轮</span>
+        <div v-else class="star-badge" role="img" aria-label="已获得星星"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</div>
       </template>
     </HeaderBar>
 
@@ -264,7 +270,7 @@ const playTotal = ref(0);
       @total="playTotal = $event"
     />
     <SongView v-else-if="stage === 'song'" :lesson="lesson" @song-done="afterSong" @back="toMenu" />
-    <TalkView v-else-if="stage === 'talk'" :lesson="lesson" @done="afterGame" />
+    <TalkView v-else-if="stage === 'talk'" :lesson="lesson" @idx="talkIdx = $event" @done="afterGame" />
 
 
     <!-- 结算（闯关/自由统一组件） -->
@@ -297,5 +303,29 @@ const playTotal = ref(0);
 }
 .hdr-title-tap:active {
   background: rgba(127, 127, 127, 0.14);
+}
+/* 亲子对话顶部进度条 */
+.talk-progress {
+  flex: 1;
+  max-width: 200px;
+  margin: 0 12px;
+}
+.tp-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.tp-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #1cb0f6, #1590c9);
+  transition: width 0.3s;
+}
+.talk-round {
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--ink-soft);
+  white-space: nowrap;
 }
 </style>
