@@ -156,7 +156,9 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   it("当前课游戏地图（只服务本课关卡）", async () => {
     const w = await mountPage(GameLessonView, "/game/lesson/l10");
-    expect(w.text()).toContain("游戏闯关");
+    // 标题显示本课课程名 + 关卡列表（学单词/听音选图…）
+    expect(w.text()).toContain("Walking In The Jungle");
+    expect(w.text()).toContain("学单词");
     expect(errors).toEqual([]);
   });
 

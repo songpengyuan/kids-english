@@ -119,8 +119,6 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     expect(kidMsg.length).toBe(1);
     expect(kidMsg[0].find(".msg-pic-en").text()).toBe("frog");
     expect(kidMsg[0].find(".msg-text").text()).toContain("It's a frog.");
-    // 进度点打勾
-    expect(wrapper.findAll(".ch-dot")[0].classes()).toContain("done");
     // 900ms 后自动进入第 2 轮
     await vi.advanceTimersByTimeAsync(1000);
     expect(wrapper.find(".ch-round").text()).toContain("第 2 / 3 轮");

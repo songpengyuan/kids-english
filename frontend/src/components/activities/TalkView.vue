@@ -183,7 +183,7 @@ function finish() {
               <span class="msg-text">{{ m.text }}</span>
               <div v-if="m.word" class="msg-pic parent-pic">
                 <span class="msg-pic-emoji">{{ m.word.emoji }}</span>
-                <span class="msg-pic-en">{{ m.word.en }}</span>
+                <span class="msg-pic-zh">{{ m.word.zh }}</span>
               </div>
             </template>
             <template v-else>
