@@ -166,7 +166,8 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     const w = await mountPage(MyView, "/me");
     expect(w.text()).toContain("今日目标");
     expect(w.text()).toContain("家长中心");
-    expect(w.text()).toContain("奥特曼卡片");
+    expect(w.text()).toContain("今日学习");
+    expect(w.text()).toContain("磨耳朵");
     expect(errors).toEqual([]);
   });
 

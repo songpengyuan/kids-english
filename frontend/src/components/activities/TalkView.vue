@@ -29,22 +29,25 @@ const words = computed(() => props.lesson.words ?? []);
 const phrases = computed<Phrase[]>(() => props.lesson.phrases ?? []);
 /** 家长问句（每轮固定，取第一句：What's that?） */
 const questionPhrase = computed<Phrase | null>(() => phrases.value[0] ?? null);
-/** 孩子答句文本：从 phrases 里找不含问号、且包含该单词的那句答句；找不到就按课程句型兜底 */
+/** 孩子答句：优先在 phrases 里精确匹配（有现成答句就用），没有就按问句类型套模板 */
 function answerText(w: Word): string {
   const en = w.en.toLowerCase().trim();
-  // 精确匹配：短语里包含这个单词（按词边界）
+  // 1) 先在 phrases 里找包含这个单词的答句（按词边界）
   const p = phrases.value.find((x) => {
     if (x.en.includes("?")) return false;
-    const lower = x.en.toLowerCase();
-    // 用单词边界匹配，避免 "play" 匹配到 "piano" 之类
-    return new RegExp(`\\b${en}\\b`).test(lower);
+    return new RegExp(`\\b${en}\\b`).test(x.en.toLowerCase());
   });
   if (p) return p.en;
-  // 兜底：根据问句猜句型
+  // 2) 按问句类型套模板
   const q = phrases.value[0]?.en ?? "";
   if (q.includes("What can you play")) return `I can play the ${w.en}.`;
-  if (q.includes("What's")) return `It's a ${w.en}.`;
-  return `${w.en}.`;
+  if (q.includes("What color")) return `It's ${w.en}.`;
+  if (q.includes("What letter")) return `It's letter ${w.en.toUpperCase()}.`;
+  if (q.includes("How many")) return `${w.en}.`;
+  if (q.includes("Where is your")) return `This is my ${w.en}.`;
+  if (q.includes("What do you see")) return `I see the ${w.en}.`;
+  if (q.includes("What's that")) return `It's a ${w.en}.`;
+  return w.en;
 }
 
 /* ---------- 微信聊天式消息流 ---------- */
