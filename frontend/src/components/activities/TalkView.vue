@@ -151,19 +151,11 @@ function finish() {
 
 <template>
   <div class="talk view">
-    <!-- 聊天头部：家长 / 宝宝头像 + 轮次进度（顶部已有圆点，这里只显示轮次文字居中） -->
+    <!-- 轮次条：精简为一行，不占大块卡片 -->
     <div class="chat-head">
-      <div class="ch-side">
-        <span class="ch-av mom">👩</span>
-        <span class="ch-name">妈妈</span>
-      </div>
-      <div class="ch-mid">
-        <span class="ch-round">第 {{ dlgIdx + 1 }} / {{ words.length }} 轮</span>
-      </div>
-      <div class="ch-side">
-        <span class="ch-name">宝宝</span>
-        <span class="ch-av kid">🧒</span>
-      </div>
+      <span class="ch-av mom">👩</span>
+      <span class="ch-round">第 {{ dlgIdx + 1 }} / {{ words.length }} 轮</span>
+      <span class="ch-av kid">🧒</span>
     </div>
 
     <!-- 对话流：家长消息（左） ⇄ 孩子消息（右），微信气泡样式 -->
@@ -212,10 +204,10 @@ function finish() {
       </div>
     </div>
 
-    <!-- 底部输入条 / 判定区（微信聊天输入框位） -->
-    <div class="chat-input">
-      <!-- 孩子要说的话：显示在输入框上方（点喇叭听发音） -->
-      <button class="ci-say" aria-label="宝宝要说的话，点一下听发音" @click="playWord(cur)">
+    <!-- 底部输入条 / 判定区（微信聊天输入框位）——全部完成时隐藏，只留"我都会啦"按钮 -->
+    <div v-if="!allPassed" class="chat-input">
+      <!-- 孩子要说的话：显示在输入框上方（点喇叭听发音）——麦克风不可用时不重复显示（答案已在聊天里） -->
+      <button v-if="!micBlocked" class="ci-say" aria-label="宝宝要说的话，点一下听发音" @click="playWord(cur)">
         <span class="ci-say-label">宝宝说</span>
         <span class="ci-say-text">{{ answerText(cur) }}</span>
         <Volume2 class="ci-say-vol k-ico" />
@@ -291,55 +283,32 @@ function finish() {
   align-items: center;
 }
 
-/* ===== 聊天头部 ===== */
+/* ===== 轮次条（精简一行） ===== */
 .chat-head {
   flex: none;
   width: 100%;
   max-width: 560px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 12px;
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-hard);
-}
-.ch-side {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
+  justify-content: center;
+  gap: 10px;
+  padding: 4px 0;
 }
 .ch-av {
   flex: none;
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  box-shadow: inset 0 0 0 2px var(--line);
+  font-size: 16px;
 }
 .ch-av.mom { background: #fff3d6; }
 .ch-av.kid { background: #d9f6ff; }
-.ch-name {
-  font-weight: 900;
-  font-size: var(--fs-small);
-  color: var(--ink-soft);
-  white-space: nowrap;
-}
-.ch-mid {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-}
 .ch-round {
   font-weight: 900;
-  font-size: var(--fs-body);
+  font-size: var(--fs-small);
   color: var(--green-dark);
   white-space: nowrap;
 }
