@@ -163,11 +163,9 @@ function finish() {
 
 <template>
   <div class="talk view">
-    <!-- 轮次条：精简为一行，不占大块卡片 -->
+    <!-- 轮次条：最顶部居中 -->
     <div class="chat-head">
-      <span class="ch-av mom">👩</span>
       <span class="ch-round">第 {{ dlgIdx + 1 }} / {{ words.length }} 轮</span>
-      <span class="ch-av kid">🧒</span>
     </div>
 
     <!-- 对话流：家长消息（左） ⇄ 孩子消息（右），微信气泡样式 -->
