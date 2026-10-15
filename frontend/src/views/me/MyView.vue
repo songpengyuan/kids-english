@@ -189,6 +189,8 @@ function sayEntry(name: string, path: string) {
 
 <style scoped>
 .me-body { display: flex; flex-direction: column; gap: var(--gap-s); width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: max(var(--gap-m), env(safe-area-inset-top)) 0 var(--pad-y); }
+/* 卡片不被 flex 压缩（内容超出时整体滚动，避免时长数字被裁掉） */
+.me-body > * { flex-shrink: 0; }
 .card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: var(--gap-m); }
 .profile { display: flex; align-items: center; gap: var(--gap-m); border-left: 8px solid var(--yellow); }
 .pf-emoji { font-size: var(--fs-emoji-xl); }
@@ -197,37 +199,37 @@ function sayEntry(name: string, path: string) {
 .pf-star .k-ico { color: var(--gold); }
 .pf-flame { display: inline-flex; align-items: center; gap: 4px; }
 .pf-flame .k-ico { color: #ff6b3d; }
-/* 今日学习时长卡片（汽水音乐式大数字） */
+/* 今日学习时长卡片（汽水音乐式大数字，水蓝品牌色） */
 .today-card {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #2f7d5c 0%, #4c9a6b 55%, #6ab98a 100%);
+  background: linear-gradient(135deg, #1e7fd0 0%, #38a3e8 55%, #6cc3f5 100%);
   color: #fff;
-  border-radius: 22px;
-  box-shadow: 0 10px 24px rgba(44, 110, 73, 0.35);
-  padding: 16px 20px 14px;
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(23, 110, 180, 0.32);
+  padding: 14px 18px 12px;
   cursor: pointer;
 }
 .tc-deco {
   position: absolute;
   right: -6px;
   top: -14px;
-  font-size: 72px;
+  font-size: 64px;
   opacity: 0.18;
   transform: rotate(15deg);
   pointer-events: none;
 }
 .tc-head { display: flex; justify-content: space-between; align-items: center; }
-.tc-head h3 { margin: 0; font-size: 13px; font-weight: 800; opacity: 0.95; letter-spacing: 3px; }
-.tc-cal { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; opacity: 0.9; }
-.tc-cal .k-ico { width: 13px; height: 13px; }
-.tc-nums { display: flex; align-items: center; gap: var(--gap-m); margin-top: 8px; }
-.tc-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.tc-big { font-size: 34px; font-weight: 900; letter-spacing: 1px; line-height: 1.1; }
-.tc-label { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; opacity: 0.92; }
-.tc-label .k-ico { width: 13px; height: 13px; }
-.tc-divider { width: 1px; height: 44px; background: rgba(255, 255, 255, 0.35); }
-.tc-foot { margin: 8px 0 0; text-align: center; font-size: 12px; font-weight: 700; opacity: 0.85; }
+.tc-head h3 { margin: 0; font-size: 12px; font-weight: 800; opacity: 0.95; letter-spacing: 3px; }
+.tc-cal { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; opacity: 0.9; }
+.tc-cal .k-ico { width: 12px; height: 12px; }
+.tc-nums { display: flex; align-items: center; gap: var(--gap-m); margin-top: 4px; }
+.tc-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tc-big { font-size: 32px; font-weight: 900; letter-spacing: 1px; line-height: 1.05; }
+.tc-label { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; opacity: 0.92; }
+.tc-label .k-ico { width: 12px; height: 12px; }
+.tc-divider { width: 1px; height: 40px; background: rgba(255, 255, 255, 0.35); }
+.tc-foot { margin: 6px 0 0; text-align: center; font-size: 11px; font-weight: 700; opacity: 0.85; }
 .goal { display: flex; flex-direction: column; gap: var(--gap-s); }
 .goal.done { box-shadow: var(--shadow-hard), inset 0 0 0 2px var(--green); }
 .goal-head { display: flex; justify-content: space-between; align-items: baseline; }
