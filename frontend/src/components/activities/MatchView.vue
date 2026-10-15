@@ -550,7 +550,7 @@ onBeforeUnmount(() => {
   z-index: var(--z-lines);
 }
 .done-line {
-  stroke: var(--green);
+  stroke: var(--ok);
   stroke-width: 6;
   stroke-linecap: round;
   /* pathLength=100 把任意长度的线归一化，避免长线出现 dasharray 断口 */
@@ -751,7 +751,7 @@ onBeforeUnmount(() => {
 .banner span {
   font-size: clamp(18px, min(4vh, 3.2vw), 34px);
   font-weight: 800;
-  color: var(--green-dark);
+  color: var(--ok-dark);
   background: var(--card-bg);
   padding: clamp(10px, 1.8vh, 14px) clamp(18px, 3vw, 28px);
   border-radius: var(--radius);

@@ -252,7 +252,7 @@ function dayNum(date: string | null): string {
 .cg-num { font-size: 13px; font-weight: 800; line-height: 1.1; }
 .cg-tags { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
 .cg-tag { font-size: 10px; font-weight: 800; line-height: 1; padding: 2px 3px; border-radius: 4px; color: #fff; }
-.cg-tag.learn { background: var(--green, #4c9a6b); }
+.cg-tag.learn { background: var(--green, #00a3ff); }
 .cg-tag.listen { background: var(--accent, #8a5a2b); }
 
 /* 选中详情 */

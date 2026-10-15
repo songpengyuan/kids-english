@@ -67,9 +67,20 @@ export const useGateStore = defineStore("gate", () => {
   /** 解锁时间戳（null=未解锁；0=永久） */
   const unlockedAt = ref<number | null>(loadUnlockedAt());
 
+  /** 局域网/本地开发自动放行：HTTP 下 crypto.subtle 不可用，sha256 校验跑不了 */
+  function isLocalOrigin(): boolean {
+    if (typeof location === "undefined") return false;
+    const h = location.hostname;
+    return (
+      h === "localhost" || h === "127.0.0.1" ||
+      /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[01])\./.test(h)
+    );
+  }
+
   const isUnlocked = computed(
     () =>
       !enabled.value ||
+      isLocalOrigin() ||
       (unlockedAt.value !== null &&
         (unlockedAt.value === 0 || Date.now() - unlockedAt.value < GATE_TTL_MS)),
   );
@@ -85,6 +96,11 @@ export const useGateStore = defineStore("gate", () => {
   /** 验证固定口令：正确 → 解锁并持久化 */
   async function verify(pass: string): Promise<boolean> {
     if (!enabled.value) return true;
+    if (isLocalOrigin()) {
+      unlockedAt.value = Date.now();
+      persist();
+      return true;
+    }
     if ((await hashPass(pass)) !== FIXED_PASS_HASH) return false;
     unlockedAt.value = Date.now();
     persist();

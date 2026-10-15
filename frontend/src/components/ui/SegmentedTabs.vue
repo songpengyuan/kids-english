@@ -42,7 +42,7 @@ const activeIdx = computed(() =>
   bottom: 4px;
   left: 4px;
   width: calc((100% - 8px) / var(--n));
-  background: linear-gradient(135deg, #1cb0f6, #1590c9);
+  background: var(--brand-grad, linear-gradient(135deg, #1e7fd0, #38a3e8, #6cc3f5));
   border-radius: 999px;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 8px rgba(28, 176, 246, 0.35);

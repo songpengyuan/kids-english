@@ -340,8 +340,8 @@ function sayFamily() {
   margin-left: 8px;
 }
 .gate-mini.on {
-  border-color: var(--green, #3a8f5f);
-  color: var(--green, #3a8f5f);
+  border-color: var(--green, #00a3ff);
+  color: var(--green, #00a3ff);
 }
 .gate-msg { font-size: 12px; color: var(--green); margin: 6px 0 0; }
 .gate-desc { font-size: 12px; color: var(--ink-faint); margin: 8px 0 0; line-height: 1.5; }

@@ -708,7 +708,7 @@ const cap = computed(() => {
   gap: var(--gap-s);
   background: var(--card-bg);
   /* 与开箱阶段的黄色宝箱氛围区分：收取页用绿色"收获"边框 */
-  border: 3px solid var(--green, #2eaf5a);
+  border: 3px solid var(--ok, #58cc02);
   border-radius: var(--radius);
   padding: var(--gap-m);
   min-width: min(78vw, 300px);
@@ -832,7 +832,7 @@ const cap = computed(() => {
   font-size: var(--fs-body);
 }
 .collected {
-  color: var(--green-dark);
+  color: var(--ok-dark);
   font-weight: 800;
   animation: pop-in 0.3s ease-out;
 }
@@ -864,7 +864,7 @@ const cap = computed(() => {
 }
 .shells .r-ico { color: var(--on-tone); }
 .take .r-ico { color: var(--on-tone); }
-.collected .gift-ico { color: var(--green-dark); }
+.collected .gift-ico { color: var(--ok-dark); }
 
 /* 减少动态偏好：关掉装饰性大动画，保留开盖过渡与信息本身 */
 @media (prefers-reduced-motion: reduce) {
