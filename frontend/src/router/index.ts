@@ -39,13 +39,19 @@ import LearnView from "../views/learn/LearnView.vue";
 import GameView from "../views/game/GameView.vue";
 import LessonView from "../views/learn/LessonView.vue";
 import { useAuthStore } from "../stores/auth";
+import { useGateStore } from "../stores/gate";
 import { parentGateDecision } from "./parentGuard";
+import { appGateDecision } from "./gateGuard";
+import GateView from "../views/GateView.vue";
 
 export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     // #/ 旧链接 → 学习主页
     { path: "/", redirect: "/learn" },
+
+    // 应用入口口令页（备案域名门禁）：未解锁时所有路由被守卫拦到这里
+    { path: "/gate", name: "gate", component: GateView, meta: { title: "家长口令" } },
 
     // ---------- 学习域 ----------
     {
@@ -169,5 +175,8 @@ router.beforeEach((to) => {
   // 家长门禁：requiresParent 路由未解锁 → 回 /me?parentGate=1（MyView 弹算术题）
   const gate = parentGateDecision(to, useAuthStore().parentUnlocked);
   if (gate !== true) return gate;
+  // 应用入口门禁：备案域名下进入学习应用需家长口令（未解锁一律回 #/gate 口令页）
+  const appGate = appGateDecision(to, useGateStore().isUnlocked);
+  if (appGate !== true) return appGate;
   return true;
 });

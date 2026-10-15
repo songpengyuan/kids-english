@@ -14,15 +14,42 @@ import { useContentStore } from "../../stores/content";
 import AppHeader from "../../components/layout/AppHeader.vue";
 import SoundToggle from "../../components/layout/SoundToggle.vue";
 import ThemeToggle from "../../components/layout/ThemeToggle.vue";
-import { ChevronRight, BarChart3, Clock, Activity, Volume2, Moon, Shield, Plus, LogOut, Pencil } from "@lucide/vue";
+import { ChevronRight, BarChart3, Clock, Activity, Volume2, Moon, Shield, Plus, LogOut, Pencil, KeyRound } from "@lucide/vue";
 import { speakZh } from "../../services/speech";
 import type { Child } from "../../types";
+import { useGateStore } from "../../stores/gate";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();
 const auth = useAuthStore();
 const content = useContentStore();
 const router = useRouter();
+const gate = useGateStore();
+
+/** 应用入口口令管理（家长中心设置区） */
+const gateEditing = ref(false);
+const gatePass = ref("");
+const gatePass2 = ref("");
+const gateMsg = ref("");
+
+async function saveGatePass() {
+  gateMsg.value = "";
+  const p = gatePass.value.trim();
+  if (p.length < 4) {
+    gateMsg.value = "口令至少 4 位";
+    return;
+  }
+  if (p !== gatePass2.value.trim()) {
+    gateMsg.value = "两次输入不一致";
+    return;
+  }
+  await gate.setPasscode(p);
+  gateEditing.value = false;
+  gatePass.value = "";
+  gatePass2.value = "";
+  gateMsg.value = "已更新应用口令";
+  speakZh("应用口令已更新");
+}
 
 const mode = ref<"login" | "register">("login");
 const form = reactive({ familyName: "", passcode: "", email: "" });
@@ -283,6 +310,28 @@ function sayFamily() {
           <span class="set-label"><Moon class="k-ico" /> 暗黑模式</span>
           <ThemeToggle />
         </div>
+        <!-- 应用入口口令（备案域名门禁） -->
+        <div class="set-row">
+          <span class="set-label"><KeyRound class="k-ico" /> 应用口令</span>
+          <template v-if="!gateEditing">
+            <button class="gate-mini" @click="gateEditing = true">
+              {{ gate.isSetup ? "修改" : "设置" }}
+            </button>
+            <button v-if="gate.isSetup" class="gate-mini ghost" @click="gate.reset(); gateMsg = '已关闭应用口令'">
+              关闭
+            </button>
+          </template>
+        </div>
+        <div v-if="gateEditing" class="gate-form">
+          <input v-model="gatePass" class="f-input" type="password" placeholder="新口令（至少 4 位）" maxlength="20" />
+          <input v-model="gatePass2" class="f-input" type="password" placeholder="再输一遍确认" maxlength="20" @keyup.enter="saveGatePass" />
+          <div class="f-profile-actions">
+            <button class="f-add-btn" @click="saveGatePass">保存</button>
+            <button class="f-ghost-btn" @click="gateEditing = false; gateMsg = ''">取消</button>
+          </div>
+        </div>
+        <p v-if="gateMsg" class="gate-msg">{{ gateMsg }}</p>
+        <p class="gate-desc">进入应用前需输入家长口令（备案合规门禁）。常用家长手机号，孩子每次重新输入顺便记下家长电话；解锁 7 天内免输。</p>
       </section>
 
       <p class="foot">登录家庭账号后，学习记录云端同步（多设备不丢）</p>
@@ -307,6 +356,21 @@ function sayFamily() {
 .set-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
 .set-label { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
 .set-label .k-ico { width: 18px; height: 18px; }
+.gate-mini {
+  border: 1px solid var(--line, #e5e2db);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--card-bg);
+  color: var(--ink);
+  cursor: pointer;
+  margin-left: 8px;
+}
+.gate-mini.ghost { color: var(--ink-faint); }
+.gate-form { margin-top: 8px; }
+.gate-msg { font-size: 12px; color: var(--green); margin: 6px 0 0; }
+.gate-desc { font-size: 12px; color: var(--ink-faint); margin: 8px 0 0; line-height: 1.5; }
 .foot { text-align: center; color: var(--ink-faint); font-size: 12px; margin: 0; }
 
 /* 家庭账号卡 */
