@@ -18,7 +18,7 @@ import { useRoute, useRouter } from "vue-router";
 import { lessons } from "../../data/lessons";
 import { dueWords } from "../../utils/reviewQueue";
 import ParentGate from "../../components/gate/ParentGate.vue";
-import { ChevronRight, Flame, Star, Shield } from "@lucide/vue";
+import { ChevronRight, Flame, Star, Shield, CalendarDays, BookOpen, Headphones } from "@lucide/vue";
 import { speakZh } from "../../services/speech";
 
 const progress = useProgressStore();
@@ -104,24 +104,25 @@ function sayEntry(name: string, path: string) {
   <div class="me view">
     <!-- 无顶部 header（汽水音乐式） -->
     <div class="me-body view-body">
-      <!-- 今日学习 / 磨耳朵时长（汽水音乐式：总时长大数字置顶，点击进学习日历） -->
+      <!-- 今日学习 / 磨耳朵时长（汽水音乐式大数字；点击进学习日历） -->
       <section class="today-card anim-pop" @click="sayToday">
+        <span class="tc-deco" aria-hidden="true">🎵</span>
         <div class="tc-head">
           <h3>今日学习</h3>
-          <ChevronRight class="k-ico tc-arrow" />
+          <span class="tc-cal"><CalendarDays class="k-ico" /> 日历</span>
         </div>
         <div class="tc-nums">
           <div class="tc-item">
             <span class="tc-big">{{ fmtMin(today.durationSec) }}</span>
-            <span class="tc-label">学习</span>
+            <span class="tc-label"><BookOpen class="k-ico" /> 学习</span>
           </div>
           <div class="tc-divider"></div>
           <div class="tc-item">
             <span class="tc-big">{{ fmtMin(today.listenSec ?? 0) }}</span>
-            <span class="tc-label">磨耳朵</span>
+            <span class="tc-label"><Headphones class="k-ico" /> 磨耳朵</span>
           </div>
         </div>
-        <p class="tc-foot">点我看看每天的学习情况</p>
+        <p class="tc-foot">点我看看每天的学习情况 →</p>
       </section>
 
       <!-- 身份卡 -->
@@ -196,24 +197,37 @@ function sayEntry(name: string, path: string) {
 .pf-star .k-ico { color: var(--gold); }
 .pf-flame { display: inline-flex; align-items: center; gap: 4px; }
 .pf-flame .k-ico { color: #ff6b3d; }
-/* 今日学习时长卡片（汽水音乐式） */
+/* 今日学习时长卡片（汽水音乐式大数字） */
 .today-card {
-  background: linear-gradient(135deg, var(--green-dark, #2c6e49), var(--green, #4c9a6b));
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2f7d5c 0%, #4c9a6b 55%, #6ab98a 100%);
   color: #fff;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-hard);
-  padding: var(--gap-m);
+  border-radius: 22px;
+  box-shadow: 0 10px 24px rgba(44, 110, 73, 0.35);
+  padding: 16px 20px 14px;
   cursor: pointer;
 }
+.tc-deco {
+  position: absolute;
+  right: -6px;
+  top: -14px;
+  font-size: 72px;
+  opacity: 0.18;
+  transform: rotate(15deg);
+  pointer-events: none;
+}
 .tc-head { display: flex; justify-content: space-between; align-items: center; }
-.tc-head h3 { margin: 0; font-size: var(--fs-small); font-weight: 800; opacity: 0.9; letter-spacing: 1px; }
-.tc-arrow { width: 16px; height: 16px; opacity: 0.9; }
-.tc-nums { display: flex; align-items: center; gap: var(--gap-m); margin-top: var(--gap-s); }
-.tc-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.tc-big { font-size: 26px; font-weight: 900; letter-spacing: 1px; }
-.tc-label { font-size: 12px; font-weight: 700; opacity: 0.85; }
-.tc-divider { width: 1px; height: 34px; background: rgba(255, 255, 255, 0.35); }
-.tc-foot { margin: var(--gap-s) 0 0; text-align: center; font-size: 12px; font-weight: 700; opacity: 0.8; }
+.tc-head h3 { margin: 0; font-size: 13px; font-weight: 800; opacity: 0.95; letter-spacing: 3px; }
+.tc-cal { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; opacity: 0.9; }
+.tc-cal .k-ico { width: 13px; height: 13px; }
+.tc-nums { display: flex; align-items: center; gap: var(--gap-m); margin-top: 8px; }
+.tc-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tc-big { font-size: 34px; font-weight: 900; letter-spacing: 1px; line-height: 1.1; }
+.tc-label { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; opacity: 0.92; }
+.tc-label .k-ico { width: 13px; height: 13px; }
+.tc-divider { width: 1px; height: 44px; background: rgba(255, 255, 255, 0.35); }
+.tc-foot { margin: 8px 0 0; text-align: center; font-size: 12px; font-weight: 700; opacity: 0.85; }
 .goal { display: flex; flex-direction: column; gap: var(--gap-s); }
 .goal.done { box-shadow: var(--shadow-hard), inset 0 0 0 2px var(--green); }
 .goal-head { display: flex; justify-content: space-between; align-items: baseline; }
@@ -224,12 +238,12 @@ function sayEntry(name: string, path: string) {
 .goal-line { margin: 0; font-weight: 700; font-size: var(--fs-small); color: var(--ink-soft); }
 .goal-line b { color: var(--ink); }
 .kid-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-s); }
-.kid-card { border-radius: var(--radius); padding: var(--gap-m); display: flex; flex-direction: column; align-items: center; gap: 6px; box-shadow: var(--shadow-hard); transition: transform 0.08s; }
+.kid-card { border-radius: 18px; padding: var(--gap-m); display: flex; flex-direction: column; align-items: center; gap: 6px; box-shadow: var(--shadow-hard); transition: transform 0.08s; }
 .kid-card:active { transform: scale(0.96); }
 .kid-card.treasure { background: linear-gradient(180deg, #fef3c7, #fde68a); }
 .kid-card.cards { background: linear-gradient(180deg, #dbeafe, #bfdbfe); }
 .kid-card.model3d { background: linear-gradient(180deg, #e9d5ff, #ddd6fe); }
-.kc-emoji { font-size: 48px; }
+.kc-emoji { font-size: 54px; line-height: 1.1; }
 .kc-name { font-weight: 900; font-size: var(--fs-body); }
 .kc-desc { font-weight: 800; font-size: var(--fs-small); color: var(--ink-soft); }
 .entry { display: flex; align-items: center; gap: var(--gap-m); background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: var(--gap-s) var(--gap-m); text-align: left; }
