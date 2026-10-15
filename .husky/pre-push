@@ -1,5 +1,9 @@
 #!/bin/bash
 echo "🔍 Pre-push checks..."
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
+command -v pnpm >/dev/null || { echo "pnpm not found in PATH"; exit 1; }
+cd frontend
 pnpm type-check || exit 1
 npx vitest run --reporter=dot 2>&1 | tail -3
 GH_REPO=songpengyuan/kids-english pnpm build:ci || exit 1

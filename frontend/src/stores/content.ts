@@ -14,7 +14,7 @@ import type { Lesson } from "../data/lessons";
 import type { LessonSummary } from "../types";
 import type { components } from "../types/api";
 
-/** 后端课程契约（openapi-typescript 自 server/openapi.json 生成，勿手改） */
+/** 后端课程契约（openapi-typescript 自 backend/openapi.json 生成，勿手改） */
 type LessonOut = components["schemas"]["LessonOut"];
 type LessonSummaryOut = components["schemas"]["LessonSummaryOut"];
 

@@ -80,7 +80,7 @@ export default defineConfig(({ mode }) => {
     base:
       process.env.BASE_PATH ||
       (mode === 'production' && process.env.GH_REPO ? `/${process.env.GH_REPO}/` : '/'),
-    // 本地开发联调：/api 代理到本地后端（server/app，uvicorn 127.0.0.1:8000）
+    // 本地开发联调：/api 代理到本地后端（backend/app，uvicorn 127.0.0.1:8000）
     server: {
       proxy: {
         '/api': {
