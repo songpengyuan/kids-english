@@ -39,7 +39,10 @@ pnpm build:ci    # 部署构建：GitHub Pages 项目子路径（强制 GH_REPO�
 
 ```
 kids-english/
-├── index.html
+├── app/
+│   └── index.html           # 学习应用 SPA 入口（访问 /app/，构建产物 dist/app/index.html）
+├── public/
+│   └── index.html           # ★ 备案首页（zelab.cn 根路径，纯静态「闲思杂记」个人站，不进构建，见 §9）
 ├── src/
 │   ├── main.js                 # 入口：主题 → Pinia → 路由 → 挂载；注册触感/错误上报/页面标题
 │   ├── App.vue                 # 顶层外壳：首页 KeepAlive 缓存（返回不丢模式/页码）
@@ -467,7 +470,7 @@ node scripts/verify-pwa.mjs
 
 脚本自己负责构建（自定义域名用 `build:root`、项目子路径带 `GH_REPO`）→ 起 `vite preview`（4173 端口）→ CDP 验证 → 杀进程。
 覆盖：manifest 合法、SW 接管、壳缓存就位、媒体进缓存、**真·断网**（直接杀 preview 服务）后
-首页可渲染 / 音频可读 / Range 请求返回 206、改 `dist/index.html` 立即生效（network-first）、
+首页可渲染 / 音频可读 / Range 请求返回 206、改 `dist/app/index.html` 立即生效（network-first）、
 改 `dist/sw.js` 构建号后 SW 自动升级、玩法中不被强制刷新且回首页静默刷新。
 
 ---
@@ -517,6 +520,14 @@ dev 的 `/sw.js` 由插件中间件提供，不缓存任何 dev 模块。
 
 > base 优先级：`BASE_PATH`（显式，任意部署路径）> `GH_REPO`（子路径）> `/`（默认根路径）。
 > sw.js 已用 `self.registration.scope` 自适应任意部署路径，无需改 PWA 逻辑。
+
+**备案首页与应用的路径分工（zelab.cn）**：
+
+- 根路径 `/` → `public/index.html` 原样输出为 `dist/index.html`：**备案首页**（「闲思杂记」个人站，纯静态，无 JS 依赖）。
+  管局审核通过后，把该文件 footer 里占位的「ICP备案审核中」替换为实际备案号（保留 beian.miit.gov.cn 跳转）。
+- `/app/` → 学习应用 SPA（入口 `app/index.html`，构建产物 `dist/app/index.html`，hash 路由 `#/learn` 等照常）。
+- vite.config 的 `build.rollupOptions.input` 只声明 `app` 入口，备案首页不进应用构建，二者互不覆盖。
+- dev 模式：`/` 与 `/index.html` 由 dev 中间件直接返回 `public/index.html`；学习应用访问 `/app/`。
 
 `GH_REPO` 环境变量决定 `vite.config.js` 里的 `base`，即部署子路径。
 **本地构建如果不带这个变量，产物资源路径会指向根目录**，部署后必挂 —— 本地想复现线上就带上它。
