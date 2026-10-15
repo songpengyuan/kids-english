@@ -33,6 +33,7 @@ const filteredLessons = computed(() => {
   return list;
 });
 const router = useRouter();
+const emit = defineEmits<{ "go-game": [] }>();
 
 function enter(l: Lesson) {
   speak(l.title, { ttsOnly: true });
@@ -84,6 +85,16 @@ const lastLessonObj = computed(() => {
           </span>
         </button>
       </div>
+
+      <!-- 闯关挑战入口（最底部跨两列） -->
+      <button class="game-entry" @click="$emit('go-game')">
+        <span class="ge-emoji">🎮</span>
+        <div class="ge-body">
+          <span class="ge-title">闯关挑战</span>
+          <span class="ge-sub">打完单词，进游戏赢英雄卡</span>
+        </div>
+        <span class="ge-arrow">›</span>
+      </button>
     </div>
   </div>
 </template>
@@ -236,4 +247,26 @@ const lastLessonObj = computed(() => {
   .card-emoji { font-size: 110px; }
   .card-title { font-size: 19px; }
 }
+
+/* 闯关挑战入口 */
+.game-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+  text-align: left;
+}
+.game-entry:active { transform: scale(0.98); }
+.ge-emoji { font-size: 32px; }
+.ge-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.ge-title { font-size: 17px; font-weight: 900; }
+.ge-sub { font-size: 12px; font-weight: 700; opacity: 0.85; }
+.ge-arrow { font-size: 24px; font-weight: 900; opacity: 0.8; }
+
 </style>

@@ -160,7 +160,7 @@ function onWord() {
   width: clamp(20px, 3.4vh, 26px);
   height: clamp(20px, 3.4vh, 26px);
   border-radius: 50%;
-  background: var(--green, #2eaf5a);
+  background: var(--ok, #58cc02);
   color: #fff;
   font-size: clamp(12px, 2vh, 15px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);

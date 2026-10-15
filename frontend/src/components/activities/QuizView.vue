@@ -251,7 +251,7 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
   background: rgba(28, 176, 246, 0.08);
 }
 .opt.right {
-  border-color: var(--green);
+  border-color: var(--ok);
   background: var(--state-ok-bg);
 }
 .opt.wrong {
