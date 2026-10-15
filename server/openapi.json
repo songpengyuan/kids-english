@@ -1,0 +1,1207 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kids-english api",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Register",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Me",
+        "operationId": "me_api_v1_auth_me_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/children": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Create Child",
+        "operationId": "create_child_api_v1_auth_children_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChildIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildCreatedOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/content/lessons": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "List Lessons",
+        "description": "课程列表（概要，不带歌词/单词全文；详情走 /lessons/{id}）。",
+        "operationId": "list_lessons_api_v1_content_lessons_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/content/lessons/{lesson_id}": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Get Lesson",
+        "operationId": "get_lesson_api_v1_content_lessons__lesson_id__get",
+        "parameters": [
+          {
+            "name": "lesson_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Lesson Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/progress/child/{child_id}": {
+      "get": {
+        "tags": [
+          "progress"
+        ],
+        "summary": "Get Progress",
+        "operationId": "get_progress_api_v1_progress_child__child_id__get",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "progress"
+        ],
+        "summary": "Put Progress",
+        "operationId": "put_progress_api_v1_progress_child__child_id__put",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressPutOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluation": {
+      "post": {
+        "tags": [
+          "evaluation"
+        ],
+        "summary": "Api Evaluate",
+        "description": "孩子跟读评测：16k/16bit/单声道 wav（或 raw pcm）。",
+        "operationId": "api_evaluate_api_v1_evaluation_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_api_evaluate_api_v1_evaluation_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ping": {
+      "get": {
+        "summary": "Ping",
+        "operationId": "ping_api_ping_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PongOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evaluate": {
+      "post": {
+        "summary": "Legacy Evaluate",
+        "operationId": "legacy_evaluate_api_evaluate_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_legacy_evaluate_api_evaluate_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_api_evaluate_api_v1_evaluation_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "text"
+        ],
+        "title": "Body_api_evaluate_api_v1_evaluation_post"
+      },
+      "Body_legacy_evaluate_api_evaluate_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "text"
+        ],
+        "title": "Body_legacy_evaluate_api_evaluate_post"
+      },
+      "ChildCreatedOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "child": {
+            "$ref": "#/components/schemas/ChildOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "child"
+        ],
+        "title": "ChildCreatedOut"
+      },
+      "ChildIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ChildIn"
+      },
+      "ChildOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ChildOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LessonDetailOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "lesson": {
+            "$ref": "#/components/schemas/LessonOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lesson"
+        ],
+        "title": "LessonDetailOut"
+      },
+      "LessonOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "titleZh": {
+            "type": "string",
+            "title": "Titlezh"
+          },
+          "emoji": {
+            "type": "string",
+            "title": "Emoji",
+            "default": ""
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "blue",
+              "green",
+              "orange",
+              "purple",
+              "pink",
+              "teal"
+            ],
+            "title": "Tone",
+            "default": "blue"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "official",
+              "bonus"
+            ],
+            "title": "Type",
+            "default": "official"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "song": {
+            "$ref": "#/components/schemas/SongOut"
+          },
+          "words": {
+            "items": {
+              "$ref": "#/components/schemas/WordOut"
+            },
+            "type": "array",
+            "title": "Words",
+            "default": []
+          },
+          "phrases": {
+            "items": {
+              "$ref": "#/components/schemas/PhraseOut"
+            },
+            "type": "array",
+            "title": "Phrases",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "titleZh",
+          "song"
+        ],
+        "title": "LessonOut"
+      },
+      "LessonSummaryOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "order_no": {
+            "type": "integer",
+            "title": "Order No"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "title_zh": {
+            "type": "string",
+            "title": "Title Zh"
+          },
+          "emoji": {
+            "type": "string",
+            "title": "Emoji",
+            "default": ""
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "blue",
+              "green",
+              "orange",
+              "purple",
+              "pink",
+              "teal"
+            ],
+            "title": "Tone",
+            "default": "blue"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "official",
+              "bonus"
+            ],
+            "title": "Type",
+            "default": "official"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "order_no",
+          "title",
+          "title_zh"
+        ],
+        "title": "LessonSummaryOut"
+      },
+      "LessonsOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "lessons": {
+            "items": {
+              "$ref": "#/components/schemas/LessonSummaryOut"
+            },
+            "type": "array",
+            "title": "Lessons",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "LessonsOut"
+      },
+      "LoginIn": {
+        "properties": {
+          "family_name": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Family Name"
+          },
+          "passcode": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 4,
+            "title": "Passcode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "family_name",
+          "passcode"
+        ],
+        "title": "LoginIn"
+      },
+      "LoginOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "family_id": {
+            "type": "integer",
+            "title": "Family Id"
+          },
+          "family_name": {
+            "type": "string",
+            "title": "Family Name"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/ChildOut"
+            },
+            "type": "array",
+            "title": "Children",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "family_id",
+          "family_name"
+        ],
+        "title": "LoginOut"
+      },
+      "MeOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "family_id": {
+            "type": "integer",
+            "title": "Family Id"
+          },
+          "family_name": {
+            "type": "string",
+            "title": "Family Name"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/ChildOut"
+            },
+            "type": "array",
+            "title": "Children",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "family_id",
+          "family_name"
+        ],
+        "title": "MeOut"
+      },
+      "PhraseOut": {
+        "properties": {
+          "en": {
+            "type": "string",
+            "title": "En"
+          },
+          "zh": {
+            "type": "string",
+            "title": "Zh"
+          },
+          "audio": {
+            "type": "string",
+            "title": "Audio",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "en",
+          "zh"
+        ],
+        "title": "PhraseOut"
+      },
+      "PongOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg"
+          }
+        },
+        "type": "object",
+        "required": [
+          "msg"
+        ],
+        "title": "PongOut"
+      },
+      "ProgressIn": {
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "ProgressIn",
+        "description": "进度上报：{lessonId: {...}} + 可选 meta（_daily/_last/_dailyLog）。"
+      },
+      "ProgressOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data",
+            "default": {}
+          },
+          "meta": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Meta",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "title": "ProgressOut"
+      },
+      "ProgressPutOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "ProgressPutOut"
+      },
+      "RegisterIn": {
+        "properties": {
+          "family_name": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Family Name"
+          },
+          "passcode": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 4,
+            "title": "Passcode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "family_name",
+          "passcode"
+        ],
+        "title": "RegisterIn"
+      },
+      "RegisterOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "family_id": {
+            "type": "integer",
+            "title": "Family Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "family_id"
+        ],
+        "title": "RegisterOut"
+      },
+      "SongOut": {
+        "properties": {
+          "audio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio"
+          },
+          "video": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video"
+          },
+          "scene": {
+            "type": "string",
+            "title": "Scene",
+            "default": "stage"
+          },
+          "lyrics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lyrics",
+            "default": []
+          },
+          "timings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimingOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "SongOut"
+      },
+      "TimingOut": {
+        "properties": {
+          "bpm": {
+            "type": "number",
+            "title": "Bpm"
+          },
+          "beatsPerBar": {
+            "type": "integer",
+            "title": "Beatsperbar"
+          },
+          "duration": {
+            "type": "number",
+            "title": "Duration"
+          },
+          "timeline": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Timeline"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bpm",
+          "beatsPerBar",
+          "duration",
+          "timeline"
+        ],
+        "title": "TimingOut"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WordOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "en": {
+            "type": "string",
+            "title": "En"
+          },
+          "zh": {
+            "type": "string",
+            "title": "Zh"
+          },
+          "emoji": {
+            "type": "string",
+            "title": "Emoji",
+            "default": ""
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          },
+          "audio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "en",
+          "zh"
+        ],
+        "title": "WordOut"
+      }
+    }
+  }
+}

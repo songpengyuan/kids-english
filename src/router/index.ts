@@ -38,6 +38,8 @@ import { createRouter, createWebHashHistory } from "vue-router";
 import LearnView from "../views/learn/LearnView.vue";
 import GameView from "../views/game/GameView.vue";
 import LessonView from "../views/learn/LessonView.vue";
+import { useAuthStore } from "../stores/auth";
+import { parentGateDecision } from "./parentGuard";
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -111,10 +113,10 @@ export const router = createRouter({
             { path: "hero/:id", name: "hero-detail", component: () => import("../views/me/HeroDetailView.vue"), meta: { title: "英雄图鉴" } },
           ],
         },
-        { path: "report", name: "report", component: () => import("../views/me/ReportView.vue"), meta: { title: "家长报告" } },
+        { path: "report", name: "report", component: () => import("../views/me/ReportView.vue"), meta: { title: "家长报告", requiresParent: true } },
         { path: "cards", name: "cards", component: () => import("../views/me/CardsView.vue"), meta: { title: "我的卡片" } },
         { path: "model3d", name: "model3d", component: () => import("../views/me/Model3DView.vue"), meta: { title: "3D 英雄", hideNav: true } },
-        { path: "parent", name: "parent", component: () => import("../views/me/ParentView.vue"), meta: { title: "家长中心" } },
+        { path: "parent", name: "parent", component: () => import("../views/me/ParentView.vue"), meta: { title: "家长中心", requiresParent: true } },
       ],
     },
 
@@ -164,5 +166,8 @@ router.beforeEach((to) => {
   if (path !== to.path || query !== to.query) return { path, query, replace: true };
   // 真正的未知路径（不是可迁移的旧路径）：回学习主页
   if (to.name === "not-found") return { path: "/learn", replace: true };
+  // 家长门禁：requiresParent 路由未解锁 → 回 /me?parentGate=1（MyView 弹算术题）
+  const gate = parentGateDecision(to, useAuthStore().parentUnlocked);
+  if (gate !== true) return gate;
   return true;
 });

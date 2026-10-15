@@ -14,6 +14,15 @@ def _secret() -> str:
     return os.environ.get("KIDS_JWT_SECRET", "dev-secret-change-me")
 
 
+def assert_secret_configured() -> None:
+    """生产启动强制校验：JWT 签名密钥缺失/默认值/过弱 → 拒绝启动（防弱签名上线）。"""
+    secret = os.environ.get("KIDS_JWT_SECRET", "")
+    if not secret or secret == "dev-secret-change-me" or len(secret) < 32:
+        raise RuntimeError(
+            "KIDS_JWT_SECRET 未配置或过弱（需 ≥32 位随机串，如 openssl rand -hex 32）——拒绝启动"
+        )
+
+
 def hash_passcode(passcode: str, salt: str | None = None) -> tuple[str, str]:
     salt = salt or secrets.token_hex(16)
     digest = hashlib.pbkdf2_hmac("sha256", passcode.encode(), salt.encode(), _ITERATIONS)

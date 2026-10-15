@@ -15,7 +15,8 @@
  */
 import { computed, ref, watch, type ComputedRef, type Ref } from "vue";
 import type { Router, RouteLocationNormalizedLoadedGeneric } from "vue-router";
-import { lessons, type Lesson } from "../data/lessons";
+import type { Lesson } from "../data/lessons";
+import { useContentStore } from "../stores/content";
 import type { QuestAct, UseQuest } from "./useQuest";
 import { bigCelebrate, celebrate } from "../services/effects";
 import { speak, speakZh } from "../services/speech";
@@ -28,7 +29,8 @@ export type LessonStage = "menu" | "questMap" | "learn" | "quiz" | "match" | "sp
 const STAGES = ["learn", "quiz", "match", "speak", "song", "talk"];
 
 export interface UseLessonFlowOptions {
-  lesson: ComputedRef<Lesson | null>;
+  /** 当前课时（本地兜底 + 远端异步覆盖；Ref 兼容 computed 与可变引用） */
+  lesson: Ref<Lesson | null>;
   activities: ComputedRef<QuestAct[]>;
   route: RouteLocationNormalizedLoadedGeneric;
   router: Router;
@@ -230,10 +232,11 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     if (lid && !quest.questMode.value) router.replace(`/learn/${lid}`);
   }
 
-  /** 下一课（当前课是最后一课则为 null，结算页隐藏该按钮） */
+  /** 下一课（与课程列表同源：远端详情优先、本地兜底；最后一课为 null） */
   const nextLesson = computed<Lesson | null>(() => {
-    const i = lessons.findIndex((l) => l.id === lesson.value?.id);
-    return i >= 0 ? lessons[i + 1] || null : null;
+    const all = useContentStore().lessons;
+    const i = all.findIndex((l) => l.id === lesson.value?.id);
+    return i >= 0 ? all[i + 1] || null : null;
   });
 
   /** 课内闯关：从菜单进入，自动串联后面的玩法 */

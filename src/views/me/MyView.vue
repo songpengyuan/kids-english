@@ -7,16 +7,18 @@
  *   - 到期复习
  *   家长内容（报告/设置/统计）收进"家长中心"
  */
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useProgressStore } from "../../stores/progress";
 import { useRewardsStore } from "../../stores/rewards";
 import { FORM_TOTAL } from "../../data/heroes";
 import { useStreakStore } from "../../stores/streak";
 import { useCardsStore } from "../../stores/cards";
-import { useRouter } from "vue-router";
+import { useAuthStore } from "../../stores/auth";
+import { useRoute, useRouter } from "vue-router";
 import { lessons } from "../../data/lessons";
 import { dueWords } from "../../utils/reviewQueue";
 import AppHeader from "../../components/layout/AppHeader.vue";
+import ParentGate from "../../components/gate/ParentGate.vue";
 import { ChevronRight, Flame, Star, Shield } from "@lucide/vue";
 import { speakZh } from "../../services/speech";
 
@@ -24,7 +26,46 @@ const progress = useProgressStore();
 const rewards = useRewardsStore();
 const streak = useStreakStore();
 const cards = useCardsStore();
+const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
+
+/** 家长门禁弹层（双模式壳层）：家长中心需答对算术题才放行 */
+const showGate = ref(false);
+
+/**
+ * 家长中心入口（亲子模式壳）：
+ *  - 已解锁（本会话答对过）→ 直接进；
+ *  - 未解锁 → 弹算术门禁，答对后进入；
+ *  - 守卫重定向深链 ?parentGate=1（手动输入家长区 URL）→ 自动弹门禁。
+ */
+function openParent() {
+  speakZh("家长中心");
+  if (auth.parentUnlocked) {
+    router.push("/me/parent");
+    return;
+  }
+  showGate.value = true;
+}
+function onGatePass() {
+  auth.unlockParent();
+  showGate.value = false;
+  router.push("/me/parent");
+}
+function onGateClose() {
+  showGate.value = false;
+}
+onMounted(() => {
+  // 深链/守卫重定向回来：?parentGate=1 → 弹门禁，并清掉 query（避免刷新重复弹）
+  if (route.query.parentGate === "1") {
+    showGate.value = true;
+    router.replace({ query: {} });
+  }
+});
+
+/** 身份卡：云模式登录后显示当前孩子（未登录保持"丞丞的学习小屋"） */
+const kidName = computed(() => auth.currentChild?.name ?? "丞丞");
+const kidAvatar = computed(() => auth.currentChild?.avatar ?? "🦊");
 
 const allWords = lessons.flatMap((l) => l.words);
 const weakCount = computed(() => dueWords(progress.getReviewQueue(), allWords).length);
@@ -37,7 +78,7 @@ const goalPct = computed(() => {
 });
 
 function sayProfile() {
-  speakZh(`丞丞的学习小屋，${progress.totalStars} 颗星，${streak.streak} 天连击`);
+  speakZh(`${kidName.value}的学习小屋，${progress.totalStars} 颗星，${streak.streak} 天连击`);
 }
 function sayEntry(name: string, path: string) {
   speakZh(name);
@@ -51,9 +92,9 @@ function sayEntry(name: string, path: string) {
     <div class="me-body view-body">
       <!-- 身份卡 -->
       <section class="profile card anim-pop" @click="sayProfile">
-        <span class="pf-emoji">🦊</span>
+        <span class="pf-emoji">{{ kidAvatar }}</span>
         <div class="pf-info">
-          <p class="pf-name">丞丞的学习小屋</p>
+          <p class="pf-name">{{ kidName }}的学习小屋</p>
           <p class="pf-sub">
             <span class="pf-star"><Star class="k-ico star-fill" />{{ progress.totalStars }} 颗星</span>
             <span class="pf-flame"><Flame class="k-ico flame" />{{ streak.streak }} 天连击</span>
@@ -98,13 +139,16 @@ function sayEntry(name: string, path: string) {
         <ChevronRight class="k-ico en-arrow" />
       </button>
 
-      <!-- 家长中心 -->
-      <button class="parent-entry anim-fade-up" @click="sayEntry('家长中心', '/me/parent')">
+      <!-- 家长中心（双模式门禁入口） -->
+      <button class="parent-entry anim-fade-up" @click="openParent">
         <Shield class="k-ico" />
         <span>家长中心</span>
         <ChevronRight class="k-ico" />
       </button>
     </div>
+
+    <!-- 家长门禁弹层：答对算术题解锁（防孩子误入家长区） -->
+    <ParentGate v-if="showGate" @pass="onGatePass" @close="onGateClose" />
   </div>
 </template>
 

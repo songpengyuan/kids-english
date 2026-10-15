@@ -7,7 +7,8 @@
  * 滚动浏览比翻页轻松，也更贴近 App 首页"往下滑看全部课"的惯用节奏。
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { activityKeys, getLesson, lessons, type Lesson } from "../../../data/lessons";
+import { activityKeys, getLesson, type Lesson } from "../../../data/lessons";
+import { useContentStore } from "../../../stores/content";
 import { useProgressStore } from "../../../stores/progress";
 import { useRouter } from "vue-router";
 import { speak } from "../../../services/speech";
@@ -15,7 +16,10 @@ import SpeakText from "../../../components/ui/SpeakText.vue";
 import { dueWords } from "../../../utils/reviewQueue";
 import { BookOpenText, Check } from "@lucide/vue";
 
+const content = useContentStore();
 const progress = useProgressStore();
+/** 课程数据源：后端内容 API 优先（远端详情为准、本地补缺口），离线自动回退本地静态 */
+const lessons = content.lessons;
 /** 课程类型筛选：official=培训班课程，bonus=自定义加餐 */
 const typeTab = ref<"official" | "bonus">("official");
 /** 正式课显示顺序：音乐 → 水手 → 手指（培训班实际上课顺序） */

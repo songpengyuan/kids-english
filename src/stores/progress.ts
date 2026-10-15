@@ -14,7 +14,7 @@
  * 历史星星不受影响。
  */
 import { defineStore } from "pinia";
-import { computed, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import {
   isMastered,
   onCorrect,
@@ -22,6 +22,9 @@ import {
   seedFromCounts,
   type SrsState,
 } from "../utils/reviewSchedule";
+import { getToken, requestWithTimeout } from "../services/api";
+import type { components } from "../types/api";
+import { useAuthStore } from "./auth";
 
 /** 单个单词的掌握度记录 */
 export interface WordStat {
@@ -155,8 +158,105 @@ export const useProgressStore = defineStore("progress", () => {
    *  普通对象不会建立响应式依赖，进度更新后 computed 缓存永不失效 */
   const progress = reactive<ProgressMap>(load());
 
+  /* ---------- 云同步（P0：进度上云） ---------- */
+
+  /** 云同步状态：idle 未同步 / syncing 进行中 / done 已同步 / error 失败待重试 */
+  const cloudState = ref<"idle" | "syncing" | "done" | "error">("idle");
+  /** 距离上次上报的时间戳（防抖用） */
+  let lastReportAt = 0;
+  let reportTimer: ReturnType<typeof setTimeout> | null = null;
+  const REPORT_DEBOUNCE_MS = 3000;
+
+  /** 当前孩子 id（未登录/未选孩子返回 null → 纯本地模式） */
+  function activeChildId(): number | null {
+    if (!getToken()) return null;
+    return useAuthStore().currentChildId ?? null;
+  }
+
+  /**
+   * 从后端拉取当前孩子全量进度并合并：
+   * - 服务端有、本地没有的课程/元数据 → 补入（多设备首次同步）；
+   * - 本地已有 → 保留本地（活跃设备的最新状态优先）。
+   */
+  async function syncFromServer(): Promise<void> {
+    const childId = activeChildId();
+    if (childId === null || cloudState.value === "syncing") return;
+    cloudState.value = "syncing";
+    try {
+      const res = await requestWithTimeout<components["schemas"]["ProgressOut"]>(
+        `/progress/child/${childId}`,
+      );
+      if (res.ok) {
+        const data = (res.data ?? {}) as Record<string, LessonProgress>;
+        const meta = (res.meta ?? {}) as {
+          _daily: DailyStats | null;
+          _last: string | null;
+          _dailyLog: Record<string, DailySnapshot>;
+        };
+        for (const id of Object.keys(data)) {
+          if (!(id in progress)) progress[id] = data[id];
+        }
+        if (meta) {
+          if (!progress._daily) progress._daily = meta._daily ?? null;
+          if (!progress._last) progress._last = meta._last ?? null;
+          const log = meta._dailyLog ?? {};
+          progress._dailyLog = { ...log, ...progress._dailyLog };
+        }
+        cloudState.value = "done";
+      }
+    } catch {
+      cloudState.value = "error";
+    }
+  }
+
+  /** 防抖全量上报（3s 内合并多次变更；失败标记 error，下次变更自动重试） */
+  function scheduleReport(): void {
+    if (activeChildId() === null) return;
+    const now = Date.now();
+    if (now - lastReportAt < REPORT_DEBOUNCE_MS || reportTimer) return;
+    reportTimer = setTimeout(() => {
+      reportTimer = null;
+      void pushReport();
+    }, REPORT_DEBOUNCE_MS);
+  }
+
+  async function pushReport(): Promise<void> {
+    const childId = activeChildId();
+    if (childId === null) return;
+    lastReportAt = Date.now();
+    const data: Record<string, LessonProgress> = {};
+    for (const id of Object.keys(progress)) {
+      if (!isLessonKey(id)) continue;
+      data[id] = progress[id];
+    }
+    const meta = {
+      _daily: progress._daily ?? null,
+      _last: progress._last ?? null,
+      _dailyLog: progress._dailyLog ?? {},
+    };
+    try {
+      await requestWithTimeout<components["schemas"]["ProgressPutOut"]>(`/progress/child/${childId}`, {
+        method: "PUT",
+        body: { data, meta },
+      });
+      cloudState.value = "done";
+    } catch {
+      cloudState.value = "error";
+    }
+  }
+
+  /** 强制立即上报（页面隐藏/切孩子时调用，缩短数据丢失窗口） */
+  async function flushReport(): Promise<void> {
+    if (reportTimer) {
+      clearTimeout(reportTimer);
+      reportTimer = null;
+    }
+    await pushReport();
+  }
+
   function save() {
     localStorage.setItem(KEY, JSON.stringify(progress));
+    scheduleReport();
   }
 
   const totalStars = computed(() =>
@@ -431,6 +531,10 @@ export const useProgressStore = defineStore("progress", () => {
     addDailyActivity,
     setLastLesson,
     lastLesson,
-    reset
+    reset,
+    // 云同步
+    cloudState,
+    syncFromServer,
+    flushReport,
   };
 });
