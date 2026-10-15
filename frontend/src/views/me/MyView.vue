@@ -97,6 +97,12 @@ function sayEntry(name: string, path: string) {
   speakZh(name);
   router.push(path);
 }
+
+function goGame() {
+  speakZh("游戏闯关");
+  const id = progress.lastLesson || lessons[0]?.id || "l4";
+  router.push(`/game/lesson/${id}`);
+}
 </script>
 
 <template>
@@ -157,6 +163,16 @@ function sayEntry(name: string, path: string) {
         </button>
       </section>
 
+      <!-- 闯关挑战 -->
+      <button class="game-entry anim-fade-up" @click="goGame">
+        <span class="ge-emoji">🎮</span>
+        <div class="ge-body">
+          <span class="ge-title">闯关挑战</span>
+          <span class="ge-sub">打完单词，进游戏赢英雄卡</span>
+        </div>
+        <ChevronRight class="k-ico ge-arrow" />
+      </button>
+
       <!-- 今日目标 -->
       <section class="goal card anim-fade-up" :class="{ done: streak.todayDone }">
         <div class="goal-head">
@@ -197,7 +213,7 @@ function sayEntry(name: string, path: string) {
 .hero {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #1e7fd0 0%, #38a3e8 60%, #6cc3f5 100%);
+  background: var(--brand-grad, linear-gradient(135deg, #1e7fd0, #38a3e8, #6cc3f5));
   color: #fff;
   border-radius: 24px;
   box-shadow: 0 10px 26px rgba(23, 110, 180, 0.32);
@@ -246,7 +262,7 @@ function sayEntry(name: string, path: string) {
 /* ---------- 今日目标 ---------- */
 .card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: var(--gap-m); }
 .goal { display: flex; flex-direction: column; gap: var(--gap-s); }
-.goal.done { box-shadow: var(--shadow-hard), inset 0 0 0 2px var(--green); }
+.goal.done { box-shadow: var(--shadow-hard), inset 0 0 0 2px var(--ok); }
 .goal-head { display: flex; justify-content: space-between; align-items: baseline; }
 .goal-head h3 { margin: 0; }
 .goal-state { font-weight: 800; font-size: var(--fs-small); color: var(--ink-soft); }
@@ -256,6 +272,23 @@ function sayEntry(name: string, path: string) {
 .goal-line b { color: var(--ink); }
 
 /* ---------- 复习 & 家长中心 ---------- */
+.game-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+  text-align: left;
+}
+.game-entry:active { transform: scale(0.98); }
+.ge-emoji { font-size: 28px; }
+.ge-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.ge-title { font-size: 16px; font-weight: 900; }
+.ge-sub { font-size: 12px; font-weight: 700; opacity: 0.85; }
+.ge-arrow { width: 20px; height: 20px; opacity: 0.8; }
 .entry { display: flex; align-items: center; gap: var(--gap-m); background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: var(--gap-s) var(--gap-m); text-align: left; }
 .en-ico { font-size: 24px; }
 .en-cap { font-weight: 800; flex: none; }

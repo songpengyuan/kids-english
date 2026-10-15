@@ -144,7 +144,7 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   it("学习主页（自由练习）", async () => {
     const w = await mountPage(LearnView, "/learn");
-    expect(w.text()).toContain("个单词");
+    expect(w.text()).toContain("闯关挑战");
     expect(errors).toEqual([]);
   });
 

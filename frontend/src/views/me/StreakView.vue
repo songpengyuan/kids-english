@@ -283,7 +283,7 @@ function dayNum(date: string | null): string {
   color: var(--ink-soft);
 }
 .st-goal.done .st-goal-state {
-  color: var(--green-dark);
+  color: var(--ok-dark);
 }
 .st-goal-line {
   display: block;

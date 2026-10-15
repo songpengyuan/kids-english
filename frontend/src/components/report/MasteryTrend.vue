@@ -96,7 +96,7 @@ const gained = computed(() => {
   color: var(--green-dark);
 }
 .trend-sum .up {
-  color: var(--green-dark);
+  color: var(--ok-dark);
 }
 .bars {
   display: flex;

@@ -340,7 +340,7 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
   gap: 4px;
 }
 .item .v.ok {
-  color: var(--green-dark);
+  color: var(--ok-dark);
 }
 .flame {
   color: #ff6b3d;
@@ -419,7 +419,7 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
   font-size: 11px;
 }
 .chip .right {
-  color: var(--green-dark);
+  color: var(--ok-dark);
   font-size: 11px;
 }
 .chip .due {
@@ -427,7 +427,7 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
   font-size: 11px;
 }
 .kv .v.good {
-  color: var(--green-dark);
+  color: var(--ok-dark);
 }
 
 .empty-line {
@@ -437,7 +437,7 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
   font-size: 13px;
 }
 .empty-line.ok {
-  color: var(--green-dark);
+  color: var(--ok-dark);
   font-weight: 800;
 }
 .foot {

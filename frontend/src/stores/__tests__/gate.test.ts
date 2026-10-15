@@ -10,6 +10,13 @@ import { useGateStore, GATE_TTL_MS, FIXED_PASS_HASH } from "../gate";
 
 describe("useGateStore（应用入口固定口令门禁）", () => {
   beforeEach(() => {
+    // 模拟生产环境（非局域网 HTTPS）：局域网/本地 HTTP 下 store 会自动放行，
+    // 口令校验路径只在非本地 origin 上生效（53e697b 起的 isLocalOrigin 放行）。
+    Object.defineProperty(window, "location", {
+      value: { hostname: "zelab.cn", protocol: "https:", href: "https://zelab.cn/app/" },
+      configurable: true,
+      writable: true,
+    });
     localStorage.clear();
     setActivePinia(createPinia());
   });

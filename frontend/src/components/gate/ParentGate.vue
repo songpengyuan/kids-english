@@ -148,7 +148,7 @@ onMounted(() => {
   color: var(--ink-faint);
 }
 .g-ok {
-  background: var(--green);
+  background: var(--ok);
   color: #fff;
 }
 </style>

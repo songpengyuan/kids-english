@@ -23,7 +23,7 @@ function goGame() {
 
 <template>
   <div class="home view">
-    <PracticeView class="pv-slot" @go-game="goGame" />
+    <PracticeView class="pv-slot" />
   </div>
 </template>
 

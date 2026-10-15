@@ -353,7 +353,7 @@ function replay() {
   color: var(--ink);
 }
 .again.ok {
-  color: var(--green-dark);
+  color: var(--ok-dark);
   font-weight: 800;
 }
 .btn-row {

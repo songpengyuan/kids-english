@@ -104,9 +104,9 @@ const emit = defineEmits<{ button: [] }>();
 }
 .lf-pill.success {
   font-size: var(--fs-title);
-  color: var(--green-dark);
+  color: var(--ok-dark);
   background: var(--state-ok-bg);
-  border: 2px solid var(--green);
+  border: 2px solid var(--ok);
   padding: 8px 20px;
   border-radius: var(--radius-pill);
 }
