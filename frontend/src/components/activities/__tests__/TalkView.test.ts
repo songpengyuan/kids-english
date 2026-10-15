@@ -87,6 +87,9 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     expect(wrapper.find(".ch-av.mom").text()).toBe("👩");
     expect(wrapper.find(".ch-av.kid").text()).toBe("🧒");
     expect(wrapper.find(".input-bar").exists()).toBe(true);
+    // 输入框上方显示孩子要说的话（点喇叭听发音）
+    expect(wrapper.find(".ci-say-text").text()).toBe("It's a frog.");
+    expect(wrapper.find(".ci-say").attributes("aria-label")).toContain("宝宝要说的话");
     // 进页自动：家长消息出现在左侧 + 朗读问句
     await vi.advanceTimersByTimeAsync(400);
     const parentMsg = wrapper.findAll(".msg-row.parent");

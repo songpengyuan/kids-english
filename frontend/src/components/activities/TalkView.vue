@@ -17,7 +17,7 @@ import { hapticTap } from "../../services/haptics";
 import { sfxCorrect, sfxWrong, bigCelebrate } from "../../services/effects";
 import { useSpeechSession } from "../../composables/useSpeechSession";
 import type { Lesson, Word, Phrase } from "../../data/lessons";
-import { Check, Mic, Square } from "@lucide/vue";
+import { Check, Mic, Square, Volume2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import LessonFooter from "./LessonFooter.vue";
 
@@ -216,6 +216,13 @@ function finish() {
 
     <!-- 底部输入条 / 判定区（微信聊天输入框位） -->
     <div class="chat-input">
+      <!-- 孩子要说的话：显示在输入框上方（点喇叭听发音） -->
+      <button class="ci-say" aria-label="宝宝要说的话，点一下听发音" @click="playWord(cur)">
+        <span class="ci-say-label">宝宝说</span>
+        <span class="ci-say-text">{{ answerText(cur) }}</span>
+        <Volume2 class="ci-say-vol k-ico" />
+      </button>
+
       <template v-if="micBlocked && !recUrl">
         <p class="ci-hint">麦克风不可用，点大图听发音后完成这一轮吧</p>
         <BaseButton class="ci-pass" variant="green" :disabled="passedIds.has(cur.id)" @click="parentJudge(true)">
@@ -232,7 +239,7 @@ function finish() {
         >
           <Mic v-if="!listening" class="ib-ico" />
           <Square v-else class="ib-ico" />
-          <span class="ib-text">{{ listening ? "松开 结束 · 我在听…" : `🎤 按住说话：${answerText(cur)}` }}</span>
+          <span class="ib-text">{{ listening ? "松开 结束 · 我在听…" : "🎤 按住说话" }}</span>
         </button>
       </template>
 
@@ -498,6 +505,37 @@ function finish() {
   align-items: center;
   gap: 8px;
   padding: 6px 0 0;
+}
+.ci-say {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-soft);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.ci-say-label {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.ci-say-text {
+  font-weight: 900;
+  font-size: 18px;
+  color: var(--green-dark);
+  letter-spacing: 0.02em;
+}
+.ci-say-vol {
+  width: 18px;
+  height: 18px;
+  color: var(--orange);
+  flex: none;
 }
 .input-bar {
   width: 100%;
