@@ -138,16 +138,16 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     stage.value = "result";
   }
 
-  /** 返回闯关地图（游戏模式首页） */
+  /** 返回闯关地图：回到当前课的地图（#/game/lesson/:id，只服务本课） */
   function backToMap() {
-    router.push("/game");
+    router.push(`/game/lesson/${lesson.value?.id ?? ""}`);
   }
 
   /** 进入下一关（单关完成画面按钮） */
   function goNextLevel() {
     if (!quest.nextLevel.value) return;
     hapticTap();
-    router.push(`/quest/${quest.nextLevel.value.lessonId}?step=${quest.nextLevel.value.actKey}`);
+    router.push(`/game/quest/${quest.nextLevel.value.lessonId}?step=${quest.nextLevel.value.actKey}`);
   }
 
   /** 结算一次玩法会话：累计今日时长与玩法数（家长报告数据源） */
@@ -222,7 +222,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
       if (lid) router.replace(`/learn/${lid}`);
       return;
     }
-    router.push(quest.questMode.value ? "/game" : "/learn");
+    router.push(quest.questMode.value ? `/game/lesson/${lesson.value?.id ?? ""}` : "/learn");
   }
 
   function toMenu() {

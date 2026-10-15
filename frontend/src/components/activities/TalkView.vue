@@ -151,7 +151,7 @@ function finish() {
 
 <template>
   <div class="talk view">
-    <!-- 聊天头部：家长 / 宝宝头像 + 轮次进度 -->
+    <!-- 聊天头部：家长 / 宝宝头像 + 轮次进度（顶部已有圆点，这里只显示轮次文字居中） -->
     <div class="chat-head">
       <div class="ch-side">
         <span class="ch-av mom">👩</span>
@@ -159,14 +159,6 @@ function finish() {
       </div>
       <div class="ch-mid">
         <span class="ch-round">第 {{ dlgIdx + 1 }} / {{ words.length }} 轮</span>
-        <div class="ch-dots" aria-label="对话轮次进度">
-          <span
-            v-for="w in words"
-            :key="w.id"
-            class="ch-dot"
-            :class="{ done: passedIds.has(w.id), cur: w.id === cur.id }"
-          >{{ passedIds.has(w.id) ? "✓" : "" }}</span>
-        </div>
       </div>
       <div class="ch-side">
         <span class="ch-name">宝宝</span>
@@ -339,10 +331,10 @@ function finish() {
   white-space: nowrap;
 }
 .ch-mid {
+  flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
   min-width: 0;
 }
 .ch-round {
@@ -350,38 +342,6 @@ function finish() {
   font-size: var(--fs-body);
   color: var(--green-dark);
   white-space: nowrap;
-}
-.ch-dots {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  max-width: 160px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.ch-dots::-webkit-scrollbar { display: none; }
-.ch-dot {
-  flex: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--card-bg);
-  box-shadow: inset 0 0 0 2px var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 900;
-  color: #fff;
-  transition: all 0.2s;
-}
-.ch-dot.cur {
-  box-shadow: inset 0 0 0 2px var(--green);
-  transform: scale(1.15);
-}
-.ch-dot.done {
-  background: var(--green);
-  box-shadow: none;
 }
 
 /* ===== 对话流 ===== */

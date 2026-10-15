@@ -47,6 +47,7 @@ async function bootHost(url: string): Promise<Host> {
     routes: [
       { path: "/learn/:id/:stage?", name: "lesson", component: { template: "<div />" } },
       { path: "/game/quest/:id/:stage?", name: "quest", component: { template: "<div />" } },
+      { path: "/game/lesson/:id", name: "game-lesson", component: { template: "<div />" } },
       { path: "/", name: "home", component: { template: "<div />" } }
     ]
   });
@@ -232,5 +233,16 @@ describe("useLessonFlow 结算", () => {
     const p = useProgressStore();
     // 会话不足 1 秒会被 round 成 0，改验证玩法计数被累计
     expect(p.todayStats.activities).toBe(1);
+  });
+
+  it("闯关收尾跳转：返回地图 → 当前课地图，左上角返回 → 当前课地图", async () => {
+    const { flow, router } = await bootHost("/game/quest/l4?step=quiz");
+    flow.boot();
+    const push = vi.spyOn(router, "push");
+    flow.backToMap();
+    expect(push).toHaveBeenCalledWith("/game/lesson/l4");
+    push.mockClear();
+    flow.back();
+    expect(push).toHaveBeenCalledWith("/game/lesson/l4");
   });
 });
