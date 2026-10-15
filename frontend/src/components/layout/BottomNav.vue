@@ -136,8 +136,8 @@ function openPlayer() {
   transform: translateY(1px);
 }
 .bottom-nav button.on {
-  color: var(--gold);
-  background: rgba(240, 180, 41, 0.12);
+  color: var(--brand);
+  background: var(--brand-soft);
 }
 .bn-ico {
   font-size: clamp(20px, min(3.4vh, 2.8vw), 28px);
