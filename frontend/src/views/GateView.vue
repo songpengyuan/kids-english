@@ -2,13 +2,12 @@
 /**
  * 应用入口口令页（#/gate）。
  *
- * 备案域名下进入学习应用的前置门禁：
- *  - 首次：家长设置口令（输入两次一致）→ 设置即解锁进入；
- *  - 之后：输入口令 → 验证通过解锁进入；
- *  - 已解锁设备的访问会被路由守卫直接跳过本页（进 /learn）。
- * 管理（修改/关闭）在「家长中心 → 设置 → 应用口令」。
+ * 备案域名下进入学习应用的门禁：必须输入家长约定的固定口令才能进入。
+ *  - 无设置流程（口令由家长约定，访问者不能自行设置/修改）；
+ *  - 输入正确 → 解锁（本设备 7 天内免输；过期重新输入，孩子顺便记下家长电话）；
+ *  - 开/关门禁在「家长中心 → 设置 → 应用口令」。
  */
-import { ref, computed } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useGateStore } from "../stores/gate";
 
@@ -16,10 +15,8 @@ const router = useRouter();
 const gate = useGateStore();
 
 const pass = ref("");
-const confirm = ref("");
 const error = ref("");
 const busy = ref(false);
-const firstTime = computed(() => !gate.isSetup);
 
 async function submit() {
   error.value = "";
@@ -31,18 +28,10 @@ async function submit() {
   }
   busy.value = true;
   try {
-    if (firstTime.value) {
-      if (p !== confirm.value.trim()) {
-        error.value = "两次输入不一致";
-        return;
-      }
-      await gate.setup(p);
-    } else {
-      const ok = await gate.verify(p);
-      if (!ok) {
-        error.value = "口令不对，再试一次";
-        return;
-      }
+    const ok = await gate.verify(p);
+    if (!ok) {
+      error.value = "口令不对，再试一次";
+      return;
     }
     router.replace("/learn");
   } finally {
@@ -56,25 +45,12 @@ async function submit() {
     <div class="gate-card">
       <div class="gate-lock">🔒</div>
       <h1 class="gate-title">丞丞ABC</h1>
-      <p class="gate-tip">
-        {{ firstTime ? "第一次使用，请设置家长口令" : "请输入家长口令" }}
-      </p>
+      <p class="gate-tip">请输入家长口令进入</p>
       <input
         v-model="pass"
         class="gate-input"
         type="password"
-        :placeholder="firstTime ? '设置口令（可用家长手机号，至少 4 位）' : '家长口令（手机号）'"
-        maxlength="20"
-        inputmode="numeric"
-        autocomplete="off"
-        @keyup.enter="submit"
-      />
-      <input
-        v-if="firstTime"
-        v-model="confirm"
-        class="gate-input"
-        type="password"
-        placeholder="再输一遍确认"
+        placeholder="家长口令（手机号）"
         maxlength="20"
         inputmode="numeric"
         autocomplete="off"
@@ -82,9 +58,9 @@ async function submit() {
       />
       <p v-if="error" class="gate-error">{{ error }}</p>
       <button class="gate-btn" :disabled="busy" @click="submit">
-        {{ busy ? "请稍候…" : firstTime ? "设置并进入" : "进入" }}
+        {{ busy ? "请稍候…" : "进入" }}
       </button>
-      <p class="gate-foot">口令由家长设置，常用家长手机号；解锁后 7 天内免输。</p>
+      <p class="gate-foot">口令由家长约定；本设备解锁后 7 天内免输。</p>
     </div>
   </div>
 </template>
