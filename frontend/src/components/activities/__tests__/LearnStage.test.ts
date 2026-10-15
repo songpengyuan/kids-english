@@ -5,7 +5,7 @@
  * - 点过的词显示"已听过"角标，但**仍可再点**（孩子想重复听随时能点）
  * - 星级 = 点读覆盖率（都点过发音才 3 星，只翻页 = 1 星，重复点只算一次）
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, beforeAll, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 
@@ -13,12 +13,26 @@ vi.mock("../../../services/speech", () => ({ speak: vi.fn() }));
 vi.mock("../../../services/effects", () => ({
   sfxTap: vi.fn(),
   sfxCorrect: vi.fn(),
+  sfxWrong: vi.fn(),
   celebrate: vi.fn(),
   bigCelebrate: vi.fn(),
 }));
 
+// dialog 亲子对话走 useSpeechSession 录音会话：jsdom 无 SpeechRecognition/MediaRecorder，
+// 强制 record 模式并用桩 MediaRecorder（家长判定链路）
+vi.mock("../../../utils/speechScore", () => ({
+  asrSupported: () => false,
+  recorderSupported: () => true,
+  createRecorder: vi.fn(),
+  createWordRecognizer: vi.fn(),
+  gradeScore: vi.fn(),
+  scorePronunciation: vi.fn(),
+}));
+vi.mock("../../../utils/speakSession", () => ({ speakStars: () => 3 }));
+
 import LearnStage from "../LearnStage.vue";
 import { speak } from "../../../services/speech";
+import { createRecorder } from "../../../utils/speechScore";
 
 /** jsdom 没有 ResizeObserver / 真实布局尺寸，桩掉后组件走保守兜底（每页 4 张） */
 class RO {
@@ -94,7 +108,7 @@ describe("LearnStage（点读覆盖率星级 + 全点过才能完成）", () => 
   });
 });
 
-describe("LearnStage dialog 亲子口语对话卡（l10）", () => {
+describe("LearnStage dialog 亲子口语对话卡（l10）· 逐轮对话 + 录音", () => {
   const dlgWords = ["frog", "monkey", "tiger"].map((id) => ({
     id, en: id, zh: id, emoji: "🐾", image: null, lessonId: "l10",
   })) as never;
@@ -104,50 +118,111 @@ describe("LearnStage dialog 亲子口语对话卡（l10）", () => {
     { en: "It's a monkey.", zh: "那是一只猴子。", audio: "/lessons/l10/audio/ph-3.mp3" },
   ] as never;
 
+  // jsdom 没有媒体播放，桩掉 play
+  beforeAll(() => {
+    Object.defineProperty(HTMLMediaElement.prototype, "play", {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(undefined),
+    });
+  });
+
+  function flush() {
+    return new Promise((r) => {
+      vi.advanceTimersByTimeAsync(0).then(() => r(undefined));
+    });
+  }
+  /** 让一轮录音通过：点 mic 开始 → 点 mic 停止 → 家长点「读对了」 */
+  async function passOneRound(wrapper: ReturnType<typeof mount>) {
+    const mic = wrapper.find(".mic-btn");
+    await mic.trigger("click"); // 开始录音
+    await flush();
+    await mic.trigger("click"); // 停止录音 → 自动回放
+    await flush();
+    await wrapper.find(".dlg-judge .k-btn-green").trigger("click"); // 家长判定：读对了
+    await flush();
+  }
+
   beforeEach(() => {
     localStorage.clear();
     setActivePinia(createPinia());
-    vi.mocked(speak).mockClear();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it("渲染对话气泡与第一个大动物；进页自动播第一个词音（不算点读）", async () => {
+  it("渲染轮次/问句/当前大图/录音按钮；进页自动播家长问句（不算通过）", async () => {
     const wrapper = mount(LearnStage, {
       props: { words: dlgWords, dialog: true, phrases: dlgPhrases },
       global: { plugins: [createPinia()] },
     });
+    expect(wrapper.find(".dlg-round").text()).toContain("第 1 / 3 轮");
     expect(wrapper.find(".dlg-bubble.q").text()).toContain("What's that?");
-    expect(wrapper.find(".dlg-bubble.a").text()).toContain("It's a frog.");
     expect(wrapper.find(".dlg-en").text()).toBe("frog");
-    expect(wrapper.findAll(".dlg-chip").length).toBe(3);
-    expect(speak).toHaveBeenCalledWith("frog", { lessonId: "l10", wordId: "frog" });
-    // 自动播放不算点读 → 完成按钮仍禁用
+    expect(wrapper.find(".mic-btn").exists()).toBe(true);
+    // 进页自动播问句（320ms），不记通过 → 完成按钮仍禁用
+    await vi.advanceTimersByTimeAsync(400);
+    expect(speak).toHaveBeenCalledWith("What's that?");
     expect(wrapper.find(".next").attributes("disabled")).toBeDefined();
+    expect(wrapper.find(".next").text()).toContain("还有 3 个词没对话");
   });
 
-  it("点词条切换大动物并播放发音、记为点读；全部点过 → 可完成记 3 星", async () => {
+  it("一轮录音通过后自动进入下一轮（下轮大图切换 + 自动播问句）", async () => {
+    const stop = vi.fn().mockResolvedValue("blob:rec-url");
+    vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);
     const wrapper = mount(LearnStage, {
       props: { words: dlgWords, dialog: true, phrases: dlgPhrases },
       global: { plugins: [createPinia()] },
     });
-    for (const chip of wrapper.findAll(".dlg-chip")) await chip.trigger("click");
-    expect(wrapper.find(".dlg-en").text()).toBe("tiger");
+    await passOneRound(wrapper);
+    // frog 这轮通过：进度点打勾
+    expect(wrapper.findAll(".dlg-dot")[0].classes()).toContain("done");
+    // 900ms 后自动进入第 2 轮（monkey）
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(wrapper.find(".dlg-round").text()).toContain("第 2 / 3 轮");
+    expect(wrapper.find(".dlg-en").text()).toBe("monkey");
+    // 进入新轮自动播问句（260ms）
+    await vi.advanceTimersByTimeAsync(400);
+    expect(speak).toHaveBeenCalledWith("What's that?");
+  });
+
+  it("家长判定「再试一次」→ 回录音按钮，轮次不变", async () => {
+    const stop = vi.fn().mockResolvedValue("blob:rec-url");
+    vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);
+    const wrapper = mount(LearnStage, {
+      props: { words: dlgWords, dialog: true, phrases: dlgPhrases },
+      global: { plugins: [createPinia()] },
+    });
+    const mic = wrapper.find(".mic-btn");
+    await mic.trigger("click");
+    await flush();
+    await mic.trigger("click");
+    await flush();
+    await wrapper.find(".dlg-judge .k-btn-orange").trigger("click"); // 没读准 → retry
+    await flush();
+    expect(wrapper.find(".dlg-judge .k-btn-green").text()).toContain("再试一次");
+    await wrapper.find(".dlg-judge .k-btn-green").trigger("click"); // 再试一次 → 回录音
+    await flush();
+    expect(wrapper.find(".mic-btn").exists()).toBe(true);
+    expect(wrapper.find(".dlg-round").text()).toContain("第 1 / 3 轮");
+  });
+
+  it("三轮全部通过 → 「我都会啦」可点，完成记 3 星", async () => {
+    const stop = vi.fn().mockResolvedValue("blob:rec-url");
+    vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);
+    const wrapper = mount(LearnStage, {
+      props: { words: dlgWords, dialog: true, phrases: dlgPhrases },
+      global: { plugins: [createPinia()] },
+    });
+    await passOneRound(wrapper); // frog
+    await vi.advanceTimersByTimeAsync(1000);
+    await passOneRound(wrapper); // monkey
+    await vi.advanceTimersByTimeAsync(1000);
+    await passOneRound(wrapper); // tiger（最后一轮不自动跳）
     expect(wrapper.find(".next").attributes("disabled")).toBeUndefined();
     expect(wrapper.find(".next").text()).toContain("我都会啦");
     await wrapper.find(".next").trigger("click");
     expect(wrapper.emitted("done")?.[0]?.[0]).toBe(3);
-  });
-
-  it("点问句气泡播放 What's that?；点答句气泡播放对应句", async () => {
-    const wrapper = mount(LearnStage, {
-      props: { words: dlgWords, dialog: true, phrases: dlgPhrases },
-      global: { plugins: [createPinia()] },
-    });
-    vi.mocked(speak).mockClear();
-    await wrapper.find(".dlg-bubble.q").trigger("click");
-    expect(speak).toHaveBeenCalledWith("What's that?");
-    await wrapper.find(".dlg-bubble.a").trigger("click");
-    expect(speak).toHaveBeenCalledWith("It's a frog.");
-    // 答句也算点读
-    expect(wrapper.find(".dlg-done").exists()).toBe(true);
   });
 });
