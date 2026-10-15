@@ -279,7 +279,7 @@ function finish() {
     </div>
 
     <LessonFooter
-      :button-text="allPassed ? '我都会啦' : `还有 ${words.length - passedCount} 个词没对话哦`"
+      :button-text="allPassed ? '我都会啦' : '继续加油'"
       :button-disabled="!allPassed"
       :show-arrow="false"
       @button="finish"
