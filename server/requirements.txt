@@ -5,3 +5,5 @@ python-multipart>=0.0.9
 python-dotenv>=1.0
 # 测试（CI 质量门禁 + 本地开发）
 pytest>=8.0
+# 新版 starlette 的 TestClient 必需（缺它 pytest 收集直接报 RuntimeError）
+httpx2>=0.28
