@@ -24,10 +24,13 @@ const content = useContentStore();
 const router = useRouter();
 
 const mode = ref<"login" | "register">("login");
-const form = reactive({ familyName: "", passcode: "" });
+const form = reactive({ familyName: "", passcode: "", email: "" });
 const newChildName = ref("");
 const busy = ref(false);
 const error = ref("");
+/** 资料编辑态：false=展示，true=编辑中 */
+const editingProfile = ref(false);
+const profile = reactive({ nickname: "", email: "" });
 
 const loggedIn = computed(() => auth.family !== null);
 
@@ -42,18 +45,39 @@ function go(path: string) { router.push(path); }
 async function submit() {
   error.value = "";
   if (!form.familyName.trim() || form.passcode.length < 4) {
-    error.value = "家庭名和口令都要填，口令至少 4 位";
+    error.value = "家庭名/邮箱和口令都要填，口令至少 4 位";
     return;
   }
   busy.value = true;
   try {
     const ok = mode.value === "login"
       ? await auth.login(form.familyName.trim(), form.passcode)
-      : await auth.register(form.familyName.trim(), form.passcode);
+      : await auth.register(form.familyName.trim(), form.passcode, form.email.trim() || undefined);
     if (ok) {
       content.loadFromServer();
       progress.syncFromServer();
     }
+  } catch (e) {
+    error.value = (e as Error).message;
+  } finally {
+    busy.value = false;
+  }
+}
+
+/** 进入资料编辑：用当前账号资料初始化输入框 */
+function startEditProfile() {
+  profile.nickname = auth.family!.nickname;
+  profile.email = auth.family!.email ?? "";
+  editingProfile.value = true;
+}
+
+/** 保存资料编辑 */
+async function saveProfile() {
+  error.value = "";
+  busy.value = true;
+  try {
+    await auth.patchMe(profile.nickname, profile.email);
+    editingProfile.value = false;
   } catch (e) {
     error.value = (e as Error).message;
   } finally {
@@ -113,7 +137,10 @@ function sayFamily() {
             <button :class="{ on: mode === 'login' }" @click="mode = 'login'; error = ''">登录</button>
             <button :class="{ on: mode === 'register' }" @click="mode = 'register'; error = ''">注册新家庭</button>
           </div>
-          <input v-model="form.familyName" class="f-input" placeholder="家庭名（如：橙子家）" maxlength="20" />
+          <input v-model="form.familyName" class="f-input"
+            :placeholder="mode === 'login' ? '家庭名或邮箱' : '家庭名（如：橙子家）'" maxlength="40" />
+          <input v-if="mode === 'register'" v-model="form.email" class="f-input" type="email"
+            placeholder="家长邮箱（选填，全局唯一）" maxlength="50" />
           <input v-model="form.passcode" class="f-input" type="password" placeholder="口令（至少 4 位）" maxlength="20"
             @keyup.enter="submit" />
           <button class="f-submit" :disabled="busy" @click="submit">
@@ -124,7 +151,20 @@ function sayFamily() {
 
         <!-- 已登录：家庭信息 + 孩子管理 -->
         <template v-else>
-          <p class="f-name">👨‍👩‍👦 {{ auth.family!.familyName }}</p>
+          <p class="f-name">👨‍👩‍👦 {{ auth.family!.nickname }}</p>
+          <p class="f-meta">{{ auth.family!.email ?? "未绑定邮箱" }}<span v-if="auth.family!.createdAt"> · 注册于 {{ auth.family!.createdAt.slice(0, 10) }}</span></p>
+
+          <!-- 资料编辑（昵称 / 邮箱） -->
+          <template v-if="editingProfile">
+            <input v-model="profile.nickname" class="f-input" placeholder="家长昵称" maxlength="20" />
+            <input v-model="profile.email" class="f-input" type="email" placeholder="家长邮箱（选填）" maxlength="50" />
+            <div class="f-profile-actions">
+              <button class="f-add-btn" :disabled="busy" @click="saveProfile">保存</button>
+              <button class="f-ghost-btn" @click="editingProfile = false">取消</button>
+            </div>
+          </template>
+          <button v-else class="f-ghost-btn" @click="startEditProfile">✏️ 编辑资料</button>
+
           <div class="f-children">
             <button v-for="c in auth.children" :key="c.id" class="f-child"
               :class="{ on: c.id === auth.currentChildId }" @click="pickChild(c.id)">
@@ -230,7 +270,12 @@ function sayFamily() {
 .f-submit { width: 100%; padding: 12px 0; border-radius: var(--radius); background: var(--green); color: #fff; font-weight: 900; font-size: 15px; }
 .f-submit:disabled { opacity: 0.6; }
 .f-tip { margin: 6px 0 0; font-size: 12px; color: var(--ink-faint); }
-.f-name { margin: 0 0 8px; font-weight: 900; font-size: 15px; }
+.f-name { margin: 0 0 2px; font-weight: 900; font-size: 15px; }
+.f-meta { margin: 0 0 8px; font-size: 12px; color: var(--ink-faint); }
+.f-ghost-btn { display: inline-block; margin-bottom: 8px; font-size: 13px; color: var(--blue); font-weight: 800; background: none; border: none; cursor: pointer; }
+.f-profile-actions { display: flex; gap: 8px; margin-bottom: 8px; }
+.f-profile-actions .f-add-btn { padding: 8px 18px; }
+.f-profile-actions .f-ghost-btn { margin-bottom: 0; color: var(--ink-faint); }
 .f-children { display: flex; flex-wrap: wrap; gap: 8px; }
 .f-child { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: var(--line); font-weight: 800; font-size: 14px; }
 .f-child.on { background: var(--green); color: #fff; }

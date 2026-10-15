@@ -50,10 +50,29 @@ def connect() -> sqlite3.Connection:
     return conn
 
 
+def _apply_migrations(conn: sqlite3.Connection) -> None:
+    """存量库升级（幂等）：给 families 补账号资料字段。
+
+    免费账号体系地基：email（唯一、可空=纯家庭名账号）、nickname（家长昵称）、updated_at。
+    唯一性用独立索引实现（SQLite 不能 ALTER ADD UNIQUE 约束；NULL 在唯一索引中可重复，
+    正好兼容存量无邮箱账号）。
+    """
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(families)")}
+    for col, ddl in (
+        ("email", "ALTER TABLE families ADD COLUMN email TEXT"),
+        ("nickname", "ALTER TABLE families ADD COLUMN nickname TEXT"),
+        ("updated_at", "ALTER TABLE families ADD COLUMN updated_at TEXT"),
+    ):
+        if col not in cols:
+            conn.execute(ddl)
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_families_email ON families(email)")
+
+
 def init_db() -> None:
     conn = connect()
     try:
         conn.executescript(SCHEMA)
+        _apply_migrations(conn)
         conn.commit()
     finally:
         conn.close()

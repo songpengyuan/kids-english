@@ -1,8 +1,9 @@
 /**
- * 家庭账号 store（P0）：
- * - 家庭注册/登录（口令），JWT 持久化
+ * 家庭账号 store：
+ * - 注册/登录（家庭名 或 邮箱 + 口令），JWT 持久化
+ * - 家长资料：邮箱（全局唯一，可空）、昵称、注册时间；PATCH 编辑
  * - 孩子档案列表 + 当前孩子选择
- * - 未登录（GitHub Pages 纯本地模式）时一切为空，应用照常跑
+ * - 未登录（纯本地模式）时一切为空，应用照常跑
  */
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
@@ -20,6 +21,12 @@ const CURRENT_CHILD_KEY = "kids-auth-current-child";
 export interface FamilyInfo {
   familyId: number;
   familyName: string;
+  /** 家长邮箱（可空=纯家庭名账号；全局唯一） */
+  email: string | null;
+  /** 家长昵称（默认=家庭名） */
+  nickname: string;
+  /** 注册时间（me 接口提供；login 响应无此字段时为 null，restore 后补全） */
+  createdAt: string | null;
 }
 
 /** 从 localStorage 恢复当前孩子选择（不存在则取列表第一个） */
@@ -52,8 +59,19 @@ export const useAuthStore = defineStore("auth", () => {
     () => children.value.find((c) => c.id === currentChildId.value) ?? null,
   );
 
-  function applyLogin(fid: number, name: string, list: Child[]) {
-    family.value = { familyId: fid, familyName: name };
+  function applyLogin(
+    fid: number,
+    name: string,
+    list: Child[],
+    extra?: { email?: string | null; nickname?: string; createdAt?: string | null },
+  ) {
+    family.value = {
+      familyId: fid,
+      familyName: name,
+      email: extra?.email ?? null,
+      nickname: extra?.nickname ?? name,
+      createdAt: extra?.createdAt ?? null,
+    };
     children.value = list;
     currentChildId.value = restoreChildId(list);
     ready.value = true;
@@ -67,7 +85,11 @@ export const useAuthStore = defineStore("auth", () => {
     try {
       const res = await request<MeOut>("/auth/me");
       if (res.ok) {
-        applyLogin(res.family_id, res.family_name, res.children);
+        applyLogin(res.family_id, res.family_name, res.children, {
+          email: res.email ?? null,
+          nickname: res.nickname,
+          createdAt: res.created_at,
+        });
         return true;
       }
     } catch {
@@ -76,33 +98,67 @@ export const useAuthStore = defineStore("auth", () => {
     return false;
   }
 
-  async function register(familyName: string, passcode: string): Promise<boolean> {
+  async function register(familyName: string, passcode: string, email?: string): Promise<boolean> {
+    const body: { family_name: string; passcode: string; email?: string } = {
+      family_name: familyName,
+      passcode,
+    };
+    if (email && email.trim()) body.email = email.trim().toLowerCase();
     const res = await request<RegisterOut>(
       "/auth/register",
-      { method: "POST", body: { family_name: familyName, passcode }, auth: false },
+      { method: "POST", body, auth: false },
     );
     setToken(res.token);
     setFamilyName(familyName);
-    family.value = { familyId: res.family_id, familyName };
-    children.value = [];
-    currentChildId.value = null;
-    ready.value = true;
+    applyLogin(res.family_id, familyName, [], { nickname: familyName, email: body.email ?? null });
     return true;
   }
 
-  async function login(familyName: string, passcode: string): Promise<boolean> {
-    const res = await request<LoginOut>("/auth/login", { method: "POST", body: { family_name: familyName, passcode }, auth: false });
+  /**
+   * 登录：identifier 是「家庭名 或 邮箱」——含 @ 视为邮箱（新通道），否则按家庭名（存量通道）。
+   */
+  async function login(identifier: string, passcode: string): Promise<boolean> {
+    const body = identifier.includes("@")
+      ? { email: identifier.trim().toLowerCase(), passcode }
+      : { family_name: identifier.trim(), passcode };
+    const res = await request<LoginOut>("/auth/login", { method: "POST", body, auth: false });
     setToken(res.token);
     setFamilyName(res.family_name);
-    applyLogin(res.family_id, res.family_name, res.children);
+    applyLogin(res.family_id, res.family_name, res.children, {
+      email: res.email ?? null,
+      nickname: res.nickname,
+    });
     return true;
+  }
+
+  /** 编辑家长资料（昵称 / 邮箱，空串表示不修改该项） */
+  async function patchMe(nickname: string, email: string): Promise<boolean> {
+    const res = await request<MeOut>("/auth/me", {
+      method: "PATCH",
+      body: { nickname: nickname.trim() || undefined, email: email.trim() || undefined },
+    });
+    if (res.ok) {
+      applyLogin(res.family_id, res.family_name, res.children, {
+        email: res.email ?? null,
+        nickname: res.nickname,
+        createdAt: res.created_at,
+      });
+      return true;
+    }
+    return false;
   }
 
   /** 刷新家庭/孩子（孩子列表变化后同步；失败静默——离线时用本地缓存） */
   async function refreshMe(): Promise<void> {
     try {
       const res = await request<MeOut>("/auth/me");
-      if (res.ok) applyLogin(res.family_id, res.family_name, res.children);
+      if (res.ok) {
+        applyLogin(res.family_id, res.family_name, res.children, {
+          email: res.email ?? null,
+          nickname: res.nickname,
+          createdAt: res.created_at,
+        });
+      }
     } catch {
       /* 离线忽略 */
     }
@@ -150,6 +206,7 @@ export const useAuthStore = defineStore("auth", () => {
     restore,
     register,
     login,
+    patchMe,
     refreshMe,
     createChild,
     selectChild,

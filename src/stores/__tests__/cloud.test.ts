@@ -35,7 +35,7 @@ describe("progress store · 云同步", () => {
     // 模拟已登录 + 已选孩子（孩子 id=1）
     setToken("test-token");
     const auth = useAuthStore();
-    auth.family = { familyId: 1, familyName: "测试家" };
+    auth.family = { familyId: 1, familyName: "测试家", email: null, nickname: "测试家", createdAt: null };
     auth.children = [{ id: 1, name: "程程", avatar: null }];
     auth.currentChildId = 1;
     auth.ready = true;

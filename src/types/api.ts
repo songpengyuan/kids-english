@@ -52,7 +52,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Patch Me
+         * @description 家长资料编辑：改昵称 / 绑定或更换邮箱（至少一项；email 全局唯一）。
+         */
+        patch: operations["patch_me_api_v1_auth_me_patch"];
         trace?: never;
     };
     "/api/v1/auth/children": {
@@ -320,10 +324,15 @@ export interface components {
              */
             lessons: components["schemas"]["LessonSummaryOut"][];
         };
-        /** LoginIn */
+        /**
+         * LoginIn
+         * @description 登录二选一：email（新账号通道）或 family_name（存量通道）。
+         */
         LoginIn: {
             /** Family Name */
-            family_name: string;
+            family_name?: string | null;
+            /** Email */
+            email?: string | null;
             /** Passcode */
             passcode: string;
         };
@@ -340,6 +349,10 @@ export interface components {
             family_id: number;
             /** Family Name */
             family_name: string;
+            /** Email */
+            email?: string | null;
+            /** Nickname */
+            nickname: string;
             /**
              * Children
              * @default []
@@ -357,11 +370,27 @@ export interface components {
             family_id: number;
             /** Family Name */
             family_name: string;
+            /** Email */
+            email?: string | null;
+            /** Nickname */
+            nickname: string;
+            /** Created At */
+            created_at: string;
             /**
              * Children
              * @default []
              */
             children: components["schemas"]["ChildOut"][];
+        };
+        /**
+         * MePatchIn
+         * @description 家长资料编辑：昵称 / 邮箱（至少一项）。
+         */
+        MePatchIn: {
+            /** Nickname */
+            nickname?: string | null;
+            /** Email */
+            email?: string | null;
         };
         /** PhraseOut */
         PhraseOut: {
@@ -435,6 +464,8 @@ export interface components {
             family_name: string;
             /** Passcode */
             passcode: string;
+            /** Email */
+            email?: string | null;
         };
         /** RegisterOut */
         RegisterOut: {
@@ -593,6 +624,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_me_api_v1_auth_me_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MePatchIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

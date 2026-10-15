@@ -51,9 +51,54 @@ describe("auth store · 契约", () => {
     const ok = await auth.register("橙子家", "1234");
     expect(ok).toBe(true);
     expect(getToken()).toBe("tok-reg");
-    expect(auth.family).toEqual({ familyId: 1, familyName: "橙子家" });
+    expect(auth.family).toEqual({
+      familyId: 1,
+      familyName: "橙子家",
+      email: null,
+      nickname: "橙子家",
+      createdAt: null,
+    });
     expect(auth.children).toEqual([]);
     expect(auth.ready).toBe(true);
+  });
+
+  it("注册带邮箱：请求体含 email，家庭资料含邮箱", async () => {
+    const { calls } = mockFetch({
+      "/api/v1/auth/register": { ok: true, token: "tok-reg", family_id: 2 },
+    });
+    const auth = useAuthStore();
+    await auth.register("邮箱家", "1234", "Parent@Example.com");
+    expect(auth.family?.email).toBe("parent@example.com"); // 前端也归一化小写
+    const last = calls[calls.length - 1];
+    expect(JSON.parse(String(last.init!.body)).email).toBe("parent@example.com");
+  });
+
+  it("登录：邮箱识别（含 @ 走 email 通道）", async () => {
+    const { calls } = mockFetch({
+      "/api/v1/auth/login": {
+        ok: true, token: "tok-email", family_id: 8, family_name: "邮箱家",
+        email: "a@b.com", nickname: "邮箱家", children: [],
+      },
+    });
+    const auth = useAuthStore();
+    await auth.login("A@B.com", "1234");
+    expect(auth.family?.email).toBe("a@b.com");
+    const last = calls[calls.length - 1];
+    expect(JSON.parse(String(last.init!.body)).email).toBe("a@b.com");
+  });
+
+  it("编辑资料：PATCH /auth/me 更新昵称与邮箱", async () => {
+    mockFetch({
+      "/api/v1/auth/me": {
+        ok: true, family_id: 1, family_name: "橙子家", email: "new@b.com",
+        nickname: "程程爸", created_at: "2026-10-15 00:00:00", children: [],
+      },
+    });
+    const auth = useAuthStore();
+    await auth.patchMe("程程爸", "new@b.com");
+    expect(auth.family?.nickname).toBe("程程爸");
+    expect(auth.family?.email).toBe("new@b.com");
+    expect(auth.family?.createdAt).toBe("2026-10-15 00:00:00");
   });
 
   it("登录：孩子列表入库，自动选中第一个", async () => {
@@ -100,7 +145,7 @@ describe("auth store · 契约", () => {
   it("创建孩子：追加并自动选中", async () => {
     localStorage.setItem("kids-auth-token", "tok");
     const auth = useAuthStore();
-    auth.family = { familyId: 1, familyName: "测试家" };
+    auth.family = { familyId: 1, familyName: "测试家", email: null, nickname: "测试家", createdAt: null };
     auth.children = [{ id: 1, name: "程程", avatar: null }];
     auth.currentChildId = 1;
     auth.ready = true;
@@ -116,7 +161,7 @@ describe("auth store · 契约", () => {
   it("切换孩子：持久化选择，非法 id 忽略", () => {
     localStorage.setItem("kids-auth-token", "tok");
     const auth = useAuthStore();
-    auth.family = { familyId: 1, familyName: "测试家" };
+    auth.family = { familyId: 1, familyName: "测试家", email: null, nickname: "测试家", createdAt: null };
     auth.children = [...CHILDREN];
     auth.currentChildId = 1;
     auth.selectChild(2);
@@ -129,7 +174,7 @@ describe("auth store · 契约", () => {
   it("登出：清 token/家庭/孩子", () => {
     localStorage.setItem("kids-auth-token", "tok");
     const auth = useAuthStore();
-    auth.family = { familyId: 1, familyName: "测试家" };
+    auth.family = { familyId: 1, familyName: "测试家", email: null, nickname: "测试家", createdAt: null };
     auth.children = [...CHILDREN];
     auth.currentChildId = 1;
     auth.ready = true;

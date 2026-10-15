@@ -214,3 +214,90 @@ class TestHardening:
         monkeypatch.setenv("KIDS_JWT_SECRET", "s" * 32)
         assert_secret_configured()  # 不抛
         monkeypatch.setenv("KIDS_JWT_SECRET", "test-secret-" + "k" * 32)
+
+
+class TestAccountStorage:
+    """账号数据存储（免费模式地基）：email 唯一、邮箱/家庭名双通道登录、资料读取与编辑。"""
+
+    def test_register_with_email_and_me_returns_full_profile(self):
+        token = _register_with_email("邮箱家", "a@b.com")
+        me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}).json()
+        assert me["email"] == "a@b.com"
+        assert me["nickname"] == "邮箱家"  # 未设昵称时默认=家庭名
+        assert me["created_at"]  # 注册时间已落库
+
+    def test_duplicate_email_409(self):
+        _register_with_email("邮箱家", "a@b.com")
+        r = client.post(
+            "/api/v1/auth/register",
+            json={"family_name": "另一个家", "passcode": "1234", "email": "a@b.com"},
+        )
+        assert r.status_code == 409
+        assert "邮箱" in r.json()["detail"]
+
+    def test_email_case_insensitive_unique(self):
+        _register_with_email("邮箱家", "Ab@b.com")
+        # 大写变体视为同一邮箱 → 409（归一化）
+        r = client.post(
+            "/api/v1/auth/register",
+            json={"family_name": "另一个家", "passcode": "1234", "email": "ab@b.com"},
+        )
+        assert r.status_code == 409
+
+    def test_login_by_email(self):
+        _register_with_email("邮箱家", "a@b.com")
+        login = client.post(
+            "/api/v1/auth/login", json={"email": "a@b.com", "passcode": "1234"}
+        ).json()
+        assert login["ok"] is True
+        assert login["email"] == "a@b.com"
+
+    def test_login_by_family_name_still_works(self):
+        """存量兼容：无邮箱的家庭名账号照常登录。"""
+        _register("旧家")
+        login = client.post(
+            "/api/v1/auth/login", json={"family_name": "旧家", "passcode": "1234"}
+        ).json()
+        assert login["ok"] is True
+        assert login["email"] is None
+
+    def test_login_without_identifier_400(self):
+        r = client.post("/api/v1/auth/login", json={"passcode": "1234"})
+        assert r.status_code == 400
+
+    def test_patch_me_updates_nickname_and_email(self):
+        token = _auth()
+        r = client.patch(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"nickname": "程程爸", "email": "new@b.com"},
+        )
+        assert r.status_code == 200
+        me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}).json()
+        assert me["nickname"] == "程程爸"
+        assert me["email"] == "new@b.com"
+
+    def test_patch_me_email_conflict_409(self):
+        _register_with_email("家A", "a@b.com")
+        token = _register_with_email("家B", "b@b.com")
+        r = client.patch(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"email": "a@b.com"},
+        )
+        assert r.status_code == 409
+
+    def test_register_without_email_ok(self):
+        """存量路径：不填邮箱仍可注册（email 可空）。"""
+        token = _register("无邮箱家").json()["token"]  # _register 返回 Response，须取 token
+        me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}).json()
+        assert me["email"] is None
+
+
+def _register_with_email(name, email, passcode="1234"):
+    r = client.post(
+        "/api/v1/auth/register",
+        json={"family_name": name, "passcode": passcode, "email": email},
+    )
+    assert r.status_code == 200, r.text
+    return r.json()["token"]

@@ -12,11 +12,20 @@ from pydantic import BaseModel, Field
 class RegisterIn(BaseModel):
     family_name: str = Field(min_length=1, max_length=20)
     passcode: str = Field(min_length=4, max_length=20)
+    email: str | None = None
 
 
 class LoginIn(BaseModel):
-    family_name: str = Field(min_length=1, max_length=20)
+    """登录二选一：email（新账号通道）或 family_name（存量通道）。"""
+    family_name: str | None = Field(default=None, min_length=1, max_length=20)
+    email: str | None = None
     passcode: str = Field(min_length=4, max_length=20)
+
+
+class MePatchIn(BaseModel):
+    """家长资料编辑：昵称 / 邮箱（至少一项）。"""
+    nickname: str | None = Field(default=None, min_length=1, max_length=20)
+    email: str | None = None
 
 
 class ChildIn(BaseModel):
@@ -53,6 +62,8 @@ class LoginOut(BaseModel):
     token: str
     family_id: int
     family_name: str
+    email: str | None = None
+    nickname: str
     children: list[ChildOut] = []
 
 
@@ -60,6 +71,9 @@ class MeOut(BaseModel):
     ok: bool = True
     family_id: int
     family_name: str
+    email: str | None = None
+    nickname: str
+    created_at: str
     children: list[ChildOut] = []
 
 
