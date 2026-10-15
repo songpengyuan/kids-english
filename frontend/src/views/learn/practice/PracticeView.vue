@@ -51,12 +51,6 @@ const lastLessonObj = computed(() => {
 
 <template>
   <div class="practice">
-    <div v-if="weakCount > 0" class="quick-links anim-fade-up">
-      <button v-if="weakCount > 0" class="q-link review" @click="router.push('/learn/review')">
-        <BookOpenText class="k-ico" />今天该复习 {{ weakCount }} 个词
-      </button>
-    </div>
-
     <!-- 课程类型 tab -->
     <div class="type-tabs">
       <button :class="{ on: typeTab === 'official' }" @click="typeTab = 'official'">正式课</button>
