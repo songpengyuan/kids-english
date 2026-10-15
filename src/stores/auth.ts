@@ -32,6 +32,15 @@ export const useAuthStore = defineStore("auth", () => {
   const currentChildId = ref<number | null>(null);
   /** 是否已从后端初始化过（避免重复拉取） */
   const ready = ref(false);
+  /** 家长门禁（会话级，内存态）：算术题答对解锁后进家长中心；刷新/退出复位 */
+  const parentUnlocked = ref(false);
+
+  function unlockParent(): void {
+    parentUnlocked.value = true;
+  }
+  function lockParent(): void {
+    parentUnlocked.value = false;
+  }
 
   const currentChild = computed<Child | null>(
     () => children.value.find((c) => c.id === currentChildId.value) ?? null,
@@ -130,6 +139,7 @@ export const useAuthStore = defineStore("auth", () => {
     children.value = [];
     currentChildId.value = null;
     ready.value = false;
+    lockParent();
   }
 
   return {
@@ -138,6 +148,9 @@ export const useAuthStore = defineStore("auth", () => {
     currentChildId,
     currentChild,
     ready,
+    parentUnlocked,
+    unlockParent,
+    lockParent,
     restore,
     register,
     login,

@@ -139,4 +139,16 @@ describe("auth store · 契约", () => {
     expect(auth.children).toEqual([]);
     expect(auth.ready).toBe(false);
   });
+
+  it("家长门禁：默认锁、unlock 解锁、logout 复位", () => {
+    const auth = useAuthStore();
+    expect(auth.parentUnlocked).toBe(false);
+    auth.unlockParent();
+    expect(auth.parentUnlocked).toBe(true);
+    auth.logout();
+    expect(auth.parentUnlocked).toBe(false);
+    auth.unlockParent();
+    auth.lockParent();
+    expect(auth.parentUnlocked).toBe(false);
+  });
 });

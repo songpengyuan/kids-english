@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { createRouter, createMemoryHistory } from "vue-router";
+import { createRouter, createMemoryHistory, type RouteLocationNormalizedLoadedGeneric } from "vue-router";
+import { parentGateDecision } from "../parentGuard";
 
 const LearnView = { template: "<div>L</div>" };
 const GameView = { template: "<div>G</div>" };
@@ -115,5 +116,21 @@ describe("旧路径 → 新嵌套路径迁移守卫", () => {
     expect(router.currentRoute.value.path).toBe("/learn/l4");
     await go("/game/quest/l4", { step: "learn" });
     expect(router.currentRoute.value.path).toBe("/game/quest/l4");
+  });
+});
+
+describe("家长门禁守卫（parentGateDecision 纯函数）", () => {
+  const to = (meta: Record<string, unknown>) => ({ meta } as RouteLocationNormalizedLoadedGeneric);
+
+  it("未解锁 + requiresParent → 重定向 /me?parentGate=1", () => {
+    const r = parentGateDecision(to({ requiresParent: true }), false);
+    expect(r).toEqual({ path: "/me", query: { parentGate: "1" }, replace: true });
+  });
+  it("已解锁 → 放行", () => {
+    expect(parentGateDecision(to({ requiresParent: true }), true)).toBe(true);
+  });
+  it("非家长区路由 → 放行（与解锁状态无关）", () => {
+    expect(parentGateDecision(to({}), false)).toBe(true);
+    expect(parentGateDecision(to({ requiresParent: false }), false)).toBe(true);
   });
 });
