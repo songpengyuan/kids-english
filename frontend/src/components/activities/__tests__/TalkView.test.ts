@@ -102,10 +102,11 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     expect(parentPic.find(".msg-pic-emoji").text()).toBe("🐾");
     expect(parentPic.find(".msg-pic-zh").text()).toBe("frog");
     expect(parentPic.find(".msg-pic-en").exists()).toBe(false);
-    // 未完成 → 完成按钮禁用（底部不再显示"还剩几个词"，头部轮次已有进度）
-    const btn = wrapper.find(".lf-btn");
-    expect(btn.attributes("disabled")).toBeDefined();
-    expect(btn.text()).toContain("继续加油");
+    // 未完成：底部不显示按钮（头部轮次已是进度）
+    expect(wrapper.find(".lf-btn").exists()).toBe(false);
+    // 家长消息文字在上、图片在下
+    const html = parentMsg[0].html();
+    expect(html.indexOf("What's that?")).toBeLessThan(html.indexOf("msg-pic"));
   });
 
   it("一轮录音通过 → 孩子「发消息」（大图+答句）并自动进入下一轮", async () => {

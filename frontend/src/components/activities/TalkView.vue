@@ -19,6 +19,7 @@ import { useSpeechSession } from "../../composables/useSpeechSession";
 import type { Lesson, Word, Phrase } from "../../data/lessons";
 import { Check, Mic, Square, Volume2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
+import SafeBottom from "../layout/SafeBottom.vue";
 import LessonFooter from "./LessonFooter.vue";
 
 const props = defineProps<{ lesson: Lesson }>();
@@ -185,22 +186,22 @@ function finish() {
         <div class="msg-col">
           <div class="msg-bubble" :class="m.role" @click="m.role === 'parent' ? playQuestion() : m.word && playWord(m.word)">
             <template v-if="m.role === 'parent'">
-              <!-- 家长发题：图片作为家长的消息发出来（孩子看图回答，不显示英文答案） -->
+              <!-- 家长发题：文字在上、图片在下（孩子看图回答，不显示英文答案） -->
+              <span class="msg-text">{{ m.text }}</span>
               <div v-if="m.word" class="msg-pic parent-pic">
                 <span class="msg-pic-emoji">{{ m.word.emoji }}</span>
                 <span class="msg-pic-zh">{{ m.word.zh }}</span>
               </div>
-              <span class="msg-text">{{ m.text }}</span>
             </template>
             <template v-else>
-              <!-- 孩子消息：大图（孩子回答的图片）+ 答句 + 语音文本 -->
+              <!-- 孩子消息：答句在上、语音文本、大图在下（孩子回答的图片） -->
+              <span class="msg-text">{{ m.text }}</span>
+              <span v-if="m.heard" class="msg-heard">🎤 {{ m.heard }}</span>
               <div v-if="m.word" class="msg-pic">
                 <span class="msg-pic-emoji">{{ m.word.emoji }}</span>
                 <span class="msg-pic-en">{{ m.word.en }}</span>
                 <span class="msg-pic-zh">{{ m.word.zh }}</span>
               </div>
-              <span class="msg-text">{{ m.text }}</span>
-              <span v-if="m.heard" class="msg-heard">🎤 {{ m.heard }}</span>
             </template>
           </div>
           <span v-if="m.role === 'kid'" class="msg-time">宝宝</span>
@@ -278,16 +279,18 @@ function finish() {
       </template>
     </div>
 
+    <!-- 底部：未完成不显示按钮（头部轮次已是进度），全部通过才出现「我都会啦」 -->
     <LessonFooter
-      :button-text="allPassed ? '我都会啦' : '继续加油'"
-      :button-disabled="!allPassed"
+      v-if="allPassed"
+      button-text="我都会啦"
       :show-arrow="false"
       @button="finish"
     >
-      <template v-if="allPassed" #button-content>
+      <template #button-content>
         <Check class="k-ico" />我都会啦
       </template>
     </LessonFooter>
+    <SafeBottom v-else :gap="24" />
   </div>
 </template>
 
