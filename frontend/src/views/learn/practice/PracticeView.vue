@@ -6,7 +6,7 @@
  * 2026-09-28：课程列表从"翻页"改为"上下滚动"——后续课程会越加越多，
  * 滚动浏览比翻页轻松，也更贴近 App 首页"往下滑看全部课"的惯用节奏。
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { activityKeys, getLesson, type Lesson } from "../../../data/lessons";
 import { useContentStore } from "../../../stores/content";
 import { useProgressStore } from "../../../stores/progress";
@@ -33,39 +33,7 @@ const filteredLessons = computed(() => {
 });
 const router = useRouter();
 
-/** 课程轮播：每页 4 课 2×2 十字排布（左右滑动 + 底部小点），移动端到超宽屏统一 */
-const PAGE_SIZE = 4;
-const pages = computed(() => {
-  const n = Math.ceil(filteredLessons.value.length / PAGE_SIZE);
-  return Array.from({ length: n }, (_, i) => filteredLessons.value.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE));
-});
-const carouselEl = ref<HTMLDivElement | null>(null);
-const curPage = ref(0);
-function recalcPage() {
-  const el = carouselEl.value;
-  if (!el) return;
-  const max = pages.value.length - 1;
-  curPage.value = Math.max(0, Math.min(max, Math.round(el.scrollLeft / el.clientWidth)));
-}
-watch(typeTab, () => { curPage.value = 0; carouselEl.value?.scrollTo({ left: 0 }); });
-function goPage(i: number) {
-  const el = carouselEl.value;
-  if (!el) return;
-  el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
-}
-onMounted(() => {
-  const el = carouselEl.value;
-  if (el) el.addEventListener("scroll", recalcPage, { passive: true });
-  window.addEventListener("resize", recalcPage);
-});
-onBeforeUnmount(() => {
-  const el = carouselEl.value;
-  if (el) el.removeEventListener("scroll", recalcPage);
-  window.removeEventListener("resize", recalcPage);
-});
-
 function enter(l: Lesson) {
-  // 点击卡片文字（课程英文标题）→ 朗读标题；进课程后由 LearnView 逐词发音
   speak(l.title, { ttsOnly: true });
   router.push(`/learn/${l.id}`);
 }
@@ -95,44 +63,26 @@ const lastLessonObj = computed(() => {
       <button :class="{ on: typeTab === 'bonus' }" @click="typeTab = 'bonus'">加餐</button>
     </div>
 
-    <!-- 课程列表：左右轮播（一页 2 课），底部小点指示器 -->
+    <!-- 课程列表：竖滑双列大卡片（汽水音乐风） -->
     <div class="stage">
-      <div
-        class="course-carousel"
-        ref="carouselEl"
-        role="region"
-        aria-label="课程列表，可左右滑动"
-      >
-        <div v-for="(page, pi) in pages" :key="pi" class="cc-page">
-          <button
-            v-for="(l, i) in page"
-            :key="l.id"
-            class="lesson-card anim-pop"
-            :class="'tone-' + l.tone"
-            :style="{ animationDelay: (i % 4) * 0.05 + 's' }"
-            @click="enter(l)"
-          >
-            <span class="big-emoji anim-float">{{ l.emoji }}</span>
-            <!-- 课程标题可点读（听英文课程名）；SpeakText span 形态自带 stopPropagation，点标题只听发音不进课 -->
-            <span class="lt"><SpeakText :text="l.title" tts-only /></span>
-            <span class="card-done" v-if="progress.isCompleted(l.id, activityKeys(l))">
-              <Check class="k-ico" />全部通关
-            </span>
-            <span class="cnt">{{ l.words.length }} 个单词</span>
-          </button>
-        </div>
-      </div>
-      <div v-if="pages.length > 1" class="cc-dots" role="tablist" aria-label="课程页">
+      <div class="course-grid">
         <button
-          v-for="(_, i) in pages"
-          :key="i"
-          class="cc-dot"
-          :class="{ on: curPage === i }"
-          role="tab"
-          :aria-selected="curPage === i"
-          :aria-label="`第 ${i + 1} 页`"
-          @click="goPage(i)"
-        ></button>
+          v-for="(l, i) in filteredLessons"
+          :key="l.id"
+          class="lesson-card anim-pop"
+          :class="'tone-' + l.tone"
+          :style="{ animationDelay: i * 0.04 + 's' }"
+          @click="enter(l)"
+        >
+          <span class="card-emoji">{{ l.emoji }}</span>
+          <div class="card-text">
+            <span class="card-title">{{ l.title }}</span>
+            <span class="card-sub">{{ l.titleZh }}</span>
+          </div>
+          <span class="card-done" v-if="progress.isCompleted(l.id, activityKeys(l))">
+            <Check class="k-ico" />
+          </span>
+        </button>
       </div>
     </div>
   </div>
@@ -191,132 +141,98 @@ const lastLessonObj = computed(() => {
 .type-tabs button { flex: 1; padding: 10px 0; border-radius: var(--radius-pill); background: var(--card-bg); box-shadow: var(--shadow-hard); font-weight: 800; font-size: var(--fs-small); color: var(--ink-faint); }
 .type-tabs button.on { background: var(--yellow); color: var(--ink); }
 .stage {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
   flex: 1;
   min-height: 0;
-  width: 100%;
-  padding-bottom: var(--gap-s);
-}
-/* 左右轮播：原生 scroll-snap，滑动即换页；滚动条隐藏（小点即指示器） */
-.course-carousel {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  touch-action: pan-x;
+  padding: 0 var(--pad-x) var(--gap-m);
   scrollbar-width: none;
 }
-.course-carousel::-webkit-scrollbar {
-  display: none;
-}
-.cc-page {
-  flex: 0 0 100%;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-content: center;
-  gap: 14px;
-  padding: 2px 8px;
-  scroll-snap-align: start;
-}
-/* 每页 4 课：2×2 十字排布，上下左右都撑满；不足 4 课（如最后一页 2 课）自动居中 */
-.cc-page .lesson-card {
-  width: calc((100% - 14px) / 2);
-  height: calc((100% - 14px) / 2);
-  min-height: 120px;
-}
-.cc-dots {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 2px 0;
-}
-.cc-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  background: var(--ink-faint);
-  opacity: 0.45;
-  transition: width var(--dur-fast) var(--ease-out), background var(--dur-fast), opacity var(--dur-fast);
-}
-.cc-dot.on {
-  width: 22px;
-  background: var(--brand, #1cb0f6);
-  opacity: 1;
+.stage::-webkit-scrollbar { display: none; }
+
+/* 双列大卡片网格 */
+.course-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 .lesson-card {
-  border-radius: var(--radius);
-  padding: var(--gap-s);
+  position: relative;
+  border-radius: 18px;
+  aspect-ratio: 4 / 5;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  position: relative;
-  transition: transform 0.1s;
-  min-height: 0;
-  min-width: 0;
+  justify-content: flex-end;
   overflow: hidden;
+  transition: transform 0.1s;
+  text-align: left;
 }
 .lesson-card:active {
-  transform: translateY(calc(var(--press) - 1px)) scale(0.98);
+  transform: scale(0.97);
 }
-.big-emoji {
-  font-size: var(--fs-emoji-xl);
+/* 大 emoji 作为背景装饰 */
+.card-emoji {
+  position: absolute;
+  right: -8px;
+  top: 10%;
+  font-size: 88px;
   line-height: 1;
+  opacity: 0.9;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
 }
-.lt {
-  font-size: clamp(16px, min(3vh, 2.4vw), 24px);
-  font-weight: 800;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
+.card-text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.card-title {
+  font-size: 17px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.35);
   line-height: 1.2;
-  max-width: 100%;
 }
-.cnt {
-  font-size: clamp(10px, min(1.6vh, 1.3vw), 13px);
-  opacity: 0.85;
+.card-sub {
+  font-size: 12px;
   font-weight: 700;
-  white-space: nowrap;
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 .card-done {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background: var(--overlay);
-  color: var(--green-dark);
-  font-size: clamp(10px, min(1.6vh, 1.3vw), 12px);
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  white-space: nowrap;
-  display: inline-flex;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  color: #22c55e;
+  display: flex;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  z-index: 2;
 }
-@media (max-height: 480px) {
-  .cnt {
-    display: none;
+.card-done .k-ico { width: 14px; height: 14px; }
+
+/* 课程色调背景（渐变） */
+.tone-blue   { background: linear-gradient(135deg, #4a90d9, #2b6cb0); }
+.tone-orange { background: linear-gradient(135deg, #f6993f, #ed8936); }
+.tone-pink   { background: linear-gradient(135deg, #ed64a6, #d53f8c); }
+.tone-green  { background: linear-gradient(135deg, #48bb78, #38a169); }
+.tone-purple { background: linear-gradient(135deg, #9f7aea, #805ad5); }
+.tone-red    { background: linear-gradient(135deg, #f56565, #e53e3e); }
+.tone-teal   { background: linear-gradient(135deg, #4fd1c5, #38b2ac); }
+.tone-yellow { background: linear-gradient(135deg, #ecc94b, #d69e2e); }
+
+@media (min-width: 768px) {
+  .course-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
   }
-}
-@media (max-height: 620px) and (max-width: 600px) {
-  .lt {
-    -webkit-line-clamp: 1;
-    font-size: 15px;
-  }
+  .card-emoji { font-size: 110px; }
+  .card-title { font-size: 19px; }
 }
 </style>
