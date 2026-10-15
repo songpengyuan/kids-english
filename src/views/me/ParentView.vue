@@ -14,8 +14,9 @@ import { useContentStore } from "../../stores/content";
 import AppHeader from "../../components/layout/AppHeader.vue";
 import SoundToggle from "../../components/layout/SoundToggle.vue";
 import ThemeToggle from "../../components/layout/ThemeToggle.vue";
-import { ChevronRight, BarChart3, Clock, Activity, Volume2, Moon, Shield, Plus, LogOut } from "@lucide/vue";
+import { ChevronRight, BarChart3, Clock, Activity, Volume2, Moon, Shield, Plus, LogOut, Pencil } from "@lucide/vue";
 import { speakZh } from "../../services/speech";
+import type { Child } from "../../types";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();
@@ -56,6 +57,7 @@ async function submit() {
     if (ok) {
       content.loadFromServer();
       progress.syncFromServer();
+      rewards.syncFromServer();
     }
   } catch (e) {
     error.value = (e as Error).message;
@@ -78,6 +80,40 @@ async function saveProfile() {
   try {
     await auth.patchMe(profile.nickname, profile.email);
     editingProfile.value = false;
+  } catch (e) {
+    error.value = (e as Error).message;
+  } finally {
+    busy.value = false;
+  }
+}
+
+/** 孩子编辑：编辑中的孩子 id（null = 未编辑） */
+const editingChildId = ref<number | null>(null);
+const childForm = reactive({ name: "", avatar: "", birthDate: "" });
+
+function startEditChild(c: Child) {
+  editingChildId.value = c.id;
+  childForm.name = c.name;
+  childForm.avatar = c.avatar ?? "";
+  childForm.birthDate = c.birthDate ?? "";
+  error.value = "";
+}
+
+async function saveChild() {
+  error.value = "";
+  const name = childForm.name.trim();
+  if (!name) {
+    error.value = "孩子名字不能为空";
+    return;
+  }
+  busy.value = true;
+  try {
+    await auth.patchChild(editingChildId.value!, {
+      name,
+      avatar: childForm.avatar.trim() || null,
+      birthDate: childForm.birthDate.trim() || null,
+    });
+    editingChildId.value = null;
   } catch (e) {
     error.value = (e as Error).message;
   } finally {
@@ -166,11 +202,26 @@ function sayFamily() {
           <button v-else class="f-ghost-btn" @click="startEditProfile">✏️ 编辑资料</button>
 
           <div class="f-children">
-            <button v-for="c in auth.children" :key="c.id" class="f-child"
-              :class="{ on: c.id === auth.currentChildId }" @click="pickChild(c.id)">
-              <span class="fc-avatar">{{ c.avatar || "👶" }}</span>
-              <span>{{ c.name }}</span>
-            </button>
+            <div v-for="c in auth.children" :key="c.id" class="f-child-wrap">
+              <button class="f-child" :class="{ on: c.id === auth.currentChildId }" @click="pickChild(c.id)">
+                <span class="fc-avatar">{{ c.avatar || "👶" }}</span>
+                <span>{{ c.name }}</span>
+              </button>
+              <button class="f-edit-btn" title="编辑资料" @click="startEditChild(c)">
+                <Pencil class="k-ico" />
+              </button>
+            </div>
+          </div>
+
+          <!-- 孩子编辑表单（名字/头像/生日） -->
+          <div v-if="editingChildId !== null" class="f-child-edit">
+            <input v-model="childForm.name" class="f-input" placeholder="名字" maxlength="20" />
+            <input v-model="childForm.avatar" class="f-input" placeholder="头像 emoji（如 🦁）" maxlength="8" />
+            <input v-model="childForm.birthDate" class="f-input" type="date" placeholder="出生日期" />
+            <div class="f-profile-actions">
+              <button class="f-add-btn" :disabled="busy" @click="saveChild">保存</button>
+              <button class="f-ghost-btn" @click="editingChildId = null">取消</button>
+            </div>
           </div>
           <div class="f-add">
             <input v-model="newChildName" class="f-input" placeholder="添加孩子（输入名字）" maxlength="20"
@@ -277,9 +328,14 @@ function sayFamily() {
 .f-profile-actions .f-add-btn { padding: 8px 18px; }
 .f-profile-actions .f-ghost-btn { margin-bottom: 0; color: var(--ink-faint); }
 .f-children { display: flex; flex-wrap: wrap; gap: 8px; }
+.f-child-wrap { display: flex; align-items: center; gap: 6px; }
 .f-child { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: var(--line); font-weight: 800; font-size: 14px; }
 .f-child.on { background: var(--green); color: #fff; }
 .fc-avatar { font-size: 16px; }
+.f-edit-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 999px; background: var(--line); color: var(--ink-faint); }
+.f-edit-btn .k-ico { width: 14px; height: 14px; }
+.f-child-edit { margin-top: 8px; padding: 10px; border-radius: var(--radius); background: var(--bg); }
+.f-child-edit .f-input { margin-bottom: 6px; }
 .f-add { display: flex; gap: 8px; margin-top: 8px; }
 .f-add .f-input { flex: 1; margin-bottom: 0; }
 .f-add-btn { display: flex; align-items: center; gap: 4px; padding: 0 14px; border-radius: var(--radius); background: var(--blue); color: #fff; font-weight: 800; font-size: 13px; }

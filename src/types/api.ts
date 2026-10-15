@@ -76,6 +76,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/children/{child_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Child
+         * @description 孩子档案编辑：改名字/头像/出生日期（至少一项；缺席=不改，显式 null=清空）。
+         */
+        patch: operations["patch_child_api_v1_auth_children__child_id__patch"];
+        trace?: never;
+    };
     "/api/v1/content/lessons": {
         parameters: {
             query?: never;
@@ -124,6 +144,24 @@ export interface paths {
         get: operations["get_progress_api_v1_progress_child__child_id__get"];
         /** Put Progress */
         put: operations["put_progress_api_v1_progress_child__child_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rewards/{child_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Rewards */
+        get: operations["get_rewards_api_v1_rewards__child_id__get"];
+        /** Put Rewards */
+        put: operations["put_rewards_api_v1_rewards__child_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -218,6 +256,8 @@ export interface components {
             name: string;
             /** Avatar */
             avatar?: string | null;
+            /** Birth Date */
+            birth_date?: string | null;
         };
         /** ChildOut */
         ChildOut: {
@@ -227,6 +267,20 @@ export interface components {
             name: string;
             /** Avatar */
             avatar?: string | null;
+            /** Birth Date */
+            birth_date?: string | null;
+        };
+        /**
+         * ChildPatchIn
+         * @description 孩子档案编辑：名/头像/生日（至少一项；缺席=不改，avatar/birth_date 显式 null=清空）。
+         */
+        ChildPatchIn: {
+            /** Name */
+            name?: string | null;
+            /** Avatar */
+            avatar?: string | null;
+            /** Birth Date */
+            birth_date?: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -479,6 +533,65 @@ export interface components {
             /** Family Id */
             family_id: number;
         };
+        /** RewardsDataOut */
+        RewardsDataOut: {
+            /**
+             * Shells
+             * @default 0
+             */
+            shells: number;
+            /**
+             * Forms
+             * @default {}
+             */
+            forms: {
+                [key: string]: number;
+            };
+            /**
+             * Chestsopened
+             * @default 0
+             */
+            chestsOpened: number;
+        };
+        /**
+         * RewardsIn
+         * @description 奖励数据上报：贝壳（>=0）+ 形态星级 + 累计开箱次数。
+         */
+        RewardsIn: {
+            /** Shells */
+            shells: number;
+            /**
+             * Forms
+             * @default {}
+             */
+            forms: {
+                [key: string]: number;
+            };
+            /**
+             * Chestsopened
+             * @default 0
+             */
+            chestsOpened: number;
+        };
+        /** RewardsOut */
+        RewardsOut: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+            data: components["schemas"]["RewardsDataOut"];
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** RewardsPutOut */
+        RewardsPutOut: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+        };
         /** SongOut */
         SongOut: {
             /** Audio */
@@ -715,6 +828,43 @@ export interface operations {
             };
         };
     };
+    patch_child_api_v1_auth_children__child_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path: {
+                child_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChildPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChildCreatedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_lessons_api_v1_content_lessons_get: {
         parameters: {
             query?: never;
@@ -836,6 +986,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProgressPutOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_rewards_api_v1_rewards__child_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path: {
+                child_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewardsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_rewards_api_v1_rewards__child_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path: {
+                child_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RewardsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewardsPutOut"];
                 };
             };
             /** @description Validation Error */

@@ -18,6 +18,11 @@ type ChildCreatedOut = components["schemas"]["ChildCreatedOut"];
 
 const CURRENT_CHILD_KEY = "kids-auth-current-child";
 
+/** 后端 ChildOut（snake_case）→ 前端 Child（camelCase） */
+function toChild(c: components["schemas"]["ChildOut"]): Child {
+  return { id: c.id, name: c.name, avatar: c.avatar ?? null, birthDate: c.birth_date ?? null };
+}
+
 export interface FamilyInfo {
   familyId: number;
   familyName: string;
@@ -62,7 +67,7 @@ export const useAuthStore = defineStore("auth", () => {
   function applyLogin(
     fid: number,
     name: string,
-    list: Child[],
+    list: components["schemas"]["ChildOut"][],
     extra?: { email?: string | null; nickname?: string; createdAt?: string | null },
   ) {
     family.value = {
@@ -72,8 +77,8 @@ export const useAuthStore = defineStore("auth", () => {
       nickname: extra?.nickname ?? name,
       createdAt: extra?.createdAt ?? null,
     };
-    children.value = list;
-    currentChildId.value = restoreChildId(list);
+    children.value = list.map(toChild);
+    currentChildId.value = restoreChildId(children.value);
     ready.value = true;
   }
 
@@ -165,15 +170,30 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   /** 新建孩子档案（成功后自动选中） */
-  async function createChild(name: string, avatar?: string): Promise<Child> {
+  async function createChild(name: string, avatar?: string, birthDate?: string): Promise<Child> {
     const res = await request<ChildCreatedOut>("/auth/children", {
       method: "POST",
-      body: { name, avatar },
+      body: { name, avatar, birth_date: birthDate || null },
     });
-    const child = res.child;
+    const child = toChild(res.child);
     children.value = [...children.value, child];
     currentChildId.value = child.id;
     localStorage.setItem(CURRENT_CHILD_KEY, String(child.id));
+    return child;
+  }
+
+  /** 编辑孩子档案：名/头像/生日（缺席字段不改；null 清空） */
+  async function patchChild(
+    childId: number,
+    patch: { name?: string; avatar?: string | null; birthDate?: string | null },
+  ): Promise<Child> {
+    const body: { name?: string; avatar?: string | null; birth_date?: string | null } = {};
+    if (patch.name !== undefined) body.name = patch.name;
+    if (patch.avatar !== undefined) body.avatar = patch.avatar;
+    if (patch.birthDate !== undefined) body.birth_date = patch.birthDate;
+    const res = await request<ChildCreatedOut>(`/auth/children/${childId}`, { method: "PATCH", body });
+    const child = toChild(res.child);
+    children.value = children.value.map((c) => (c.id === childId ? child : c));
     return child;
   }
 
@@ -209,6 +229,7 @@ export const useAuthStore = defineStore("auth", () => {
     patchMe,
     refreshMe,
     createChild,
+    patchChild,
     selectChild,
     logout,
   };

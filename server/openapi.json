@@ -235,6 +235,69 @@
         }
       }
     },
+    "/api/v1/auth/children/{child_id}": {
+      "patch": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Patch Child",
+        "description": "孩子档案编辑：改名字/头像/出生日期（至少一项；缺席=不改，显式 null=清空）。",
+        "operationId": "patch_child_api_v1_auth_children__child_id__patch",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChildPatchIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildCreatedOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/content/lessons": {
       "get": {
         "tags": [
@@ -443,6 +506,118 @@
         }
       }
     },
+    "/api/v1/rewards/{child_id}": {
+      "get": {
+        "tags": [
+          "rewards"
+        ],
+        "summary": "Get Rewards",
+        "operationId": "get_rewards_api_v1_rewards__child_id__get",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RewardsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "rewards"
+        ],
+        "summary": "Put Rewards",
+        "operationId": "put_rewards_api_v1_rewards__child_id__put",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewardsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RewardsPutOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/evaluation": {
       "post": {
         "tags": [
@@ -613,6 +788,18 @@
               }
             ],
             "title": "Avatar"
+          },
+          "birth_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Date"
           }
         },
         "type": "object",
@@ -641,6 +828,17 @@
               }
             ],
             "title": "Avatar"
+          },
+          "birth_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Date"
           }
         },
         "type": "object",
@@ -649,6 +847,49 @@
           "name"
         ],
         "title": "ChildOut"
+      },
+      "ChildPatchIn": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar"
+          },
+          "birth_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Date"
+          }
+        },
+        "type": "object",
+        "title": "ChildPatchIn",
+        "description": "孩子档案编辑：名/头像/生日（至少一项；缺席=不改，avatar/birth_date 显式 null=清空）。"
       },
       "HTTPValidationError": {
         "properties": {
@@ -1178,6 +1419,98 @@
           "family_id"
         ],
         "title": "RegisterOut"
+      },
+      "RewardsDataOut": {
+        "properties": {
+          "shells": {
+            "type": "integer",
+            "title": "Shells",
+            "default": 0
+          },
+          "forms": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Forms",
+            "default": {}
+          },
+          "chestsOpened": {
+            "type": "integer",
+            "title": "Chestsopened",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "RewardsDataOut"
+      },
+      "RewardsIn": {
+        "properties": {
+          "shells": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Shells"
+          },
+          "forms": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Forms",
+            "default": {}
+          },
+          "chestsOpened": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Chestsopened",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "shells"
+        ],
+        "title": "RewardsIn",
+        "description": "奖励数据上报：贝壳（>=0）+ 形态星级 + 累计开箱次数。"
+      },
+      "RewardsOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/RewardsDataOut"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "RewardsOut"
+      },
+      "RewardsPutOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "RewardsPutOut"
       },
       "SongOut": {
         "properties": {

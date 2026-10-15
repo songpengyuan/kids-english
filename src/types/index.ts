@@ -29,6 +29,8 @@ export interface Child {
   id: number;
   name: string;
   avatar?: string | null;
+  /** 出生日期 YYYY-MM-DD（可空=未填写） */
+  birthDate?: string | null;
 }
 
 /** 课程概要（内容 API 列表项） */

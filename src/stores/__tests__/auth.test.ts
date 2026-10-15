@@ -101,6 +101,24 @@ describe("auth store · 契约", () => {
     expect(auth.family?.createdAt).toBe("2026-10-15 00:00:00");
   });
 
+  it("编辑孩子：PATCH /auth/children/{id} 更新并替换列表项", async () => {
+    localStorage.setItem("kids-auth-token", "tok");
+    const auth = useAuthStore();
+    auth.family = { familyId: 1, familyName: "测试家", email: null, nickname: "测试家", createdAt: null };
+    auth.children = [{ id: 1, name: "程程", avatar: "🐰", birthDate: "2022-03-15" }];
+    auth.currentChildId = 1;
+    mockFetch({
+      "/api/v1/auth/children/1": {
+        ok: true, child: { id: 1, name: "程程宝", avatar: "🦁", birth_date: "2022-06-01" },
+      },
+    });
+    const child = await auth.patchChild(1, { name: "程程宝", avatar: "🦁", birthDate: "2022-06-01" });
+    expect(child.name).toBe("程程宝");
+    expect(auth.children[0].name).toBe("程程宝");
+    expect(auth.children[0].avatar).toBe("🦁");
+    expect(auth.children[0].birthDate).toBe("2022-06-01"); // snake_case → camelCase
+  });
+
   it("登录：孩子列表入库，自动选中第一个", async () => {
     mockFetch({
       "/api/v1/auth/login": {

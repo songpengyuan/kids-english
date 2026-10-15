@@ -15,6 +15,11 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { ALL_FORMS, FORM_TOTAL, formById, type FlatForm } from "../data/heroes";
+import { getToken, requestWithTimeout } from "../services/api";
+import type { components } from "../types/api";
+import { useAuthStore } from "./auth";
+
+type RewardsOut = components["schemas"]["RewardsOut"];
 
 /** 形态最高星级 */
 export const MAX_FORM_STARS = 3;
@@ -73,6 +78,50 @@ export const useRewardsStore = defineStore("rewards", () => {
     return Math.floor(rng() * (max - min + 1)) + min;
   }
 
+  /* ---------- 云同步（奖励上云：换设备不丢） ---------- */
+
+  /** 当前孩子 id（未登录/未选孩子 → null = 纯本地模式） */
+  function activeChildId(): number | null {
+    if (!getToken()) return null;
+    return useAuthStore().currentChildId ?? null;
+  }
+
+  /**
+   * 从后端拉取当前孩子奖励并合并（多设备首次同步）：
+   * 奖励都是"只增不减"的累积量（贝壳/星级/开箱数），按各字段取 max 合并，
+   * 不覆盖本机刚开的宝箱。
+   */
+  async function syncFromServer(): Promise<void> {
+    const childId = activeChildId();
+    if (childId === null) return;
+    try {
+      const res = await requestWithTimeout<RewardsOut>(`/rewards/${childId}`);
+      if (res.ok) {
+        const d = res.data;
+        shells.value = Math.max(shells.value, d.shells || 0);
+        for (const [id, stars] of Object.entries(d.forms || {})) {
+          forms.value[id] = Math.max(forms.value[id] || 0, stars || 0);
+        }
+        chestsOpened.value = Math.max(chestsOpened.value, d.chestsOpened || 0);
+        save();
+      }
+    } catch {
+      /* 后端不可用：保持本地（纯本地模式） */
+    }
+  }
+
+  /** 全量上报（开箱/兑换后即时；失败静默，下次变更自动重试） */
+  function report(): void {
+    const childId = activeChildId();
+    if (childId === null) return;
+    void requestWithTimeout<components["schemas"]["RewardsPutOut"]>(`/rewards/${childId}`, {
+      method: "PUT",
+      body: { shells: shells.value, forms: { ...forms.value }, chestsOpened: chestsOpened.value },
+    }).catch(() => {
+      /* 离线/后端不可用：下次变更再报 */
+    });
+  }
+
   function save() {
     try {
       localStorage.setItem(
@@ -82,6 +131,7 @@ export const useRewardsStore = defineStore("rewards", () => {
     } catch {
       /* 无痕模式写入失败，忽略 */
     }
+    report();
   }
   // 迁移结果要落盘（否则每次启动都重复折算）
   if (legacyStickers.length > 0) save();
@@ -166,6 +216,7 @@ export const useRewardsStore = defineStore("rewards", () => {
     forms.value = {};
     chestsOpened.value = 0;
     localStorage.removeItem(KEY);
+    // 仅清本地，不上报（调试用；云端数据保留）
   }
 
   return {
@@ -182,5 +233,6 @@ export const useRewardsStore = defineStore("rewards", () => {
     grant,
     buyForm,
     reset,
+    syncFromServer,
   };
 });

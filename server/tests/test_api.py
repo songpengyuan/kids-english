@@ -301,3 +301,164 @@ def _register_with_email(name, email, passcode="1234"):
     )
     assert r.status_code == 200, r.text
     return r.json()["token"]
+
+
+def _make_child(token, name="程程", avatar="🐰", birth_date="2022-03-15"):
+    r = client.post(
+        "/api/v1/auth/children",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": name, "avatar": avatar, "birth_date": birth_date},
+    )
+    assert r.status_code == 200, r.text
+    return r.json()["child"]["id"]
+
+
+class TestChildProfile:
+    """孩子档案个性化：birth_date + PATCH 编辑（名/头像/生日）。"""
+
+    def test_create_child_with_birth_date_in_me(self):
+        token = _auth()
+        _make_child(token)
+        me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}).json()
+        child = me["children"][0]
+        assert child["name"] == "程程"
+        assert child["avatar"] == "🐰"
+        assert child["birth_date"] == "2022-03-15"
+
+    def test_create_child_without_birth_date_ok(self):
+        """存量路径：不填生日仍可建孩子（birth_date 可空）。"""
+        token = _auth()
+        r = client.post(
+            "/api/v1/auth/children",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"name": "朵朵"},
+        )
+        assert r.status_code == 200
+        assert r.json()["child"]["birth_date"] is None
+
+    def test_patch_child_name_avatar_birth(self):
+        token = _auth()
+        cid = _make_child(token)
+        r = client.patch(
+            f"/api/v1/auth/children/{cid}",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"name": "程程宝", "avatar": "🦁", "birth_date": "2022-06-01"},
+        )
+        assert r.status_code == 200
+        child = r.json()["child"]
+        assert child["name"] == "程程宝"
+        assert child["avatar"] == "🦁"
+        assert child["birth_date"] == "2022-06-01"
+
+    def test_patch_child_partial_only_name(self):
+        token = _auth()
+        cid = _make_child(token)
+        r = client.patch(
+            f"/api/v1/auth/children/{cid}",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"name": "程程宝"},
+        )
+        assert r.status_code == 200
+        child = r.json()["child"]
+        assert child["name"] == "程程宝"
+        assert child["avatar"] == "🐰"  # 未提交字段保留原值
+        assert child["birth_date"] == "2022-03-15"
+
+    def test_patch_child_clear_avatar(self):
+        """显式传 null 清除头像（PATCH 语义：缺席=不改，null=清空）。"""
+        token = _auth()
+        cid = _make_child(token)
+        r = client.patch(
+            f"/api/v1/auth/children/{cid}",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"avatar": None},
+        )
+        assert r.status_code == 200
+        assert r.json()["child"]["avatar"] is None
+
+    def test_patch_child_nothing_400(self):
+        token = _auth()
+        cid = _make_child(token)
+        r = client.patch(
+            f"/api/v1/auth/children/{cid}",
+            headers={"Authorization": f"Bearer {token}"},
+            json={},
+        )
+        assert r.status_code == 400
+
+    def test_patch_other_family_child_404(self):
+        token = _auth()
+        cid = _make_child(token)
+        t2 = _auth("别人家", "5678")
+        assert client.patch(
+            f"/api/v1/auth/children/{cid}",
+            headers={"Authorization": f"Bearer {t2}"},
+            json={"name": "抢"},
+        ).status_code == 404
+
+
+class TestRewards:
+    """奖励数据上云：贝壳/形态星级/开箱次数按孩子存取（换设备不丢）。"""
+
+    def test_get_empty_rewards(self):
+        token = _auth()
+        cid = _make_child(token)
+        got = client.get(
+            f"/api/v1/rewards/{cid}", headers={"Authorization": f"Bearer {token}"}
+        ).json()
+        assert got["ok"] is True
+        assert got["data"] == {"shells": 0, "forms": {}, "chestsOpened": 0}
+
+    def test_put_then_get_roundtrip(self):
+        token = _auth()
+        cid = _make_child(token)
+        put = client.put(
+            f"/api/v1/rewards/{cid}",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"shells": 42, "forms": {"leo": 2, "doli": 1}, "chestsOpened": 9},
+        )
+        assert put.json()["ok"] is True
+        got = client.get(
+            f"/api/v1/rewards/{cid}", headers={"Authorization": f"Bearer {token}"}
+        ).json()
+        assert got["data"]["shells"] == 42
+        assert got["data"]["forms"]["leo"] == 2
+        assert got["data"]["chestsOpened"] == 9
+        assert got["updated_at"]
+
+    def test_put_overwrite_latest(self):
+        token = _auth()
+        cid = _make_child(token)
+        for shells in (10, 20):
+            client.put(
+                f"/api/v1/rewards/{cid}",
+                headers={"Authorization": f"Bearer {token}"},
+                json={"shells": shells, "forms": {}, "chestsOpened": 0},
+            )
+        got = client.get(
+            f"/api/v1/rewards/{cid}", headers={"Authorization": f"Bearer {token}"}
+        ).json()
+        assert got["data"]["shells"] == 20  # 覆盖写入，取最后一次
+
+    def test_cross_family_rewards_404(self):
+        token = _auth()
+        cid = _make_child(token)
+        t2 = _auth("别人家", "5678")
+        assert client.get(
+            f"/api/v1/rewards/{cid}", headers={"Authorization": f"Bearer {t2}"}
+        ).status_code == 404
+        assert client.put(
+            f"/api/v1/rewards/{cid}",
+            headers={"Authorization": f"Bearer {t2}"},
+            json={"shells": 1, "forms": {}, "chestsOpened": 0},
+        ).status_code == 404
+
+    def test_negative_shells_422(self):
+        token = _auth()
+        cid = _make_child(token)
+        r = client.put(
+            f"/api/v1/rewards/{cid}",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"shells": -1, "forms": {}, "chestsOpened": 0},
+        )
+        assert r.status_code == 422

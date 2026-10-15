@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 /**
  * 奖励 store 测试（贝壳 → 英雄形态）：
- * 兑换/升级/满级、开箱掉落、全收集后的行为、老贴纸数据折算、持久化读回。
+ * 兑换/升级/满级、开箱掉落、全收集后的行为、老贴纸数据折算、持久化读回、云同步。
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { CHEST_FORM_CHANCE, LEGACY_STICKER_REFUND, MAX_FORM_STARS, useRewardsStore } from "../rewards";
 import { ALL_FORMS, FORM_TOTAL } from "../../data/heroes";
+import { useAuthStore } from "../auth";
+import { setToken } from "../../services/api";
 
 const KEY = "kids-english-rewards-v1";
 
@@ -154,5 +156,90 @@ describe("rewards store · 老数据迁移与持久化", () => {
     const r = useRewardsStore();
     expect(r.shells).toBe(0);
     expect(r.ownedCount).toBe(0);
+  });
+});
+
+describe("rewards store · 云同步（奖励上云）", () => {
+  /** 简单 fetch mock：记录调用，按路由返回 */
+  function mockFetch(routes: Record<string, unknown>) {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const fn = vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url, init });
+      const body = routes[url];
+      return { ok: true, status: 200, json: async () => body } as Response;
+    });
+    vi.stubGlobal("fetch", fn);
+    return { calls, fn };
+  }
+
+  /** 模拟已登录 + 已选孩子（孩子 id=1） */
+  function loginAsParent() {
+    setToken("test-token");
+    const auth = useAuthStore();
+    auth.family = { familyId: 1, familyName: "测试家", email: null, nickname: "测试家", createdAt: null };
+    auth.children = [{ id: 1, name: "程程", avatar: null, birthDate: null }];
+    auth.currentChildId = 1;
+    auth.ready = true;
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+  });
+
+  it("已登录：开箱发奖后即时报到 /rewards/{child}", async () => {
+    loginAsParent();
+    const { calls, fn } = mockFetch({});
+    const r = useRewardsStore();
+    r.grant({ shells: 5, formId: null, isNew: false });
+    await vi.waitFor(() => expect(fn).toHaveBeenCalled());
+    const put = calls.find((c) => c.url === "/api/v1/rewards/1");
+    expect(put).toBeTruthy();
+    expect(put!.init!.method).toBe("PUT");
+    const body = JSON.parse(put!.init!.body as string) as {
+      shells: number;
+      forms: Record<string, number>;
+      chestsOpened: number;
+    };
+    expect(body.shells).toBe(5);
+    expect(body.chestsOpened).toBe(1);
+  });
+
+  it("未登录：发奖不上报（纯本地模式）", async () => {
+    const { fn } = mockFetch({});
+    const r = useRewardsStore();
+    r.grant({ shells: 5, formId: null, isNew: false });
+    await new Promise((res) => setTimeout(res, 20));
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("syncFromServer：各字段取 max 合并，不覆盖本地更高值", async () => {
+    loginAsParent();
+    mockFetch({
+      "/api/v1/rewards/1": {
+        ok: true,
+        data: { shells: 42, forms: { leo: 2, bun: 3 }, chestsOpened: 9 },
+        updated_at: "2026-10-15 10:00:00",
+      },
+    });
+    const r = useRewardsStore();
+    r.grant({ shells: 100, formId: null, isNew: false }); // 本地 100 贝壳 > 云端
+    r.grant({ shells: 0, formId: "leo", isNew: false }); // 本地 leo 1★ < 云端 2★
+    await r.syncFromServer();
+    expect(r.shells).toBe(100); // 本地更高 → 保留本地
+    expect(r.starsOf("leo")).toBe(2); // 云端更高 → 补到云端
+    expect(r.starsOf("bun")).toBe(3); // 云端独有 → 补入
+    expect(r.chestsOpened).toBe(9); // 云端更高 → 补入
+  });
+
+  it("syncFromServer：未登录不请求", async () => {
+    const { fn } = mockFetch({});
+    const r = useRewardsStore();
+    await r.syncFromServer();
+    expect(fn).not.toHaveBeenCalled();
   });
 });

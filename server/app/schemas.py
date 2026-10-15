@@ -31,6 +31,21 @@ class MePatchIn(BaseModel):
 class ChildIn(BaseModel):
     name: str = Field(min_length=1, max_length=20)
     avatar: str | None = None
+    birth_date: str | None = Field(default=None, max_length=20)
+
+
+class ChildPatchIn(BaseModel):
+    """孩子档案编辑：名/头像/生日（至少一项；缺席=不改，avatar/birth_date 显式 null=清空）。"""
+    name: str | None = Field(default=None, min_length=1, max_length=20)
+    avatar: str | None = None
+    birth_date: str | None = Field(default=None, max_length=20)
+
+
+class RewardsIn(BaseModel):
+    """奖励数据上报：贝壳（>=0）+ 形态星级 + 累计开箱次数。"""
+    shells: int = Field(ge=0)
+    forms: dict[str, int] = {}
+    chestsOpened: int = Field(default=0, ge=0)
 
 
 class ProgressIn(BaseModel):
@@ -49,6 +64,7 @@ class ChildOut(BaseModel):
     id: int
     name: str
     avatar: str | None = None
+    birth_date: str | None = None
 
 
 class RegisterOut(BaseModel):
@@ -80,6 +96,22 @@ class MeOut(BaseModel):
 class ChildCreatedOut(BaseModel):
     ok: bool = True
     child: ChildOut
+
+
+class RewardsDataOut(BaseModel):
+    shells: int = 0
+    forms: dict[str, int] = {}
+    chestsOpened: int = 0
+
+
+class RewardsOut(BaseModel):
+    ok: bool = True
+    data: RewardsDataOut
+    updated_at: str | None = None
+
+
+class RewardsPutOut(BaseModel):
+    ok: bool = True
 
 
 class TimingOut(BaseModel):
