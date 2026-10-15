@@ -182,11 +182,6 @@ html.no-bottom-nav #app {
   padding-bottom: 0;
 }
 
-/* 歌词全屏播放时隐藏底部导航 */
-html.hide-nav .bottom-nav {
-  display: none;
-}
-
 /* 平板竖屏：空间充裕，稍微放宽左右留白 */
 @media (min-width: 700px) and (orientation: portrait) {
   #app {

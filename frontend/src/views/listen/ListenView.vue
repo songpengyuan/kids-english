@@ -10,9 +10,8 @@ import { ref, computed, onBeforeUnmount } from "vue";
 import { lessons, asset } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
-import { Play, Pause, SkipBack, SkipForward, Music, Video, X, ChevronDown, Repeat, Repeat1, Shuffle, ListMusic } from "@lucide/vue";
+import { Play, Pause, Music, Video, X, ChevronDown, ListMusic } from "@lucide/vue";
 import BaseDrawer from "../../components/ui/BaseDrawer.vue";
-import SafeBottom from "../../components/layout/SafeBottom.vue";
 import type { ListenSubTab } from "../../types";
 
 const player = usePlayerStore();
@@ -62,41 +61,35 @@ onBeforeUnmount(() => {
 <template>
   <div class="listen view">
     <!-- ===== 歌词全屏页（状态来自全局 store，跨路由保持） ===== -->
-    <div v-if="player.nowPlaying && player.currentSong" class="lyrics-page" :class="{ 'anim-in': player.nowPlaying }">
-      <div class="lp-header">
-        <button class="lp-back" @click="player.closeLyrics()"><ChevronDown class="k-ico" /></button>
-        <div class="lp-cover" :class="'tone-' + player.currentSong.tone">{{ player.currentSong.emoji }}</div>
-        <div class="lp-title-area">
-          <p class="lp-title">{{ player.currentSong.title }}</p>
-          <p class="lp-sub">{{ player.currentSong.titleZh }}</p>
+    <Transition name="lyrics">
+      <div v-if="player.nowPlaying && player.currentSong" class="lyrics-page">
+        <div class="lp-header">
+          <button class="lp-back" @click="player.closeLyrics()"><ChevronDown class="k-ico" /></button>
+          <div class="lp-cover" :class="'tone-' + player.currentSong.tone">{{ player.currentSong.emoji }}</div>
+          <div class="lp-title-area">
+            <p class="lp-title">{{ player.currentSong.title }}</p>
+            <p class="lp-sub">{{ player.currentSong.titleZh }}</p>
+          </div>
+        </div>
+        <div class="lp-lyrics">
+          <p v-for="(line, i) in player.currentLyrics" :key="i" class="lp-line"
+            :class="{ active: Math.round(player.progress * player.currentLyrics.length) === i }">{{ line }}</p>
+          <p v-if="player.currentLyrics.length === 0" class="lp-line">🎵</p>
+        </div>
+        <!-- 播放控制交给底部「磨耳朵」迷你播放条，这里只留播放列表入口 -->
+        <div class="lp-controls">
+          <button class="lp-btn" @click="showPlaylist = true"><ListMusic class="k-ico" /></button>
+        </div>
+        <div class="lp-progress-row">
+          <span class="lp-time">{{ player.formatTime(player.progress * player.duration) }}</span>
+          <input class="lp-progress" type="range" :value="Math.round(player.progress * 100)" @input="player.seek" min="0" max="100" />
+          <span class="lp-time">{{ player.formatTime(player.duration) }}</span>
         </div>
       </div>
-      <div class="lp-lyrics">
-        <p v-for="(line, i) in player.currentLyrics" :key="i" class="lp-line"
-          :class="{ active: Math.round(player.progress * player.currentLyrics.length) === i }">{{ line }}</p>
-        <p v-if="player.currentLyrics.length === 0" class="lp-line">🎵</p>
-      </div>
-      <div class="lp-controls">
-        <button class="lp-btn" @click="player.toggleRepeat()">
-          <Repeat1 v-if="player.repeatMode === 'one'" class="k-ico" />
-          <Repeat v-else-if="player.repeatMode === 'all'" class="k-ico" />
-          <Shuffle v-else-if="player.shuffleOn" class="k-ico" />
-          <Repeat v-else class="k-ico" style="opacity:0.4" />
-        </button>
-        <button class="lp-btn" @click="player.prev()"><SkipBack class="k-ico" /></button>
-        <button class="lp-btn big" @click="player.togglePlay()"><Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" /></button>
-        <button class="lp-btn" @click="player.next()"><SkipForward class="k-ico" /></button>
-        <button class="lp-btn" @click="showPlaylist = true"><ListMusic class="k-ico" /></button>
-      </div>
-      <SafeBottom class="lp-progress-row" :gap="20">
-        <span class="lp-time">{{ player.formatTime(player.progress * player.duration) }}</span>
-        <input class="lp-progress" type="range" :value="Math.round(player.progress * 100)" @input="player.seek" min="0" max="100" />
-        <span class="lp-time">{{ player.formatTime(player.duration) }}</span>
-      </SafeBottom>
-    </div>
+    </Transition>
 
-    <!-- ===== 列表页（无顶部 header） ===== -->
-    <template v-else>
+    <!-- ===== 列表页（无顶部 header）；非播放态显示 ===== -->
+    <template v-if="!player.nowPlaying || !player.currentSong">
       <div class="today-chip">今天磨了 <b>{{ Math.floor((progStore.todayStats.listenSec ?? 0) / 60) }}</b> 分钟</div>
       <div class="sub-tabs">
         <button :class="{ on: subTab === 'songs' }" @click="switchTab('songs')"><Music class="k-ico" /> 歌曲</button>
@@ -189,7 +182,7 @@ onBeforeUnmount(() => {
 
 /* ===== 歌词全屏页 ===== */
 .lyrics-page {
-  position: fixed; inset: 0; z-index: 90;
+  position: fixed; inset: 0; z-index: 30; /* 低于底部导航(40)：歌词抽屉下垫着常驻 tab 栏 */
   background: transparent;
   display: flex; flex-direction: column;
   padding: env(safe-area-inset-top) var(--pad-x) 0;
@@ -226,16 +219,20 @@ onBeforeUnmount(() => {
   display: flex; align-items: center; justify-content: center;
   color: var(--ink-soft); background: var(--card-bg); box-shadow: var(--shadow-soft);
 }
-.lp-btn.big {
-  width: calc(var(--tap-min) + 16px); height: calc(var(--tap-min) + 16px);
-  background: var(--green); color: #fff;
-  box-shadow: 0 var(--press) 0 var(--green-dark);
-}
 .lp-btn .k-ico { width: 26px; height: 26px; }
-.lp-btn.big .k-ico { width: 30px; height: 30px; }
-.lp-progress-row { display: flex; align-items: center; gap: var(--gap-s); padding-left: var(--pad-x); padding-right: var(--pad-x); /* 底部安全间距由 SafeBottom 统一提供 */ }
+.lp-progress-row {
+  display: flex; align-items: center; gap: var(--gap-s);
+  padding-left: var(--pad-x); padding-right: var(--pad-x);
+  /* 底部常驻导航（fixed）预留高度 + 全面屏 Home 条安全距离 */
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+}
 .lp-progress { flex: 1; accent-color: var(--yellow); height: 6px; }
 .lp-time { font-size: 11px; font-weight: 700; color: var(--ink-faint); min-width: 36px; text-align: center; }
+
+/* 歌词全屏页 = 抽屉：进入/收起都从底部丝滑滑出 */
+.lyrics-enter-active { transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease; }
+.lyrics-leave-active { transition: transform 0.26s cubic-bezier(0.4, 0, 0.6, 1), opacity 0.26s ease; }
+.lyrics-enter-from, .lyrics-leave-to { transform: translateY(100%); opacity: 0; }
 
 /* 播放列表抽屉内容 */
 .drawer-list { padding: 8px 0; }
@@ -261,12 +258,4 @@ onBeforeUnmount(() => {
 .video-close { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); color: #fff; display: flex; align-items: center; justify-content: center; }
 .video-player { max-width: 95vw; max-height: 70vh; border-radius: 8px; }
 .video-caption { color: #ccc; margin: 0; font-weight: 700; }
-
-.lyrics-page.anim-in {
-  animation: lyrics-up 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-@keyframes lyrics-up {
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 </style>

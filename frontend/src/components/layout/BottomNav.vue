@@ -13,6 +13,7 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import PathIcon from "../PathIcon.vue";
 import { speakZh } from "../../services/speech";
+import { hapticTap } from "../../services/haptics";
 import { usePlayerStore } from "../../stores/player";
 import { Pause, Play } from "@lucide/vue";
 
@@ -33,23 +34,27 @@ const isMe = computed(
 );
 
 function goPractice() {
+  hapticTap();
   speakZh("学习");
   if (isHome.value) return;
   void router.push("/learn").catch(() => {});
 }
 function goMe() {
+  hapticTap();
   speakZh("我的");
   if (route.name === "me") return;
   void router.push("/me").catch(() => {});
 }
 /** 磨耳朵入口（未播放时点这里进列表页） */
 function goListen() {
+  hapticTap();
   speakZh("磨耳朵");
   if (isListen.value) return;
   void router.push("/listen").catch(() => {});
 }
 /** 播放条点击：展开歌词页（已播放时）；不在磨耳朵页先跳过去 */
 function openPlayer() {
+  hapticTap();
   const s = player.currentSong;
   if (!s) return;
   player.openLyrics(player.currentIdx);
@@ -138,6 +143,22 @@ function openPlayer() {
 .bottom-nav button.on {
   color: var(--brand);
   background: var(--brand-soft);
+}
+/* 命中动画：图标弹跳 + 淡入（新主题色激活态） */
+.bottom-nav button.on .bn-ico {
+  animation: tab-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.bottom-nav button.on .bn-cap {
+  animation: tab-fade 0.22s ease;
+}
+@keyframes tab-pop {
+  0% { transform: scale(0.82); }
+  55% { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+@keyframes tab-fade {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
 }
 .bn-ico {
   font-size: clamp(20px, min(3.4vh, 2.8vw), 28px);
