@@ -60,7 +60,7 @@ export const usePlayerStore = defineStore("player", () => {
     return lesson?.song?.lyrics ?? [];
   });
 
-  /* ---------- 磨耳朵时长累计（播放中每 5s 计一次） ---------- */
+  /* ---------- 磨耳朵时长累计（播放中每 5s 计一次，独立于学习时长） ---------- */
   let listenTimer: number | null = null;
   let lastTick = 0;
   function startListenTimer() {
@@ -69,7 +69,7 @@ export const usePlayerStore = defineStore("player", () => {
     listenTimer = window.setInterval(() => {
       const sec = (Date.now() - lastTick) / 1000;
       lastTick = Date.now();
-      useProgressStore().addDailyActivity(sec);
+      useProgressStore().addListenActivity(sec);
     }, 5000);
   }
   function stopListenTimer() {

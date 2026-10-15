@@ -111,6 +111,7 @@ export const router = createRouter({
       children: [
         { path: "", name: "me", component: () => import("../views/me/MyView.vue"), meta: { title: "我的" } },
         { path: "streak", name: "streak", component: () => import("../views/me/StreakView.vue"), meta: { title: "连击" } },
+        { path: "calendar", name: "calendar", component: () => import("../views/me/CalendarView.vue"), meta: { title: "学习日历" } },
         {
           path: "treasure",
           children: [

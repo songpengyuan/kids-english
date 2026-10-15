@@ -60,6 +60,8 @@ export interface DailyStats {
   date: string;
   /** 今日累计学习时长（秒，按玩法会话计） */
   durationSec: number;
+  /** 今日磨耳朵时长（秒，播放中每 5s 累加；可选=旧数据无此字段） */
+  listenSec?: number;
   /** 今日完成的玩法数 */
   activities: number;
 }
@@ -84,6 +86,8 @@ export interface DailySnapshot {
   activities: number;
   /** 当日结束时的"已掌握单词数"（累计值，用于趋势） */
   mastered: number;
+  /** 当日磨耳朵时长（秒；可选=旧数据无此字段） */
+  listenSec?: number;
 }
 
 /** 复习队列条目（不含词面信息，en/zh 由调用方查 lessons） */
@@ -466,30 +470,47 @@ export const useProgressStore = defineStore("progress", () => {
   const todayStats = computed<DailyStats>(() => {
     const d = progress._daily;
     if (d && d.date === today()) return d;
-    return { date: today(), durationSec: 0, activities: 0 };
+    return { date: today(), durationSec: 0, activities: 0, listenSec: 0 };
   });
 
   /**
-   * 完成一次玩法后调用：累计今日时长与玩法数（跨天自动重置）。
+   * 完成一次玩法后调用：累计今日学习时长与玩法数（跨天自动重置）。
    * @param durationSec 本次玩法会话时长（秒）
    */
   function addDailyActivity(durationSec: number) {
     const t = today();
     const d = progress._daily;
-    const cur = d && d.date === t ? d : { date: t, durationSec: 0, activities: 0 };
+    const cur = d && d.date === t ? d : { date: t, durationSec: 0, activities: 0, listenSec: 0 };
     cur.durationSec += Math.max(0, Math.round(durationSec));
     cur.activities += 1;
     progress._daily = cur;
     // 每日快照：掌握度趋势的数据点（保留最近 30 天）
     const log = (progress._dailyLog = progress._dailyLog || {});
-    log[t] = { durationSec: cur.durationSec, activities: cur.activities, mastered: masterySummary().mastered };
+    log[t] = { durationSec: cur.durationSec, activities: cur.activities, mastered: masterySummary().mastered, listenSec: cur.listenSec ?? 0 };
+    const days = Object.keys(log).sort();
+    for (const old of days.slice(0, Math.max(0, days.length - 30))) delete log[old];
+    save();
+  }
+
+  /**
+   * 磨耳朵时长累加：播放中每 5s 调用一次，只累计 listenSec（不计玩法数）。
+   * 与 addDailyActivity 分开，便于「今日学习时长 / 今日磨耳朵时长」独立展示。
+   */
+  function addListenActivity(durationSec: number) {
+    const t = today();
+    const d = progress._daily;
+    const cur = d && d.date === t ? d : { date: t, durationSec: 0, activities: 0, listenSec: 0 };
+    cur.listenSec = (cur.listenSec ?? 0) + Math.max(0, Math.round(durationSec));
+    progress._daily = cur;
+    const log = (progress._dailyLog = progress._dailyLog || {});
+    log[t] = { durationSec: cur.durationSec, activities: cur.activities, mastered: masterySummary().mastered, listenSec: cur.listenSec };
     const days = Object.keys(log).sort();
     for (const old of days.slice(0, Math.max(0, days.length - 30))) delete log[old];
     save();
   }
 
   /** 最近 n 天的每日快照（含今天），按日期升序 —— 家长报告趋势用 */
-  function recentDays(n = 7): { date: string; durationSec: number; activities: number; mastered: number }[] {
+  function recentDays(n = 7): { date: string; durationSec: number; activities: number; mastered: number; listenSec?: number }[] {
     const log = progress._dailyLog || {};
     return Object.keys(log)
       .sort()
@@ -529,6 +550,7 @@ export const useProgressStore = defineStore("progress", () => {
     recentDays,
     dailyLog: computed(() => progress._dailyLog || {}),
     addDailyActivity,
+    addListenActivity,
     setLastLesson,
     lastLesson,
     reset,

@@ -77,6 +77,21 @@ const goalPct = computed(() => {
   return Math.round(((r + l) / 2) * 100);
 });
 
+/** 今日学习 / 磨耳朵时长（汽水音乐式：大数字展示，点击进学习日历） */
+const today = progress.todayStats;
+function fmtMin(sec: number): string {
+  const m = Math.round((sec || 0) / 60);
+  if (m >= 60) {
+    const h = Math.floor(m / 60);
+    return `${h}小时${m % 60 ? m % 60 + "分" : ""}`;
+  }
+  return `${m}分钟`;
+}
+function sayToday() {
+  speakZh(`今天学了${fmtMin(today.durationSec)}，磨耳朵${fmtMin(today.listenSec ?? 0)}`);
+  router.push("/me/calendar");
+}
+
 function sayProfile() {
   speakZh(`${kidName.value}的学习小屋，${progress.totalStars} 颗星，${streak.streak} 天连击`);
 }
@@ -100,6 +115,26 @@ function sayEntry(name: string, path: string) {
             <span class="pf-flame"><Flame class="k-ico flame" />{{ streak.streak }} 天连击</span>
           </p>
         </div>
+      </section>
+
+      <!-- 今日学习 / 磨耳朵时长（汽水音乐式；点击卡片进学习日历） -->
+      <section class="today-card anim-fade-up" @click="sayToday">
+        <div class="tc-head">
+          <h3>今日学习</h3>
+          <ChevronRight class="k-ico tc-arrow" />
+        </div>
+        <div class="tc-nums">
+          <div class="tc-item">
+            <span class="tc-big">{{ fmtMin(today.durationSec) }}</span>
+            <span class="tc-label">学习</span>
+          </div>
+          <div class="tc-divider"></div>
+          <div class="tc-item">
+            <span class="tc-big">{{ fmtMin(today.listenSec ?? 0) }}</span>
+            <span class="tc-label">磨耳朵</span>
+          </div>
+        </div>
+        <p class="tc-foot">点我看看每天的学习情况</p>
       </section>
 
       <!-- 今日目标 -->
@@ -162,6 +197,24 @@ function sayEntry(name: string, path: string) {
 .pf-star .k-ico { color: var(--gold); }
 .pf-flame { display: inline-flex; align-items: center; gap: 4px; }
 .pf-flame .k-ico { color: #ff6b3d; }
+/* 今日学习时长卡片（汽水音乐式） */
+.today-card {
+  background: linear-gradient(135deg, var(--green-dark, #2c6e49), var(--green, #4c9a6b));
+  color: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: var(--gap-m);
+  cursor: pointer;
+}
+.tc-head { display: flex; justify-content: space-between; align-items: center; }
+.tc-head h3 { margin: 0; font-size: var(--fs-small); font-weight: 800; opacity: 0.9; letter-spacing: 1px; }
+.tc-arrow { width: 16px; height: 16px; opacity: 0.9; }
+.tc-nums { display: flex; align-items: center; gap: var(--gap-m); margin-top: var(--gap-s); }
+.tc-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tc-big { font-size: 26px; font-weight: 900; letter-spacing: 1px; }
+.tc-label { font-size: 12px; font-weight: 700; opacity: 0.85; }
+.tc-divider { width: 1px; height: 34px; background: rgba(255, 255, 255, 0.35); }
+.tc-foot { margin: var(--gap-s) 0 0; text-align: center; font-size: 12px; font-weight: 700; opacity: 0.8; }
 .goal { display: flex; flex-direction: column; gap: var(--gap-s); }
 .goal.done { box-shadow: var(--shadow-hard), inset 0 0 0 2px var(--green); }
 .goal-head { display: flex; justify-content: space-between; align-items: baseline; }
