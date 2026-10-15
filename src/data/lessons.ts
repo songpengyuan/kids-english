@@ -66,6 +66,8 @@ export interface RawLesson {
   emoji: string;
   tone?: Tone;
   date?: string;
+  /** 学单词玩法样式：cards=看图点读（默认），dialog=亲子口语对话卡（l10 用） */
+  stageStyle?: "cards" | "dialog";
   song: RawLessonSong;
   words: RawLessonWord[];
   phrases?: { en: string; zh: string }[];
@@ -106,6 +108,8 @@ export interface Lesson {
   tone: Tone;
   type: LessonType;
   date?: string;
+  /** 学单词玩法样式（默认看图点读；l10 为亲子口语对话卡） */
+  stageStyle: "cards" | "dialog";
   song: LessonSong;
   words: Word[];
   phrases: Phrase[];
@@ -511,6 +515,8 @@ const rawLessons: RawLesson[] = [
     emoji: "🐒",
     tone: "green",
     date: "2026-10-14",
+    /* 学单词玩法用「亲子口语对话卡」：大动物 + What's that? / It's a ... 问答 */
+    stageStyle: "dialog",
     song: {
       audio: "/lessons/l10/song.mp3",
       /* 老师提供的课堂视频（Super Simple Songs 官方动画，带机构水印） */
@@ -638,6 +644,7 @@ const BONUS_IDS = new Set(["l6", "l7", "l8"]);
 export const lessons: Lesson[] = rawLessons.map((lesson) => ({
   ...lesson,
   type: BONUS_IDS.has(lesson.id) ? "bonus" : "official",
+  stageStyle: lesson.stageStyle ?? "cards",
   // 缺失时兜底成蓝色，避免 class 变成 tone-undefined 导致卡片没有底色
   tone: lesson.tone || "blue",
   song: {

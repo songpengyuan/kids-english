@@ -246,9 +246,18 @@ const playTotal = ref(0);
     />
 
     <!-- 各玩法 -->
+    <LearnStage
+      v-else-if="stage === 'learn'"
+      :words="lesson.words"
+      :dialog="lesson.stageStyle === 'dialog'"
+      :phrases="lesson.phrases"
+      @done="afterGame"
+      @progress="playPct = $event"
+      @total="playTotal = $event"
+    />
     <component
-      v-else-if="stage === 'learn' || stage === 'quiz' || stage === 'match' || stage === 'speak'"
-      :is="stage === 'learn' ? LearnStage : stage === 'quiz' ? QuizView : stage === 'match' ? MatchView : SpeakView"
+      v-else-if="stage === 'quiz' || stage === 'match' || stage === 'speak'"
+      :is="stage === 'quiz' ? QuizView : stage === 'match' ? MatchView : SpeakView"
       :words="lesson.words"
       @done="afterGame"
       @progress="playPct = $event"

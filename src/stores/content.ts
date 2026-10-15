@@ -31,6 +31,7 @@ function toLesson(raw: LessonOut): Lesson {
     tone: raw.tone,
     type: raw.type,
     date: raw.date ?? undefined,
+    stageStyle: raw.stageStyle === "dialog" ? "dialog" : "cards",
     song: {
       audio: song.audio ?? null,
       video: song.video ?? null,

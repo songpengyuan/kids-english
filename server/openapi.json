@@ -973,6 +973,17 @@
             ],
             "title": "Date"
           },
+          "stageStyle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stagestyle"
+          },
           "song": {
             "$ref": "#/components/schemas/SongOut"
           },

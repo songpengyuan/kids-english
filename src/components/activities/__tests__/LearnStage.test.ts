@@ -93,3 +93,61 @@ describe("LearnStage（点读覆盖率星级 + 全点过才能完成）", () => 
     expect(vi.mocked(speak)).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("LearnStage dialog 亲子口语对话卡（l10）", () => {
+  const dlgWords = ["frog", "monkey", "tiger"].map((id) => ({
+    id, en: id, zh: id, emoji: "🐾", image: null, lessonId: "l10",
+  })) as never;
+  const dlgPhrases = [
+    { en: "What's that?", zh: "那是什么？", audio: "/lessons/l10/audio/ph-1.mp3" },
+    { en: "It's a frog.", zh: "那是一只青蛙。", audio: "/lessons/l10/audio/ph-2.mp3" },
+    { en: "It's a monkey.", zh: "那是一只猴子。", audio: "/lessons/l10/audio/ph-3.mp3" },
+  ] as never;
+
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+    vi.mocked(speak).mockClear();
+  });
+
+  it("渲染对话气泡与第一个大动物；进页自动播第一个词音（不算点读）", async () => {
+    const wrapper = mount(LearnStage, {
+      props: { words: dlgWords, dialog: true, phrases: dlgPhrases },
+      global: { plugins: [createPinia()] },
+    });
+    expect(wrapper.find(".dlg-bubble.q").text()).toContain("What's that?");
+    expect(wrapper.find(".dlg-bubble.a").text()).toContain("It's a frog.");
+    expect(wrapper.find(".dlg-en").text()).toBe("frog");
+    expect(wrapper.findAll(".dlg-chip").length).toBe(3);
+    expect(speak).toHaveBeenCalledWith("frog", { lessonId: "l10", wordId: "frog" });
+    // 自动播放不算点读 → 完成按钮仍禁用
+    expect(wrapper.find(".next").attributes("disabled")).toBeDefined();
+  });
+
+  it("点词条切换大动物并播放发音、记为点读；全部点过 → 可完成记 3 星", async () => {
+    const wrapper = mount(LearnStage, {
+      props: { words: dlgWords, dialog: true, phrases: dlgPhrases },
+      global: { plugins: [createPinia()] },
+    });
+    for (const chip of wrapper.findAll(".dlg-chip")) await chip.trigger("click");
+    expect(wrapper.find(".dlg-en").text()).toBe("tiger");
+    expect(wrapper.find(".next").attributes("disabled")).toBeUndefined();
+    expect(wrapper.find(".next").text()).toContain("我都会啦");
+    await wrapper.find(".next").trigger("click");
+    expect(wrapper.emitted("done")?.[0]?.[0]).toBe(3);
+  });
+
+  it("点问句气泡播放 What's that?；点答句气泡播放对应句", async () => {
+    const wrapper = mount(LearnStage, {
+      props: { words: dlgWords, dialog: true, phrases: dlgPhrases },
+      global: { plugins: [createPinia()] },
+    });
+    vi.mocked(speak).mockClear();
+    await wrapper.find(".dlg-bubble.q").trigger("click");
+    expect(speak).toHaveBeenCalledWith("What's that?");
+    await wrapper.find(".dlg-bubble.a").trigger("click");
+    expect(speak).toHaveBeenCalledWith("It's a frog.");
+    // 答句也算点读
+    expect(wrapper.find(".dlg-done").exists()).toBe(true);
+  });
+});

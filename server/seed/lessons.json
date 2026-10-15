@@ -1,1135 +1,1136 @@
 [
-  {
-    "id": "l4",
-    "order": "4",
-    "title": "A Sailor Went to Sea",
-    "titleZh": "水手出海去",
+ {
+  "id": "l4",
+  "order": "4",
+  "title": "A Sailor Went to Sea",
+  "titleZh": "水手出海去",
+  "emoji": "🌊",
+  "tone": "blue",
+  "type": "official",
+  "date": "2026-09-18",
+  "song": {
+   "audio": "/lessons/l4/song.mp3",
+   "video": "/lessons/l4/song.mp4",
+   "scene": "sea",
+   "lyrics": [
+    "A sailor went to sea, sea, sea",
+    "To see what he could see, see, see",
+    "But all that he could see, see, see",
+    "Was the bottom of the deep blue sea, sea, sea",
+    "",
+    "A sailor went to sea, sea, sea",
+    "To see what he could see, see, see",
+    "But all that he could see, see, see",
+    "Was the bottom of the deep blue sea, sea, sea",
+    "",
+    "A sailor went to sea, sea, sea",
+    "To see what he could see, see, see",
+    "But all that he could see, see, see",
+    "Was the bottom of the deep blue sea, sea, sea",
+    "A sailor went to sea, sea, sea",
+    "To see what he could see, see, see",
+    "But all that he could see, see, see",
+    "Was the bottom of the deep blue sea, sea, sea",
+    "",
+    "A sailor went to sea, sea, sea",
+    "To see what he could see, see, see",
+    "But all that he could see, see, see",
+    "Was the bottom of the deep blue sea, sea, sea",
+    "",
+    "A sailor went to sea, sea, sea",
+    "To see what he could see, see, see",
+    "But all that he could see, see, see",
+    "Was the bottom of the deep blue sea, sea, sea",
+    "A sailor went to sea, sea, sea",
+    "To see what he could see, see, see",
+    "But all that he could see, see, see",
+    "Was the bottom of the deep blue sea, sea, sea",
+    "",
+    "A sailor went to sea, sea, sea",
+    "To see what he could see, see, see",
+    "But all that he could see, see, see",
+    "Was the bottom of the deep blue sea, sea, sea",
+    "",
+    "A sailor went to sea, sea, sea",
+    "To see what he could see, see, see",
+    "But all that he could see, see, see",
+    "Was the bottom of the deep blue sea, sea, sea"
+   ],
+   "timings": {
+    "bpm": 96,
+    "beatsPerBar": 4,
+    "duration": 200.9,
+    "timeline": [
+     2,
+     7.25,
+     12.5,
+     17.76,
+     24.32,
+     24.32,
+     29.57,
+     34.83,
+     40.08,
+     46.64,
+     46.64,
+     51.9,
+     57.15,
+     62.4,
+     68.97,
+     74.22,
+     79.47,
+     84.72,
+     91.29,
+     91.29,
+     96.54,
+     101.79,
+     107.05,
+     113.61,
+     113.61,
+     118.86,
+     124.12,
+     129.37,
+     135.93,
+     141.19,
+     146.44,
+     151.69,
+     158.26,
+     158.26,
+     163.51,
+     168.76,
+     174.01,
+     180.58,
+     180.58,
+     185.83,
+     191.08,
+     196.33
+    ],
+    "estimated": true
+   }
+  },
+  "words": [
+   {
+    "id": "seahorse",
+    "en": "seahorse",
+    "zh": "海马",
+    "emoji": "🐴",
+    "image": "/lessons/l4/words/seahorse.png",
+    "audio": "/lessons/l4/audio/seahorse.mp3"
+   },
+   {
+    "id": "jellyfish",
+    "en": "jellyfish",
+    "zh": "水母",
+    "emoji": "🪼",
+    "image": "/lessons/l4/words/jellyfish.png",
+    "audio": "/lessons/l4/audio/jellyfish.mp3"
+   },
+   {
+    "id": "turtle",
+    "en": "turtle",
+    "zh": "海龟",
+    "emoji": "🐢",
+    "image": "/lessons/l4/words/turtle.png",
+    "audio": "/lessons/l4/audio/turtle.mp3"
+   },
+   {
+    "id": "octopus",
+    "en": "octopus",
+    "zh": "章鱼",
+    "emoji": "🐙",
+    "image": "/lessons/l4/words/octopus.png",
+    "audio": "/lessons/l4/audio/octopus.mp3"
+   },
+   {
+    "id": "shark",
+    "en": "shark",
+    "zh": "鲨鱼",
+    "emoji": "🦈",
+    "image": "/lessons/l4/words/shark.png",
+    "audio": "/lessons/l4/audio/shark.mp3"
+   },
+   {
+    "id": "whale",
+    "en": "whale",
+    "zh": "鲸鱼",
+    "emoji": "🐳",
+    "image": "/lessons/l4/words/whale.png",
+    "audio": "/lessons/l4/audio/whale.mp3"
+   },
+   {
+    "id": "sailor",
+    "en": "sailor",
+    "zh": "水手",
+    "emoji": "⛵",
+    "image": "/lessons/l4/words/sailor.png",
+    "audio": "/lessons/l4/audio/sailor.mp3"
+   },
+   {
+    "id": "sea",
+    "en": "sea",
+    "zh": "大海",
     "emoji": "🌊",
-    "tone": "blue",
-    "type": "official",
-    "date": "2026-09-18",
-    "song": {
-      "audio": "/lessons/l4/song.mp3",
-      "video": "/lessons/l4/song.mp4",
-      "scene": "sea",
-      "lyrics": [
-        "A sailor went to sea, sea, sea",
-        "To see what he could see, see, see",
-        "But all that he could see, see, see",
-        "Was the bottom of the deep blue sea, sea, sea",
-        "",
-        "A sailor went to sea, sea, sea",
-        "To see what he could see, see, see",
-        "But all that he could see, see, see",
-        "Was the bottom of the deep blue sea, sea, sea",
-        "",
-        "A sailor went to sea, sea, sea",
-        "To see what he could see, see, see",
-        "But all that he could see, see, see",
-        "Was the bottom of the deep blue sea, sea, sea",
-        "A sailor went to sea, sea, sea",
-        "To see what he could see, see, see",
-        "But all that he could see, see, see",
-        "Was the bottom of the deep blue sea, sea, sea",
-        "",
-        "A sailor went to sea, sea, sea",
-        "To see what he could see, see, see",
-        "But all that he could see, see, see",
-        "Was the bottom of the deep blue sea, sea, sea",
-        "",
-        "A sailor went to sea, sea, sea",
-        "To see what he could see, see, see",
-        "But all that he could see, see, see",
-        "Was the bottom of the deep blue sea, sea, sea",
-        "A sailor went to sea, sea, sea",
-        "To see what he could see, see, see",
-        "But all that he could see, see, see",
-        "Was the bottom of the deep blue sea, sea, sea",
-        "",
-        "A sailor went to sea, sea, sea",
-        "To see what he could see, see, see",
-        "But all that he could see, see, see",
-        "Was the bottom of the deep blue sea, sea, sea",
-        "",
-        "A sailor went to sea, sea, sea",
-        "To see what he could see, see, see",
-        "But all that he could see, see, see",
-        "Was the bottom of the deep blue sea, sea, sea"
-      ],
-      "timings": {
-        "bpm": 96,
-        "beatsPerBar": 4,
-        "duration": 200.9,
-        "timeline": [
-          2,
-          7.25,
-          12.5,
-          17.76,
-          24.32,
-          24.32,
-          29.57,
-          34.83,
-          40.08,
-          46.64,
-          46.64,
-          51.9,
-          57.15,
-          62.4,
-          68.97,
-          74.22,
-          79.47,
-          84.72,
-          91.29,
-          91.29,
-          96.54,
-          101.79,
-          107.05,
-          113.61,
-          113.61,
-          118.86,
-          124.12,
-          129.37,
-          135.93,
-          141.19,
-          146.44,
-          151.69,
-          158.26,
-          158.26,
-          163.51,
-          168.76,
-          174.01,
-          180.58,
-          180.58,
-          185.83,
-          191.08,
-          196.33
-        ],
-        "estimated": true
-      }
-    },
-    "words": [
-      {
-        "id": "seahorse",
-        "en": "seahorse",
-        "zh": "海马",
-        "emoji": "🐴",
-        "image": "/lessons/l4/words/seahorse.png",
-        "audio": "/lessons/l4/audio/seahorse.mp3"
-      },
-      {
-        "id": "jellyfish",
-        "en": "jellyfish",
-        "zh": "水母",
-        "emoji": "🪼",
-        "image": "/lessons/l4/words/jellyfish.png",
-        "audio": "/lessons/l4/audio/jellyfish.mp3"
-      },
-      {
-        "id": "turtle",
-        "en": "turtle",
-        "zh": "海龟",
-        "emoji": "🐢",
-        "image": "/lessons/l4/words/turtle.png",
-        "audio": "/lessons/l4/audio/turtle.mp3"
-      },
-      {
-        "id": "octopus",
-        "en": "octopus",
-        "zh": "章鱼",
-        "emoji": "🐙",
-        "image": "/lessons/l4/words/octopus.png",
-        "audio": "/lessons/l4/audio/octopus.mp3"
-      },
-      {
-        "id": "shark",
-        "en": "shark",
-        "zh": "鲨鱼",
-        "emoji": "🦈",
-        "image": "/lessons/l4/words/shark.png",
-        "audio": "/lessons/l4/audio/shark.mp3"
-      },
-      {
-        "id": "whale",
-        "en": "whale",
-        "zh": "鲸鱼",
-        "emoji": "🐳",
-        "image": "/lessons/l4/words/whale.png",
-        "audio": "/lessons/l4/audio/whale.mp3"
-      },
-      {
-        "id": "sailor",
-        "en": "sailor",
-        "zh": "水手",
-        "emoji": "⛵",
-        "image": "/lessons/l4/words/sailor.png",
-        "audio": "/lessons/l4/audio/sailor.mp3"
-      },
-      {
-        "id": "sea",
-        "en": "sea",
-        "zh": "大海",
-        "emoji": "🌊",
-        "image": "/lessons/l4/words/sea.png",
-        "audio": "/lessons/l4/audio/sea.mp3"
-      },
-      {
-        "id": "blue",
-        "en": "blue",
-        "zh": "蓝色",
-        "emoji": "🔵",
-        "image": "/lessons/l4/words/blue.png",
-        "audio": "/lessons/l4/audio/blue.mp3"
-      }
+    "image": "/lessons/l4/words/sea.png",
+    "audio": "/lessons/l4/audio/sea.mp3"
+   },
+   {
+    "id": "blue",
+    "en": "blue",
+    "zh": "蓝色",
+    "emoji": "🔵",
+    "image": "/lessons/l4/words/blue.png",
+    "audio": "/lessons/l4/audio/blue.mp3"
+   }
+  ],
+  "phrases": [
+   {
+    "en": "What do you see?",
+    "zh": "你看见什么啦？",
+    "audio": "/lessons/l4/audio/ph-1.mp3"
+   },
+   {
+    "en": "I see a ...",
+    "zh": "我看见了一只……",
+    "audio": "/lessons/l4/audio/ph-2.mp3"
+   }
+  ]
+ },
+ {
+  "id": "l5",
+  "order": "5",
+  "title": "I Am the Music Man",
+  "titleZh": "我是一个音乐人",
+  "emoji": "🎺",
+  "tone": "orange",
+  "type": "official",
+  "date": "2026-09-16",
+  "song": {
+   "audio": "/lessons/l5/song.mp3",
+   "video": "/lessons/l5/song.mp4",
+   "scene": "stage",
+   "lyrics": [
+    "I am the Music Man,",
+    "I come from down your way,",
+    "And I can play!",
+    "What can you play?",
+    "I play the piano!",
+    "Pia, pia, piano, piano, piano,",
+    "Pia, pia, piano, pia, piano!",
+    "",
+    "I am the Music Man,",
+    "I come from down your way,",
+    "And I can play!",
+    "What can you play?",
+    "I play the violin!",
+    "Vio, vio, violin, violin, violin,",
+    "Vio, vio, violin, vio, violin!",
+    "",
+    "I am the Music Man,",
+    "I come from down your way,",
+    "And I can play!",
+    "What can you play?",
+    "I play the trombone!",
+    "Trom, trom, trombone, trombone, trombone,",
+    "Trom, trom, trombone, trom, trombone!"
+   ],
+   "timings": {
+    "bpm": 96,
+    "beatsPerBar": 4,
+    "duration": 110.5,
+    "timeline": [
+     1,
+     5.16,
+     9.32,
+     12.09,
+     14.86,
+     18.33,
+     25.26,
+     31.5,
+     31.5,
+     35.09,
+     38.68,
+     41.07,
+     43.46,
+     47.05,
+     54.82,
+     62,
+     62,
+     68.44,
+     74.88,
+     79.17,
+     83.46,
+     89.9,
+     98.49
     ],
-    "phrases": [
-      {
-        "en": "What do you see?",
-        "zh": "你看见什么啦？",
-        "audio": "/lessons/l4/audio/ph-1.mp3"
-      },
-      {
-        "en": "I see a ...",
-        "zh": "我看见了一只……",
-        "audio": "/lessons/l4/audio/ph-2.mp3"
-      }
-    ]
+    "estimated": true
+   }
   },
-  {
-    "id": "l5",
-    "order": "5",
-    "title": "I Am the Music Man",
-    "titleZh": "我是一个音乐人",
+  "words": [
+   {
+    "id": "violin",
+    "en": "violin",
+    "zh": "小提琴",
+    "emoji": "🎻",
+    "image": "/lessons/l5/words/violin.png",
+    "audio": "/lessons/l5/audio/violin.mp3"
+   },
+   {
+    "id": "piano",
+    "en": "piano",
+    "zh": "钢琴",
+    "emoji": "🎹",
+    "image": "/lessons/l5/words/piano.png",
+    "audio": "/lessons/l5/audio/piano.mp3"
+   },
+   {
+    "id": "musicman",
+    "en": "Music Man",
+    "zh": "音乐人",
+    "emoji": "🎹",
+    "image": "/lessons/l5/words/musicman.png",
+    "audio": "/lessons/l5/audio/musicman.mp3"
+   },
+   {
+    "id": "trombone",
+    "en": "trombone",
+    "zh": "长号",
     "emoji": "🎺",
-    "tone": "orange",
-    "type": "official",
-    "date": "2026-09-16",
-    "song": {
-      "audio": "/lessons/l5/song.mp3",
-      "video": "/lessons/l5/song.mp4",
-      "scene": "stage",
-      "lyrics": [
-        "I am the Music Man,",
-        "I come from down your way,",
-        "And I can play!",
-        "What can you play?",
-        "I play the piano!",
-        "Pia, pia, piano, piano, piano,",
-        "Pia, pia, piano, pia, piano!",
-        "",
-        "I am the Music Man,",
-        "I come from down your way,",
-        "And I can play!",
-        "What can you play?",
-        "I play the violin!",
-        "Vio, vio, violin, violin, violin,",
-        "Vio, vio, violin, vio, violin!",
-        "",
-        "I am the Music Man,",
-        "I come from down your way,",
-        "And I can play!",
-        "What can you play?",
-        "I play the trombone!",
-        "Trom, trom, trombone, trombone, trombone,",
-        "Trom, trom, trombone, trom, trombone!"
-      ],
-      "timings": {
-        "bpm": 96,
-        "beatsPerBar": 4,
-        "duration": 110.5,
-        "timeline": [
-          1,
-          5.16,
-          9.32,
-          12.09,
-          14.86,
-          18.33,
-          25.26,
-          31.5,
-          31.5,
-          35.09,
-          38.68,
-          41.07,
-          43.46,
-          47.05,
-          54.82,
-          62,
-          62,
-          68.44,
-          74.88,
-          79.17,
-          83.46,
-          89.9,
-          98.49
-        ],
-        "estimated": true
-      }
-    },
-    "words": [
-      {
-        "id": "violin",
-        "en": "violin",
-        "zh": "小提琴",
-        "emoji": "🎻",
-        "image": "/lessons/l5/words/violin.png",
-        "audio": "/lessons/l5/audio/violin.mp3"
-      },
-      {
-        "id": "piano",
-        "en": "piano",
-        "zh": "钢琴",
-        "emoji": "🎹",
-        "image": "/lessons/l5/words/piano.png",
-        "audio": "/lessons/l5/audio/piano.mp3"
-      },
-      {
-        "id": "musicman",
-        "en": "Music Man",
-        "zh": "音乐人",
-        "emoji": "🎹",
-        "image": "/lessons/l5/words/musicman.png",
-        "audio": "/lessons/l5/audio/musicman.mp3"
-      },
-      {
-        "id": "trombone",
-        "en": "trombone",
-        "zh": "长号",
-        "emoji": "🎺",
-        "image": "/lessons/l5/words/trombone.png",
-        "audio": "/lessons/l5/audio/trombone.mp3"
-      },
-      {
-        "id": "mantis",
-        "en": "mantis",
-        "zh": "螳螂",
-        "emoji": "🦗",
-        "image": "/lessons/l5/words/mantis.png",
-        "audio": "/lessons/l5/audio/mantis.mp3"
-      },
-      {
-        "id": "squirrel",
-        "en": "squirrel",
-        "zh": "松鼠",
-        "emoji": "🐿️",
-        "image": "/lessons/l5/words/squirrel.png",
-        "audio": "/lessons/l5/audio/squirrel.mp3"
-      },
-      {
-        "id": "frog",
-        "en": "frog",
-        "zh": "青蛙",
-        "emoji": "🐸",
-        "image": "/lessons/l5/words/frog.png",
-        "audio": "/lessons/l5/audio/frog.mp3"
-      }
-    ],
-    "phrases": [
-      {
-        "en": "What can you play?",
-        "zh": "你会演奏什么呀？",
-        "audio": "/lessons/l5/audio/ph-1.mp3"
-      },
-      {
-        "en": "I can play the piano.",
-        "zh": "我会弹钢琴。",
-        "audio": "/lessons/l5/audio/ph-2.mp3"
-      },
-      {
-        "en": "I can play the violin.",
-        "zh": "我会拉小提琴。",
-        "audio": "/lessons/l5/audio/ph-3.mp3"
-      },
-      {
-        "en": "I can play the trombone.",
-        "zh": "我会吹长号。",
-        "audio": "/lessons/l5/audio/ph-4.mp3"
-      }
+    "image": "/lessons/l5/words/trombone.png",
+    "audio": "/lessons/l5/audio/trombone.mp3"
+   },
+   {
+    "id": "mantis",
+    "en": "mantis",
+    "zh": "螳螂",
+    "emoji": "🦗",
+    "image": "/lessons/l5/words/mantis.png",
+    "audio": "/lessons/l5/audio/mantis.mp3"
+   },
+   {
+    "id": "squirrel",
+    "en": "squirrel",
+    "zh": "松鼠",
+    "emoji": "🐿️",
+    "image": "/lessons/l5/words/squirrel.png",
+    "audio": "/lessons/l5/audio/squirrel.mp3"
+   },
+   {
+    "id": "frog",
+    "en": "frog",
+    "zh": "青蛙",
+    "emoji": "🐸",
+    "image": "/lessons/l5/words/frog.png",
+    "audio": "/lessons/l5/audio/frog.mp3"
+   }
+  ],
+  "phrases": [
+   {
+    "en": "What can you play?",
+    "zh": "你会演奏什么呀？",
+    "audio": "/lessons/l5/audio/ph-1.mp3"
+   },
+   {
+    "en": "I can play the piano.",
+    "zh": "我会弹钢琴。",
+    "audio": "/lessons/l5/audio/ph-2.mp3"
+   },
+   {
+    "en": "I can play the violin.",
+    "zh": "我会拉小提琴。",
+    "audio": "/lessons/l5/audio/ph-3.mp3"
+   },
+   {
+    "en": "I can play the trombone.",
+    "zh": "我会吹长号。",
+    "audio": "/lessons/l5/audio/ph-4.mp3"
+   }
+  ]
+ },
+ {
+  "id": "l6",
+  "order": "6",
+  "title": "A Rainbow of Colors",
+  "titleZh": "彩虹颜色歌",
+  "emoji": "🎨",
+  "tone": "pink",
+  "type": "bonus",
+  "date": "2026-09-24",
+  "song": {
+   "audio": "/lessons/l6/song.mp3",
+   "video": null,
+   "scene": "rainbow",
+   "lyrics": [
+    "Red, red, a red red apple",
+    "Yellow, yellow, the yellow sun",
+    "Blue, blue, the blue blue sky",
+    "I see a rainbow in the sky",
+    "",
+    "Green, green, the green green tree",
+    "Orange, orange, an orange cat",
+    "Purple, purple, a purple grape",
+    "I see a rainbow in the sky",
+    "",
+    "Pink, pink, a pink pink flower",
+    "White, white, a white white cloud",
+    "Black, black, a black black hat",
+    "I see a rainbow in the sky"
+   ],
+   "timings": {
+    "bpm": 120,
+    "beatsPerBar": 4,
+    "duration": 68,
+    "timeline": [
+     8,
+     12,
+     16,
+     20,
+     24,
+     28,
+     32,
+     36,
+     40,
+     44,
+     48,
+     52,
+     56,
+     60
     ]
+   }
   },
-  {
-    "id": "l6",
-    "order": "6",
-    "title": "A Rainbow of Colors",
-    "titleZh": "彩虹颜色歌",
-    "emoji": "🎨",
-    "tone": "pink",
-    "type": "bonus",
-    "date": "2026-09-24",
-    "song": {
-      "audio": "/lessons/l6/song.mp3",
-      "video": null,
-      "scene": "rainbow",
-      "lyrics": [
-        "Red, red, a red red apple",
-        "Yellow, yellow, the yellow sun",
-        "Blue, blue, the blue blue sky",
-        "I see a rainbow in the sky",
-        "",
-        "Green, green, the green green tree",
-        "Orange, orange, an orange cat",
-        "Purple, purple, a purple grape",
-        "I see a rainbow in the sky",
-        "",
-        "Pink, pink, a pink pink flower",
-        "White, white, a white white cloud",
-        "Black, black, a black black hat",
-        "I see a rainbow in the sky"
-      ],
-      "timings": {
-        "bpm": 120,
-        "beatsPerBar": 4,
-        "duration": 68,
-        "timeline": [
-          8,
-          12,
-          16,
-          20,
-          24,
-          28,
-          32,
-          36,
-          40,
-          44,
-          48,
-          52,
-          56,
-          60
-        ]
-      }
-    },
-    "words": [
-      {
-        "id": "red",
-        "en": "red",
-        "zh": "红色",
-        "emoji": "🍎",
-        "image": "/lessons/l6/words/red.svg",
-        "audio": "/lessons/l6/audio/red.mp3"
-      },
-      {
-        "id": "yellow",
-        "en": "yellow",
-        "zh": "黄色",
-        "emoji": "🍋",
-        "image": "/lessons/l6/words/yellow.svg",
-        "audio": "/lessons/l6/audio/yellow.mp3"
-      },
-      {
-        "id": "blue",
-        "en": "blue",
-        "zh": "蓝色",
-        "emoji": "🫐",
-        "image": "/lessons/l6/words/blue.svg",
-        "audio": "/lessons/l6/audio/blue.mp3"
-      },
-      {
-        "id": "green",
-        "en": "green",
-        "zh": "绿色",
-        "emoji": "🥝",
-        "image": "/lessons/l6/words/green.svg",
-        "audio": "/lessons/l6/audio/green.mp3"
-      },
-      {
-        "id": "orange",
-        "en": "orange",
-        "zh": "橙色",
-        "emoji": "🍊",
-        "image": "/lessons/l6/words/orange.svg",
-        "audio": "/lessons/l6/audio/orange.mp3"
-      },
-      {
-        "id": "purple",
-        "en": "purple",
-        "zh": "紫色",
-        "emoji": "🍇",
-        "image": "/lessons/l6/words/purple.svg",
-        "audio": "/lessons/l6/audio/purple.mp3"
-      },
-      {
-        "id": "pink",
-        "en": "pink",
-        "zh": "粉色",
-        "emoji": "🌸",
-        "image": "/lessons/l6/words/pink.svg",
-        "audio": "/lessons/l6/audio/pink.mp3"
-      },
-      {
-        "id": "white",
-        "en": "white",
-        "zh": "白色",
-        "emoji": "🥛",
-        "image": "/lessons/l6/words/white.svg",
-        "audio": "/lessons/l6/audio/white.mp3"
-      },
-      {
-        "id": "black",
-        "en": "black",
-        "zh": "黑色",
-        "emoji": "🐧",
-        "image": "/lessons/l6/words/black.svg",
-        "audio": "/lessons/l6/audio/black.mp3"
-      }
-    ],
-    "phrases": [
-      {
-        "en": "What color is it?",
-        "zh": "它是什么颜色呀？",
-        "audio": "/lessons/l6/audio/ph-1.mp3"
-      },
-      {
-        "en": "It's red.",
-        "zh": "它是红色的。",
-        "audio": "/lessons/l6/audio/ph-2.mp3"
-      },
-      {
-        "en": "I like blue.",
-        "zh": "我喜欢蓝色。",
-        "audio": "/lessons/l6/audio/ph-3.mp3"
-      },
-      {
-        "en": "Look at my rainbow!",
-        "zh": "看我的彩虹！",
-        "audio": "/lessons/l6/audio/ph-4.mp3"
-      }
+  "words": [
+   {
+    "id": "red",
+    "en": "red",
+    "zh": "红色",
+    "emoji": "🍎",
+    "image": "/lessons/l6/words/red.svg",
+    "audio": "/lessons/l6/audio/red.mp3"
+   },
+   {
+    "id": "yellow",
+    "en": "yellow",
+    "zh": "黄色",
+    "emoji": "🍋",
+    "image": "/lessons/l6/words/yellow.svg",
+    "audio": "/lessons/l6/audio/yellow.mp3"
+   },
+   {
+    "id": "blue",
+    "en": "blue",
+    "zh": "蓝色",
+    "emoji": "🫐",
+    "image": "/lessons/l6/words/blue.svg",
+    "audio": "/lessons/l6/audio/blue.mp3"
+   },
+   {
+    "id": "green",
+    "en": "green",
+    "zh": "绿色",
+    "emoji": "🥝",
+    "image": "/lessons/l6/words/green.svg",
+    "audio": "/lessons/l6/audio/green.mp3"
+   },
+   {
+    "id": "orange",
+    "en": "orange",
+    "zh": "橙色",
+    "emoji": "🍊",
+    "image": "/lessons/l6/words/orange.svg",
+    "audio": "/lessons/l6/audio/orange.mp3"
+   },
+   {
+    "id": "purple",
+    "en": "purple",
+    "zh": "紫色",
+    "emoji": "🍇",
+    "image": "/lessons/l6/words/purple.svg",
+    "audio": "/lessons/l6/audio/purple.mp3"
+   },
+   {
+    "id": "pink",
+    "en": "pink",
+    "zh": "粉色",
+    "emoji": "🌸",
+    "image": "/lessons/l6/words/pink.svg",
+    "audio": "/lessons/l6/audio/pink.mp3"
+   },
+   {
+    "id": "white",
+    "en": "white",
+    "zh": "白色",
+    "emoji": "🥛",
+    "image": "/lessons/l6/words/white.svg",
+    "audio": "/lessons/l6/audio/white.mp3"
+   },
+   {
+    "id": "black",
+    "en": "black",
+    "zh": "黑色",
+    "emoji": "🐧",
+    "image": "/lessons/l6/words/black.svg",
+    "audio": "/lessons/l6/audio/black.mp3"
+   }
+  ],
+  "phrases": [
+   {
+    "en": "What color is it?",
+    "zh": "它是什么颜色呀？",
+    "audio": "/lessons/l6/audio/ph-1.mp3"
+   },
+   {
+    "en": "It's red.",
+    "zh": "它是红色的。",
+    "audio": "/lessons/l6/audio/ph-2.mp3"
+   },
+   {
+    "en": "I like blue.",
+    "zh": "我喜欢蓝色。",
+    "audio": "/lessons/l6/audio/ph-3.mp3"
+   },
+   {
+    "en": "Look at my rainbow!",
+    "zh": "看我的彩虹！",
+    "audio": "/lessons/l6/audio/ph-4.mp3"
+   }
+  ]
+ },
+ {
+  "id": "l7",
+  "order": "7",
+  "title": "Count With Me",
+  "titleZh": "跟我数数 0-10",
+  "emoji": "🔢",
+  "tone": "green",
+  "type": "bonus",
+  "date": "2026-09-24",
+  "song": {
+   "audio": "/lessons/l7/song.mp3",
+   "video": null,
+   "scene": "numbers",
+   "lyrics": [
+    "Zero, zero, zero!",
+    "One, two, three",
+    "Four, five, six",
+    "Seven, eight, nine",
+    "Nine, and ten",
+    "",
+    "Let's count again",
+    "One, two, three",
+    "Four, five, six",
+    "Seven, eight, nine",
+    "Nine, and ten",
+    "",
+    "Ten, nine, eight",
+    "Seven, six, five",
+    "Four, three, two",
+    "One, and zero!",
+    "We counted to ten"
+   ],
+   "timings": {
+    "bpm": 120,
+    "beatsPerBar": 4,
+    "duration": 50,
+    "timeline": [
+     8,
+     10,
+     12,
+     14,
+     16,
+     18,
+     22,
+     24,
+     26,
+     28,
+     30,
+     32,
+     36,
+     38,
+     40,
+     42,
+     44
     ]
+   }
   },
-  {
-    "id": "l7",
-    "order": "7",
-    "title": "Count With Me",
-    "titleZh": "跟我数数 0-10",
-    "emoji": "🔢",
-    "tone": "green",
-    "type": "bonus",
-    "date": "2026-09-24",
-    "song": {
-      "audio": "/lessons/l7/song.mp3",
-      "video": null,
-      "scene": "numbers",
-      "lyrics": [
-        "Zero, zero, zero!",
-        "One, two, three",
-        "Four, five, six",
-        "Seven, eight, nine",
-        "Nine, and ten",
-        "",
-        "Let's count again",
-        "One, two, three",
-        "Four, five, six",
-        "Seven, eight, nine",
-        "Nine, and ten",
-        "",
-        "Ten, nine, eight",
-        "Seven, six, five",
-        "Four, three, two",
-        "One, and zero!",
-        "We counted to ten"
-      ],
-      "timings": {
-        "bpm": 120,
-        "beatsPerBar": 4,
-        "duration": 50,
-        "timeline": [
-          8,
-          10,
-          12,
-          14,
-          16,
-          18,
-          22,
-          24,
-          26,
-          28,
-          30,
-          32,
-          36,
-          38,
-          40,
-          42,
-          44
-        ]
-      }
-    },
-    "words": [
-      {
-        "id": "zero",
-        "en": "zero",
-        "zh": "零",
-        "emoji": "0️⃣",
-        "image": "/lessons/l7/words/zero.svg",
-        "audio": "/lessons/l7/audio/zero.mp3"
-      },
-      {
-        "id": "one",
-        "en": "one",
-        "zh": "一",
-        "emoji": "1️⃣",
-        "image": "/lessons/l7/words/one.svg",
-        "audio": "/lessons/l7/audio/one.mp3"
-      },
-      {
-        "id": "two",
-        "en": "two",
-        "zh": "二",
-        "emoji": "2️⃣",
-        "image": "/lessons/l7/words/two.svg",
-        "audio": "/lessons/l7/audio/two.mp3"
-      },
-      {
-        "id": "three",
-        "en": "three",
-        "zh": "三",
-        "emoji": "3️⃣",
-        "image": "/lessons/l7/words/three.svg",
-        "audio": "/lessons/l7/audio/three.mp3"
-      },
-      {
-        "id": "four",
-        "en": "four",
-        "zh": "四",
-        "emoji": "4️⃣",
-        "image": "/lessons/l7/words/four.svg",
-        "audio": "/lessons/l7/audio/four.mp3"
-      },
-      {
-        "id": "five",
-        "en": "five",
-        "zh": "五",
-        "emoji": "5️⃣",
-        "image": "/lessons/l7/words/five.svg",
-        "audio": "/lessons/l7/audio/five.mp3"
-      },
-      {
-        "id": "six",
-        "en": "six",
-        "zh": "六",
-        "emoji": "6️⃣",
-        "image": "/lessons/l7/words/six.svg",
-        "audio": "/lessons/l7/audio/six.mp3"
-      },
-      {
-        "id": "seven",
-        "en": "seven",
-        "zh": "七",
-        "emoji": "7️⃣",
-        "image": "/lessons/l7/words/seven.svg",
-        "audio": "/lessons/l7/audio/seven.mp3"
-      },
-      {
-        "id": "eight",
-        "en": "eight",
-        "zh": "八",
-        "emoji": "8️⃣",
-        "image": "/lessons/l7/words/eight.svg",
-        "audio": "/lessons/l7/audio/eight.mp3"
-      },
-      {
-        "id": "nine",
-        "en": "nine",
-        "zh": "九",
-        "emoji": "9️⃣",
-        "image": "/lessons/l7/words/nine.svg",
-        "audio": "/lessons/l7/audio/nine.mp3"
-      },
-      {
-        "id": "ten",
-        "en": "ten",
-        "zh": "十",
-        "emoji": "🔟",
-        "image": "/lessons/l7/words/ten.svg",
-        "audio": "/lessons/l7/audio/ten.mp3"
-      }
-    ],
-    "phrases": [
-      {
-        "en": "How many apples?",
-        "zh": "有几个苹果呀？",
-        "audio": "/lessons/l7/audio/ph-1.mp3"
-      },
-      {
-        "en": "Let's count together.",
-        "zh": "我们一起数一数。",
-        "audio": "/lessons/l7/audio/ph-2.mp3"
-      },
-      {
-        "en": "I can count to ten.",
-        "zh": "我能数到十。",
-        "audio": "/lessons/l7/audio/ph-3.mp3"
-      },
-      {
-        "en": "Give me five!",
-        "zh": "击个掌！",
-        "audio": "/lessons/l7/audio/ph-4.mp3"
-      }
+  "words": [
+   {
+    "id": "zero",
+    "en": "zero",
+    "zh": "零",
+    "emoji": "0️⃣",
+    "image": "/lessons/l7/words/zero.svg",
+    "audio": "/lessons/l7/audio/zero.mp3"
+   },
+   {
+    "id": "one",
+    "en": "one",
+    "zh": "一",
+    "emoji": "1️⃣",
+    "image": "/lessons/l7/words/one.svg",
+    "audio": "/lessons/l7/audio/one.mp3"
+   },
+   {
+    "id": "two",
+    "en": "two",
+    "zh": "二",
+    "emoji": "2️⃣",
+    "image": "/lessons/l7/words/two.svg",
+    "audio": "/lessons/l7/audio/two.mp3"
+   },
+   {
+    "id": "three",
+    "en": "three",
+    "zh": "三",
+    "emoji": "3️⃣",
+    "image": "/lessons/l7/words/three.svg",
+    "audio": "/lessons/l7/audio/three.mp3"
+   },
+   {
+    "id": "four",
+    "en": "four",
+    "zh": "四",
+    "emoji": "4️⃣",
+    "image": "/lessons/l7/words/four.svg",
+    "audio": "/lessons/l7/audio/four.mp3"
+   },
+   {
+    "id": "five",
+    "en": "five",
+    "zh": "五",
+    "emoji": "5️⃣",
+    "image": "/lessons/l7/words/five.svg",
+    "audio": "/lessons/l7/audio/five.mp3"
+   },
+   {
+    "id": "six",
+    "en": "six",
+    "zh": "六",
+    "emoji": "6️⃣",
+    "image": "/lessons/l7/words/six.svg",
+    "audio": "/lessons/l7/audio/six.mp3"
+   },
+   {
+    "id": "seven",
+    "en": "seven",
+    "zh": "七",
+    "emoji": "7️⃣",
+    "image": "/lessons/l7/words/seven.svg",
+    "audio": "/lessons/l7/audio/seven.mp3"
+   },
+   {
+    "id": "eight",
+    "en": "eight",
+    "zh": "八",
+    "emoji": "8️⃣",
+    "image": "/lessons/l7/words/eight.svg",
+    "audio": "/lessons/l7/audio/eight.mp3"
+   },
+   {
+    "id": "nine",
+    "en": "nine",
+    "zh": "九",
+    "emoji": "9️⃣",
+    "image": "/lessons/l7/words/nine.svg",
+    "audio": "/lessons/l7/audio/nine.mp3"
+   },
+   {
+    "id": "ten",
+    "en": "ten",
+    "zh": "十",
+    "emoji": "🔟",
+    "image": "/lessons/l7/words/ten.svg",
+    "audio": "/lessons/l7/audio/ten.mp3"
+   }
+  ],
+  "phrases": [
+   {
+    "en": "How many apples?",
+    "zh": "有几个苹果呀？",
+    "audio": "/lessons/l7/audio/ph-1.mp3"
+   },
+   {
+    "en": "Let's count together.",
+    "zh": "我们一起数一数。",
+    "audio": "/lessons/l7/audio/ph-2.mp3"
+   },
+   {
+    "en": "I can count to ten.",
+    "zh": "我能数到十。",
+    "audio": "/lessons/l7/audio/ph-3.mp3"
+   },
+   {
+    "en": "Give me five!",
+    "zh": "击个掌！",
+    "audio": "/lessons/l7/audio/ph-4.mp3"
+   }
+  ]
+ },
+ {
+  "id": "l8",
+  "order": "8",
+  "title": "The ABC Song",
+  "titleZh": "字母歌 ABC",
+  "emoji": "🔤",
+  "tone": "purple",
+  "type": "bonus",
+  "date": "2026-09-24",
+  "song": {
+   "audio": "/lessons/l8/song.mp3",
+   "video": null,
+   "scene": "letters",
+   "lyrics": [
+    "A B C D E F G",
+    "H I J K L M N O P",
+    "Q R S T U V",
+    "W X Y and Z",
+    "Now I know my ABC",
+    "Next time won't you sing with me",
+    "",
+    "A B C D E F G",
+    "H I J K L M N O P",
+    "Q R S T U V",
+    "W X Y and Z",
+    "Now I know my ABC",
+    "Next time won't you sing with me"
+   ],
+   "timings": {
+    "bpm": 120,
+    "beatsPerBar": 4,
+    "duration": 52,
+    "timeline": [
+     8,
+     12,
+     16,
+     18,
+     20,
+     22,
+     26,
+     30,
+     34,
+     38,
+     40,
+     42,
+     44
     ]
+   }
   },
-  {
-    "id": "l8",
-    "order": "8",
-    "title": "The ABC Song",
-    "titleZh": "字母歌 ABC",
-    "emoji": "🔤",
-    "tone": "purple",
-    "type": "bonus",
-    "date": "2026-09-24",
-    "song": {
-      "audio": "/lessons/l8/song.mp3",
-      "video": null,
-      "scene": "letters",
-      "lyrics": [
-        "A B C D E F G",
-        "H I J K L M N O P",
-        "Q R S T U V",
-        "W X Y and Z",
-        "Now I know my ABC",
-        "Next time won't you sing with me",
-        "",
-        "A B C D E F G",
-        "H I J K L M N O P",
-        "Q R S T U V",
-        "W X Y and Z",
-        "Now I know my ABC",
-        "Next time won't you sing with me"
-      ],
-      "timings": {
-        "bpm": 120,
-        "beatsPerBar": 4,
-        "duration": 52,
-        "timeline": [
-          8,
-          12,
-          16,
-          18,
-          20,
-          22,
-          26,
-          30,
-          34,
-          38,
-          40,
-          42,
-          44
-        ]
-      }
-    },
-    "words": [
-      {
-        "id": "apple",
-        "en": "apple",
-        "zh": "苹果（A）",
-        "emoji": "🍎",
-        "image": "/lessons/l8/words/apple.svg",
-        "audio": "/lessons/l8/audio/apple.mp3"
-      },
-      {
-        "id": "ball",
-        "en": "ball",
-        "zh": "皮球（B）",
-        "emoji": "⚽",
-        "image": "/lessons/l8/words/ball.svg",
-        "audio": "/lessons/l8/audio/ball.mp3"
-      },
-      {
-        "id": "cat",
-        "en": "cat",
-        "zh": "小猫（C）",
-        "emoji": "🐱",
-        "image": "/lessons/l8/words/cat.svg",
-        "audio": "/lessons/l8/audio/cat.mp3"
-      },
-      {
-        "id": "dog",
-        "en": "dog",
-        "zh": "小狗（D）",
-        "emoji": "🐶",
-        "image": "/lessons/l8/words/dog.svg",
-        "audio": "/lessons/l8/audio/dog.mp3"
-      },
-      {
-        "id": "egg",
-        "en": "egg",
-        "zh": "鸡蛋（E）",
-        "emoji": "🥚",
-        "image": "/lessons/l8/words/egg.svg",
-        "audio": "/lessons/l8/audio/egg.mp3"
-      },
-      {
-        "id": "fish",
-        "en": "fish",
-        "zh": "小鱼（F）",
-        "emoji": "🐟",
-        "image": "/lessons/l8/words/fish.svg",
-        "audio": "/lessons/l8/audio/fish.mp3"
-      },
-      {
-        "id": "grape",
-        "en": "grape",
-        "zh": "葡萄（G）",
-        "emoji": "🍇",
-        "image": "/lessons/l8/words/grape.svg",
-        "audio": "/lessons/l8/audio/grape.mp3"
-      },
-      {
-        "id": "hat",
-        "en": "hat",
-        "zh": "帽子（H）",
-        "emoji": "🎩",
-        "image": "/lessons/l8/words/hat.svg",
-        "audio": "/lessons/l8/audio/hat.mp3"
-      },
-      {
-        "id": "icecream",
-        "en": "ice cream",
-        "zh": "冰淇淋（I）",
-        "emoji": "🍦",
-        "image": "/lessons/l8/words/icecream.svg",
-        "audio": "/lessons/l8/audio/icecream.mp3"
-      }
-    ],
-    "phrases": [
-      {
-        "en": "What letter is it?",
-        "zh": "这是什么字母呀？",
-        "audio": "/lessons/l8/audio/ph-1.mp3"
-      },
-      {
-        "en": "It's letter A.",
-        "zh": "这是字母 A。",
-        "audio": "/lessons/l8/audio/ph-2.mp3"
-      },
-      {
-        "en": "A is for apple.",
-        "zh": "A 是 apple（苹果）。",
-        "audio": "/lessons/l8/audio/ph-3.mp3"
-      },
-      {
-        "en": "Let's sing ABC!",
-        "zh": "我们一起唱字母歌！",
-        "audio": "/lessons/l8/audio/ph-4.mp3"
-      }
-    ]
+  "words": [
+   {
+    "id": "apple",
+    "en": "apple",
+    "zh": "苹果（A）",
+    "emoji": "🍎",
+    "image": "/lessons/l8/words/apple.svg",
+    "audio": "/lessons/l8/audio/apple.mp3"
+   },
+   {
+    "id": "ball",
+    "en": "ball",
+    "zh": "皮球（B）",
+    "emoji": "⚽",
+    "image": "/lessons/l8/words/ball.svg",
+    "audio": "/lessons/l8/audio/ball.mp3"
+   },
+   {
+    "id": "cat",
+    "en": "cat",
+    "zh": "小猫（C）",
+    "emoji": "🐱",
+    "image": "/lessons/l8/words/cat.svg",
+    "audio": "/lessons/l8/audio/cat.mp3"
+   },
+   {
+    "id": "dog",
+    "en": "dog",
+    "zh": "小狗（D）",
+    "emoji": "🐶",
+    "image": "/lessons/l8/words/dog.svg",
+    "audio": "/lessons/l8/audio/dog.mp3"
+   },
+   {
+    "id": "egg",
+    "en": "egg",
+    "zh": "鸡蛋（E）",
+    "emoji": "🥚",
+    "image": "/lessons/l8/words/egg.svg",
+    "audio": "/lessons/l8/audio/egg.mp3"
+   },
+   {
+    "id": "fish",
+    "en": "fish",
+    "zh": "小鱼（F）",
+    "emoji": "🐟",
+    "image": "/lessons/l8/words/fish.svg",
+    "audio": "/lessons/l8/audio/fish.mp3"
+   },
+   {
+    "id": "grape",
+    "en": "grape",
+    "zh": "葡萄（G）",
+    "emoji": "🍇",
+    "image": "/lessons/l8/words/grape.svg",
+    "audio": "/lessons/l8/audio/grape.mp3"
+   },
+   {
+    "id": "hat",
+    "en": "hat",
+    "zh": "帽子（H）",
+    "emoji": "🎩",
+    "image": "/lessons/l8/words/hat.svg",
+    "audio": "/lessons/l8/audio/hat.mp3"
+   },
+   {
+    "id": "icecream",
+    "en": "ice cream",
+    "zh": "冰淇淋（I）",
+    "emoji": "🍦",
+    "image": "/lessons/l8/words/icecream.svg",
+    "audio": "/lessons/l8/audio/icecream.mp3"
+   }
+  ],
+  "phrases": [
+   {
+    "en": "What letter is it?",
+    "zh": "这是什么字母呀？",
+    "audio": "/lessons/l8/audio/ph-1.mp3"
+   },
+   {
+    "en": "It's letter A.",
+    "zh": "这是字母 A。",
+    "audio": "/lessons/l8/audio/ph-2.mp3"
+   },
+   {
+    "en": "A is for apple.",
+    "zh": "A 是 apple（苹果）。",
+    "audio": "/lessons/l8/audio/ph-3.mp3"
+   },
+   {
+    "en": "Let's sing ABC!",
+    "zh": "我们一起唱字母歌！",
+    "audio": "/lessons/l8/audio/ph-4.mp3"
+   }
+  ]
+ },
+ {
+  "id": "l9",
+  "order": "9",
+  "title": "One Little Finger",
+  "titleZh": "一根小手指",
+  "emoji": "👆",
+  "tone": "teal",
+  "type": "official",
+  "date": "2026-10-10",
+  "song": {
+   "audio": "/lessons/l9/song.mp3",
+   "video": "/lessons/l9/song.mp4",
+   "scene": "stage",
+   "lyrics": [
+    "One little finger, one little finger, one little finger",
+    "Tap tap tap!",
+    "Point your finger up, point your finger down",
+    "Put it on your head, head!",
+    "",
+    "One little finger, one little finger, one little finger",
+    "Tap tap tap!",
+    "Point your finger up, point your finger down",
+    "Put it on your nose, nose!",
+    "",
+    "One little finger, one little finger, one little finger",
+    "Tap tap tap!",
+    "Point your finger up, point your finger down",
+    "Put it on your chin, chin!",
+    "",
+    "One little finger, one little finger, one little finger",
+    "Tap tap tap!",
+    "Point your finger up, point your finger down",
+    "Put it on your arm, arm!",
+    "",
+    "One little finger, one little finger, one little finger",
+    "Tap tap tap!",
+    "Point your finger up, point your finger down",
+    "Put it on your leg, leg!",
+    "",
+    "One little finger, one little finger, one little finger",
+    "Tap tap tap!",
+    "Point your finger up, point your finger down",
+    "Put it on your foot, foot!",
+    "",
+    "Put it on your leg, leg!",
+    "Put it on your arm, arm!",
+    "Put it on your chin, chin!",
+    "Put it on your nose, nose!",
+    "Put it on your head, head!",
+    "",
+    "Now let's wave goodbye!",
+    "Goodbye!"
+   ],
+   "timings": null
   },
-  {
-    "id": "l9",
-    "order": "9",
-    "title": "One Little Finger",
-    "titleZh": "一根小手指",
+  "words": [
+   {
+    "id": "nose",
+    "en": "nose",
+    "zh": "鼻子",
+    "emoji": "👃",
+    "image": "/lessons/l9/words/nose.png",
+    "audio": "/lessons/l9/audio/nose.mp3"
+   },
+   {
+    "id": "arm",
+    "en": "arm",
+    "zh": "手臂",
+    "emoji": "💪",
+    "image": "/lessons/l9/words/arm.png",
+    "audio": "/lessons/l9/audio/arm.mp3"
+   },
+   {
+    "id": "leg",
+    "en": "leg",
+    "zh": "腿",
+    "emoji": "🦵",
+    "image": "/lessons/l9/words/leg.png",
+    "audio": "/lessons/l9/audio/leg.mp3"
+   },
+   {
+    "id": "foot",
+    "en": "foot",
+    "zh": "脚",
+    "emoji": "🦶",
+    "image": "/lessons/l9/words/foot.png",
+    "audio": "/lessons/l9/audio/foot.mp3"
+   },
+   {
+    "id": "chin",
+    "en": "chin",
+    "zh": "下巴",
+    "emoji": "😊",
+    "image": "/lessons/l9/words/chin.png",
+    "audio": "/lessons/l9/audio/chin.mp3"
+   },
+   {
+    "id": "finger",
+    "en": "finger",
+    "zh": "手指",
     "emoji": "👆",
-    "tone": "teal",
-    "type": "official",
-    "date": "2026-10-10",
-    "song": {
-      "audio": "/lessons/l9/song.mp3",
-      "video": "/lessons/l9/song.mp4",
-      "scene": "stage",
-      "lyrics": [
-        "One little finger, one little finger, one little finger",
-        "Tap tap tap!",
-        "Point your finger up, point your finger down",
-        "Put it on your head, head!",
-        "",
-        "One little finger, one little finger, one little finger",
-        "Tap tap tap!",
-        "Point your finger up, point your finger down",
-        "Put it on your nose, nose!",
-        "",
-        "One little finger, one little finger, one little finger",
-        "Tap tap tap!",
-        "Point your finger up, point your finger down",
-        "Put it on your chin, chin!",
-        "",
-        "One little finger, one little finger, one little finger",
-        "Tap tap tap!",
-        "Point your finger up, point your finger down",
-        "Put it on your arm, arm!",
-        "",
-        "One little finger, one little finger, one little finger",
-        "Tap tap tap!",
-        "Point your finger up, point your finger down",
-        "Put it on your leg, leg!",
-        "",
-        "One little finger, one little finger, one little finger",
-        "Tap tap tap!",
-        "Point your finger up, point your finger down",
-        "Put it on your foot, foot!",
-        "",
-        "Put it on your leg, leg!",
-        "Put it on your arm, arm!",
-        "Put it on your chin, chin!",
-        "Put it on your nose, nose!",
-        "Put it on your head, head!",
-        "",
-        "Now let's wave goodbye!",
-        "Goodbye!"
-      ],
-      "timings": null
-    },
-    "words": [
-      {
-        "id": "nose",
-        "en": "nose",
-        "zh": "鼻子",
-        "emoji": "👃",
-        "image": "/lessons/l9/words/nose.png",
-        "audio": "/lessons/l9/audio/nose.mp3"
-      },
-      {
-        "id": "arm",
-        "en": "arm",
-        "zh": "手臂",
-        "emoji": "💪",
-        "image": "/lessons/l9/words/arm.png",
-        "audio": "/lessons/l9/audio/arm.mp3"
-      },
-      {
-        "id": "leg",
-        "en": "leg",
-        "zh": "腿",
-        "emoji": "🦵",
-        "image": "/lessons/l9/words/leg.png",
-        "audio": "/lessons/l9/audio/leg.mp3"
-      },
-      {
-        "id": "foot",
-        "en": "foot",
-        "zh": "脚",
-        "emoji": "🦶",
-        "image": "/lessons/l9/words/foot.png",
-        "audio": "/lessons/l9/audio/foot.mp3"
-      },
-      {
-        "id": "chin",
-        "en": "chin",
-        "zh": "下巴",
-        "emoji": "😊",
-        "image": "/lessons/l9/words/chin.png",
-        "audio": "/lessons/l9/audio/chin.mp3"
-      },
-      {
-        "id": "finger",
-        "en": "finger",
-        "zh": "手指",
-        "emoji": "👆",
-        "image": "/lessons/l9/words/finger.png",
-        "audio": "/lessons/l9/audio/finger.mp3"
-      },
-      {
-        "id": "head",
-        "en": "head",
-        "zh": "头",
-        "emoji": "🧑",
-        "image": "/lessons/l9/words/head.png",
-        "audio": "/lessons/l9/audio/head.mp3"
-      }
-    ],
-    "phrases": [
-      {
-        "en": "Where is your finger?",
-        "zh": "你的手指在哪里？",
-        "audio": "/lessons/l9/audio/ph-1.mp3"
-      },
-      {
-        "en": "This is my head.",
-        "zh": "这是我的头。",
-        "audio": "/lessons/l9/audio/ph-2.mp3"
-      },
-      {
-        "en": "Put it on your nose.",
-        "zh": "把它放在鼻子上。",
-        "audio": "/lessons/l9/audio/ph-3.mp3"
-      },
-      {
-        "en": "Point your finger up.",
-        "zh": "手指向上指。",
-        "audio": "/lessons/l9/audio/ph-4.mp3"
-      },
-      {
-        "en": "Wave goodbye!",
-        "zh": "挥挥手说再见！",
-        "audio": "/lessons/l9/audio/ph-5.mp3"
-      }
-    ]
+    "image": "/lessons/l9/words/finger.png",
+    "audio": "/lessons/l9/audio/finger.mp3"
+   },
+   {
+    "id": "head",
+    "en": "head",
+    "zh": "头",
+    "emoji": "🧑",
+    "image": "/lessons/l9/words/head.png",
+    "audio": "/lessons/l9/audio/head.mp3"
+   }
+  ],
+  "phrases": [
+   {
+    "en": "Where is your finger?",
+    "zh": "你的手指在哪里？",
+    "audio": "/lessons/l9/audio/ph-1.mp3"
+   },
+   {
+    "en": "This is my head.",
+    "zh": "这是我的头。",
+    "audio": "/lessons/l9/audio/ph-2.mp3"
+   },
+   {
+    "en": "Put it on your nose.",
+    "zh": "把它放在鼻子上。",
+    "audio": "/lessons/l9/audio/ph-3.mp3"
+   },
+   {
+    "en": "Point your finger up.",
+    "zh": "手指向上指。",
+    "audio": "/lessons/l9/audio/ph-4.mp3"
+   },
+   {
+    "en": "Wave goodbye!",
+    "zh": "挥挥手说再见！",
+    "audio": "/lessons/l9/audio/ph-5.mp3"
+   }
+  ]
+ },
+ {
+  "id": "l10",
+  "order": "10",
+  "title": "Walking In The Jungle",
+  "titleZh": "丛林里散步",
+  "emoji": "🐒",
+  "tone": "green",
+  "type": "official",
+  "date": "2026-10-14",
+  "song": {
+   "audio": "/lessons/l10/song.mp3",
+   "video": "/lessons/l10/song.mp4",
+   "scene": "stage",
+   "lyrics": [
+    "Let's take a walk in the jungle.",
+    "Walking in the jungle. Walking in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "One step. Two steps. Three steps forward.",
+    "One step. Two steps. Three steps back.",
+    "Stop. Listen. What's that?",
+    "It's a frog! We're not afraid!",
+    "",
+    "Let's stomp.",
+    "Stomping in the jungle. Stomping in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "Stomping in the jungle. Stomping in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "One step, two steps, three steps forward.",
+    "One step, two steps, three steps back.",
+    "Stop! Listen! What's that?",
+    "It's a monkey!",
+    "We're not afraid!",
+    "",
+    "Let's jump!",
+    "Jumping in the jungle. Jumping in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "Jumping in the jungle. Jumping in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "One step, two steps, three steps forward.",
+    "One step, two steps, three steps back.",
+    "Stop! Listen! What's that?",
+    "It's a toucan!",
+    "We're not afraid!",
+    "",
+    "Let's skip!",
+    "Skipping in the jungle. Skipping in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "Skipping in the jungle. Skipping in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "One step, two steps, three steps forward.",
+    "One step, two steps, three steps back.",
+    "Stop! Listen! What's that?",
+    "It's a tiger!",
+    "Run!",
+    "Let's take a walk in the jungle.",
+    "Walking in the jungle. Walking in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "One step. Two steps. Three steps forward.",
+    "One step. Two steps. Three steps back.",
+    "Stop. Listen. What's that?",
+    "It's a frog! We're not afraid!",
+    "",
+    "Let's stomp.",
+    "Stomping in the jungle. Stomping in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "Stomping in the jungle. Stomping in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "One step, two steps, three steps forward.",
+    "One step, two steps, three steps back.",
+    "Stop! Listen! What's that?",
+    "It's a monkey!",
+    "We're not afraid!",
+    "",
+    "Let's jump!",
+    "Jumping in the jungle. Jumping in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "Jumping in the jungle. Jumping in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "One step, two steps, three steps forward.",
+    "One step, two steps, three steps back.",
+    "Stop! Listen! What's that?",
+    "It's a toucan!",
+    "We're not afraid!",
+    "",
+    "Let's skip!",
+    "Skipping in the jungle. Skipping in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "Skipping in the jungle. Skipping in the jungle.",
+    "We're not afraid. We're not afraid.",
+    "One step, two steps, three steps forward.",
+    "One step, two steps, three steps back.",
+    "Stop! Listen! What's that?",
+    "It's a tiger!"
+   ],
+   "timings": null
   },
-  {
-    "id": "l10",
-    "order": "10",
-    "title": "Walking In The Jungle",
-    "titleZh": "丛林里散步",
+  "words": [
+   {
+    "id": "frog",
+    "en": "frog",
+    "zh": "青蛙",
+    "emoji": "🐸",
+    "image": null,
+    "audio": "/lessons/l10/audio/frog.mp3"
+   },
+   {
+    "id": "monkey",
+    "en": "monkey",
+    "zh": "猴子",
     "emoji": "🐒",
-    "tone": "green",
-    "type": "official",
-    "date": "2026-10-14",
-    "song": {
-      "audio": "/lessons/l10/song.mp3",
-      "video": "/lessons/l10/song.mp4",
-      "scene": "stage",
-      "lyrics": [
-        "Let's take a walk in the jungle.",
-        "Walking in the jungle. Walking in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step. Two steps. Three steps forward.",
-        "One step. Two steps. Three steps back.",
-        "Stop. Listen. What's that?",
-        "It's a frog! We're not afraid!",
-        "",
-        "Let's stomp.",
-        "Stomping in the jungle. Stomping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "Stomping in the jungle. Stomping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step, two steps, three steps forward.",
-        "One step, two steps, three steps back.",
-        "Stop! Listen! What's that?",
-        "It's a monkey!",
-        "We're not afraid!",
-        "",
-        "Let's jump!",
-        "Jumping in the jungle. Jumping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "Jumping in the jungle. Jumping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step, two steps, three steps forward.",
-        "One step, two steps, three steps back.",
-        "Stop! Listen! What's that?",
-        "It's a toucan!",
-        "We're not afraid!",
-        "",
-        "Let's skip!",
-        "Skipping in the jungle. Skipping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "Skipping in the jungle. Skipping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step, two steps, three steps forward.",
-        "One step, two steps, three steps back.",
-        "Stop! Listen! What's that?",
-        "It's a tiger!",
-        "Run!",
-        "Let's take a walk in the jungle.",
-        "Walking in the jungle. Walking in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step. Two steps. Three steps forward.",
-        "One step. Two steps. Three steps back.",
-        "Stop. Listen. What's that?",
-        "It's a frog! We're not afraid!",
-        "",
-        "Let's stomp.",
-        "Stomping in the jungle. Stomping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "Stomping in the jungle. Stomping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step, two steps, three steps forward.",
-        "One step, two steps, three steps back.",
-        "Stop! Listen! What's that?",
-        "It's a monkey!",
-        "We're not afraid!",
-        "",
-        "Let's jump!",
-        "Jumping in the jungle. Jumping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "Jumping in the jungle. Jumping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step, two steps, three steps forward.",
-        "One step, two steps, three steps back.",
-        "Stop! Listen! What's that?",
-        "It's a toucan!",
-        "We're not afraid!",
-        "",
-        "Let's skip!",
-        "Skipping in the jungle. Skipping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "Skipping in the jungle. Skipping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step, two steps, three steps forward.",
-        "One step, two steps, three steps back.",
-        "Stop! Listen! What's that?",
-        "It's a tiger!"
-      ],
-      "timings": null
-    },
-    "words": [
-      {
-        "id": "frog",
-        "en": "frog",
-        "zh": "青蛙",
-        "emoji": "🐸",
-        "image": null,
-        "audio": "/lessons/l10/audio/frog.mp3"
-      },
-      {
-        "id": "monkey",
-        "en": "monkey",
-        "zh": "猴子",
-        "emoji": "🐒",
-        "image": null,
-        "audio": "/lessons/l10/audio/monkey.mp3"
-      },
-      {
-        "id": "tiger",
-        "en": "tiger",
-        "zh": "老虎",
-        "emoji": "🐯",
-        "image": null,
-        "audio": "/lessons/l10/audio/tiger.mp3"
-      },
-      {
-        "id": "toucan",
-        "en": "toucan",
-        "zh": "巨嘴鸟",
-        "emoji": "🦜",
-        "image": null,
-        "audio": "/lessons/l10/audio/toucan.mp3"
-      },
-      {
-        "id": "afraid",
-        "en": "afraid",
-        "zh": "害怕的",
-        "emoji": "😨",
-        "image": null,
-        "audio": "/lessons/l10/audio/afraid.mp3"
-      },
-      {
-        "id": "jungle",
-        "en": "jungle",
-        "zh": "丛林",
-        "emoji": "🌴",
-        "image": null,
-        "audio": "/lessons/l10/audio/jungle.mp3"
-      },
-      {
-        "id": "listen",
-        "en": "listen",
-        "zh": "听",
-        "emoji": "👂",
-        "image": null,
-        "audio": "/lessons/l10/audio/listen.mp3"
-      }
-    ],
-    "phrases": [
-      {
-        "en": "What's that?",
-        "zh": "那是什么？",
-        "audio": "/lessons/l10/audio/ph-1.mp3"
-      },
-      {
-        "en": "It's a frog.",
-        "zh": "那是一只青蛙。",
-        "audio": "/lessons/l10/audio/ph-2.mp3"
-      },
-      {
-        "en": "It's a monkey.",
-        "zh": "那是一只猴子。",
-        "audio": "/lessons/l10/audio/ph-3.mp3"
-      },
-      {
-        "en": "It's a tiger.",
-        "zh": "那是一只老虎。",
-        "audio": "/lessons/l10/audio/ph-4.mp3"
-      },
-      {
-        "en": "It's a toucan.",
-        "zh": "那是一只巨嘴鸟。",
-        "audio": "/lessons/l10/audio/ph-5.mp3"
-      }
-    ]
-  }
+    "image": null,
+    "audio": "/lessons/l10/audio/monkey.mp3"
+   },
+   {
+    "id": "tiger",
+    "en": "tiger",
+    "zh": "老虎",
+    "emoji": "🐯",
+    "image": null,
+    "audio": "/lessons/l10/audio/tiger.mp3"
+   },
+   {
+    "id": "toucan",
+    "en": "toucan",
+    "zh": "巨嘴鸟",
+    "emoji": "🦜",
+    "image": null,
+    "audio": "/lessons/l10/audio/toucan.mp3"
+   },
+   {
+    "id": "afraid",
+    "en": "afraid",
+    "zh": "害怕的",
+    "emoji": "😨",
+    "image": null,
+    "audio": "/lessons/l10/audio/afraid.mp3"
+   },
+   {
+    "id": "jungle",
+    "en": "jungle",
+    "zh": "丛林",
+    "emoji": "🌴",
+    "image": null,
+    "audio": "/lessons/l10/audio/jungle.mp3"
+   },
+   {
+    "id": "listen",
+    "en": "listen",
+    "zh": "听",
+    "emoji": "👂",
+    "image": null,
+    "audio": "/lessons/l10/audio/listen.mp3"
+   }
+  ],
+  "phrases": [
+   {
+    "en": "What's that?",
+    "zh": "那是什么？",
+    "audio": "/lessons/l10/audio/ph-1.mp3"
+   },
+   {
+    "en": "It's a frog.",
+    "zh": "那是一只青蛙。",
+    "audio": "/lessons/l10/audio/ph-2.mp3"
+   },
+   {
+    "en": "It's a monkey.",
+    "zh": "那是一只猴子。",
+    "audio": "/lessons/l10/audio/ph-3.mp3"
+   },
+   {
+    "en": "It's a tiger.",
+    "zh": "那是一只老虎。",
+    "audio": "/lessons/l10/audio/ph-4.mp3"
+   },
+   {
+    "en": "It's a toucan.",
+    "zh": "那是一只巨嘴鸟。",
+    "audio": "/lessons/l10/audio/ph-5.mp3"
+   }
+  ],
+  "stageStyle": "dialog"
+ }
 ]

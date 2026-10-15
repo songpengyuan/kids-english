@@ -323,6 +323,8 @@ export interface components {
             type: "official" | "bonus";
             /** Date */
             date?: string | null;
+            /** Stagestyle */
+            stageStyle?: string | null;
             song: components["schemas"]["SongOut"];
             /**
              * Words

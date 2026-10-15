@@ -152,6 +152,8 @@ class LessonOut(BaseModel):
     tone: Tone = "blue"
     type: LessonType = "official"
     date: str | None = None
+    # 学单词玩法样式：cards=看图点读（默认），dialog=亲子口语对话卡（l10）
+    stageStyle: str | None = None
     song: SongOut
     words: list[WordOut] = []
     phrases: list[PhraseOut] = []
