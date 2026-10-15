@@ -35,3 +35,6 @@ public/heroes/.tmp-download.fb
 server/.env
 server/.venv
 server/__pycache__/
+# 运行期数据库（含家庭/孩子/进度数据）不入库；生产数据只存在于服务器 + 定期备份
+server/*.db
+server/*.db-*

@@ -23,6 +23,7 @@ import {
   type SrsState,
 } from "../utils/reviewSchedule";
 import { getToken, requestWithTimeout } from "../services/api";
+import type { components } from "../types/api";
 import { useAuthStore } from "./auth";
 
 /** 单个单词的掌握度记录 */
@@ -182,19 +183,23 @@ export const useProgressStore = defineStore("progress", () => {
     if (childId === null || cloudState.value === "syncing") return;
     cloudState.value = "syncing";
     try {
-      const res = await requestWithTimeout<{
-        ok: boolean;
-        data: Record<string, LessonProgress>;
-        meta: { _daily: DailyStats | null; _last: string | null; _dailyLog: Record<string, DailySnapshot> };
-      }>(`/progress/child/${childId}`);
+      const res = await requestWithTimeout<components["schemas"]["ProgressOut"]>(
+        `/progress/child/${childId}`,
+      );
       if (res.ok) {
-        for (const id of Object.keys(res.data)) {
-          if (!(id in progress)) progress[id] = res.data[id];
+        const data = (res.data ?? {}) as Record<string, LessonProgress>;
+        const meta = (res.meta ?? {}) as {
+          _daily: DailyStats | null;
+          _last: string | null;
+          _dailyLog: Record<string, DailySnapshot>;
+        };
+        for (const id of Object.keys(data)) {
+          if (!(id in progress)) progress[id] = data[id];
         }
-        if (res.meta) {
-          if (!progress._daily) progress._daily = res.meta._daily ?? null;
-          if (!progress._last) progress._last = res.meta._last ?? null;
-          const log = res.meta._dailyLog ?? {};
+        if (meta) {
+          if (!progress._daily) progress._daily = meta._daily ?? null;
+          if (!progress._last) progress._last = meta._last ?? null;
+          const log = meta._dailyLog ?? {};
           progress._dailyLog = { ...log, ...progress._dailyLog };
         }
         cloudState.value = "done";
@@ -230,7 +235,7 @@ export const useProgressStore = defineStore("progress", () => {
       _dailyLog: progress._dailyLog ?? {},
     };
     try {
-      await requestWithTimeout(`/progress/child/${childId}`, {
+      await requestWithTimeout<components["schemas"]["ProgressPutOut"]>(`/progress/child/${childId}`, {
         method: "PUT",
         body: { data, meta },
       });

@@ -2,7 +2,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
 
 from ..db import connect
-from ..schemas import ChildIn, LoginIn, RegisterIn
+from ..schemas import (
+    ChildCreatedOut,
+    ChildIn,
+    LoginIn,
+    LoginOut,
+    MeOut,
+    RegisterIn,
+    RegisterOut,
+)
 from ..security import create_token, hash_passcode, verify_passcode, verify_token
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -24,7 +32,7 @@ def _family_children(conn, family_id: int) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-@router.post("/register")
+@router.post("/register", response_model=RegisterOut)
 def register(body: RegisterIn):
     conn = connect()
     try:
@@ -45,7 +53,7 @@ def register(body: RegisterIn):
     return {"ok": True, "token": create_token(family_id), "family_id": family_id}
 
 
-@router.post("/login")
+@router.post("/login", response_model=LoginOut)
 def login(body: LoginIn):
     conn = connect()
     try:
@@ -66,7 +74,7 @@ def login(body: LoginIn):
         conn.close()
 
 
-@router.get("/me")
+@router.get("/me", response_model=MeOut)
 def me(family_id: int = Depends(_require_family)):
     conn = connect()
     try:
@@ -83,7 +91,7 @@ def me(family_id: int = Depends(_require_family)):
         conn.close()
 
 
-@router.post("/children")
+@router.post("/children", response_model=ChildCreatedOut)
 def create_child(body: ChildIn, family_id: int = Depends(_require_family)):
     conn = connect()
     try:

@@ -7,7 +7,13 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { request, setFamilyName, setToken } from "../services/api";
+import type { components } from "../types/api";
 import type { Child } from "../types";
+
+type RegisterOut = components["schemas"]["RegisterOut"];
+type LoginOut = components["schemas"]["LoginOut"];
+type MeOut = components["schemas"]["MeOut"];
+type ChildCreatedOut = components["schemas"]["ChildCreatedOut"];
 
 const CURRENT_CHILD_KEY = "kids-auth-current-child";
 
@@ -59,9 +65,7 @@ export const useAuthStore = defineStore("auth", () => {
     const token = localStorage.getItem("kids-auth-token");
     if (!token) return false;
     try {
-      const res = await request<{ ok: boolean; family_id: number; family_name: string; children: Child[] }>(
-        "/auth/me",
-      );
+      const res = await request<MeOut>("/auth/me");
       if (res.ok) {
         applyLogin(res.family_id, res.family_name, res.children);
         return true;
@@ -73,7 +77,7 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   async function register(familyName: string, passcode: string): Promise<boolean> {
-    const res = await request<{ ok: boolean; token: string; family_id: number }>(
+    const res = await request<RegisterOut>(
       "/auth/register",
       { method: "POST", body: { family_name: familyName, passcode }, auth: false },
     );
@@ -87,13 +91,7 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   async function login(familyName: string, passcode: string): Promise<boolean> {
-    const res = await request<{
-      ok: boolean;
-      token: string;
-      family_id: number;
-      family_name: string;
-      children: Child[];
-    }>("/auth/login", { method: "POST", body: { family_name: familyName, passcode }, auth: false });
+    const res = await request<LoginOut>("/auth/login", { method: "POST", body: { family_name: familyName, passcode }, auth: false });
     setToken(res.token);
     setFamilyName(res.family_name);
     applyLogin(res.family_id, res.family_name, res.children);
@@ -103,9 +101,7 @@ export const useAuthStore = defineStore("auth", () => {
   /** 刷新家庭/孩子（孩子列表变化后同步；失败静默——离线时用本地缓存） */
   async function refreshMe(): Promise<void> {
     try {
-      const res = await request<{ ok: boolean; family_id: number; family_name: string; children: Child[] }>(
-        "/auth/me",
-      );
+      const res = await request<MeOut>("/auth/me");
       if (res.ok) applyLogin(res.family_id, res.family_name, res.children);
     } catch {
       /* 离线忽略 */
@@ -114,7 +110,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   /** 新建孩子档案（成功后自动选中） */
   async function createChild(name: string, avatar?: string): Promise<Child> {
-    const res = await request<{ ok: boolean; child: Child }>("/auth/children", {
+    const res = await request<ChildCreatedOut>("/auth/children", {
       method: "POST",
       body: { name, avatar },
     });

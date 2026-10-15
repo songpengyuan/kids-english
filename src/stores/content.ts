@@ -12,42 +12,45 @@ import { requestWithTimeout } from "../services/api";
 import { lessons as localLessons, getLesson as getLocalLesson } from "../data/lessons";
 import type { Lesson } from "../data/lessons";
 import type { LessonSummary } from "../types";
+import type { components } from "../types/api";
+
+/** 后端课程契约（openapi-typescript 自 server/openapi.json 生成，勿手改） */
+type LessonOut = components["schemas"]["LessonOut"];
+type LessonSummaryOut = components["schemas"]["LessonSummaryOut"];
 
 const CACHE_KEY = "kids-content-lessons-v1";
 
-/** 后端课程 JSON → 前端 Lesson 形状（与本地数据对齐） */
-function toLesson(raw: Record<string, unknown>): Lesson {
-  const song = raw.song as Record<string, unknown>;
-  const words = (raw.words as Record<string, unknown>[]) ?? [];
-  const phrases = (raw.phrases as Record<string, unknown>[]) ?? [];
+/** 后端课程 JSON（契约类型）→ 前端 Lesson 形状（与本地数据对齐） */
+function toLesson(raw: LessonOut): Lesson {
+  const song = raw.song;
   return {
-    id: raw.id as string,
-    title: raw.title as string,
-    titleZh: raw.titleZh as string,
-    emoji: (raw.emoji as string) ?? "",
-    tone: (raw.tone as Lesson["tone"]) ?? "blue",
-    type: ((raw.type as Lesson["type"]) ?? "official") as Lesson["type"],
-    date: (raw.date as string) ?? undefined,
+    id: raw.id,
+    title: raw.title,
+    titleZh: raw.titleZh,
+    emoji: raw.emoji ?? "",
+    tone: raw.tone,
+    type: raw.type,
+    date: raw.date ?? undefined,
     song: {
-      audio: (song.audio as string) ?? null,
-      video: (song.video as string) ?? null,
-      scene: (song.scene as string) ?? "stage",
-      lyrics: (song.lyrics as string[]) ?? [],
-      timings: (song.timings as Lesson["song"]["timings"]) ?? null,
+      audio: song.audio ?? null,
+      video: song.video ?? null,
+      scene: song.scene ?? "stage",
+      lyrics: song.lyrics ?? [],
+      timings: song.timings ?? null,
     },
-    words: words.map((w) => ({
-      id: w.id as string,
-      en: w.en as string,
-      zh: w.zh as string,
-      emoji: (w.emoji as string) ?? "",
-      image: (w.image as string) ?? null,
-      audio: (w.audio as string) ?? null,
-      lessonId: raw.id as string,
+    words: (raw.words ?? []).map((w) => ({
+      id: w.id,
+      en: w.en,
+      zh: w.zh,
+      emoji: w.emoji ?? "",
+      image: w.image ?? null,
+      audio: w.audio ?? null,
+      lessonId: raw.id,
     })),
-    phrases: phrases.map((p) => ({
-      en: p.en as string,
-      zh: p.zh as string,
-      audio: (p.audio as string) ?? "",
+    phrases: (raw.phrases ?? []).map((p) => ({
+      en: p.en,
+      zh: p.zh,
+      audio: p.audio ?? "",
     })),
   };
 }
@@ -96,11 +99,11 @@ export const useContentStore = defineStore("content", () => {
   /** 拉取远端课程概要（登录后调用；失败静默保持本地） */
   async function loadFromServer(): Promise<void> {
     try {
-      const res = await requestWithTimeout<{ ok: boolean; lessons: LessonSummary[] }>(
+      const res = await requestWithTimeout<components["schemas"]["LessonsOut"]>(
         "/content/lessons",
       );
       if (res.ok && Array.isArray(res.lessons) && res.lessons.length) {
-        summaries.value = res.lessons;
+        summaries.value = res.lessons as LessonSummary[];
         source.value = "remote";
         // 预取全部详情缓存（内容库规模小，一次拿全最省请求）
         await Promise.all(
@@ -116,11 +119,11 @@ export const useContentStore = defineStore("content", () => {
   async function getLesson(id: string): Promise<Lesson | null> {
     if (detailCache.value[id]) return detailCache.value[id];
     try {
-      const res = await requestWithTimeout<{ ok: boolean; lesson: Record<string, unknown> }>(
+      const res = await requestWithTimeout<components["schemas"]["LessonDetailOut"]>(
         `/content/lessons/${id}`,
       );
       if (res.ok && res.lesson) {
-        const lesson = toLesson(res.lesson);
+        const lesson = toLesson(res.lesson as LessonOut);
         detailCache.value = { ...detailCache.value, [id]: lesson };
         return lesson;
       }

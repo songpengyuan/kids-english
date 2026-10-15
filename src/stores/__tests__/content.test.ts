@@ -7,6 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { useContentStore } from "../content";
 import { setToken } from "../../services/api";
+import type { components } from "../../types/api";
+
+type LessonsOut = components["schemas"]["LessonsOut"];
+type LessonDetailOut = components["schemas"]["LessonDetailOut"];
 
 function mockFetch(routes: Record<string, unknown>) {
   const calls: Array<{ url: string }> = [];
@@ -19,7 +23,7 @@ function mockFetch(routes: Record<string, unknown>) {
   return { calls, fn };
 }
 
-const SUMMARY = {
+const SUMMARY: LessonsOut = {
   ok: true,
   lessons: [
     { id: "l4", order_no: 4, title: "A Sailor Went to Sea", title_zh: "水手出海去", emoji: "🌊", tone: "blue", type: "official", date: "2026-09-18" },
@@ -27,7 +31,7 @@ const SUMMARY = {
   ],
 };
 
-const DETAIL = {
+const DETAIL: LessonDetailOut = {
   ok: true,
   lesson: {
     id: "l4",
@@ -50,6 +54,13 @@ const DETAIL = {
   },
 };
 
+/** 简版课程详情（后端契约要求 title/tone/type/song，必须齐全才合法） */
+type Tone = components["schemas"]["LessonOut"]["tone"];
+type LessonType = components["schemas"]["LessonOut"]["type"];
+function briefLesson(id: string, title: string, titleZh: string, tone: Tone, type: LessonType = "official", lyrics: string[] = []): LessonDetailOut {
+  return { ok: true, lesson: { id, title, titleZh, emoji: "", tone, type, song: { lyrics, scene: "stage" }, words: [], phrases: [] } };
+}
+
 describe("content store · 契约", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -65,7 +76,7 @@ describe("content store · 契约", () => {
     const { calls } = mockFetch({
       "/api/v1/content/lessons": SUMMARY,
       "/api/v1/content/lessons/l4": DETAIL,
-      "/api/v1/content/lessons/l5": { ok: true, lesson: { id: "l5", titleZh: "音乐人", tone: "orange", song: { lyrics: [], scene: "stage" }, words: [], phrases: [] } },
+      "/api/v1/content/lessons/l5": briefLesson("l5", "I Am the Music Man", "音乐人", "orange"),
     });
     const c = useContentStore();
     await c.loadFromServer();
@@ -133,7 +144,7 @@ describe("content store · 契约", () => {
   });
 
   it("远端新增课程（本地没有）自动并入列表", async () => {
-    const NEW_SUMMARY = {
+    const NEW_SUMMARY: LessonsOut = {
       ok: true,
       lessons: [
         ...SUMMARY.lessons,
@@ -143,8 +154,8 @@ describe("content store · 契约", () => {
     mockFetch({
       "/api/v1/content/lessons": NEW_SUMMARY,
       "/api/v1/content/lessons/l4": DETAIL,
-      "/api/v1/content/lessons/l5": { ok: true, lesson: { id: "l5", titleZh: "音乐人", tone: "orange", song: { lyrics: [], scene: "stage" }, words: [], phrases: [] } },
-      "/api/v1/content/lessons/l11": { ok: true, lesson: { id: "l11", titleZh: "新课", tone: "teal", song: { lyrics: ["la la"], scene: "stage" }, words: [], phrases: [] } },
+      "/api/v1/content/lessons/l5": briefLesson("l5", "I Am the Music Man", "音乐人", "orange"),
+      "/api/v1/content/lessons/l11": briefLesson("l11", "New Song", "新课", "teal", "official", ["la la"]),
     });
     const c = useContentStore();
     await c.loadFromServer();

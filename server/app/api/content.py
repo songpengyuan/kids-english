@@ -4,12 +4,13 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..db import connect
+from ..schemas import LessonDetailOut, LessonsOut
 from .auth import _require_family
 
 router = APIRouter(prefix="/api/v1/content", tags=["content"])
 
 
-@router.get("/lessons")
+@router.get("/lessons", response_model=LessonsOut)
 def list_lessons(family_id: int = Depends(_require_family)):
     """课程列表（概要，不带歌词/单词全文；详情走 /lessons/{id}）。"""
     conn = connect()
@@ -22,7 +23,7 @@ def list_lessons(family_id: int = Depends(_require_family)):
         conn.close()
 
 
-@router.get("/lessons/{lesson_id}")
+@router.get("/lessons/{lesson_id}", response_model=LessonDetailOut)
 def get_lesson(lesson_id: str, family_id: int = Depends(_require_family)):
     conn = connect()
     try:

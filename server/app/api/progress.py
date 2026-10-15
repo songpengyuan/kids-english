@@ -4,7 +4,7 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..db import connect
-from ..schemas import ProgressIn
+from ..schemas import ProgressIn, ProgressOut, ProgressPutOut
 from .auth import _require_family
 
 router = APIRouter(prefix="/api/v1/progress", tags=["progress"])
@@ -18,7 +18,7 @@ def _child_belongs(conn, child_id: int, family_id: int) -> bool:
     )
 
 
-@router.get("/child/{child_id}")
+@router.get("/child/{child_id}", response_model=ProgressOut)
 def get_progress(child_id: int, family_id: int = Depends(_require_family)):
     conn = connect()
     try:
@@ -40,7 +40,7 @@ def get_progress(child_id: int, family_id: int = Depends(_require_family)):
         conn.close()
 
 
-@router.put("/child/{child_id}")
+@router.put("/child/{child_id}", response_model=ProgressPutOut)
 def put_progress(
     child_id: int, body: ProgressIn, family_id: int = Depends(_require_family)
 ):

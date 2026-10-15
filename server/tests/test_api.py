@@ -12,20 +12,25 @@ import pytest
 # 用临时数据库，避免污染真实数据（必须在 import app 之前设置）
 _tmp = tempfile.mkdtemp(prefix="kids-test-")
 os.environ["KIDS_DB_PATH"] = str(Path(_tmp) / "test.db")
+# 测试用强密钥（生产由 assert_secret_configured 强制 ≥32 位）
+os.environ["KIDS_JWT_SECRET"] = "test-secret-" + "k" * 32
 
 from fastapi.testclient import TestClient  # noqa: E402
 
 from main import app  # noqa: E402
+from app.ratelimit import reset as reset_ratelimit  # noqa: E402
+from app.security import assert_secret_configured  # noqa: E402
 
 client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
 def fresh_db():
-    """每个用例前重建数据库 + 重新 seed（隔离用例间数据）。"""
+    """每个用例前重建数据库 + 重新 seed + 清限流计数（隔离用例间数据）。"""
     from app.db import init_db
     from app.seed import seed_lessons
 
+    reset_ratelimit()
     if Path(os.environ["KIDS_DB_PATH"]).exists():
         Path(os.environ["KIDS_DB_PATH"]).unlink()
     init_db()
@@ -182,3 +187,30 @@ class TestLegacy:
         # 旧前端路径保留：无凭据时返回 server_not_configured（契约不变）
         r = client.post("/api/evaluate", files={"file": ("x.wav", b"\x00" * 300, "audio/wav")}, data={"text": "hello"})
         assert r.json() == {"ok": False, "error": "server_not_configured", "msg": "讯飞凭据未配置"}
+
+
+class TestHardening:
+    def test_login_rate_limited_429(self):
+        """登录限流：同一 IP 1 分钟内超 10 次 → 429（防暴力试口令）。"""
+        reset_ratelimit()
+        for _ in range(10):
+            client.post("/api/v1/auth/login", json={"family_name": "nobody", "passcode": "0000"})
+        r = client.post("/api/v1/auth/login", json={"family_name": "nobody", "passcode": "0000"})
+        assert r.status_code == 429
+        assert r.json()["error"] == "too_many_requests"
+        reset_ratelimit()  # 不影响后续用例
+
+    def test_secret_required_for_startup(self, monkeypatch):
+        """启动安全闸门：缺失/默认值/过短 → 拒绝启动；强密钥放行。"""
+        monkeypatch.delenv("KIDS_JWT_SECRET", raising=False)
+        with pytest.raises(RuntimeError, match="KIDS_JWT_SECRET"):
+            assert_secret_configured()
+        monkeypatch.setenv("KIDS_JWT_SECRET", "dev-secret-change-me")
+        with pytest.raises(RuntimeError, match="KIDS_JWT_SECRET"):
+            assert_secret_configured()
+        monkeypatch.setenv("KIDS_JWT_SECRET", "short")
+        with pytest.raises(RuntimeError, match="KIDS_JWT_SECRET"):
+            assert_secret_configured()
+        monkeypatch.setenv("KIDS_JWT_SECRET", "s" * 32)
+        assert_secret_configured()  # 不抛
+        monkeypatch.setenv("KIDS_JWT_SECRET", "test-secret-" + "k" * 32)
