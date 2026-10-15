@@ -183,8 +183,10 @@ class TestLegacy:
     def test_ping(self):
         assert client.get("/api/ping").json()["ok"] is True
 
-    def test_legacy_evaluate_unchanged(self):
+    def test_legacy_evaluate_unchanged(self, monkeypatch):
         # 旧前端路径保留：无凭据时返回 server_not_configured（契约不变）
+        for k in ("XF_APPID", "XF_API_KEY", "XF_API_SECRET"):
+            monkeypatch.delenv(k, raising=False)
         r = client.post("/api/evaluate", files={"file": ("x.wav", b"\x00" * 300, "audio/wav")}, data={"text": "hello"})
         assert r.json() == {"ok": False, "error": "server_not_configured", "msg": "讯飞凭据未配置"}
 
