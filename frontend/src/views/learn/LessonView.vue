@@ -206,7 +206,7 @@ const playTotal = ref(0);
              步骤型玩法（学/辨/连/读）再加单局答题进度条（多邻国式）。
              童谣（song）用播放器自身进度、亲子对话（talk）自由探索，只显示段落进度。 -->
         <LessonProgressHeader
-          v-if="isPlay"
+          v-if="isPlay && stage !== 'talk'"
           :activities="activities"
           :stage="stage"
           :play-pct="playPct"
