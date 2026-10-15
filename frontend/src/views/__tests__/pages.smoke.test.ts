@@ -54,6 +54,7 @@ vi.mock("../../services/effects", () => ({
 
 import LearnView from "../../views/learn/LearnView.vue";
 import GameView from "../game/GameView.vue";
+import GameLessonView from "../game/GameLessonView.vue";
 import MyView from "../me/MyView.vue";
 import ReportView from "../me/ReportView.vue";
 import TreasureView from "../me/TreasureView.vue";
@@ -96,7 +97,10 @@ const routes = [
     path: "/game",
     name: "game",
     component: GameView,
-    children: [{ path: "quest/:id/:stage?", name: "quest", component: LessonView }],
+    children: [
+      { path: "quest/:id/:stage?", name: "quest", component: LessonView },
+      { path: "lesson/:id", name: "game-lesson", component: GameLessonView },
+    ],
   },
   {
     path: "/me",
@@ -146,6 +150,12 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   it("游戏闯关（独立路由 /game）", async () => {
     const w = await mountPage(GameView, "/game");
+    expect(w.text()).toContain("游戏闯关");
+    expect(errors).toEqual([]);
+  });
+
+  it("当前课游戏地图（只服务本课关卡）", async () => {
+    const w = await mountPage(GameLessonView, "/game/lesson/l10");
     expect(w.text()).toContain("游戏闯关");
     expect(errors).toEqual([]);
   });

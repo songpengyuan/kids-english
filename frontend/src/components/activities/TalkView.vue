@@ -29,13 +29,22 @@ const words = computed(() => props.lesson.words ?? []);
 const phrases = computed<Phrase[]>(() => props.lesson.phrases ?? []);
 /** 家长问句（每轮固定，取第一句：What's that?） */
 const questionPhrase = computed<Phrase | null>(() => phrases.value[0] ?? null);
-/** 孩子答句文本：优先既有 phrase（It's a frog.），兜底 It's a X. */
+/** 孩子答句文本：从 phrases 里找不含问号、且包含该单词的那句答句；找不到就按课程句型兜底 */
 function answerText(w: Word): string {
-  const en = w.en.toLowerCase();
-  const p = phrases.value.find(
-    (x) => !x.en.includes("?") && x.en.toLowerCase().includes(en)
-  );
-  return p ? p.en : `It's a ${w.en}.`;
+  const en = w.en.toLowerCase().trim();
+  // 精确匹配：短语里包含这个单词（按词边界）
+  const p = phrases.value.find((x) => {
+    if (x.en.includes("?")) return false;
+    const lower = x.en.toLowerCase();
+    // 用单词边界匹配，避免 "play" 匹配到 "piano" 之类
+    return new RegExp(`\\b${en}\\b`).test(lower);
+  });
+  if (p) return p.en;
+  // 兜底：根据问句猜句型
+  const q = phrases.value[0]?.en ?? "";
+  if (q.includes("What can you play")) return `I can play the ${w.en}.`;
+  if (q.includes("What's")) return `It's a ${w.en}.`;
+  return `${w.en}.`;
 }
 
 /* ---------- 微信聊天式消息流 ---------- */
@@ -174,7 +183,7 @@ function finish() {
               <span class="msg-text">{{ m.text }}</span>
               <div v-if="m.word" class="msg-pic parent-pic">
                 <span class="msg-pic-emoji">{{ m.word.emoji }}</span>
-                <span class="msg-pic-zh">{{ m.word.zh }}</span>
+                <span class="msg-pic-en">{{ m.word.en }}</span>
               </div>
             </template>
             <template v-else>
@@ -184,7 +193,6 @@ function finish() {
               <div v-if="m.word" class="msg-pic">
                 <span class="msg-pic-emoji">{{ m.word.emoji }}</span>
                 <span class="msg-pic-en">{{ m.word.en }}</span>
-                <span class="msg-pic-zh">{{ m.word.zh }}</span>
               </div>
             </template>
           </div>
@@ -208,7 +216,6 @@ function finish() {
     <div v-if="!allPassed" class="chat-input">
       <!-- 孩子要说的话：显示在输入框上方（点喇叭听发音）——麦克风不可用时不重复显示（答案已在聊天里） -->
       <button v-if="!micBlocked" class="ci-say" aria-label="宝宝要说的话，点一下听发音" @click="playWord(cur)">
-        <span class="ci-say-label">宝宝说</span>
         <span class="ci-say-text">{{ answerText(cur) }}</span>
         <Volume2 class="ci-say-vol k-ico" />
       </button>
