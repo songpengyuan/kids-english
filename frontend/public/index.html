@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>闲思杂记 · 个人技术实践、阅读随笔与文稿记录</title>
+    <meta name="description" content="闲思杂记——个人技术实践、阅读随笔、文稿记录的原创个人笔记站点。" />
+    <meta name="keywords" content="闲思杂记,zelab.cn,个人笔记,技术实践,随笔" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      /* ============ 闲思杂记 · 备案首页（纯静态，无外部依赖） ============ */
+      :root {
+        --ink: #2b2b2b;
+        --ink-soft: #6b6b6b;
+        --line: #e8e5df;
+        --paper: #ffffff;
+        --paper-soft: #faf8f4;
+        --accent: #8a5a2b;
+        --accent-soft: #f3ead9;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background: var(--paper);
+        line-height: 1.75;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: var(--accent); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+
+      /* 顶栏 */
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px clamp(20px, 5vw, 48px);
+        border-bottom: 1px solid var(--line);
+        background: var(--paper);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .brand { font-size: 20px; font-weight: 700; letter-spacing: 2px; color: var(--ink); }
+      .brand small { font-size: 12px; font-weight: 400; color: var(--ink-soft); letter-spacing: 0; margin-left: 8px; }
+      nav { display: flex; align-items: center; gap: 20px; font-size: 14px; }
+      nav a { color: var(--ink-soft); }
+      nav a:hover { color: var(--accent); text-decoration: none; }
+      .enter-btn {
+        display: inline-block;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        border-radius: 999px;
+        padding: 6px 18px;
+        font-size: 14px;
+        transition: all .2s;
+      }
+      .enter-btn:hover { background: var(--accent); color: #fff; text-decoration: none; }
+
+      /* 主视觉 */
+      .hero {
+        padding: clamp(48px, 8vw, 96px) clamp(20px, 5vw, 48px) clamp(36px, 6vw, 64px);
+        max-width: 960px;
+        margin: 0 auto;
+        text-align: center;
+      }
+      .hero h1 { font-size: clamp(26px, 4.5vw, 40px); font-weight: 700; letter-spacing: 1px; }
+      .hero p { margin-top: 16px; color: var(--ink-soft); font-size: clamp(15px, 2.4vw, 17px); }
+      .hero .tags { margin-top: 24px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+      .hero .tags span {
+        background: var(--accent-soft); color: var(--accent);
+        border-radius: 999px; padding: 6px 16px; font-size: 13px;
+      }
+
+      /* 内容板块 */
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 clamp(20px, 5vw, 48px) 64px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 20px;
+      }
+      .col {
+        background: var(--paper-soft);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 24px;
+      }
+      .col h2 { font-size: 16px; display: flex; align-items: center; gap: 8px; letter-spacing: 1px; }
+      .col ul { list-style: none; margin-top: 14px; }
+      .col li { padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+      .col li:last-child { border-bottom: 0; }
+      .col li a { color: var(--ink); display: block; }
+      .col li a:hover { color: var(--accent); }
+      .col li small { display: block; color: var(--ink-soft); font-size: 12px; }
+
+      /* 备案合规区 */
+      .footer {
+        border-top: 1px solid var(--line);
+        margin-top: 8px;
+        padding: 28px clamp(20px, 5vw, 48px) 36px;
+        text-align: center;
+        font-size: 13px;
+        color: var(--ink-soft);
+        line-height: 2;
+      }
+      .footer .site-name { color: var(--ink); font-weight: 600; }
+      .footer .beian {
+        display: inline-block;
+        margin-top: 6px;
+        color: var(--ink-soft);
+      }
+      .footer .beian:hover { color: var(--accent); text-decoration: none; }
+
+      @media (max-width: 560px) {
+        header { padding: 14px 16px; }
+        nav { gap: 12px; }
+        .enter-btn { padding: 5px 14px; font-size: 13px; }
+        main { padding-bottom: 40px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">闲思杂记<small>zelab.cn</small></div>
+      <nav>
+        <a href="#/posts">笔记</a>
+        <a href="#/about">关于</a>
+        <a class="enter-btn" href="app/">应用入口</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1>闲思杂记</h1>
+      <p>个人技术实践、阅读随笔与文稿记录的原创站点。<br />记录即思考，留存即沉淀。</p>
+      <div class="tags">
+        <span>✍️ 技术实践</span>
+        <span>📖 阅读随笔</span>
+        <span>📄 文稿记录</span>
+      </div>
+    </section>
+
+    <main>
+      <section class="col">
+        <h2>✍️ 技术实践</h2>
+        <ul>
+          <li><a href="#/posts">脚本与工具整理<small>持续更新中</small></a></li>
+          <li><a href="#/posts">环境配置备忘<small>踩坑记录</small></a></li>
+        </ul>
+      </section>
+      <section class="col">
+        <h2>📖 阅读随笔</h2>
+        <ul>
+          <li><a href="#/posts">读书摘录与随想<small>待整理</small></a></li>
+        </ul>
+      </section>
+      <section class="col">
+        <h2>📄 文稿记录</h2>
+        <ul>
+          <li><a href="#/posts">个人文稿归档<small>原创内容</small></a></li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div><span class="site-name">闲思杂记</span> · zelab.cn</div>
+      <div>本网站为个人非经营性站点，仅用于个人技术实践、阅读随笔与文稿的记录留存。</div>
+      <!-- ⚠️ 备案号占位：管局审核通过后，把下面链接里的文字替换为实际备案号，如
+           粤ICP备2026XXXXXX号-1，并保留跳转 beian.miit.gov.cn -->
+      <a class="beian" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">ICP备案审核中</a>
+      <div>© 2026 闲思杂记</div>
+    </footer>
+  </body>
+</html>

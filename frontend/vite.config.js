@@ -2,6 +2,7 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 
 // 每次构建生成唯一 id：src/sw.js 里的构建占位符会被替换成它。
 // 于是 sw.js 的字节随部署变化，浏览器下次打开就能检测到新版本 —— PWA「及时更新」的前提。
@@ -45,6 +46,15 @@ function kidsPwa() {
             .replace('__PRECACHE_ASSETS__', '[]'))
           return
         }
+        // 备案首页（public/index.html）占根路径：dev 下裸 / 也返回它
+        const pathname = req.url ? req.url.split('?')[0] : '/'
+        if (pathname === '/' || pathname === '/index.html') {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8')
+          fs.createReadStream(
+            fileURLToPath(new URL('./public/index.html', import.meta.url)),
+          ).pipe(res)
+          return
+        }
         next()
       })
     },
@@ -80,6 +90,15 @@ export default defineConfig(({ mode }) => {
     base:
       process.env.BASE_PATH ||
       (mode === 'production' && process.env.GH_REPO ? `/${process.env.GH_REPO}/` : '/'),
+    // 多页构建：SPA 学习应用入口在 app/index.html（根路径留给备案首页，见 public/index.html）。
+    // 备案首页是纯静态页，经 public/ 原样输出到 dist/index.html，不进应用构建。
+    build: {
+      rollupOptions: {
+        input: {
+          app: path.resolve(__dirname, 'app/index.html'),
+        },
+      },
+    },
     // 本地开发联调：/api 代理到本地后端（backend/app，uvicorn 127.0.0.1:8000）
     server: {
       proxy: {
