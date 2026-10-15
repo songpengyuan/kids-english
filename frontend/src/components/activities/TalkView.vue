@@ -185,8 +185,8 @@ function finish() {
               <!-- 家长发题：文字在上、图片在下（孩子看图回答，不显示英文答案） -->
               <span class="msg-text">{{ m.text }}</span>
               <div v-if="m.word" class="msg-pic parent-pic">
-                <span class="msg-pic-emoji">{{ m.word.emoji }}</span>
-                <span class="msg-pic-zh">{{ m.word.zh }}</span>
+                <img v-if="m.word.image" :src="m.word.image" :alt="m.word.en" class="msg-pic-img" />
+                <span v-else class="msg-pic-emoji">{{ m.word.emoji }}</span>
               </div>
             </template>
             <template v-else>
@@ -194,7 +194,8 @@ function finish() {
               <span class="msg-text">{{ m.text }}</span>
               <span v-if="m.heard" class="msg-heard">🎤 {{ m.heard }}</span>
               <div v-if="m.word" class="msg-pic">
-                <span class="msg-pic-emoji">{{ m.word.emoji }}</span>
+                <img v-if="m.word.image" :src="m.word.image" :alt="m.word.en" class="msg-pic-img" />
+                <span v-else class="msg-pic-emoji">{{ m.word.emoji }}</span>
                 <span class="msg-pic-en">{{ m.word.en }}</span>
               </div>
             </template>
@@ -442,6 +443,12 @@ function finish() {
 .msg-pic-emoji {
   font-size: 56px;
   line-height: 1;
+}
+.msg-pic-img {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  border-radius: 8px;
 }
 .msg-pic-en {
   font-weight: 900;
