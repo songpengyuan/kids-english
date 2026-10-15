@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
- * 亲子对话（TalkView）逐轮对话行为：
- * - 渲染轮次/家长问句/当前大图/录音按钮；进页自动播问句
- * - 录音 → 家长判定通过 → 自动进入下一轮（大图切换 + 再播问句）
+ * 亲子对话（TalkView · 微信聊天式）逐轮对话行为：
+ * - 渲染聊天头部（妈妈/宝宝头像+轮次）；进页家长自动发出问句消息并朗读
+ * - 录音 → 判定通过 → 孩子"发消息"（大图+答句+语音文本）并自动进入下一轮
  * - 判定「没读准」→ 可再试，轮次不变
  * - 全部单词对话完 → 完成按钮可用，emit done(星级)
  */
@@ -16,7 +16,7 @@ vi.mock("../../../services/effects", () => ({
   bigCelebrate: vi.fn(),
 }));
 vi.mock("../../../services/haptics", () => ({ hapticTap: vi.fn() }));
-// dialog 录音会话走 useSpeechSession：jsdom 无 SpeechRecognition/MediaRecorder，
+// 录音会话走 useSpeechSession：jsdom 无 SpeechRecognition/MediaRecorder，
 // 强制 record 模式并用桩 MediaRecorder（家长判定链路）
 vi.mock("../../../utils/speechScore", () => ({
   asrSupported: () => false,
@@ -60,18 +60,18 @@ function flush() {
     vi.advanceTimersByTimeAsync(0).then(() => r(undefined));
   });
 }
-/** 让一轮录音通过：点 mic 开始 → 点 mic 停止 → 家长点「读对了」 */
+/** 让一轮录音通过：点输入框开始 → 停止 → 家长点「读对了」 */
 async function passOneRound(wrapper: ReturnType<typeof mount>) {
-  const mic = wrapper.find(".mic-btn");
-  await mic.trigger("click");
+  const bar = wrapper.find(".input-bar");
+  await bar.trigger("click");
   await flush();
-  await mic.trigger("click");
+  await bar.trigger("click");
   await flush();
-  await wrapper.find(".dlg-judge .k-btn-green").trigger("click");
+  await wrapper.find(".ci-judge .k-btn-green").trigger("click");
   await flush();
 }
 
-describe("TalkView 亲子对话（逐轮对话 + 录音）", () => {
+describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
@@ -80,13 +80,18 @@ describe("TalkView 亲子对话（逐轮对话 + 录音）", () => {
     vi.useRealTimers();
   });
 
-  it("渲染轮次/问句/当前大图/录音按钮；进页自动播家长问句（不算通过）", async () => {
+  it("渲染聊天头部与输入框；进页家长自动发出问句消息并朗读（不算通过）", async () => {
     const wrapper = mount(TalkView, { props: { lesson } });
-    expect(wrapper.find(".dlg-round").text()).toContain("第 1 / 3 轮");
-    expect(wrapper.find(".dlg-bubble.q").text()).toContain("What's that?");
-    expect(wrapper.find(".dlg-en").text()).toBe("frog");
-    expect(wrapper.find(".mic-btn").exists()).toBe(true);
+    expect(wrapper.find(".ch-round").text()).toContain("第 1 / 3 轮");
+    // 头部有妈妈 / 宝宝头像
+    expect(wrapper.find(".ch-av.mom").text()).toBe("👩");
+    expect(wrapper.find(".ch-av.kid").text()).toBe("🧒");
+    expect(wrapper.find(".input-bar").exists()).toBe(true);
+    // 进页自动：家长消息出现在左侧 + 朗读问句
     await vi.advanceTimersByTimeAsync(400);
+    const parentMsg = wrapper.findAll(".msg-row.parent");
+    expect(parentMsg.length).toBe(1);
+    expect(parentMsg[0].text()).toContain("What's that?");
     expect(speak).toHaveBeenCalledWith("What's that?");
     // 未完成 → 完成按钮禁用 + 提示还剩几个词
     const btn = wrapper.find(".lf-btn");
@@ -94,35 +99,45 @@ describe("TalkView 亲子对话（逐轮对话 + 录音）", () => {
     expect(wrapper.find(".lf").text()).toContain("还有 3 个词没对话");
   });
 
-  it("一轮录音通过后自动进入下一轮（下轮大图切换 + 自动播问句）", async () => {
+  it("一轮录音通过 → 孩子「发消息」（大图+答句）并自动进入下一轮", async () => {
     const stop = vi.fn().mockResolvedValue("blob:rec-url");
     vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);
     const wrapper = mount(TalkView, { props: { lesson } });
     await passOneRound(wrapper);
-    expect(wrapper.findAll(".dlg-dot")[0].classes()).toContain("done");
+    // 孩子消息出现在右侧：大图 frog + 答句 + 语音文本
+    const kidMsg = wrapper.findAll(".msg-row.kid");
+    expect(kidMsg.length).toBe(1);
+    expect(kidMsg[0].find(".msg-pic-en").text()).toBe("frog");
+    expect(kidMsg[0].find(".msg-text").text()).toContain("It's a frog.");
+    // 进度点打勾
+    expect(wrapper.findAll(".ch-dot")[0].classes()).toContain("done");
+    // 900ms 后自动进入第 2 轮
     await vi.advanceTimersByTimeAsync(1000);
-    expect(wrapper.find(".dlg-round").text()).toContain("第 2 / 3 轮");
-    expect(wrapper.find(".dlg-en").text()).toBe("monkey");
+    expect(wrapper.find(".ch-round").text()).toContain("第 2 / 3 轮");
+    // 新轮 260ms 后家长再发问句消息 + 朗读
     await vi.advanceTimersByTimeAsync(400);
+    expect(wrapper.findAll(".msg-row.parent").length).toBe(2);
     expect(speak).toHaveBeenCalledWith("What's that?");
   });
 
-  it("判定「没读准」→ 再试一次 → 回录音按钮，轮次不变", async () => {
+  it("判定「没读准」→ 再试一次 → 回输入框，轮次不变", async () => {
     const stop = vi.fn().mockResolvedValue("blob:rec-url");
     vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);
     const wrapper = mount(TalkView, { props: { lesson } });
-    const mic = wrapper.find(".mic-btn");
-    await mic.trigger("click");
+    const bar = wrapper.find(".input-bar");
+    await bar.trigger("click");
     await flush();
-    await mic.trigger("click");
+    await bar.trigger("click");
     await flush();
-    await wrapper.find(".dlg-judge .k-btn-orange").trigger("click"); // 没读准 → retry
+    await wrapper.find(".ci-judge .k-btn-orange").trigger("click"); // 没读准 → retry
     await flush();
-    expect(wrapper.find(".dlg-judge .k-btn-green").text()).toContain("再试一次");
-    await wrapper.find(".dlg-judge .k-btn-green").trigger("click"); // 再试 → 回录音
+    expect(wrapper.find(".ci-judge .k-btn-green").text()).toContain("再试一次");
+    await wrapper.find(".ci-judge .k-btn-green").trigger("click"); // 再试 → 回输入框
     await flush();
-    expect(wrapper.find(".mic-btn").exists()).toBe(true);
-    expect(wrapper.find(".dlg-round").text()).toContain("第 1 / 3 轮");
+    expect(wrapper.find(".input-bar").exists()).toBe(true);
+    expect(wrapper.find(".ch-round").text()).toContain("第 1 / 3 轮");
+    // 未通过不发孩子消息
+    expect(wrapper.findAll(".msg-row.kid").length).toBe(0);
   });
 
   it("三轮全部通过 → 完成按钮可用，emit done(3 星)", async () => {
@@ -134,6 +149,7 @@ describe("TalkView 亲子对话（逐轮对话 + 录音）", () => {
     await passOneRound(wrapper);
     await vi.advanceTimersByTimeAsync(1000);
     await passOneRound(wrapper);
+    expect(wrapper.findAll(".msg-row.kid").length).toBe(3);
     const btn = wrapper.find(".lf-btn");
     expect(btn.attributes("disabled")).toBeUndefined();
     expect(btn.text()).toContain("我都会啦");
