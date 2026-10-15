@@ -609,13 +609,13 @@ const rawLessons: RawLesson[] = [
     },
     words: [
       /* 老师正式词表（2026-10-14 提供）：7 词；图片老师未提供，缺失自动回退 emoji */
-      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸" },
-      { id: "monkey", en: "monkey", zh: "猴子", emoji: "🐒" },
-      { id: "tiger", en: "tiger", zh: "老虎", emoji: "🐯" },
-      { id: "toucan", en: "toucan", zh: "巨嘴鸟", emoji: "🦜" },
-      { id: "afraid", en: "afraid", zh: "害怕的", emoji: "😨" },
-      { id: "jungle", en: "jungle", zh: "丛林", emoji: "🌴" },
-      { id: "listen", en: "listen", zh: "听", emoji: "👂" }
+      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l10/words/frog.png" },
+      { id: "monkey", en: "monkey", zh: "猴子", emoji: "🐒", image: "/lessons/l10/words/monkey.png" },
+      { id: "tiger", en: "tiger", zh: "老虎", emoji: "🐯", image: "/lessons/l10/words/tiger.png" },
+      { id: "toucan", en: "toucan", zh: "巨嘴鸟", emoji: "🦜", image: "/lessons/l10/words/toucan.png" },
+      { id: "afraid", en: "afraid", zh: "害怕的", emoji: "😨", image: "/lessons/l10/words/afraid.png" },
+      { id: "jungle", en: "jungle", zh: "丛林", emoji: "🌴", image: "/lessons/l10/words/jungle.png" },
+      { id: "listen", en: "listen", zh: "听", emoji: "👂", image: "/lessons/l10/words/listen.png" }
     ],
     phrases: [
       /* 老师亲子口语模板：What's that? -- It's a ... .（配歌词里 4 个动物实例） */
