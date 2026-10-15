@@ -131,9 +131,31 @@ const lastLessonObj = computed(() => {
   transform: translateY(calc(var(--press) - 1px));
 }
 /* 滚动列表：占满剩余高度，课多了往下滑 */
-.type-tabs { display: flex; gap: var(--gap-s); padding: 0 var(--pad-x); margin: var(--gap-s) 0; }
-.type-tabs button { flex: 1; padding: 10px 0; border-radius: var(--radius-pill); background: var(--card-bg); box-shadow: var(--shadow-hard); font-weight: 800; font-size: var(--fs-small); color: var(--ink-faint); }
-.type-tabs button.on { background: var(--yellow); color: var(--ink); }
+/* 分段控件式 tab */
+.type-tabs {
+  display: flex;
+  gap: 0;
+  margin: var(--gap-s) var(--pad-x) var(--gap-m);
+  padding: 4px;
+  background: var(--card-bg);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-hard);
+}
+.type-tabs button {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+  background: transparent;
+  transition: all 0.2s;
+}
+.type-tabs button.on {
+  background: var(--yellow);
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
 .stage {
   flex: 1;
   min-height: 0;
