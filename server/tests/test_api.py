@@ -176,7 +176,7 @@ class TestProgress:
         got = client.get(
             "/api/v1/progress/child/1", headers={"Authorization": f"Bearer {token}"}
         ).json()
-        assert got["data"]["l4"]["learn"] == 3  # 覆盖写入，取最后一次
+        assert got["data"]["l4"]["learn"] == 3  # 合并语义：星级取 max
 
 
 class TestLegacy:
@@ -462,3 +462,97 @@ class TestRewards:
             json={"shells": -1, "forms": {}, "chestsOpened": 0},
         )
         assert r.status_code == 422
+
+
+class TestConcurrency:
+    """多设备并发：双端各玩各的，云端合并写不丢任何一端的数据。
+
+    儿童场景数据"只增不减"：星级/计数取 max、玩过列表取并集、
+    单词逐词合并（计数 max + lastAt 取较新）、贝壳取 max。
+    """
+
+    def _child(self, token):
+        return _make_child(token)
+
+    def _put(self, token, cid, data=None, meta=None):
+        r = client.put(
+            f"/api/v1/progress/child/{cid}",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"data": data or {}, "meta": meta},
+        )
+        assert r.status_code == 200, r.text
+
+    def _get(self, token, cid):
+        return client.get(
+            f"/api/v1/progress/child/{cid}", headers={"Authorization": f"Bearer {token}"}
+        ).json()
+
+    def test_two_devices_different_lessons_both_kept(self):
+        token = _auth()
+        cid = self._child(token)
+        # 手机：学了 l4；iPad：学了 l5 —— 两端上报互不覆盖
+        self._put(token, cid, {"l4": {"learn": 3, "completed": ["learn"]}})
+        self._put(token, cid, {"l5": {"quiz": 2, "completed": ["quiz"]}})
+        got = self._get(token, cid)
+        assert got["data"]["l4"]["learn"] == 3
+        assert got["data"]["l5"]["quiz"] == 2
+
+    def test_same_lesson_stars_take_max(self):
+        token = _auth()
+        cid = self._child(token)
+        self._put(token, cid, {"l4": {"learn": 2, "quiz": 1}})
+        self._put(token, cid, {"l4": {"learn": 3}})  # 另一端更高
+        got = self._get(token, cid)
+        assert got["data"]["l4"]["learn"] == 3  # max
+        assert got["data"]["l4"]["quiz"] == 1  # 未上报的字段保留
+
+    def test_completed_union(self):
+        token = _auth()
+        cid = self._child(token)
+        self._put(token, cid, {"l4": {"completed": ["learn"]}})
+        self._put(token, cid, {"l4": {"completed": ["quiz", "match"]}})
+        got = self._get(token, cid)
+        assert sorted(got["data"]["l4"]["completed"]) == ["learn", "match", "quiz"]
+
+    def test_words_merge_per_word(self):
+        token = _auth()
+        cid = self._child(token)
+        self._put(token, cid, {"l4": {"words": {"sea": {"seen": 2, "correct": 1, "wrong": 1}}}})
+        self._put(token, cid, {"l4": {"words": {"sun": {"seen": 1}, "sea": {"correct": 3, "lastAt": 900}}}})
+        got = self._get(token, cid)
+        words = got["data"]["l4"]["words"]
+        assert words["sun"]["seen"] == 1          # 另一端新词补入
+        assert words["sea"]["seen"] == 2          # 计数取 max
+        assert words["sea"]["correct"] == 3       # 计数取 max
+        assert words["sea"]["wrong"] == 1         # 另一端未动保留
+        assert words["sea"]["lastAt"] == 900      # 较新的 lastAt 保留
+
+    def test_rewards_merge_take_max(self):
+        token = _auth()
+        cid = self._child(token)
+        client.put(
+            f"/api/v1/rewards/{cid}",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"shells": 42, "forms": {"leo": 2}, "chestsOpened": 9},
+        )
+        client.put(
+            f"/api/v1/rewards/{cid}",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"shells": 10, "forms": {"leo": 1, "bun": 3}, "chestsOpened": 2},
+        )
+        got = client.get(
+            f"/api/v1/rewards/{cid}", headers={"Authorization": f"Bearer {token}"}
+        ).json()["data"]
+        assert got["shells"] == 42      # max
+        assert got["forms"]["leo"] == 2  # max
+        assert got["forms"]["bun"] == 3  # 另一端独有补入
+        assert got["chestsOpened"] == 9  # max
+
+    def test_meta_daily_log_merge(self):
+        token = _auth()
+        cid = self._child(token)
+        self._put(token, cid, {}, meta={"_daily": {"date": "2026-10-15", "durationSec": 60, "activities": 1}})
+        self._put(token, cid, {}, meta={"_dailyLog": {"2026-10-14": {"durationSec": 30, "activities": 1, "mastered": 2}}})
+        got = self._get(token, cid)
+        assert got["meta"]["_daily"]["date"] == "2026-10-15"
+        assert got["meta"]["_dailyLog"]["2026-10-14"]["durationSec"] == 30
