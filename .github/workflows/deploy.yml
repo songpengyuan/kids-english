@@ -22,6 +22,8 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          # 前端已独立为 frontend/ 子项目，pnpm lockfile 在 frontend/ 下
+          cache-dependency-path: frontend/pnpm-lock.yaml
       - name: Install
         run: pnpm install --frozen-lockfile
         working-directory: frontend
