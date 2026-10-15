@@ -1345,9 +1345,24 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
 
 - 品牌主色 = `--green`（历史命名保留，实为水蓝）：亮色 `#00a3ff` / 暗色 `#2f9fe0`，
   立体投影 `--green-dark` `#0086d6` / `#237bb0`。主按钮/进度条/导航高亮/焦点环全部跟随。
-- **反馈语义色独立保留**：正确=绿 `--c-green`（#58cc02）、错误=红、进行中=蓝——判断类
-  反馈（答题对错）不随品牌色走，避免语义混淆。
-- 新页面视觉优先用品牌蓝渐变（Hero/时长卡）：`linear-gradient(135deg,#1e7fd0,#38a3e8,#6cc3f5)`；
-  不要在组件里写死旧绿（#2f7d5c/#4c9a6b/#58cc02 等），统一走 tokens。
+- **品牌辅助色（tokens.css `--brand*` 系）**：`--brand`/`--brand-dark`/`--brand-deep`（渐变
+  端点/强调文字）/`--brand-bright`（渐变亮端）/`--brand-soft`/`--brand-tint`（柔和底/提示底）/
+  `--brand-grad`（标准品牌渐变，Hero/主卡/选中 tab 统一用它）。亮暗两套都有值；组件禁止写死
+  `#1e7fd0`/`#38a3e8` 等具体色值，一律 `var(--brand-grad, …)` 兜底。
+- **语义反馈色（tokens.css `--ok` 系，不随品牌走）**：正确/完成/成功 = `--ok`（绿 `#58cc02`，
+  暗色 `#7cc94a`）、`--ok-dark` 为深色。以下场景**必须用 `--ok` 而不是 `--green`**：
+  答题答对（QuizView .opt.right / ParentGate .g-ok / ReviewView .again.ok）、发音 perfect
+  （SpeakView .verdict.perfect）、配对完成线（MatchView .done-line/.banner）、宝箱收取与已收集
+  （ChestReward）、成功徽章（LessonFooter .lf-pill.success）、报告正确统计（ReportView .v.ok /
+  .chip .right / .empty-line.ok / .kv .v.good）、掌握上升（MasteryTrend .up）、今日目标完成
+  （MyView .goal.done / StreakView .st-goal.done）、词卡已听过（WordCard .marked）。
+  **进度类保持品牌蓝（不是对错判定，不改绿）**：关卡线（LessonQuestMap .qline.done）、进度段
+  （LessonProgressHeader .seg.done/.dot.done）、弹窗进度点（LearnStage .dlg-dot）、磨耳朵声波
+  与时长（ListenView .eq/.today-chip b）。
+- 新页面视觉优先用 `var(--brand-grad)`（Hero/时长卡/选中 tab）；不要在组件里写死旧绿
+  （#2f7d5c/#4c9a6b/#58cc02 等），统一走 tokens。
 - 我的页（/me）布局契约：me-body 为 flex 列滚动容器，**子项一律 `flex-shrink:0`**——
   flex 容器内容略超出时会压缩首个子项（曾把时长卡压到 26px 裁掉数字），这是硬性防复发规则。
+- 门禁（gate.ts）契约：固定口令哈希 `FIXED_PASS_HASH`，**局域网/本地 HTTP（crypto.subtle
+  不可用）自动放行**（isLocalOrigin），生产 HTTPS 才校验口令；gate 单测须把 location mock 成
+  非本地 origin（zelab.cn）才能走口令校验路径。
