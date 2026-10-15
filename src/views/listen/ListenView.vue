@@ -1,28 +1,32 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount, watch } from "vue";
+/**
+ * 磨耳朵（/listen）：歌曲列表 + 视频 tab。
+ *
+ * 歌曲播放已提升到全局 player store（audio 单例常驻），
+ * 本页只负责：列表交互 / 歌词全屏页渲染 / 视频播放（局部）。
+ * 切到其他 tab 播放不中断，底部播放条可随时控制。
+ */
+import { ref, computed, onBeforeUnmount } from "vue";
 import { lessons, asset } from "../../data/lessons";
 import AppHeader from "../../components/layout/AppHeader.vue";
 import { useProgressStore } from "../../stores/progress";
+import { usePlayerStore } from "../../stores/player";
 import { Play, Pause, SkipBack, SkipForward, Music, Video, X, ChevronDown, Repeat, Repeat1, Shuffle, ListMusic } from "@lucide/vue";
 import BaseDrawer from "../../components/ui/BaseDrawer.vue";
 import SafeBottom from "../../components/layout/SafeBottom.vue";
-import type { ListenSubTab, RepeatMode } from "../../types";
+import type { ListenSubTab } from "../../types";
+
+const player = usePlayerStore();
+const progStore = useProgressStore();
 
 const subTab = ref<ListenSubTab>("songs");
 function switchTab(t: ListenSubTab) {
   subTab.value = t;
-  nowPlaying.value = false;
+  player.closeLyrics();
   playingVideo.value = null;
 }
-const nowPlaying = ref(false);
 const showPlaylist = ref(false);
 
-const songList = computed(() =>
-  lessons.filter((l) => l.song.audio && !["l6", "l7", "l8"].includes(l.id)).map((l) => ({
-    id: l.id, title: l.title, titleZh: l.titleZh, emoji: l.emoji,
-    tone: l.tone ?? "blue", src: asset(l.song.audio)!,
-  }))
-);
 const videoList = computed(() =>
   lessons.filter((l) => l.song.video && !["l6", "l7", "l8"].includes(l.id)).map((l) => ({
     id: l.id, title: l.title, titleZh: l.titleZh, emoji: l.emoji,
@@ -30,143 +34,65 @@ const videoList = computed(() =>
   }))
 );
 
-const audio = ref<HTMLAudioElement | null>(null);
-const currentIdx = ref(-1);
-const playing = ref(false);
-const progress = ref(0);
-const duration = ref(0);
-const repeatMode = ref<RepeatMode>("all");
-const shuffleOn = ref(false);
-const currentSong = computed(() => currentIdx.value >= 0 ? songList.value[currentIdx.value] : null);
-
-const currentLyrics = computed(() => {
-  if (!currentSong.value) return [];
-  const lesson = lessons.find((l) => l.id === currentSong.value!.id);
-  return lesson?.song?.lyrics ?? [];
-});
-
-function ensureAudio() {
-  if (!audio.value) {
-    audio.value = new Audio();
-    audio.value.addEventListener("timeupdate", () => {
-      if (audio.value?.duration) {
-        progress.value = audio.value.currentTime / audio.value.duration;
-        duration.value = audio.value.duration;
-      }
-    });
-    audio.value.addEventListener("ended", next);
-  }
-  return audio.value;
-}
-function playSong(idx: number) {
-  const a = ensureAudio(); const s = songList.value[idx]; if (!s) return;
-  currentIdx.value = idx; a.src = s.src; a.play(); playing.value = true;
-  nowPlaying.value = true; startListenTimer();
-}
-/** 点整行：进入歌词页（如果是当前曲就直接展开，不切歌） */
-function enterLyrics(idx: number) {
-  if (currentIdx.value === idx) { nowPlaying.value = true; return; }
-  playSong(idx);
-}
-/** 点右侧按钮：只切播放/暂停，不进歌词页（列表内直接播放，标题旁声波 eq 显示当前曲） */
-function toggleRow(i: number, e: Event) {
-  e.stopPropagation();
-  if (currentIdx.value !== i) {
-    // 与 playSong 的区别：不设 nowPlaying，留在列表页；点整行 enterLyrics 才进歌词页
-    const a = ensureAudio(); const s = songList.value[i]; if (!s) return;
-    currentIdx.value = i; a.src = s.src; void a.play(); playing.value = true;
-    startListenTimer();
-    return;
-  }
-  togglePlay();
-}
-function togglePlay() {
-  const a = ensureAudio(); if (!a.src) return;
-  if (playing.value) { a.pause(); playing.value = false; } else { a.play(); playing.value = true; }
-}
-function next() {
-  if (repeatMode.value === "one") {
-    if (audio.value) { audio.value.currentTime = 0; audio.value.play(); }
-    return;
-  }
-  if (shuffleOn.value && songList.value.length > 1) {
-    let r; do { r = Math.floor(Math.random() * songList.value.length); } while (r === currentIdx.value);
-    playSong(r); return;
-  }
-  if (currentIdx.value < songList.value.length - 1) playSong(currentIdx.value + 1);
-  else if (repeatMode.value === "all") playSong(0);
-  else playing.value = false;
-}
-function prev() {
-  if (audio.value && audio.value.currentTime > 3) { audio.value.currentTime = 0; return; }
-  if (currentIdx.value > 0) playSong(currentIdx.value - 1);
-}
-function toggleRepeat() {
-  repeatMode.value = repeatMode.value === "off" ? "all" : repeatMode.value === "all" ? "one" : "off";
-}
-function formatTime(sec: number) {
-  if (!sec || !isFinite(sec)) return "0:00";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-function seek(e: Event) {
-  const el = e.target as HTMLInputElement;
-  if (audio.value && el) audio.value.currentTime = (Number(el.value) / 100) * (audio.value.duration || 0);
-}
-watch(nowPlaying, (v) => {
-  document.documentElement.classList.toggle("hide-nav", v);
-});
-onBeforeUnmount(() => { audio.value?.pause(); stopListenTimer(); document.documentElement.classList.remove("hide-nav"); });
-
-const progStore = useProgressStore();
-let listenTimer: number | null = null;
-let lastTick = 0;
-function startListenTimer() {
-  stopListenTimer(); lastTick = Date.now();
-  listenTimer = window.setInterval(() => {
-    const sec = (Date.now() - lastTick) / 1000; lastTick = Date.now();
+/* ---------- 视频播放（局部全屏；计时独立，不影响歌曲全局计时） ---------- */
+const playingVideo = ref<{ src: string; titleZh: string; title: string } | null>(null);
+let videoTimer: number | null = null;
+let videoTick = 0;
+function playVideo(v: { src: string; titleZh: string; title: string }) {
+  playingVideo.value = v;
+  stopVideoTimer();
+  videoTick = Date.now();
+  videoTimer = window.setInterval(() => {
+    const sec = (Date.now() - videoTick) / 1000;
+    videoTick = Date.now();
     progStore.addDailyActivity(sec);
   }, 5000);
 }
-function stopListenTimer() { if (listenTimer) { clearInterval(listenTimer); listenTimer = null; } }
-
-const playingVideo = ref<{ src: string; titleZh: string; title: string } | null>(null);
-function playVideo(v: { src: string; titleZh: string; title: string }) { playingVideo.value = v; startListenTimer(); }
+function stopVideoTimer() {
+  if (videoTimer) {
+    clearInterval(videoTimer);
+    videoTimer = null;
+  }
+}
+onBeforeUnmount(() => {
+  stopVideoTimer();
+  // 歌曲播放由全局 store 持有，本页卸载不暂停（跨 tab 续播）
+});
 </script>
 
 <template>
   <div class="listen view">
-    <!-- ===== 歌词全屏页 ===== -->
-    <div v-if="nowPlaying && currentSong" class="lyrics-page" :class="{ 'anim-in': nowPlaying }">
+    <!-- ===== 歌词全屏页（状态来自全局 store，跨路由保持） ===== -->
+    <div v-if="player.nowPlaying && player.currentSong" class="lyrics-page" :class="{ 'anim-in': player.nowPlaying }">
       <div class="lp-header">
-        <button class="lp-back" @click="nowPlaying = false"><ChevronDown class="k-ico" /></button>
-        <div class="lp-cover" :class="'tone-' + currentSong.tone">{{ currentSong.emoji }}</div>
+        <button class="lp-back" @click="player.closeLyrics()"><ChevronDown class="k-ico" /></button>
+        <div class="lp-cover" :class="'tone-' + player.currentSong.tone">{{ player.currentSong.emoji }}</div>
         <div class="lp-title-area">
-          <p class="lp-title">{{ currentSong.title }}</p>
-          <p class="lp-sub">{{ currentSong.titleZh }}</p>
+          <p class="lp-title">{{ player.currentSong.title }}</p>
+          <p class="lp-sub">{{ player.currentSong.titleZh }}</p>
         </div>
       </div>
       <div class="lp-lyrics">
-        <p v-for="(line, i) in currentLyrics" :key="i" class="lp-line" :class="{ active: Math.round(progress * currentLyrics.length) === i }">{{ line }}</p>
-        <p v-if="currentLyrics.length === 0" class="lp-line">🎵</p>
+        <p v-for="(line, i) in player.currentLyrics" :key="i" class="lp-line"
+          :class="{ active: Math.round(player.progress * player.currentLyrics.length) === i }">{{ line }}</p>
+        <p v-if="player.currentLyrics.length === 0" class="lp-line">🎵</p>
       </div>
       <div class="lp-controls">
-        <button class="lp-btn" @click="toggleRepeat">
-          <Repeat1 v-if="repeatMode === 'one'" class="k-ico" />
-          <Repeat v-else-if="repeatMode === 'all'" class="k-ico" />
-          <Shuffle v-else-if="shuffleOn" class="k-ico" />
+        <button class="lp-btn" @click="player.toggleRepeat()">
+          <Repeat1 v-if="player.repeatMode === 'one'" class="k-ico" />
+          <Repeat v-else-if="player.repeatMode === 'all'" class="k-ico" />
+          <Shuffle v-else-if="player.shuffleOn" class="k-ico" />
           <Repeat v-else class="k-ico" style="opacity:0.4" />
         </button>
-        <button class="lp-btn" @click="prev"><SkipBack class="k-ico" /></button>
-        <button class="lp-btn big" @click="togglePlay"><Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" /></button>
-        <button class="lp-btn" @click="next"><SkipForward class="k-ico" /></button>
+        <button class="lp-btn" @click="player.prev()"><SkipBack class="k-ico" /></button>
+        <button class="lp-btn big" @click="player.togglePlay()"><Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" /></button>
+        <button class="lp-btn" @click="player.next()"><SkipForward class="k-ico" /></button>
         <button class="lp-btn" @click="showPlaylist = true"><ListMusic class="k-ico" /></button>
       </div>
       <SafeBottom class="lp-progress-row" :gap="20">
-        <span class="lp-time">{{ formatTime(progress * duration) }}</span>
-        <input class="lp-progress" type="range" :value="Math.round(progress * 100)" @input="seek" min="0" max="100" />
-        <span class="lp-time">{{ formatTime(duration) }}</span>
+        <span class="lp-time">{{ player.formatTime(player.progress * player.duration) }}</span>
+        <input class="lp-progress" type="range" :value="Math.round(player.progress * 100)" @input="player.seek" min="0" max="100" />
+        <span class="lp-time">{{ player.formatTime(player.duration) }}</span>
       </SafeBottom>
     </div>
 
@@ -181,19 +107,19 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
       <div class="body view-body">
         <template v-if="subTab === 'songs'">
           <div class="song-list">
-            <div v-for="(s, i) in songList" :key="s.id" class="song-row"
-              :class="{ active: currentIdx === i }" @click="enterLyrics(i)">
+            <div v-for="(s, i) in player.SONG_LIST" :key="s.id" class="song-row"
+              :class="{ active: player.currentIdx === i }" @click="player.openLyrics(i)">
               <span class="sr-emoji" :class="'tone-' + s.tone">{{ s.emoji }}</span>
               <span class="sr-info">
                 <span class="sr-title-row">
                   <span class="sr-title">{{ s.title }}</span>
                   <!-- 正在播放：标题旁动态声波（孩子一眼看出哪首在唱） -->
-                  <span v-if="currentIdx === i && playing" class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
+                  <span v-if="player.currentIdx === i && player.playing" class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
                 </span>
                 <span class="sr-sub">{{ s.titleZh }}</span>
               </span>
-              <button v-if="currentIdx === i" class="sr-play" @click="toggleRow(i, $event)">
-                <Pause v-if="playing" class="k-ico" /><Play v-else class="k-ico" />
+              <button v-if="player.currentIdx === i" class="sr-play" @click="player.playFromRow(i)">
+                <Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" />
               </button>
               <span v-else class="sr-play"><Play class="k-ico" /></span>
             </div>
@@ -213,17 +139,17 @@ function playVideo(v: { src: string; titleZh: string; title: string }) { playing
     </template>
 
     <!-- 播放列表抽屉 -->
-    <BaseDrawer :open="showPlaylist" :title="`播放列表（${songList.length}）`" @close="showPlaylist = false">
+    <BaseDrawer :open="showPlaylist" :title="`播放列表（${player.SONG_LIST.length}）`" @close="showPlaylist = false">
       <div class="drawer-list">
-        <button v-for="(s, i) in songList" :key="s.id" class="drawer-item"
-          :class="{ active: currentIdx === i }" @click="playSong(i); showPlaylist = false">
+        <button v-for="(s, i) in player.SONG_LIST" :key="s.id" class="drawer-item"
+          :class="{ active: player.currentIdx === i }" @click="player.playSong(i); showPlaylist = false">
           <span class="di-idx">{{ i + 1 }}</span>
           <span class="di-emoji">{{ s.emoji }}</span>
           <span class="di-info">
             <span class="di-title">{{ s.title }}</span>
             <span class="di-sub">{{ s.titleZh }}</span>
           </span>
-          <span v-if="currentIdx === i && playing" class="eq"><i></i><i></i><i></i></span>
+          <span v-if="player.currentIdx === i && player.playing" class="eq"><i></i><i></i><i></i></span>
         </button>
       </div>
     </BaseDrawer>

@@ -8,6 +8,7 @@ import { useStreakStore } from "./stores/streak";
 import { useAuthStore } from "./stores/auth";
 import { useContentStore } from "./stores/content";
 import { useProgressStore } from "./stores/progress";
+import { usePlayerStore } from "./stores/player";
 import { initPWA, applyUpdateIfIdle } from "./services/pwa";
 
 const router = useRouter();
@@ -16,6 +17,7 @@ const streak = useStreakStore();
 const auth = useAuthStore();
 const content = useContentStore();
 const progress = useProgressStore();
+const player = usePlayerStore();
 
 /** 底部导航只在三个主 tab 显示：学习（/learn）/ 磨耳朵（/listen）/ 我的（/me）；
  *  游戏入口在学习页右上角按钮（#/game 无底部导航，沉浸闯关，顶栏返回可回学习）；
@@ -28,6 +30,11 @@ const showNav = computed(() =>
 watch(showNav, (v) => {
   document.documentElement.classList.toggle("no-bottom-nav", !v);
 }, { immediate: true });
+
+/** 歌词全屏页展开时隐藏底部导航（状态在全局 player store，跨路由生效） */
+watch(() => player.nowPlaying, (v) => {
+  document.documentElement.classList.toggle("hide-nav", v);
+});
 
 /**
  * 兼容旧深链 ?lesson=l4&stage=talk（业务复杂化前的书签/分享链接）：
