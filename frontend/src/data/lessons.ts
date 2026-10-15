@@ -515,8 +515,6 @@ const rawLessons: RawLesson[] = [
     emoji: "🐒",
     tone: "green",
     date: "2026-10-14",
-    /* 学单词玩法用「亲子口语对话卡」：大动物 + What's that? / It's a ... 问答 */
-    stageStyle: "dialog",
     song: {
       audio: "/lessons/l10/song.mp3",
       /* 老师提供的课堂视频（Super Simple Songs 官方动画，带机构水印） */
