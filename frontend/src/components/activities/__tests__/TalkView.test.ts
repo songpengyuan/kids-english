@@ -96,6 +96,12 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     expect(parentMsg.length).toBe(1);
     expect(parentMsg[0].text()).toContain("What's that?");
     expect(speak).toHaveBeenCalledWith("What's that?");
+    // 家长消息带发题图片（孩子看图回答；不显示英文答案）
+    const parentPic = parentMsg[0].find(".msg-pic");
+    expect(parentPic.exists()).toBe(true);
+    expect(parentPic.find(".msg-pic-emoji").text()).toBe("🐾");
+    expect(parentPic.find(".msg-pic-zh").text()).toBe("frog");
+    expect(parentPic.find(".msg-pic-en").exists()).toBe(false);
     // 未完成 → 完成按钮禁用 + 提示还剩几个词
     const btn = wrapper.find(".lf-btn");
     expect(btn.attributes("disabled")).toBeDefined();

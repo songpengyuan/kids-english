@@ -43,7 +43,7 @@ interface ChatMsg {
   role: "parent" | "kid";
   /** 消息文本（家长问句 / 孩子答句） */
   text?: string;
-  /** 孩子消息附带的大图（孩子回答的图片） */
+  /** 消息附带的图片：家长发题图（看图回答） / 孩子回答图 */
   word?: Word;
   /** 孩子说出的内容（识别文本，语音消息展示） */
   heard?: string;
@@ -51,9 +51,9 @@ interface ChatMsg {
 const messages = ref<ChatMsg[]>([]);
 const msgBox = ref<HTMLDivElement | null>(null);
 let msgSeq = 0;
-/** 家长发出问句消息（左上角头像 + 左侧气泡） */
-function pushParent(text: string) {
-  messages.value.push({ id: ++msgSeq, role: "parent", text });
+/** 家长发出问句消息（左上角头像 + 左侧气泡，图片作为家长的消息一起发出） */
+function pushParent(w: Word, text: string) {
+  messages.value.push({ id: ++msgSeq, role: "parent", word: w, text });
   scrollBottom();
 }
 /** 孩子"发送"消息：大图 + 答句 + 语音文本（右上角头像 + 右侧气泡） */
@@ -104,7 +104,7 @@ watch(dlgIdx, () => {
   if (questionPhrase.value) {
     if (questionTimer) clearTimeout(questionTimer);
     questionTimer = window.setTimeout(() => {
-      pushParent(questionPhrase.value!.en);
+      pushParent(cur.value, questionPhrase.value!.en);
       speak(questionPhrase.value!.en);
     }, 260);
   }
@@ -113,7 +113,7 @@ onMounted(() => {
   if (questionPhrase.value) {
     if (questionTimer) clearTimeout(questionTimer);
     questionTimer = window.setTimeout(() => {
-      pushParent(questionPhrase.value!.en);
+      pushParent(cur.value, questionPhrase.value!.en);
       speak(questionPhrase.value!.en);
     }, 320);
   }
@@ -185,6 +185,11 @@ function finish() {
         <div class="msg-col">
           <div class="msg-bubble" :class="m.role" @click="m.role === 'parent' ? playQuestion() : m.word && playWord(m.word)">
             <template v-if="m.role === 'parent'">
+              <!-- 家长发题：图片作为家长的消息发出来（孩子看图回答，不显示英文答案） -->
+              <div v-if="m.word" class="msg-pic parent-pic">
+                <span class="msg-pic-emoji">{{ m.word.emoji }}</span>
+                <span class="msg-pic-zh">{{ m.word.zh }}</span>
+              </div>
               <span class="msg-text">{{ m.text }}</span>
             </template>
             <template v-else>
@@ -479,6 +484,18 @@ function finish() {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.06);
+}
+.msg-pic.parent-pic {
+  padding: 12px 18px;
+  border-radius: 14px;
+}
+.msg-pic.parent-pic .msg-pic-emoji {
+  font-size: 72px;
+}
+.msg-pic.parent-pic .msg-pic-zh {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
 }
 .msg-pic-emoji {
   font-size: 56px;
