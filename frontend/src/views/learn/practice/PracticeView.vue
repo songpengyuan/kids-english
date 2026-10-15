@@ -13,6 +13,7 @@ import { useProgressStore } from "../../../stores/progress";
 import { useRouter } from "vue-router";
 import { speak } from "../../../services/speech";
 import SpeakText from "../../../components/ui/SpeakText.vue";
+import SegmentedTabs from "../../../components/ui/SegmentedTabs.vue";
 import { dueWords } from "../../../utils/reviewQueue";
 import { BookOpenText, Check } from "@lucide/vue";
 
@@ -53,8 +54,13 @@ const lastLessonObj = computed(() => {
   <div class="practice">
     <!-- 课程类型 tab -->
     <div class="type-tabs">
-      <button :class="{ on: typeTab === 'official' }" @click="typeTab = 'official'">正式课</button>
-      <button :class="{ on: typeTab === 'bonus' }" @click="typeTab = 'bonus'">加餐</button>
+      <SegmentedTabs
+        v-model="typeTab"
+        :items="[
+          { value: 'official', label: '正式课' },
+          { value: 'bonus', label: '加餐' },
+        ]"
+      />
     </div>
 
     <!-- 课程列表：竖滑双列大卡片（汽水音乐风） -->
@@ -131,30 +137,9 @@ const lastLessonObj = computed(() => {
   transform: translateY(calc(var(--press) - 1px));
 }
 /* 滚动列表：占满剩余高度，课多了往下滑 */
-/* 分段控件式 tab */
 .type-tabs {
-  display: flex;
-  gap: 0;
-  margin: var(--gap-s) var(--pad-x) var(--gap-m);
-  padding: 4px;
-  background: var(--card-bg);
-  border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-hard);
-}
-.type-tabs button {
-  flex: 1;
-  padding: 10px 0;
-  border-radius: var(--radius-pill);
-  font-weight: 800;
-  font-size: var(--fs-small);
-  color: var(--ink-faint);
-  background: transparent;
-  transition: all 0.2s;
-}
-.type-tabs button.on {
-  background: var(--yellow);
-  color: var(--ink);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  padding: 0 var(--pad-x);
+  margin: var(--gap-s) 0 var(--gap-m);
 }
 .stage {
   flex: 1;
