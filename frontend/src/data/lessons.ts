@@ -118,6 +118,60 @@ export interface Lesson {
 
 const rawLessons: RawLesson[] = [
   {
+    id: "l5",
+    title: "I Am the Music Man",
+    titleZh: "我是一个音乐人",
+    emoji: "🎺",
+    tone: "orange",
+    date: "2026-09-16",
+    song: {
+      audio: "/lessons/l5/song.mp3",
+      /* 视频：你自己提供的素材（同上） */
+      video: "/lessons/l5/song.mp4",
+      scene: "stage",
+      lyrics: [
+        "I am the Music Man,",
+        "I come from down your way,",
+        "And I can play!",
+        "What can you play?",
+        "I play the piano!",
+        "Pia, pia, piano, piano, piano,",
+        "Pia, pia, piano, pia, piano!",
+        "",
+        "I am the Music Man,",
+        "I come from down your way,",
+        "And I can play!",
+        "What can you play?",
+        "I play the violin!",
+        "Vio, vio, violin, violin, violin,",
+        "Vio, vio, violin, vio, violin!",
+        "",
+        "I am the Music Man,",
+        "I come from down your way,",
+        "And I can play!",
+        "What can you play?",
+        "I play the trombone!",
+        "Trom, trom, trombone, trombone, trombone,",
+        "Trom, trom, trombone, trom, trombone!"
+      ]
+    },
+    words: [
+      { id: "violin", en: "violin", zh: "小提琴", emoji: "🎻", image: "/lessons/l5/words/violin.png" },
+      { id: "piano", en: "piano", zh: "钢琴", emoji: "🎹", image: "/lessons/l5/words/piano.png" },
+      { id: "musicman", en: "Music Man", zh: "音乐人", emoji: "🎹", image: "/lessons/l5/words/musicman.png" },
+      { id: "trombone", en: "trombone", zh: "长号", emoji: "🎺", image: "/lessons/l5/words/trombone.png" },
+      { id: "mantis", en: "mantis", zh: "螳螂", emoji: "🦗", image: "/lessons/l5/words/mantis.png" },
+      { id: "squirrel", en: "squirrel", zh: "松鼠", emoji: "🐿️", image: "/lessons/l5/words/squirrel.png" },
+      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l5/words/frog.png" }
+    ],
+    phrases: [
+      { en: "What can you play?", zh: "你会演奏什么呀？" },
+      { en: "I can play the piano.", zh: "我会弹钢琴。" },
+      { en: "I can play the violin.", zh: "我会拉小提琴。" },
+      { en: "I can play the trombone.", zh: "我会吹长号。" }
+    ]
+  },
+  {
     id: "l4",
     title: "A Sailor Went to Sea",
     titleZh: "水手出海去",
@@ -238,205 +292,6 @@ const rawLessons: RawLesson[] = [
     phrases: [
       { en: "What do you see?", zh: "你看见什么啦？" },
       { en: "I see a ...", zh: "我看见了一只……" }
-    ]
-  },
-  {
-    id: "l5",
-    title: "I Am the Music Man",
-    titleZh: "我是一个音乐人",
-    emoji: "🎺",
-    tone: "orange",
-    date: "2026-09-16",
-    song: {
-      audio: "/lessons/l5/song.mp3",
-      /* 视频：你自己提供的素材（同上） */
-      video: "/lessons/l5/song.mp4",
-      scene: "stage",
-      lyrics: [
-        "I am the Music Man,",
-        "I come from down your way,",
-        "And I can play!",
-        "What can you play?",
-        "I play the piano!",
-        "Pia, pia, piano, piano, piano,",
-        "Pia, pia, piano, pia, piano!",
-        "",
-        "I am the Music Man,",
-        "I come from down your way,",
-        "And I can play!",
-        "What can you play?",
-        "I play the violin!",
-        "Vio, vio, violin, violin, violin,",
-        "Vio, vio, violin, vio, violin!",
-        "",
-        "I am the Music Man,",
-        "I come from down your way,",
-        "And I can play!",
-        "What can you play?",
-        "I play the trombone!",
-        "Trom, trom, trombone, trombone, trombone,",
-        "Trom, trom, trombone, trom, trombone!"
-      ]
-    },
-    words: [
-      { id: "violin", en: "violin", zh: "小提琴", emoji: "🎻", image: "/lessons/l5/words/violin.png" },
-      { id: "piano", en: "piano", zh: "钢琴", emoji: "🎹", image: "/lessons/l5/words/piano.png" },
-      { id: "musicman", en: "Music Man", zh: "音乐人", emoji: "🎹", image: "/lessons/l5/words/musicman.png" },
-      { id: "trombone", en: "trombone", zh: "长号", emoji: "🎺", image: "/lessons/l5/words/trombone.png" },
-      { id: "mantis", en: "mantis", zh: "螳螂", emoji: "🦗", image: "/lessons/l5/words/mantis.png" },
-      { id: "squirrel", en: "squirrel", zh: "松鼠", emoji: "🐿️", image: "/lessons/l5/words/squirrel.png" },
-      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l5/words/frog.png" }
-    ],
-    phrases: [
-      { en: "What can you play?", zh: "你会演奏什么呀？" },
-      { en: "I can play the piano.", zh: "我会弹钢琴。" },
-      { en: "I can play the violin.", zh: "我会拉小提琴。" },
-      { en: "I can play the trombone.", zh: "我会吹长号。" }
-    ]
-  },
-  {
-    id: "l6",
-    title: "A Rainbow of Colors",
-    titleZh: "彩虹颜色歌",
-    emoji: "🎨",
-    tone: "pink",
-    date: "2026-09-24",
-    song: {
-      audio: "/lessons/l6/song.mp3",
-      video: null,
-      /* 动画舞台场景：rainbow = 彩虹和彩色泡泡（见 SongStage.vue） */
-      scene: "rainbow",
-      lyrics: [
-        "Red, red, a red red apple",
-        "Yellow, yellow, the yellow sun",
-        "Blue, blue, the blue blue sky",
-        "I see a rainbow in the sky",
-        "",
-        "Green, green, the green green tree",
-        "Orange, orange, an orange cat",
-        "Purple, purple, a purple grape",
-        "I see a rainbow in the sky",
-        "",
-        "Pink, pink, a pink pink flower",
-        "White, white, a white white cloud",
-        "Black, black, a black black hat",
-        "I see a rainbow in the sky"
-      ]
-    },
-    words: [
-      { id: "red", en: "red", zh: "红色", emoji: "🍎", image: "/lessons/l6/words/red.svg" },
-      { id: "yellow", en: "yellow", zh: "黄色", emoji: "🍋", image: "/lessons/l6/words/yellow.svg" },
-      { id: "blue", en: "blue", zh: "蓝色", emoji: "🫐", image: "/lessons/l6/words/blue.svg" },
-      { id: "green", en: "green", zh: "绿色", emoji: "🥝", image: "/lessons/l6/words/green.svg" },
-      { id: "orange", en: "orange", zh: "橙色", emoji: "🍊", image: "/lessons/l6/words/orange.svg" },
-      { id: "purple", en: "purple", zh: "紫色", emoji: "🍇", image: "/lessons/l6/words/purple.svg" },
-      { id: "pink", en: "pink", zh: "粉色", emoji: "🌸", image: "/lessons/l6/words/pink.svg" },
-      { id: "white", en: "white", zh: "白色", emoji: "🥛", image: "/lessons/l6/words/white.svg" },
-      { id: "black", en: "black", zh: "黑色", emoji: "🐧", image: "/lessons/l6/words/black.svg" }
-    ],
-    phrases: [
-      { en: "What color is it?", zh: "它是什么颜色呀？" },
-      { en: "It's red.", zh: "它是红色的。" },
-      { en: "I like blue.", zh: "我喜欢蓝色。" },
-      { en: "Look at my rainbow!", zh: "看我的彩虹！" }
-    ]
-  },
-  {
-    id: "l7",
-    title: "Count With Me",
-    titleZh: "跟我数数 0-10",
-    emoji: "🔢",
-    tone: "green",
-    date: "2026-09-24",
-    song: {
-      audio: "/lessons/l7/song.mp3",
-      video: null,
-      /* 动画舞台场景：numbers = 数数的小气球 */
-      scene: "numbers",
-      lyrics: [
-        "Zero, zero, zero!",
-        "One, two, three",
-        "Four, five, six",
-        "Seven, eight, nine",
-        "Nine, and ten",
-        "",
-        "Let's count again",
-        "One, two, three",
-        "Four, five, six",
-        "Seven, eight, nine",
-        "Nine, and ten",
-        "",
-        "Ten, nine, eight",
-        "Seven, six, five",
-        "Four, three, two",
-        "One, and zero!",
-        "We counted to ten"
-      ]
-    },
-    words: [
-      { id: "zero", en: "zero", zh: "零", emoji: "0️⃣", image: "/lessons/l7/words/zero.svg" },
-      { id: "one", en: "one", zh: "一", emoji: "1️⃣", image: "/lessons/l7/words/one.svg" },
-      { id: "two", en: "two", zh: "二", emoji: "2️⃣", image: "/lessons/l7/words/two.svg" },
-      { id: "three", en: "three", zh: "三", emoji: "3️⃣", image: "/lessons/l7/words/three.svg" },
-      { id: "four", en: "four", zh: "四", emoji: "4️⃣", image: "/lessons/l7/words/four.svg" },
-      { id: "five", en: "five", zh: "五", emoji: "5️⃣", image: "/lessons/l7/words/five.svg" },
-      { id: "six", en: "six", zh: "六", emoji: "6️⃣", image: "/lessons/l7/words/six.svg" },
-      { id: "seven", en: "seven", zh: "七", emoji: "7️⃣", image: "/lessons/l7/words/seven.svg" },
-      { id: "eight", en: "eight", zh: "八", emoji: "8️⃣", image: "/lessons/l7/words/eight.svg" },
-      { id: "nine", en: "nine", zh: "九", emoji: "9️⃣", image: "/lessons/l7/words/nine.svg" },
-      { id: "ten", en: "ten", zh: "十", emoji: "🔟", image: "/lessons/l7/words/ten.svg" }
-    ],
-    phrases: [
-      { en: "How many apples?", zh: "有几个苹果呀？" },
-      { en: "Let's count together.", zh: "我们一起数一数。" },
-      { en: "I can count to ten.", zh: "我能数到十。" },
-      { en: "Give me five!", zh: "击个掌！" }
-    ]
-  },
-  {
-    id: "l8",
-    title: "The ABC Song",
-    titleZh: "字母歌 ABC",
-    emoji: "🔤",
-    tone: "purple",
-    date: "2026-09-24",
-    song: {
-      audio: "/lessons/l8/song.mp3",
-      video: null,
-      /* 动画舞台场景：letters = 飞来飞去的字母积木 */
-      scene: "letters",
-      lyrics: [
-        "A B C D E F G",
-        "H I J K L M N O P",
-        "Q R S T U V",
-        "W X Y and Z",
-        "Now I know my ABC",
-        "Next time won't you sing with me",
-        "",
-        "A B C D E F G",
-        "H I J K L M N O P",
-        "Q R S T U V",
-        "W X Y and Z",
-        "Now I know my ABC",
-        "Next time won't you sing with me"
-      ]
-    },
-    words: [
-      { id: "apple", en: "apple", zh: "苹果（A）", emoji: "🍎", image: "/lessons/l8/words/apple.svg" },
-      { id: "ball", en: "ball", zh: "皮球（B）", emoji: "⚽", image: "/lessons/l8/words/ball.svg" },
-      { id: "cat", en: "cat", zh: "小猫（C）", emoji: "🐱", image: "/lessons/l8/words/cat.svg" },
-      { id: "dog", en: "dog", zh: "小狗（D）", emoji: "🐶", image: "/lessons/l8/words/dog.svg" },
-      { id: "egg", en: "egg", zh: "鸡蛋（E）", emoji: "🥚", image: "/lessons/l8/words/egg.svg" },
-      { id: "fish", en: "fish", zh: "小鱼（F）", emoji: "🐟", image: "/lessons/l8/words/fish.svg" },
-      { id: "grape", en: "grape", zh: "葡萄（G）", emoji: "🍇", image: "/lessons/l8/words/grape.svg" },
-      { id: "hat", en: "hat", zh: "帽子（H）", emoji: "🎩", image: "/lessons/l8/words/hat.svg" },
-      { id: "icecream", en: "ice cream", zh: "冰淇淋（I）", emoji: "🍦", image: "/lessons/l8/words/icecream.svg" }
-    ],
-    phrases: [
-      { en: "What letter is it?", zh: "这是什么字母呀？" },
-      { en: "It's letter A.", zh: "这是字母 A。" },
-      { en: "A is for apple.", zh: "A 是 apple（苹果）。" },
-      { en: "Let's sing ABC!", zh: "我们一起唱字母歌！" }
     ]
   },
   {
@@ -623,7 +478,152 @@ const rawLessons: RawLesson[] = [
       { en: "It's a tiger.", zh: "那是一只老虎。" },
       { en: "It's a toucan.", zh: "那是一只巨嘴鸟。" }
     ]
-  }
+  },
+  {
+    id: "l6",
+    title: "A Rainbow of Colors",
+    titleZh: "彩虹颜色歌",
+    emoji: "🎨",
+    tone: "pink",
+    date: "2026-09-24",
+    song: {
+      audio: "/lessons/l6/song.mp3",
+      video: null,
+      /* 动画舞台场景：rainbow = 彩虹和彩色泡泡（见 SongStage.vue） */
+      scene: "rainbow",
+      lyrics: [
+        "Red, red, a red red apple",
+        "Yellow, yellow, the yellow sun",
+        "Blue, blue, the blue blue sky",
+        "I see a rainbow in the sky",
+        "",
+        "Green, green, the green green tree",
+        "Orange, orange, an orange cat",
+        "Purple, purple, a purple grape",
+        "I see a rainbow in the sky",
+        "",
+        "Pink, pink, a pink pink flower",
+        "White, white, a white white cloud",
+        "Black, black, a black black hat",
+        "I see a rainbow in the sky"
+      ]
+    },
+    words: [
+      { id: "red", en: "red", zh: "红色", emoji: "🍎", image: "/lessons/l6/words/red.svg" },
+      { id: "yellow", en: "yellow", zh: "黄色", emoji: "🍋", image: "/lessons/l6/words/yellow.svg" },
+      { id: "blue", en: "blue", zh: "蓝色", emoji: "🫐", image: "/lessons/l6/words/blue.svg" },
+      { id: "green", en: "green", zh: "绿色", emoji: "🥝", image: "/lessons/l6/words/green.svg" },
+      { id: "orange", en: "orange", zh: "橙色", emoji: "🍊", image: "/lessons/l6/words/orange.svg" },
+      { id: "purple", en: "purple", zh: "紫色", emoji: "🍇", image: "/lessons/l6/words/purple.svg" },
+      { id: "pink", en: "pink", zh: "粉色", emoji: "🌸", image: "/lessons/l6/words/pink.svg" },
+      { id: "white", en: "white", zh: "白色", emoji: "🥛", image: "/lessons/l6/words/white.svg" },
+      { id: "black", en: "black", zh: "黑色", emoji: "🐧", image: "/lessons/l6/words/black.svg" }
+    ],
+    phrases: [
+      { en: "What color is it?", zh: "它是什么颜色呀？" },
+      { en: "It's red.", zh: "它是红色的。" },
+      { en: "I like blue.", zh: "我喜欢蓝色。" },
+      { en: "Look at my rainbow!", zh: "看我的彩虹！" }
+    ]
+  },
+  {
+    id: "l7",
+    title: "Count With Me",
+    titleZh: "跟我数数 0-10",
+    emoji: "🔢",
+    tone: "green",
+    date: "2026-09-24",
+    song: {
+      audio: "/lessons/l7/song.mp3",
+      video: null,
+      /* 动画舞台场景：numbers = 数数的小气球 */
+      scene: "numbers",
+      lyrics: [
+        "Zero, zero, zero!",
+        "One, two, three",
+        "Four, five, six",
+        "Seven, eight, nine",
+        "Nine, and ten",
+        "",
+        "Let's count again",
+        "One, two, three",
+        "Four, five, six",
+        "Seven, eight, nine",
+        "Nine, and ten",
+        "",
+        "Ten, nine, eight",
+        "Seven, six, five",
+        "Four, three, two",
+        "One, and zero!",
+        "We counted to ten"
+      ]
+    },
+    words: [
+      { id: "zero", en: "zero", zh: "零", emoji: "0️⃣", image: "/lessons/l7/words/zero.svg" },
+      { id: "one", en: "one", zh: "一", emoji: "1️⃣", image: "/lessons/l7/words/one.svg" },
+      { id: "two", en: "two", zh: "二", emoji: "2️⃣", image: "/lessons/l7/words/two.svg" },
+      { id: "three", en: "three", zh: "三", emoji: "3️⃣", image: "/lessons/l7/words/three.svg" },
+      { id: "four", en: "four", zh: "四", emoji: "4️⃣", image: "/lessons/l7/words/four.svg" },
+      { id: "five", en: "five", zh: "五", emoji: "5️⃣", image: "/lessons/l7/words/five.svg" },
+      { id: "six", en: "six", zh: "六", emoji: "6️⃣", image: "/lessons/l7/words/six.svg" },
+      { id: "seven", en: "seven", zh: "七", emoji: "7️⃣", image: "/lessons/l7/words/seven.svg" },
+      { id: "eight", en: "eight", zh: "八", emoji: "8️⃣", image: "/lessons/l7/words/eight.svg" },
+      { id: "nine", en: "nine", zh: "九", emoji: "9️⃣", image: "/lessons/l7/words/nine.svg" },
+      { id: "ten", en: "ten", zh: "十", emoji: "🔟", image: "/lessons/l7/words/ten.svg" }
+    ],
+    phrases: [
+      { en: "How many apples?", zh: "有几个苹果呀？" },
+      { en: "Let's count together.", zh: "我们一起数一数。" },
+      { en: "I can count to ten.", zh: "我能数到十。" },
+      { en: "Give me five!", zh: "击个掌！" }
+    ]
+  },
+  {
+    id: "l8",
+    title: "The ABC Song",
+    titleZh: "字母歌 ABC",
+    emoji: "🔤",
+    tone: "purple",
+    date: "2026-09-24",
+    song: {
+      audio: "/lessons/l8/song.mp3",
+      video: null,
+      /* 动画舞台场景：letters = 飞来飞去的字母积木 */
+      scene: "letters",
+      lyrics: [
+        "A B C D E F G",
+        "H I J K L M N O P",
+        "Q R S T U V",
+        "W X Y and Z",
+        "Now I know my ABC",
+        "Next time won't you sing with me",
+        "",
+        "A B C D E F G",
+        "H I J K L M N O P",
+        "Q R S T U V",
+        "W X Y and Z",
+        "Now I know my ABC",
+        "Next time won't you sing with me"
+      ]
+    },
+    words: [
+      { id: "apple", en: "apple", zh: "苹果（A）", emoji: "🍎", image: "/lessons/l8/words/apple.svg" },
+      { id: "ball", en: "ball", zh: "皮球（B）", emoji: "⚽", image: "/lessons/l8/words/ball.svg" },
+      { id: "cat", en: "cat", zh: "小猫（C）", emoji: "🐱", image: "/lessons/l8/words/cat.svg" },
+      { id: "dog", en: "dog", zh: "小狗（D）", emoji: "🐶", image: "/lessons/l8/words/dog.svg" },
+      { id: "egg", en: "egg", zh: "鸡蛋（E）", emoji: "🥚", image: "/lessons/l8/words/egg.svg" },
+      { id: "fish", en: "fish", zh: "小鱼（F）", emoji: "🐟", image: "/lessons/l8/words/fish.svg" },
+      { id: "grape", en: "grape", zh: "葡萄（G）", emoji: "🍇", image: "/lessons/l8/words/grape.svg" },
+      { id: "hat", en: "hat", zh: "帽子（H）", emoji: "🎩", image: "/lessons/l8/words/hat.svg" },
+      { id: "icecream", en: "ice cream", zh: "冰淇淋（I）", emoji: "🍦", image: "/lessons/l8/words/icecream.svg" }
+    ],
+    phrases: [
+      { en: "What letter is it?", zh: "这是什么字母呀？" },
+      { en: "It's letter A.", zh: "这是字母 A。" },
+      { en: "A is for apple.", zh: "A 是 apple（苹果）。" },
+      { en: "Let's sing ABC!", zh: "我们一起唱字母歌！" }
+    ]
+  },
 ];
 
 // 逐行时间轴索引化（json 字面量类型无 index signature，转 Record 再取）

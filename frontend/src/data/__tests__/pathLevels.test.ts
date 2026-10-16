@@ -111,10 +111,10 @@ describe("lessonDoneCount / currentLevel", () => {
 
   it("currentLevel 忽略 chest（返回第一个可玩玩法关）", () => {
     const p = {
-      l4: prog({ learn: 2 }, ["learn"]),
+      l5: prog({ learn: 2 }, ["learn"]),
     };
     const cur = currentLevel(LEVELS, computeStates(LEVELS, p));
-    expect(cur?.id).toBe("l4-quiz");
+    expect(cur?.id).toBe("l5-quiz");
   });
 });
 
@@ -124,14 +124,14 @@ describe("nextLevelAfter（玩法→玩法，跳过宝箱关）", () => {
     expect(n?.id).toBe("l4-speak");
   });
 
-  it("l4-song 后跳过 chest 直达 l5-learn（不把宝箱关当玩法下一关）", () => {
-    const n = nextLevelAfter("l4-song", LEVELS);
-    expect(n?.id).toBe("l5-learn");
+  it("l5-song 后跳过 chest 直达 l4-learn（不把宝箱关当玩法下一关）", () => {
+    const n = nextLevelAfter("l5-song", LEVELS);
+    expect(n?.id).toBe("l4-learn");
   });
 
-  it("l8-song 后进入 l9（新增课程自动续接）", () => {
-    const n = nextLevelAfter("l8-song", LEVELS);
-    expect(n?.id).toBe("l9-learn");
+  it("l10-song 后跳过 chest 直达 l6-learn（丛林后接彩虹）", () => {
+    const n = nextLevelAfter("l10-song", LEVELS);
+    expect(n?.id).toBe("l6-learn");
   });
 
   it("最后一课 song 后无下一关", () => {
