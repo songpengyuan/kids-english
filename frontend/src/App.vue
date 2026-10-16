@@ -7,6 +7,7 @@ import { useStreakStore } from "./stores/streak";
 import { useAuthStore } from "./stores/auth";
 import { useContentStore } from "./stores/content";
 import { useProgressStore } from "./stores/progress";
+import { usePlayerStore } from "./stores/player";
 import { initPWA, applyUpdateIfIdle } from "./services/pwa";
 import { flush as flushTelemetry, setSessionContext, track } from "./services/telemetry";
 
@@ -16,12 +17,16 @@ const streak = useStreakStore();
 const auth = useAuthStore();
 const content = useContentStore();
 const progress = useProgressStore();
+const player = usePlayerStore();
 
 /** 底部导航只在三个主 tab 显示：课程（/course）/ 磨耳朵（/listen）/ 我的（/me）；
  *  游戏入口在课程页右上角按钮（#/game 无底部导航，沉浸闯关，顶栏返回可回课程）；
- *  宝藏罐/报告/复习/课程详情等子页面都隐藏，沉浸进入 */
+ *  宝藏罐/报告/复习/课程详情等子页面都隐藏，沉浸进入。
+ *  播放页（磨耳朵的歌词全屏页）同样隐藏：它自带完整 transport，
+ *  底栏再留一颗播放键就是同一屏两个播放键、两个"底部"互相打架（退出用顶栏收起键）。 */
 const showNav = computed(() =>
-  route.path === "/course" || route.path === "/listen" || route.path === "/me"
+  (route.path === "/course" || route.path === "/listen" || route.path === "/me") &&
+  !player.nowPlaying
 );
 
 /** 答题页无底部导航：去掉 #app 预留的 nav-h 底部 padding，让 footer 真正贴底 */

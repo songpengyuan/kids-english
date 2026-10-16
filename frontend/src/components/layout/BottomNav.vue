@@ -1,13 +1,16 @@
 <script setup>
 /**
- * 底部导航（App 风格常驻）：
- *   📖 学习 / 🎧 播放条（磨耳朵入口 + 全局播放控制）/ 👤 我的
+ * 底部导航（App 风格常驻）：📖 学习 / 🎧 磨耳朵 / 👤 我的
  *
  * - 学习是独立路由 #/course；游戏入口收在学习页右上角按钮（非底部主 tab）。
- * - 中间位：未播放时是「磨耳朵」入口按钮；播放中升级为迷你播放条
- *   （当前歌 + 进度 + 播放/暂停），点击展开歌词页——切到任何 tab 歌不停。
+ * - 中间位**永远是「磨耳朵」入口**；一旦有歌在播，槽位里换成一颗播放/暂停键
+ *   （--tap-min，品牌蓝）。不再把封面/歌名/进度塞进槽位——那是播放页的事，
+ *   塞进来只会让歌名被截成 "Walki…"，还把三格的宽度与基线一起撑歪。
+ *   点那颗键 = 播放/暂停；点槽位其余 = 进磨耳朵列表。
+ *   为什么不能"只留一个播放键"：磨耳朵全站只有这一个入口（别处没有 push /listen），
+ *   一旦放歌就再也回不去列表，所以入口必须留着。
  * - 我的 tab 高亮覆盖其子页：/me、/treasure、/report、/review。
- * - 玩法页（/course/:id）不渲染本组件（沉浸学习，见 App.vue）。
+ * - 玩法页（/course/:id）与播放页（歌词全屏页展开时）不渲染本组件（沉浸，见 App.vue）。
  */
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -45,20 +48,12 @@ function goMe() {
   if (route.name === "me") return;
   void router.push("/me").catch(() => {});
 }
-/** 磨耳朵入口（未播放时点这里进列表页） */
+/** 磨耳朵入口（点槽位进列表，点槽位里的播放键只切播放态） */
 function goListen() {
   hapticTap();
   speakZh("磨耳朵");
   if (isListen.value) return;
   void router.push("/listen").catch(() => {});
-}
-/** 播放条点击：展开歌词页（已播放时）；不在磨耳朵页先跳过去 */
-function openPlayer() {
-  hapticTap();
-  const s = player.currentSong;
-  if (!s) return;
-  player.openLyrics(player.currentIdx);
-  if (!isListen.value) void router.push("/listen").catch(() => {});
 }
 </script>
 
@@ -66,35 +61,55 @@ function openPlayer() {
   <nav class="bottom-nav" role="tablist" aria-label="主导航">
     <button
       role="tab"
+      class="bn-tab"
       aria-label="学习"
       :aria-selected="isHome"
       :class="{ on: isHome }"
       @click="goPractice"
     >
-      <span class="bn-ico"><PathIcon name="free" /></span>
+      <span class="bn-zone"><PathIcon name="free" /></span>
       <span class="bn-cap">学习</span>
     </button>
 
-    <!-- 中间位：未播放 = 磨耳朵入口；播放中 = 迷你播放条 -->
-    <button v-if="!player.currentSong" role="tab" aria-label="磨耳朵" :aria-selected="isListen"
-      :class="{ on: isListen }" @click="goListen">
-      <span class="bn-ico">🎧</span>
+    <!-- 中间位：没有在播 = 磨耳朵入口；有歌在播 = 槽位里只放一颗播放/暂停键 -->
+    <button
+      v-if="!player.currentSong"
+      role="tab"
+      class="bn-tab"
+      aria-label="磨耳朵"
+      :aria-selected="isListen"
+      :class="{ on: isListen }"
+      @click="goListen"
+    >
+      <span class="bn-zone"><span class="bn-ico">🎧</span></span>
       <span class="bn-cap">磨耳朵</span>
     </button>
-    <div v-else class="bn-player" :class="'tone-' + player.currentSong.tone" role="button"
-      aria-label="正在播放，点击打开歌词页" @click="openPlayer">
-      <span class="bp-emoji" aria-hidden="true">{{ player.currentSong.emoji }}</span>
-      <span class="bp-info">
-        <span class="bp-title">{{ player.currentSong.title }}</span>
-        <span class="bp-progress"><i :style="{ width: Math.round(player.progress * 100) + '%' }" /></span>
+    <div
+      v-else
+      role="tab"
+      tabindex="0"
+      class="bn-tab"
+      aria-label="磨耳朵（正在播放）"
+      :aria-selected="isListen"
+      :class="{ on: isListen }"
+      @click="goListen"
+      @keydown.enter="goListen"
+    >
+      <span class="bn-zone">
+        <button
+          class="bn-play round"
+          :class="{ live: player.playing }"
+          :aria-label="player.playing ? '暂停' : '播放'"
+          @click.stop="player.togglePlay()"
+        >
+          <Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" />
+        </button>
       </span>
-      <button class="bp-btn round" :aria-label="player.playing ? '暂停' : '播放'" @click.stop="player.togglePlay()">
-        <Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" />
-      </button>
+      <span class="bn-cap">磨耳朵</span>
     </div>
 
-    <button role="tab" aria-label="我的" :aria-selected="isMe" :class="{ on: isMe }" @click="goMe">
-      <span class="bn-ico"><PathIcon name="me" /></span>
+    <button role="tab" class="bn-tab" aria-label="我的" :aria-selected="isMe" :class="{ on: isMe }" @click="goMe">
+      <span class="bn-zone"><PathIcon name="me" /></span>
       <span class="bn-cap">我的</span>
     </button>
   </nav>
@@ -123,13 +138,17 @@ function openPlayer() {
   backdrop-filter: blur(var(--bar-blur, 14px));
   box-shadow: var(--shadow-bar-up);
 }
-.bottom-nav button {
+.bn-tab {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--gap-xs);
   padding: var(--gap-xs) 0;
+  /* 显式透明：全局 button 重置没有重置 background，不写这一行就会带出
+   * 浏览器默认的浅灰底（左右两个 tab 是 <button>、中间是 <div>，
+   * 三者底色就会不一致）。选中态由 .on 上色。 */
+  background: transparent;
   border-radius: var(--radius-s);
   font-weight: var(--fw-strong);
   font-size: var(--fs-small);
@@ -141,18 +160,18 @@ function openPlayer() {
   user-select: none;
   -webkit-user-select: none;
 }
-.bottom-nav button:active {
+.bn-tab:active {
   transform: translateY(1px);
 }
-.bottom-nav button.on {
+.bn-tab.on {
   color: var(--brand);
   background: var(--brand-soft);
 }
 /* 命中动画：图标弹跳 + 淡入 */
-.bottom-nav button.on .bn-ico {
+.bn-tab.on .bn-ico {
   animation: tab-pop var(--dur-base) var(--ease-pop);
 }
-.bottom-nav button.on .bn-cap {
+.bn-tab.on .bn-cap {
   animation: tab-fade var(--dur-base) ease;
 }
 @keyframes tab-pop {
@@ -164,77 +183,48 @@ function openPlayer() {
   from { opacity: 0.4; }
   to { opacity: 1; }
 }
-.bn-ico {
+/* 图标位：三格统一 --tap-min 高。
+ * 中间那颗播放键和左右图标尺寸不同，靠固定高的图标位，
+ * 三格的标签才能落在同一条基线上（否则底栏会像以前那样左右不齐）。 */
+.bn-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--tap-min);
   font-size: var(--fs-title);
+  line-height: 1;
+}
+.bn-ico {
   line-height: 1;
 }
 .bn-cap {
   font-size: var(--fs-small);
   font-weight: var(--fw-strong);
 }
-/* ===== 迷你播放条（播放中替换磨耳朵 tab） ===== */
-.bn-player {
-  flex: 1.35;
-  display: flex;
-  align-items: center;
-  gap: var(--gap-s);
-  padding: var(--gap-xs) var(--gap-s);
-  border-radius: var(--radius-pill);
-  background: var(--card-bg);
-  box-shadow: var(--shadow-hard);
-  min-width: 0;
-  cursor: pointer;
-  transition: transform var(--dur-fast);
-}
-.bn-player:active {
-  transform: translateY(1px);
-}
-/* 封面方块：跟着迷你条的字号缩放（比例恒定，不写像素） */
-.bp-emoji {
-  width: 1.9em;
-  height: 1.9em;
-  border-radius: var(--radius-s);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--fs-body);
-  flex: none;
-}
-.bp-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-xs);
-}
-.bp-title {
-  font-weight: var(--fw-strong);
-  font-size: var(--fs-small);
-  color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.bp-progress {
-  display: block;
-  height: var(--gap-xs);
-  border-radius: var(--radius-pill);
-  background: var(--line);
-  overflow: hidden;
-}
-.bp-progress i {
-  display: block;
-  height: 100%;
-  border-radius: var(--radius-pill);
-  background: var(--brand);
-  transition: width var(--dur-base) linear;
-}
-.bp-btn {
-  width: 1.9em;
-  height: 1.9em;
-  font-size: var(--fs-body);
+/* ===== 槽位里的播放/暂停键 =====
+ * 底栏唯一带颜色的元素，也是全站最容易够到的一颗键。
+ * 它只负责播放/暂停；导航仍由整个槽位负责（点槽位=进磨耳朵列表）。
+ * 宽度用 --tap-min：儿童手指定位精度低，这颗键会是他们按得最多的一个。 */
+.bn-play {
+  width: var(--tap-min);
+  height: var(--tap-min);
   background: var(--brand);
   color: var(--on-tone);
-  padding: 0;
+  box-shadow: 0 var(--press) 0 var(--brand-dark);
+  font-size: var(--fs-body);
+}
+/* 播放中：外扩一圈呼吸光环（"正在唱"的状态信号，颜色跟随品牌色） */
+.bn-play.live {
+  animation: play-live 2s ease-in-out infinite;
+}
+@keyframes play-live {
+  0%, 100% {
+    box-shadow: 0 var(--press) 0 var(--brand-dark),
+      0 0 0 0 color-mix(in srgb, var(--brand) 34%, transparent);
+  }
+  50% {
+    box-shadow: 0 var(--press) 0 var(--brand-dark),
+      0 0 0 6px color-mix(in srgb, var(--brand) 14%, transparent);
+  }
 }
 </style>

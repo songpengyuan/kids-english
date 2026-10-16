@@ -58,6 +58,10 @@ html {
 button {
   font-family: inherit;
   border: none;
+  /* 必须显式清掉 background：浏览器默认给 button 一层 buttonface 灰底，
+   * 忘了清的地方就会无声地露出一条灰（底栏的左右 tab、播放列表抽屉行、
+   * 「家长中心」文字入口都中过招）。要灰底请显式用 --btn-plain-bg。 */
+  background: transparent;
   cursor: pointer;
   color: inherit;
 }

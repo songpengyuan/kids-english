@@ -101,6 +101,8 @@
 
 播放器跟随主题：`--player-bg-*` / `--player-surface` / `--player-text*` 都已指向主题变量，新代码直接引用即可，不要再写 `#1e293b` 这类固定深色。
 
+**播放页（磨耳朵播放中，`/listen` + `player.nowPlaying`）自己带完整播放控制，不依赖底栏**，因此进播放态时**隐藏底部导航**（`App.vue` 的 `showNav` 判 `!player.nowPlaying`），页面高度按 `--nav-h: 0` 计算。播放页尺寸走三个专用 token：`--fs-emoji-hero`（大封面）、`--play-btn`（播放主键）、`--slider-thumb`（进度条滑块）。
+
 ### 2.7 绝对色与玩法插画色板
 
 以上 2.1–2.6 都是**语义色**（表示"这是什么/什么状态"，随主题反转）。
@@ -203,7 +205,7 @@
 
 | 组件 | 路径 | 用途 |
 |------|------|------|
-| `BottomNav` | `components/layout/BottomNav.vue` | 底部三 tab（学习 / 磨耳朵 / 我的）；播放中中间位升级为迷你播放条 |
+| `BottomNav` | `components/layout/BottomNav.vue` | 底部三 tab（学习 / 磨耳朵 / 我的）。中间位**恒为磨耳朵入口**（全站唯一入口）：无歌时是普通磨耳朵 tab，有歌时 tab 内只放一个播放/暂停键（不是迷你播放条） |
 | `SafeBottom` | `components/layout/SafeBottom.vue` | 底部安全距离共用容器 |
 | `HeaderBar` | `components/layout/HeaderBar.vue` | **全站唯一子页面顶栏**；返回钮 `--tap-min` 正圆 + 标题绝对居中 + 右侧 `showBadges` 徽章或 `#right` 插槽 |
 
@@ -268,6 +270,8 @@
 - **首页无顶栏**：`/course`、`/listen`、`/me` 用 `<PageShell bare>`。
 - **带返回的二级页**：一律 `HeaderBar`（= `PageShell` 默认模式），答题中用 `close`（房子图标）。
 - 底部导航只在三个首页显示；闯关入口在「我的」页。
+- **磨耳朵播放中隐藏底栏**：`showNav` 额外判 `!player.nowPlaying`。播放页自带播放/进度/歌词，再留一条底栏只会分走视线与纵向空间。
+- **底栏中间位是磨耳朵的唯一入口**，不能简化成纯播放键——`/listen` 的 `router.push` 全站只出现在 `BottomNav.vue`。所以做法是：tab 仍是可点的导航项，只在它的图标位里换成播放/暂停键。
 - 带底栏页面的底部安全距离用 `SafeBottom`，不各自写 `env(safe-area-inset-bottom)`。
 
 ## 11. 三端适配
@@ -301,6 +305,7 @@
 - ❌ 把 CSS 写在 `</style>` 之后——**SFC 解析器不报错，直接丢弃**（GamePath 曾因此丢掉 31 行 `.lv-guide`，线上从未生效）
 - ❌ 把整块规则复制第二遍放在媒体查询里（LessonResult 曾有一份 48 行的逐字重复）——要覆盖就只写要覆盖的那几条
 - ❌ `border-radius: 50%`（用 `.round`）
+- ❌ **全局 `button` reset 只清 `border` 不清 `background`**——浏览器会给 `<button>` 兜底 `buttonface` 灰（`rgb(239,239,239)`），于是「是按钮」的 tab / 抽屉行偷露灰底，而旁边同款的 `<div role="tab">` 没有，一行里深浅不一（底栏三 tab 曾因此左右灰、中间白）。base.css 的 `button` reset 必须带 `background: transparent`；任何自绘按钮类也要显式给 `background`。
 - ❌ `font-weight: 900`（超出 Baloo 2 的 400–800 范围）
 - ❌ 在 `.view` 内部再补一次 `--pad-x`
 - ❌ 底部导航出现在非首页；首页出现顶栏

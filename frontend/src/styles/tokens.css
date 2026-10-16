@@ -230,8 +230,11 @@
   --pad-x: clamp(10px, 2.2vw, 30px);
   --pad-y: clamp(6px, 1.2vh, 18px);
 
-  /* 底部导航高度：fixed 底栏占位（含按钮行高），内容区底部让位用 */
-  --nav-h: 76px;
+  /* 底部导航高度：fixed 底栏占位，内容区底部让位用。
+   * 2026-10 从 76 调到 100：中间位改成一颗粒子级播放键（--tap-min 52px）后，
+   * 三格的"图标位"统一成 52px 高（否则播放键比左右图标高一截，标签基线就错开了），
+   * 底栏整体因此长高约 26px。 */
+  --nav-h: 100px;
 
   /* ---------- 圆角 / 阴影 ---------- */
   /* 可爱化：圆角整体放大一档，贴纸描边（--sticker）给彩色卡片勾一圈白边 */
@@ -265,6 +268,7 @@
   --fs-small: clamp(11px, min(1.7vh, 1.4vw), 15px);
   --fs-btn: clamp(16px, min(2.6vh, 2.1vw), 23px);
   /* 大号 emoji / 表情图标 */
+  --fs-emoji-hero: clamp(64px, min(19vh, 40vw), 168px); /* 播放页封面：整页的主角 */
   --fs-emoji-xl: clamp(38px, min(9vh, 7vw), 74px);
   --fs-emoji-l: clamp(28px, min(6vh, 5vw), 48px);
 
@@ -279,6 +283,10 @@
   /* ---------- 触控目标 ---------- */
   /* 儿童手指定位精度低，可点区域不小于 52px（低于 44px 的 HIG 下限也不合适） */
   --tap-min: 52px;
+  /* 播放页的主播放键：整页唯一的主行动，比普通控件再大一号（拇指落点） */
+  --play-btn: clamp(64px, min(9vh, 18vw), 80px);
+  /* 进度条拇指：孩子手指定位精度低，滑块本身要够大；滑杆的触控高度也按它走 */
+  --slider-thumb: clamp(20px, min(3vh, 6vw), 30px);
 
   /* ---------- 层级 ---------- */
   /* 卡片内部的相对层：让文字压住绝对定位的装饰（emoji / 光斑） */
@@ -464,7 +472,7 @@
     --pad-x: clamp(16px, 2.6vw, 48px);
     --pad-y: clamp(8px, 1.4vh, 24px);
 
-    --nav-h: 92px; /* 底栏更高：宽屏下按钮/图标更大 */
+    --nav-h: 116px; /* 底栏更高：宽屏下图标位按 --tap-min(64px) 走 */
 
     --radius: clamp(20px, 3vh, 36px);
     --radius-s: clamp(14px, 2vh, 26px);
@@ -476,9 +484,12 @@
     --fs-small: clamp(13px, min(2vh, 1.7vw), 20px);
     --fs-btn: clamp(18px, min(3vh, 2.5vw), 30px);
 
+    --fs-emoji-hero: clamp(80px, min(20vh, 30vw), 180px);
     --fs-emoji-xl: clamp(44px, min(10vh, 8vw), 96px);
     --fs-emoji-l: clamp(32px, min(7vh, 6vw), 62px);
 
     --tap-min: 64px; /* 儿童手指定位精度低，宽屏给更大目标 */
+    --play-btn: clamp(72px, min(10vh, 14vw), 96px);
+    --slider-thumb: clamp(24px, min(3.4vh, 4vw), 36px);
   }
 }

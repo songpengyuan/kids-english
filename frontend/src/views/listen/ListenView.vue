@@ -11,15 +11,29 @@
  *    和 MatchView / QuizView / Hero 详情页那份是同一套动画的第四份拷贝）；
  *  · emoji 封面改用共享的 EmojiTile（歌词页封面 + 列表行封面原本各写一份）；
  *  · 列表行改用全局 .entry-row 骨架（此前和"家长中心/闯关入口"那几处各写一套）；
- *  · 横向 padding 由外层 .view / .lyrics-page 提供，去掉各处重复叠加的那一层
+ *  · 横向 padding 由外层 .view / .player 提供，去掉各处重复叠加的那一层
  *    （此前内容实际被内缩了 2 倍 --pad-x，iPad 上尤其明显）；
  *  · 所有色值/字号/圆角/层级改为 token。
+ *
+ * 2026-10-17 播放页（歌词全屏页）重做成"唱片页"：
+ *  · 修掉最硬的一处缺陷——**这台播放器上原本没有播放/暂停**：控制被整体挪给了
+ *    底部迷你播放条（底栏那颗 30px 的小圆键），页面只剩一颗没有文案的"播放列表"圆钮。
+ *    现在 transport 回到页面里：上一首 / 72px 主播放键 / 下一首，播放列表挪到顶栏右侧。
+ *  · 一屏三问：① 听的是哪首（大封面 + 歌名）→ ② 唱到哪（歌词）→ ③ 我要干嘛（主播放键）。
+ *  · 歌词从"一整面 2.2 行高的灰字"改成卡拉 OK：当前行带药丸底 + 加粗 + 全不透明，
+ *    其余行降到 55% 透明度，并把当前行自动滚到卡片正中（位置本身在说"唱到这里了"）。
+ *  · 进度条只留这一条（底栏那条已随迷你播放条一起删掉），颜色回到进度语义色 --brand
+ *    （原来是 accent-color: --yellow，与"进度=品牌"的规范相冲）；收起键给上可见的圆底。
+ *  · 本页隐藏底部导航（见 App.vue 的 showNav），退出用左上角收起键 ——
+ *    这样只有一个"底部"，不必再为底栏预留一条 --nav-h。
  */
 import { ref, computed, onBeforeUnmount } from "vue";
 import { lessons, asset } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
-import { Play, Pause, X, ChevronDown, ListMusic, Music, Film } from "@lucide/vue";
+import {
+  Play, Pause, X, ChevronDown, ListMusic, Music, Film, SkipBack, SkipForward,
+} from "@lucide/vue";
 import BaseDrawer from "../../components/ui/BaseDrawer.vue";
 import SegmentedTabs from "../../components/ui/SegmentedTabs.vue";
 import EmojiTile from "../../components/ui/EmojiTile.vue";
@@ -28,6 +42,34 @@ import type { ListenSubTab } from "../../types";
 
 const player = usePlayerStore();
 const progStore = useProgressStore();
+
+/* ---------- 播放页的歌词窗（卡拉 OK） ---------- */
+/** 歌词窗固定 5 行：当前行永远是正中那行（上 2 行、下 2 行当上下文） */
+const LINE_WINDOW = 5;
+
+/** 当前唱到第几行（0 起；-1 = 这首没有歌词） */
+const activeLine = computed(() => {
+  const n = player.currentLyrics.length;
+  if (!n) return -1;
+  return Math.min(n - 1, Math.max(0, Math.round(player.progress * n)));
+});
+
+/**
+ * 歌词窗内容：只取当前行前后各 2 行。
+ * 为什么不做"整篇滚动 + 当前行高亮"：一屏十几行还是一面文字墙，孩子得自己找；
+ * 固定 5 行窗口让"当前行"永远落在同一个位置——位置本身就是信号，不用教。
+ * 超出范围的位置留空槽（模板渲染 &nbsp; 撑住行高），这样歌首/歌尾当前行也照样居中。
+ */
+const lyricWindow = computed(() => {
+  const lines = player.currentLyrics;
+  const center = activeLine.value;
+  const half = Math.floor(LINE_WINDOW / 2);
+  return Array.from({ length: LINE_WINDOW }, (_, i) => {
+    const idx = center - half + i;
+    const text = idx >= 0 && idx < lines.length ? lines[idx] : "";
+    return { text, on: idx === center };
+  });
+});
 
 /** tab 定义提到 setup 顶层，避免每次渲染新建数组导致子组件 props 反复 diff */
 const TABS = [
@@ -85,34 +127,55 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="listen view">
-    <!-- ===== 歌词全屏页（状态来自全局 store，跨路由保持） ===== -->
+    <!-- ===== 播放页（唱片页；状态来自全局 store，跨路由保持） =====
+         一屏三问：听的是哪首 → 唱到哪 → 我要干嘛。整页只有一颗主播放键。 -->
     <Transition name="lyrics">
-      <div v-if="player.nowPlaying && player.currentSong" class="lyrics-page">
-        <div class="lp-header">
-          <button class="lp-back round" aria-label="收起歌词" @click="player.closeLyrics()">
+      <div v-if="player.nowPlaying && player.currentSong" class="player">
+        <!-- 顶栏只剩"页面级动作"：收起 / 播放列表（transport 不放在这里） -->
+        <div class="pl-bar">
+          <button class="pl-chip round" aria-label="收起歌词" @click="player.closeLyrics()">
             <ChevronDown class="k-ico" />
           </button>
-          <EmojiTile :emoji="player.currentSong.emoji" :tone="player.currentSong.tone" />
-          <div class="lp-title-area">
-            <p class="lp-title">{{ player.currentSong.title }}</p>
-            <p class="lp-sub">{{ player.currentSong.titleZh }}</p>
-          </div>
-        </div>
-        <div class="lp-lyrics">
-          <p v-for="(line, i) in player.currentLyrics" :key="i" class="lp-line"
-            :class="{ active: Math.round(player.progress * player.currentLyrics.length) === i }">{{ line }}</p>
-          <p v-if="player.currentLyrics.length === 0" class="lp-line">🎵</p>
-        </div>
-        <!-- 播放控制交给底部「磨耳朵」迷你播放条，这里只留播放列表入口 -->
-        <div class="lp-controls">
-          <button class="lp-btn round" aria-label="打开播放列表" @click="showPlaylist = true">
+          <button class="pl-chip round" aria-label="打开播放列表" @click="showPlaylist = true">
             <ListMusic class="k-ico" />
           </button>
         </div>
-        <div class="lp-progress-row">
-          <span class="lp-time">{{ player.formatTime(player.progress * player.duration) }}</span>
-          <input class="lp-progress" type="range" :value="Math.round(player.progress * 100)" @input="player.seek" min="0" max="100" />
-          <span class="lp-time">{{ player.formatTime(player.duration) }}</span>
+
+        <div class="pl-hero">
+          <EmojiTile :emoji="player.currentSong.emoji" :tone="player.currentSong.tone" size="xl" />
+          <p class="pl-title">{{ player.currentSong.title }}</p>
+          <p class="pl-sub">{{ player.currentSong.titleZh }}</p>
+        </div>
+
+        <!-- 卡拉 OK 歌词窗：固定 5 行，当前行永远在正中（位置 + 药丸底 + 字重三重信号） -->
+        <div class="pl-lyrics">
+          <template v-if="player.currentLyrics.length">
+            <p v-for="(slot, i) in lyricWindow" :key="i" class="pl-line" :class="{ on: slot.on }">{{
+              slot.text || "\u00A0"
+            }}</p>
+          </template>
+          <p v-else class="pl-line on">🎵</p>
+        </div>
+
+        <!-- transport：整页唯一的主行动就是中间那颗实底播放键 -->
+        <div class="pl-transport">
+          <button class="pl-side round" aria-label="上一首" @click="player.prev()">
+            <SkipBack class="k-ico" />
+          </button>
+          <button class="pl-main round" :aria-label="player.playing ? '暂停' : '播放'" @click="player.togglePlay()">
+            <Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" />
+          </button>
+          <button class="pl-side round" aria-label="下一首" @click="player.next()">
+            <SkipForward class="k-ico" />
+          </button>
+        </div>
+
+        <div class="pl-progress-row">
+          <span class="pl-time">{{ player.formatTime(player.progress * player.duration) }}</span>
+          <input class="pl-progress" type="range" aria-label="播放进度"
+            :style="{ '--p': Math.round(player.progress * 100) + '%' }"
+            :value="Math.round(player.progress * 100)" @input="player.seek" min="0" max="100" />
+          <span class="pl-time">{{ player.formatTime(player.duration) }}</span>
         </div>
       </div>
     </Transition>
@@ -244,101 +307,172 @@ onBeforeUnmount(() => {
   color: var(--ink-faint);
 }
 
-/* ===== 歌词全屏页 ===== */
-.lyrics-page {
+/* ===== 播放页（唱片页） =====
+ * 全屏一页，「一屏三问」：① 听的是哪首（封面 + 歌名）→ ② 唱到哪（歌词）
+ * → ③ 我要干嘛（唯一一颗主播放键）。
+ * 本页隐藏底部导航（见 App.vue 的 showNav），所以底部只要一条安全距离，
+ * 不必再为 --nav-h 让位 —— 这就是"两个底部打架"的解法。
+ */
+.player {
   position: fixed;
   inset: 0;
-  /* 低于底部导航：歌词页下垫着常驻 tab 栏，随时能切走 */
   z-index: var(--z-bar);
-  background: transparent;
   display: flex;
   flex-direction: column;
-  padding: env(safe-area-inset-top) var(--pad-x) 0;
-  gap: var(--gap-s);
+  gap: var(--gap-m);
+  padding:
+    max(var(--gap-s), env(safe-area-inset-top))
+    var(--pad-x)
+    max(var(--gap-m), env(safe-area-inset-bottom));
 }
-.lp-header {
+/* 顶栏只放"页面级动作"：收起在左、播放列表在右。
+ * 两颗都是白底圆键——原来是透明底的图标，孩子看不出那里能点。 */
+.pl-bar {
   display: flex;
   align-items: center;
-  gap: var(--gap-m);
-  padding: var(--gap-s) 0;
+  justify-content: space-between;
 }
-.lp-back {
+.pl-chip {
   width: var(--tap-min);
   height: var(--tap-min);
+  background: var(--card-bg);
   color: var(--ink-soft);
-  background: transparent;
-  font-size: var(--fs-hero);
+  box-shadow: var(--shadow-soft);
+  font-size: var(--fs-title);
 }
-.lp-title-area {
-  flex: 1;
-  min-width: 0;
+/* 唱片区：封面是整页的主角（第①问） */
+.pl-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
 }
-.lp-title {
-  margin: 0;
+.pl-title {
+  margin: var(--gap-s) 0 0;
+  text-align: center;
   color: var(--ink);
   font-weight: var(--fw-strong);
   font-size: var(--fs-title);
 }
-.lp-sub {
-  margin: var(--gap-xs) 0 0;
+.pl-sub {
+  margin: 0;
+  text-align: center;
   color: var(--ink-soft);
   font-weight: var(--fw-mid);
   font-size: var(--fs-small);
 }
-.lp-lyrics {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--gap-l) var(--gap-m);
+/* 歌词窗：永远 5 行（见 lyricWindow）。
+ * 不设 flex:1，而是靠 margin-block:auto 吸收多出来的高度 ——
+ * 卡片始终是一个"窗口"，而不是被拉满整页的大白块。 */
+.pl-lyrics {
+  margin-block: auto;
+  padding: var(--gap-m) var(--gap-s);
   background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
   text-align: left;
-  -webkit-overflow-scrolling: touch;
 }
-.lp-line {
-  color: var(--ink-faint);
+.pl-line {
+  margin: 0;
+  padding: var(--gap-s) var(--gap-m);
+  border-radius: var(--radius-pill);
+  color: var(--ink);
   font-weight: var(--fw-mid);
   font-size: var(--fs-body);
-  line-height: 2.2;
-  transition: color var(--dur-base);
+  line-height: 1.6;
+  /* 离当前行越远越淡。窗口固定 5 槽，所以"位置"就是"距离"：
+   * 第 1/5 槽 = 距当前行 2 行，第 2/4 槽 = 距 1 行，正中 = 当前行。 */
+  opacity: 0.32;
+  transition: opacity var(--dur-base), background var(--dur-base);
 }
-.lp-line.active {
-  color: var(--ink);
+.pl-line:nth-child(2),
+.pl-line:nth-child(4) {
+  opacity: 0.6;
+}
+.pl-line.on {
+  background: var(--brand-soft);
   font-weight: var(--fw-strong);
+  opacity: 1;
 }
-.lp-controls {
+/* transport：中间实底主键 + 立体厚度（整页唯一的主行动），两侧降为白底圆键 */
+.pl-transport {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--gap-m);
-  padding: var(--gap-s) 0;
+  gap: var(--gap-l);
 }
-.lp-btn {
+.pl-side {
   width: var(--tap-min);
   height: var(--tap-min);
-  color: var(--ink-soft);
   background: var(--card-bg);
+  color: var(--ink-soft);
   box-shadow: var(--shadow-soft);
   font-size: var(--fs-title);
 }
-.lp-progress-row {
+.pl-main {
+  width: var(--play-btn);
+  height: var(--play-btn);
+  background: var(--brand);
+  color: var(--on-tone);
+  box-shadow: 0 var(--press) 0 var(--brand-dark), var(--shadow-soft);
+  font-size: var(--fs-hero);
+}
+.pl-progress-row {
   display: flex;
   align-items: center;
   gap: var(--gap-s);
-  /* 底部常驻导航（fixed）预留高度 + 全面屏 Home 条安全距离 */
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--nav-h));
 }
-.lp-progress {
+/* 进度：色回到进度语义色 --brand（原来写 accent-color: --yellow，
+ * 与"进度/导航类用品牌色"的规范相冲）。
+ * 也不用原生 accent-color：它跟着 UA 与 color-scheme 变（无头 Chrome 下整条轨道
+ * 渲染成深色），显式画轨道与拇指才能各浏览器一致，也才把拇指做大给孩子按。 */
+.pl-progress {
   flex: 1;
-  accent-color: var(--yellow);
-  height: var(--gap-xs);
+  height: var(--slider-thumb);
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
 }
-.lp-time {
-  font-size: var(--fs-small);
-  font-weight: var(--fw-mid);
-  color: var(--ink-faint);
+/* 已播段实底品牌色、未播段浅色，用模板注入的 --p（百分比）切分 */
+.pl-progress::-webkit-slider-runnable-track {
+  height: var(--gap-xs);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--brand) 0 var(--p), var(--line) var(--p) 100%);
+}
+.pl-progress::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: var(--slider-thumb);
+  height: var(--slider-thumb);
+  margin-top: calc((var(--gap-xs) - var(--slider-thumb)) / 2);
+  border: 3px solid var(--card-bg);
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  box-shadow: var(--shadow-soft);
+}
+.pl-progress::-moz-range-track {
+  height: var(--gap-xs);
+  border-radius: var(--radius-pill);
+  background: var(--line);
+}
+.pl-progress::-moz-range-progress {
+  height: var(--gap-xs);
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+}
+.pl-progress::-moz-range-thumb {
+  width: var(--slider-thumb);
+  height: var(--slider-thumb);
+  border: 3px solid var(--card-bg);
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+}
+.pl-time {
   min-width: 3em;
   text-align: center;
+  color: var(--ink-faint);
+  font-weight: var(--fw-mid);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
 }
 
 /* 歌词全屏页 = 抽屉：进入/收起都从底部丝滑滑出（大元素位移 → --dur-slow） */
@@ -365,6 +499,8 @@ onBeforeUnmount(() => {
   width: 100%;
   padding: var(--gap-s) var(--gap-m);
   text-align: left;
+  /* 显式透明：全局 button 重置没重置 background，会带出浏览器默认浅灰底 */
+  background: transparent;
 }
 .drawer-item:active {
   background: var(--tint-green);
