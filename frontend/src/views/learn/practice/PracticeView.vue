@@ -36,7 +36,7 @@ const router = useRouter();
 
 function enter(l: Lesson) {
   speak(l.title, { ttsOnly: true });
-  router.push(`/learn/${l.id}`);
+  router.push(`/course/${l.id}`);
 }
 
 /* ---------- 快捷引导 ---------- */

@@ -195,7 +195,7 @@ function goGame() {
       </section>
 
       <!-- 到期复习 -->
-      <button v-if="weakCount > 0" class="entry anim-fade-up" @click="sayEntry('复习一下', '/learn/review')">
+      <button v-if="weakCount > 0" class="entry anim-fade-up" @click="sayEntry('复习一下', '/course/review')">
         <span class="en-ico">📖</span>
         <span class="en-cap">复习一下</span>
         <span class="en-desc">{{ weakCount }} 个词</span>

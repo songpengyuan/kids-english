@@ -18,7 +18,7 @@ const lesson = computed(() => getLesson(lessonId.value));
 function goBack() {
   // 从学习/课程页进入 → 返回上一页；无历史（直接输地址）回学习主页
   if (window.history.length > 1) router.back();
-  else void router.push("/learn");
+  else void router.push("/course");
 }
 </script>
 

@@ -2,16 +2,16 @@
  * 应用路由（vue-router，hash 模式）。
  *
  * - 用 createWebHashHistory：项目部署在 GitHub Pages 静态托管，
- *   history 模式深链刷新会 404，hash 模式（/#/learn/l4/learn）刷新不掉链。
+ *   history 模式深链刷新会 404，hash 模式（/#/course/l4/learn）刷新不掉链。
  *
  * - **路由分层（子路由承载）**：三个主入口（学习 / 游戏 / 我的）为顶层父路由，
  *   各自的子页面作为**子路由**挂在父级下，不在根路径平铺新 path：
  *
  *   #/learn（学习域）
  *     ├─ /learn                         学习主页（父容器空 path 子路由，顶层渲染）
- *     ├─ /learn/:id                     课程菜单（父路由带组件）
- *     │   └─ /learn/:id/learn|quiz|...  题型子路由（二级，继承父组件，仅声明 name/meta）
- *     └─ /learn/review                  错词复习（学习闭环：学 → 错 → 复习）
+ *     ├─ /course/:id                     课程菜单（父路由带组件）
+ *     │   └─ /course/:id/learn|quiz|...  题型子路由（二级，继承父组件，仅声明 name/meta）
+ *     └─ /course/review                  错词复习（学习闭环：学 → 错 → 复习）
  *   #/game（游戏域）
  *     ├─ /game                          游戏闯关地图
  *     └─ /game/quest/:id/:stage?        闯关玩法（地图点关卡直达）
@@ -48,38 +48,36 @@ export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     // #/ 旧链接 → 学习主页
-    { path: "/", redirect: "/learn" },
+    { path: "/", redirect: "/course" },
 
     // 应用入口口令页（备案域名门禁）：未解锁时所有路由被守卫拦到这里
     { path: "/gate", name: "gate", component: GateView, meta: { title: "家长口令" } },
 
-    // ---------- 学习域 ----------
+    // ---------- 课程域 ----------
+    // 旧路径重定向（书签/外链兼容）
+    { path: "/course", redirect: "/course" },
+    { path: "/course/:rest(.*)*", redirect: to => `/course/${to.params.rest}` },
     {
-      path: "/learn",
+      path: "/course",
       children: [
-        // 空子路径承载学习主页（父容器无组件 → 顶层渲染，KeepAlive 可缓存）
+        // 空子路径承载课程主页（父容器无组件 → 顶层渲染，KeepAlive 可缓存）
         { path: "", name: "learn", component: LearnView, meta: { title: "丞丞ABC" } },
-        // 课程菜单（/learn/l9）
-        // 题型独立子路由（/learn/l9/quiz …）：父路由带组件、子路由只声明
-        // name/path/meta（无组件，继承父 LessonView 渲染）——URL 与旧版一致，
-        // 但层级语义更清晰：菜单是父、题型是子（二级路由，对应 views 逐层组织）。
         {
           path: ":id",
           name: "lesson",
           component: LessonView,
           meta: { title: "学习" },
           children: [
-            // 子路由与父共用 LessonView：实际渲染由父组件按 route.name 分发题型
-            //（父 LessonView 模板无 <router-view>，子组件不会重复渲染）。
             { path: "learn", name: "lesson-learn", component: LessonView, meta: { title: "学单词", stage: "learn" } },
-            { path: "quiz", name: "lesson-quiz", component: LessonView, meta: { title: "听音选图", stage: "quiz" } },
+            { path: "hear", name: "lesson-quiz", component: LessonView, meta: { title: "听音选图", stage: "quiz" } },
             { path: "match", name: "lesson-match", component: LessonView, meta: { title: "连一连", stage: "match" } },
             { path: "speak", name: "lesson-speak", component: LessonView, meta: { title: "跟读", stage: "speak" } },
             { path: "song", name: "lesson-song", component: LessonView, meta: { title: "唱童谣", stage: "song" } },
             { path: "talk", name: "lesson-talk", component: LessonView, meta: { title: "亲子对话", stage: "talk" } },
+            // 旧 quiz 路径重定向
+            { path: "quiz", redirect: to => `/course/${to.params.id}/hear` },
           ],
         },
-        // 错词复习（学习闭环子页）
         { path: "review", name: "review", component: () => import("../views/learn/ReviewView.vue"), meta: { title: "错词复习" } },
       ],
     },
@@ -136,7 +134,7 @@ export const router = createRouter({
 // 旧链接兼容（历史平铺路径 → 新嵌套路径；保留 step/form 等 query）：
 //  · #/?mode=game → #/game（游戏模式曾用 query 参数指向）
 //  · #/lesson/...?mode=quest&step=... → #/game/quest/...?step=（闯关曾用参数指向）
-//  · #/lesson/... → #/learn/...、#/review → #/learn/review
+//  · #/lesson/... → #/course/...、#/review → #/course/review
 //  · #/quest/... → #/game/quest/...、#/streak → #/me/streak
 //  · #/treasure/... → #/me/treasure/...、#/report → #/me/report
 router.beforeEach((to) => {
@@ -158,10 +156,10 @@ router.beforeEach((to) => {
     ["/me/treasure", "/treasure"],
     ["/me/streak", "/streak"],
     ["/me/report", "/report"],
-    ["/learn/review", "/review"],
+    ["/course/review", "/review"],
     ["/game/quest", "/quest"],
-    ["/learn", "/learn/lesson"], // 上一版嵌套（/learn/lesson/l4/learn）→ 去 lesson 段（/learn/l4/learn）
-    ["/learn", "/lesson"],           // 历史平铺（/lesson/l4/learn）→ /learn/l4/learn
+    ["/course", "/course/lesson"], // 上一版嵌套（/course/lesson/l4/learn）→ 去 lesson 段（/course/l4/learn）
+    ["/course", "/lesson"],           // 历史平铺（/lesson/l4/learn）→ /course/l4/learn
   ];
   for (const [nw, old] of MIGRATE) {
     if (path.startsWith(old)) {
@@ -172,7 +170,7 @@ router.beforeEach((to) => {
 
   if (path !== to.path || query !== to.query) return { path, query, replace: true };
   // 真正的未知路径（不是可迁移的旧路径）：回学习主页
-  if (to.name === "not-found") return { path: "/learn", replace: true };
+  if (to.name === "not-found") return { path: "/course", replace: true };
   // 家长门禁：requiresParent 路由未解锁 → 回 /me?parentGate=1（MyView 弹算术题）
   const gate = parentGateDecision(to, useAuthStore().parentUnlocked);
   if (gate !== true) return gate;

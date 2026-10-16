@@ -40,7 +40,7 @@ const { isNarrow } = useViewport();
 
 const lessonId = computed(() => (typeof route.params.id === "string" ? route.params.id : ""));
 /**
- * 当前课时（#/learn/l4 深链可直达）。
+ * 当前课时（#/course/l4 深链可直达）。
  * 数据源：本地静态同步渲染（秒开兜底），挂载后由后端内容 API 异步覆盖
  * —— 加课不发版后，远端详情（歌词时间轴/词表）为准，离线/后端挂时本地兜底。
  */
@@ -288,7 +288,7 @@ const talkIdx = ref(0);
       @back-to-map="backToMap"
       @go-next-level="goNextLevel"
       @to-menu="toMenu"
-      @go-next-lesson="router.push('/learn/' + (nextLesson?.id ?? ''))"
+      @go-next-lesson="router.push('/course/' + (nextLesson?.id ?? ''))"
     />
 
   </div>

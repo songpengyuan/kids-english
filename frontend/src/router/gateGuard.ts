@@ -18,7 +18,7 @@ export function appGateDecision(
   unlocked: boolean,
 ): true | AppGateRedirect {
   if (to.path === "/gate") {
-    return unlocked ? { path: "/learn", replace: true } : true;
+    return unlocked ? { path: "/course", replace: true } : true;
   }
   if (!unlocked) return { path: "/gate", replace: true };
   return true;

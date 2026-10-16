@@ -45,7 +45,7 @@ async function submit() {
       await progress.flushReport();
       progress.syncFromServer();
     }
-    router.replace("/learn");
+    router.replace("/course");
   } finally {
     busy.value = false;
   }

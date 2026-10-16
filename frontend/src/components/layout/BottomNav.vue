@@ -7,7 +7,7 @@
  * - 中间位：未播放时是「磨耳朵」入口按钮；播放中升级为迷你播放条
  *   （当前歌 + 进度 + 播放/暂停），点击展开歌词页——切到任何 tab 歌不停。
  * - 我的 tab 高亮覆盖其子页：/me、/treasure、/report、/review。
- * - 玩法页（/learn/:id）不渲染本组件（沉浸学习，见 App.vue）。
+ * - 玩法页（/course/:id）不渲染本组件（沉浸学习，见 App.vue）。
  */
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -37,7 +37,7 @@ function goPractice() {
   hapticTap();
   speakZh("学习");
   if (isHome.value) return;
-  void router.push("/learn").catch(() => {});
+  void router.push("/course").catch(() => {});
 }
 function goMe() {
   hapticTap();
