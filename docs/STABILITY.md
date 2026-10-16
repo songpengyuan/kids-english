@@ -88,6 +88,14 @@ install -m 644 /www/wwwroot/kids-english/backend/deploy/kids-maintenance.logrota
 cron 与 logrotate 的**定义文件随仓库版本化**（`backend/deploy/`），
 不写进 `crontab -e` —— 后者是不透明的用户表，重建服务器时说不清当时跑的是什么。
 
+> ⚠️ 改这两个文件时注意 **cron 行里的 `%` 有特殊含义**（第一个未转义的 `%` 之后
+> 会变成该任务的标准输入，命令行就此截断，且**无任何报错**）。
+> 需要 `%` 就写 `\%`；本项目的方式是 cron 行里完全不出现 `%`，逻辑都放脚本里。
+> 实测踩过一次：自检任务看起来"没触发"，其实是命令被吃掉、输出被 cron 丢弃。
+>
+> 另外 `systemctl reload cron` 在这台机器上不可用（cron 无 reload job type），
+> 改完用 `systemctl restart cron`；重启 cron 不会杀掉已在运行的任务。
+
 #### 怎么确认它真的在跑
 
 这是 cron 最容易失效的地方：**脚本还在、cron 还在，但永远不再执行**

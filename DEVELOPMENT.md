@@ -1384,6 +1384,20 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
 - **给 venv 的 python 做软链接会让它找不到 site-packages**：venv 的 `sys.prefix` 由
   可执行文件**路径**推出，软链到别处后 `import fastapi` 直接 `ModuleNotFoundError`。
   搭临时环境验证时用真实路径（或 `KIDS_PY` 显式指过去），别用软链。
+- **cron 命令行里的 `%` 会把命令吃掉**：第一个未转义的 `%` 之后的整段成为该任务的
+  **标准输入**，命令行就此截断。`date "+%F %T"` 实际执行的是 `date "+` ——
+  既没有输出、也没有报错（输出被 cron 以 `No MTA installed` 丢弃），
+  看起来就像"任务完全没触发"，极易误判成 cron 配置没生效。
+  → cron 行里**别写 `%`**（逻辑放进脚本，cron 行只留时间+用户+脚本路径）；
+  必须写时用 `\%`。排查时看 `/var/log/syslog` 里 `(root) CMD (...)` 的**实际命令文本**，
+  它能立刻暴露截断。
+- **`systemctl reload cron` 不存在**（cron 没有 reload job type，报
+  `Job type reload is not applicable`）→ 改 `/etc/cron.d/` 后用 `restart`，
+  重启不会杀掉正在运行的任务。
+- **验证"cron 真的会跑"不要只靠假设**：放一个每分钟执行的临时 `cron.d` 文件
+  （内容**不含 `%`**），等一分钟看 syslog 与产物，再删掉。
+  本轮就是靠这个自检才发现上面那条 `%` 陷阱 —— 否则会误报"配置成功"，
+  而任务永远不会执行。
 
 
 ### 14.7 数据单源化（第二份手写数据会漂移）
