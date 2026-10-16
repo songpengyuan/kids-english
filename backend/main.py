@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
-from app.api import auth, content, evaluation, progress, rewards  # noqa: E402
+from app.api import auth, content, evaluation, progress, recordings, rewards  # noqa: E402
 from app.db import init_db  # noqa: E402
 from app.ratelimit import hit  # noqa: E402
 from app.schemas import PongOut  # noqa: E402
@@ -71,6 +71,7 @@ app.include_router(content.router)
 app.include_router(progress.router)
 app.include_router(rewards.router)
 app.include_router(evaluation.router)
+app.include_router(recordings.router)
 
 
 @app.get("/api/ping", response_model=PongOut)

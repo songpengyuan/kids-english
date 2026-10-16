@@ -45,7 +45,19 @@ CREATE TABLE IF NOT EXISTS rewards (
   data_json TEXT NOT NULL,
   updated_at TEXT DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS recordings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  child_id INTEGER NOT NULL REFERENCES children(id),
+  lesson_id TEXT,
+  activity_type TEXT NOT NULL DEFAULT 'follow',
+  ref_text TEXT,
+  duration_ms INTEGER,
+  file_path TEXT NOT NULL,
+  scores_json TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
 CREATE INDEX IF NOT EXISTS idx_children_family ON children(family_id);
+CREATE INDEX IF NOT EXISTS idx_recordings_child ON recordings(child_id, id);
 """
 
 
