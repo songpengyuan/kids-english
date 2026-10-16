@@ -221,8 +221,8 @@ function goGame() {
   cursor: pointer;
 }
 .hero-deco { position: absolute; opacity: 0.16; pointer-events: none; }
-.hero-deco-a { right: -8px; top: -12px; font-size: 84px; transform: rotate(18deg); }
-.hero-deco-b { left: -16px; bottom: -22px; font-size: 72px; transform: rotate(-12deg); }
+.hero-deco-a { right: -8px; top: -12px; font-size: 56px; transform: rotate(18deg); }
+.hero-deco-b { left: -16px; bottom: -22px; font-size: 48px; transform: rotate(-12deg); }
 .hero-cal {
   position: absolute; right: 14px; top: 14px;
   display: inline-flex; align-items: center; gap: 4px;
@@ -233,7 +233,7 @@ function goGame() {
 .hero-cal .k-ico { width: 14px; height: 14px; }
 .hero-id { display: flex; align-items: center; gap: 12px; margin-top: 24px; }
 .hero-avatar {
-  font-size: 40px; width: 62px; height: 62px; flex: none;
+  font-size: 32px; width: 52px; height: 52px; flex: none;
   background: rgba(255, 255, 255, 0.22);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -246,7 +246,7 @@ function goGame() {
 .hero-nums { display: flex; align-items: center; gap: var(--gap-m); margin-top: 18px; }
 .hn-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .hn-icon { font-size: 20px; line-height: 1; }
-.hn-big { font-size: 40px; font-weight: 900; letter-spacing: 1px; line-height: 1.1; }
+.hn-big { font-size: 26px; font-weight: 900; letter-spacing: 0.5px; line-height: 1.1; }
 .hn-label { font-size: 12px; font-weight: 800; opacity: 0.9; }
 .hn-divider { width: 1px; height: 54px; background: rgba(255, 255, 255, 0.35); }
 .hero-foot { margin: 14px 0 0; text-align: center; font-size: 12px; font-weight: 700; opacity: 0.85; }
