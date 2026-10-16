@@ -1398,6 +1398,29 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
   （内容**不含 `%`**），等一分钟看 syslog 与产物，再删掉。
   本轮就是靠这个自检才发现上面那条 `%` 陷阱 —— 否则会误报"配置成功"，
   而任务永远不会执行。
+- **CI 红 ≠ 代码有问题：先看是哪个 job 红的**。本仓库有两套部署并行 ——
+  `build` job 里同步到生产服务器（110.41.61.4），`deploy` job 里发 GitHub Pages
+  （自定义域名 `zelab.cn`）。只有 `deploy` job 红时，**生产其实已经部署成功了**，
+  红的是 Pages 那条旁路，报 `Deployment request failed ... due to in progress deployment`
+  （Pages 同一时刻只允许一个部署在途）。现在 workflow 加了 `concurrency: group: pages`；
+  排查同类问题时，先看 job 名再判断影响面，别一看红灯就回滚。
+- **埋点要埋在"唯一汇聚点"，不是"看起来该埋的地方"**：`activity_done` 埋在
+  `useLessonFlow.settleActivity()`（所有玩法 `@done` 的汇聚点）而不是 6 个玩法组件里
+  —— 否则每加一个玩法就要记得补一次，漏了不报错、只是数字少一块。
+  同类：`listen_play` 埋在 `progress.addListenActivity()`。
+- **结算函数里不要就地读 `stage`**：`afterSong()` 先把 `stage` 改成 `result` 再结算，
+  此时读 `stage.value` 会把所有童谣时长记成 `activity: "result"` ——
+  看板上只是分类错乱，**不会有任何报错**。已改为与 `actStart` 一起记录的局部变量，
+  并有测试钉住。
+- **高频 tick 不能直接上报**：磨耳朵的计时是每 5 秒一次，原样上报会让半小时播放
+  产生 360 条事件，撑爆离线队列（上限 200）并淹没事件表；而汇总只要分钟级。
+  → 按 60 秒粒度聚合成一条（`progress.ts` 的 `listenAccumSec`）。
+- **测试环境里 `__BUILD_ID__` 也是有值的**：vitest 复用同一份 `vite.config`，
+  所以 `app_version` 不是 `"dev"` 而是形如 `mvbkmkib` 的真实构建 id。
+  断言别写死 `"dev"`，只断言"非空字符串"。
+- **别在生产库上做验证性写入**：验证时区分桶这类事，用 `KIDS_DB_PATH` 指向临时目录
+  + `init_db()` 建全新库来做（顺带把"换机重建"路径也验了），验完删目录。
+  本轮就是这么在服务器真实环境上验的：`events`/`daily_stats` 一张表都没碰。
 
 
 ### 14.7 数据单源化（第二份手写数据会漂移）
