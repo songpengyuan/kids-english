@@ -7,6 +7,7 @@ import { useViewport } from "../../composables/useViewport";
 import { buildMatchGroups, matchGroupRange, matchStars } from "../../utils/matchBoard";
 import { shuffleWith } from "../../utils/quizSession";
 import { BookOpenText, Link2, Volume2 } from "@lucide/vue";
+import SpeakWave from "../ui/SpeakWave.vue";
 
 const props = defineProps({ words: { type: Array, required: true } });
 const emit = defineEmits(["done", "progress", "total", "page"]);
@@ -653,33 +654,6 @@ onBeforeUnmount(() => {
   line-height: 1.15;
   overflow-wrap: anywhere;
   min-width: 0;
-}
-/* 波纹跳动（与英雄详情/听音选词一致）：播放时单词右侧三根波纹交替起伏 */
-.wave {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 12px;
-  pointer-events: none;
-  flex: none;
-}
-.wave i {
-  width: 3px;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--blue);
-  animation: wave-bounce 0.7s ease-in-out infinite;
-}
-.wave i:nth-child(2) { animation-delay: 0.14s; }
-.wave i:nth-child(3) { animation-delay: 0.28s; }
-@keyframes wave-bounce {
-  0%,
-  100% {
-    height: 4px;
-  }
-  50% {
-    height: 11px;
-  }
 }
 /* 练习方式切换（看词 / 听音） */
 .mode-switch {

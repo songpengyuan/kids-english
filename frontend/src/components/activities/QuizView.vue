@@ -6,6 +6,7 @@ import { useProgressStore } from "../../stores/progress";
 import { useQuizSession } from "../../composables/useQuizSession";
 import type { Word } from "../../data/lessons";
 import { Volume2 } from "@lucide/vue";
+import SpeakWave from "../ui/SpeakWave.vue";
 import LessonFooter from "./LessonFooter.vue";
 
 const props = defineProps<{ words: Word[] }>();
@@ -94,7 +95,7 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
   <div class="quiz view">
     <button class="big-speaker anim-float" @click="replay" aria-label="再听一遍" title="再听一遍">
       <Volume2 class="k-ico" />
-      <span v-if="speaking" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
+      <SpeakWave v-if="speaking" size="lg" />
     </button>
     <p class="tip">听一听，点正确的图片</p>
 
@@ -150,35 +151,6 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
   align-items: center;
   justify-content: center;
   gap: 6px;
-}
-/* 朗读声波：图标后面的三根跳动静音条（样式对齐宝藏详情页） */
-.wave {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 16px;
-}
-.wave i {
-  width: 4px;
-  height: 6px;
-  border-radius: 2px;
-  background: currentColor;
-  animation: wave-bounce 0.7s ease-in-out infinite;
-}
-.wave i:nth-child(2) {
-  animation-delay: 0.14s;
-}
-.wave i:nth-child(3) {
-  animation-delay: 0.28s;
-}
-@keyframes wave-bounce {
-  0%,
-  100% {
-    height: 6px;
-  }
-  50% {
-    height: 15px;
-  }
 }
 .big-speaker:active {
   transform: translateY(calc(var(--press) - 1px));
