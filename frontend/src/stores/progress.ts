@@ -507,14 +507,17 @@ export const useProgressStore = defineStore("progress", () => {
   }
 
   /**
-   * 磨耳朵时长累加：播放中每 5s 调用一次，只累计 listenSec（不计玩法数）。
-   * 与 addDailyActivity 分开，便于「今日学习时长 / 今日磨耳朵时长」独立展示。
+   * 磨耳朵时长累加：播放（音频/视频）期间按真实经过秒数调用。
+   * 同时累计 listenSec（磨耳朵）与 durationSec（学习总时长，磨耳朵 ⊆ 学习）；
+   * 不增加 activities（玩法数只由玩法结算计入）。
    */
   function addListenActivity(durationSec: number) {
     const t = today();
     const d = progress._daily;
     const cur = d && d.date === t ? d : { date: t, durationSec: 0, activities: 0, listenSec: 0 };
-    cur.listenSec = (cur.listenSec ?? 0) + Math.max(0, Math.round(durationSec));
+    const sec = Math.max(0, Math.round(durationSec));
+    cur.durationSec += sec;
+    cur.listenSec = (cur.listenSec ?? 0) + sec;
     progress._daily = cur;
     const log = (progress._dailyLog = progress._dailyLog || {});
     log[t] = { durationSec: cur.durationSec, activities: cur.activities, mastered: masterySummary().mastered, listenSec: cur.listenSec };

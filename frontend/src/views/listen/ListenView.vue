@@ -36,6 +36,7 @@ const videoList = computed(() =>
 const playingVideo = ref<{ src: string; titleZh: string; title: string } | null>(null);
 let videoTimer: number | null = null;
 let videoTick = 0;
+/** 结算式视频计时：后台标签页 setInterval 被节流也不丢时长（与音频一致） */
 function playVideo(v: { src: string; titleZh: string; title: string }) {
   playingVideo.value = v;
   stopVideoTimer();
@@ -43,13 +44,19 @@ function playVideo(v: { src: string; titleZh: string; title: string }) {
   videoTimer = window.setInterval(() => {
     const sec = (Date.now() - videoTick) / 1000;
     videoTick = Date.now();
-    progStore.addDailyActivity(sec);
+    if (sec > 0.5) progStore.addListenActivity(sec);
   }, 5000);
 }
 function stopVideoTimer() {
   if (videoTimer) {
     clearInterval(videoTimer);
     videoTimer = null;
+  }
+  // 尾部结算：停止时把最后一次 tick 到现在的真实秒数补入（>0.5s 才记）
+  if (videoTick) {
+    const sec = (Date.now() - videoTick) / 1000;
+    videoTick = 0;
+    if (sec > 0.5) progStore.addListenActivity(sec);
   }
 }
 onBeforeUnmount(() => {

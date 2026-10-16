@@ -160,14 +160,14 @@ describe("progress store · 掌握度与每日快照", () => {
     expect(p.recentDays(60)).toHaveLength(30);
   });
 
-  it("磨耳朵时长独立累计：不计玩法数，学习时长不受影响", () => {
+  it("磨耳朵计入学习总时长：播放累加 listenSec 与 durationSec，但不计玩法数", () => {
     const p = useProgressStore();
-    p.addDailyActivity(60); // 学习 60s + 1 次玩法
-    p.addListenActivity(300); // 磨耳朵 300s
+    p.addDailyActivity(60); // 玩法操作 60s + 1 次玩法
+    p.addListenActivity(300); // 磨耳朵（音频/视频）300s
     p.addListenActivity(120); // 再磨 120s
-    expect(p.todayStats.durationSec).toBe(60);
-    expect(p.todayStats.listenSec).toBe(420);
-    expect(p.todayStats.activities).toBe(1);
+    expect(p.todayStats.durationSec).toBe(480); // 学习总时长 = 操作 60 + 播放 420
+    expect(p.todayStats.listenSec).toBe(420); // 磨耳朵 = 播放部分（⊆ 学习）
+    expect(p.todayStats.activities).toBe(1); // 播放不计玩法数
     // 每日快照同步含 listenSec
     expect(p.recentDays()[0].listenSec).toBe(420);
   });
