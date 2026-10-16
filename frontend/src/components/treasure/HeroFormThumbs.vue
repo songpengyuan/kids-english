@@ -79,7 +79,7 @@ function srcOf(f: FlatForm) {
   height: clamp(66px, 10vw, 96px);
   flex: none;
   border-radius: var(--radius-s);
-  background: var(--card);
+  background: var(--card-bg);
   border: 2.5px solid transparent;
   padding: 4px;
   cursor: pointer;

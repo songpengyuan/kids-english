@@ -421,11 +421,11 @@ function goBack() {
   border: none;
   border-radius: var(--radius-pill);
   background: linear-gradient(180deg, var(--c-gold), var(--c-gold-deep));
-  color: #5b4300;
+  color: var(--on-gold);
   font-size: var(--fs-body);
   font-weight: var(--fw-strong);
   box-shadow:
-    0 4px 0 rgba(160, 110, 10, 0.55),
+    0 var(--press) 0 var(--c-gold-deep),
     var(--shadow-chip);
   cursor: pointer;
   transition:

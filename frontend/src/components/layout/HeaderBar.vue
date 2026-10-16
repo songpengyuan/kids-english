@@ -92,16 +92,16 @@ function goStreak() {
   /* App 化：顶栏固定在视口顶部，内容滚动时不离开 */
   position: sticky;
   top: 0;
-  z-index: 30;
+  z-index: var(--z-bar);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--gap-s);
   padding:
-    calc(10px + env(safe-area-inset-top))
+    calc(var(--pad-y) + env(safe-area-inset-top))
     calc(var(--pad-x) + env(safe-area-inset-right))
-    10px
+    var(--pad-y)
     calc(var(--pad-x) + env(safe-area-inset-left));
-  min-height: 56px;
+  min-height: 56px; /* 结构性下限：保证顶栏不会因字号变小而塌陷 */
   box-sizing: border-box;
   /* 毛玻璃：半透明 + 模糊，让全站背景质感透上来，仍能遮住滚到下面的内容 */
   background: var(--bar-bg, var(--bg));
@@ -115,27 +115,23 @@ function goStreak() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border-radius: var(--radius-pill);
   background: var(--card-bg);
   color: var(--ink);
   box-shadow: var(--shadow-hard);
-  transition: transform 0.1s;
-  font-size: 22px;
+  transition: transform var(--dur-fast);
+  font-size: var(--fs-title);
 }
 .hdr-back:active {
   transform: translateY(2px);
 }
-/* 关闭按钮：弱化底色但尺寸按儿童触控目标放大（52px ≥ --tap-min）；
-   图标随 font-size 走（PathIcon 1em），浅灰弱化不变 */
+/* 关闭按钮：弱化底色（不加阴影，免得在沉浸式玩法页抢注意力），但触控区不变小 */
 .hdr-back.isClose {
   background: transparent;
   box-shadow: none;
   color: var(--ink-faint);
-  width: 52px;
-  height: 52px;
-  font-size: 24px;
 }
 .hdr-back.isClose:hover {
   color: var(--ink-soft);
@@ -149,7 +145,7 @@ function goStreak() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--gap-xs);
   font-weight: var(--fw-strong);
   font-size: var(--fs-title);
   color: var(--ink);
@@ -165,56 +161,7 @@ function goStreak() {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--gap-s);
   margin-left: auto;
-}
-
-/* ---------- 全局数字徽章（星/贝壳/连击） ---------- */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--fs-small);
-  font-weight: var(--fw-strong);
-  padding: 4px 10px;
-  border-radius: var(--radius-s);
-  white-space: nowrap;
-}
-.star-badge {
-  background: var(--card-bg);
-  color: var(--ink-soft);
-  box-shadow: var(--shadow-soft);
-}
-.star-badge .star-fill {
-  color: var(--gold);
-}
-.treasure-badge {
-  background: linear-gradient(160deg, #ffd87a, #f0b429);
-  color: #6b4e00;
-  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18);
-  transition: transform 0.1s;
-}
-.treasure-badge:active {
-  transform: translateY(calc(var(--press) - 1px));
-}
-.streak-badge {
-  background: var(--card-bg);
-  color: var(--ink-soft);
-  box-shadow: var(--shadow-soft);
-  transition: background 0.3s, color 0.3s, transform 0.1s;
-}
-.streak-badge:active {
-  transform: translateY(calc(var(--press) - 1px));
-}
-.streak-badge.done {
-  background: linear-gradient(160deg, #ff9f43, #ff6b3d);
-  color: #fff;
-  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18), 0 0 14px rgba(255, 122, 61, 0.4);
-}
-.flame-ico {
-  color: #ff6b3d;
-}
-.streak-badge.done .flame-ico {
-  color: #fff;
 }
 </style>

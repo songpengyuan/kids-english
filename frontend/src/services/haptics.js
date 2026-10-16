@@ -81,7 +81,7 @@ const OVERLAY_ICON = "input[" + OVERLAY_ATTR + "]";
  * 兜底豁免（白名单模式下极少用到）：万一某元素被标了 data-haptic 但属于关键
  * 导航/功能按钮，在这里豁免并清理残留，保证点击直达。
  */
-const EXCLUDE_SELECTOR = ".back, .bottom-nav button, .lesson-card, .q-link, .treasure-badge";
+const EXCLUDE_SELECTOR = ".back, .bottom-nav button, .lesson-card, .treasure-badge";
 
 let styleReady = false;
 let observer = null;

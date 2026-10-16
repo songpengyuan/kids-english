@@ -1,21 +1,27 @@
 <script setup lang="ts">
 /**
- * 自由练习首页（阶段 2-2：从 HomePage 拆分）。
- * 快捷引导（复习/继续学习）+ 课时卡片网格（**上下滚动**）。
+ * 自由练习首页（阶段 2-2：从 HomePage 拆分）——课时卡片网格（**上下滚动**）。
  *
  * 2026-09-28：课程列表从"翻页"改为"上下滚动"——后续课程会越加越多，
  * 滚动浏览比翻页轻松，也更贴近 App 首页"往下滑看全部课"的惯用节奏。
+ *
+ * 2026-10 设计系统统一：
+ *  · 删掉三块早已不再渲染的死样式（闯关入口 game-map-entry / 快捷引导 q-link / gme-*），
+ *    它们对应的模板此前已移除，只剩 CSS 悬在那里；
+ *  · 删掉本页私有的 `.tone-*` 调色板——它和 base.css 的全局同名工具类**撞名**，
+ *    而且 scoped 的 `[data-v-*]` 让局部的优先级更高，导致这一页的卡片配色是全站唯一的
+ *    （比如 blue 是 #4a90d9，其它页是 #1cb0f6）。删掉后自动落回全站统一色板，
+ *    连立体投影/贴纸描边/按下手感也一并统一；
+ *  · 色值/字号/圆角/间距全部改回 token；横向 padding 由外层 .view 提供，去掉重复的那一层。
  */
 import { computed, ref } from "vue";
-import { activityKeys, getLesson, type Lesson } from "../../../data/lessons";
+import { activityKeys, type Lesson } from "../../../data/lessons";
 import { useContentStore } from "../../../stores/content";
 import { useProgressStore } from "../../../stores/progress";
 import { useRouter } from "vue-router";
 import { speak } from "../../../services/speech";
-import SpeakText from "../../../components/ui/SpeakText.vue";
 import SegmentedTabs from "../../../components/ui/SegmentedTabs.vue";
-import { dueWords } from "../../../utils/reviewQueue";
-import { BookOpenText, Check } from "@lucide/vue";
+import { Check } from "@lucide/vue";
 
 const content = useContentStore();
 const progress = useProgressStore();
@@ -32,35 +38,24 @@ const filteredLessons = computed(() => {
   }
   return list;
 });
+/** tab 定义提到 setup 顶层：模板里每次渲染都新建数组会让子组件的 props diff 白白失效 */
+const TABS = [
+  { value: "official", label: "正式课" },
+  { value: "bonus", label: "加餐" },
+];
 const router = useRouter();
 
 function enter(l: Lesson) {
   speak(l.title, { ttsOnly: true });
   router.push(`/course/${l.id}`);
 }
-
-/* ---------- 快捷引导 ---------- */
-/** 全词库（过滤课程已删除的残留词） */
-const allWords = lessons.flatMap((l) => l.words);
-/** 今天到期该复习的词数（间隔重复队列；词库已删除的残留词自动丢弃） */
-const weakCount = computed(() => dueWords(progress.getReviewQueue(), allWords).length);
-const lastLessonObj = computed(() => {
-  const id = progress.lastLesson;
-  return id ? getLesson(id) : null;
-});
 </script>
 
 <template>
   <div class="practice">
     <!-- 课程类型 tab -->
     <div class="type-tabs">
-      <SegmentedTabs
-        v-model="typeTab"
-        :items="[
-          { value: 'official', label: '正式课' },
-          { value: 'bonus', label: '加餐' },
-        ]"
-      />
+      <SegmentedTabs v-model="typeTab" :items="TABS" />
     </div>
 
     <!-- 课程列表：竖滑双列大卡片（汽水音乐风） -->
@@ -74,12 +69,12 @@ const lastLessonObj = computed(() => {
           :style="{ animationDelay: i * 0.04 + 's' }"
           @click="enter(l)"
         >
-          <span class="card-emoji">{{ l.emoji }}</span>
+          <span class="card-emoji" aria-hidden="true">{{ l.emoji }}</span>
           <div class="card-text">
             <span class="card-title">{{ l.title }}</span>
             <span class="card-sub">{{ l.titleZh }}</span>
           </div>
-          <span class="card-done" v-if="progress.isCompleted(l.id, activityKeys(l))">
+          <span v-if="progress.isCompleted(l.id, activityKeys(l))" class="card-done">
             <Check class="k-ico" />
           </span>
         </button>
@@ -89,152 +84,98 @@ const lastLessonObj = computed(() => {
 </template>
 
 <style scoped>
-.game-map-entry {
-  display: flex; align-items: center; gap: var(--gap-m);
-  width: 100%; margin: 0 var(--pad-x);
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-hard);
-  padding: var(--gap-m);
-  text-align: left;
-}
-.gme-ico { font-size: 36px; }
-.gme-body { flex: 1; }
-.gme-title { display: block; font-weight: var(--fw-strong); font-size: var(--fs-body); color: #92400e; }
-.gme-desc { display: block; font-size: 12px; font-weight: var(--fw-mid); color: #b45309; }
-.gme-arrow { font-size: 28px; font-weight: var(--fw-strong); color: #b45309; }
 .practice {
   display: flex;
   flex-direction: column;
   min-height: 0;
   flex: 1;
 }
-.quick-links {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--gap-s);
-  margin-top: var(--gap-s);
-}
-.q-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: clamp(7px, 1.4vh, 10px) clamp(12px, 1.8vw, 18px);
-  border-radius: var(--radius-pill);
-  font-weight: var(--fw-strong);
-  font-size: var(--fs-small);
-  color: var(--ink);
-  background: var(--card-bg);
-  box-shadow: var(--shadow-hard);
-  transition: transform 0.1s, background 0.2s;
-}
-.q-link.review {
-  background: linear-gradient(160deg, #ffd6a5, #ffb26b);
-  color: #5c3a00;
-}
-.q-link:active {
-  transform: translateY(calc(var(--press) - 1px));
-}
+
 /* 滚动列表：占满剩余高度，课多了往下滑 */
 .type-tabs {
-  padding: 0 var(--pad-x);
   margin: var(--gap-s) 0 var(--gap-m);
 }
 .stage {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: 0 var(--pad-x) var(--gap-m);
   scrollbar-width: none;
 }
-.stage::-webkit-scrollbar { display: none; }
+.stage::-webkit-scrollbar {
+  display: none;
+}
 
 /* 双列大卡片网格 */
 .course-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: var(--gap-s);
 }
+/* 彩色卡片的背景/投影/文字色由全局 .tone-* 工具类注入，这里只描述"卡片自己的形状" */
 .lesson-card {
   position: relative;
-  border-radius: 18px;
+  border-radius: var(--radius);
   aspect-ratio: 4 / 5;
-  padding: 14px;
+  padding: var(--gap-l);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   overflow: hidden;
-  transition: transform 0.1s;
   text-align: left;
-}
-.lesson-card:active {
-  transform: scale(0.97);
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 /* 大 emoji 作为背景装饰 */
 .card-emoji {
   position: absolute;
   right: -8px;
   top: 10%;
-  font-size: 88px;
+  font-size: var(--fs-emoji-xl);
   line-height: 1;
   opacity: 0.9;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
 }
 .card-text {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--gap-xs);
 }
 .card-title {
-  font-size: 17px;
+  font-size: var(--fs-body);
   font-weight: var(--fw-strong);
-  color: #fff;
-  text-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  text-shadow: var(--tone-ink-shadow);
   line-height: 1.2;
 }
 .card-sub {
-  font-size: 12px;
+  font-size: var(--fs-small);
   font-weight: var(--fw-mid);
-  color: rgba(255,255,255,0.85);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  opacity: 0.85;
+  text-shadow: var(--tone-ink-shadow);
 }
+/* 已完成角标：白底绿勾，取全局覆盖层色与语义成功色 */
 .card-done {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.9);
-  color: #22c55e;
+  top: var(--gap-s);
+  right: var(--gap-s);
+  font-size: var(--fs-small);
+  width: 2em;
+  height: 2em;
+  border-radius: var(--radius-pill);
+  background: var(--overlay);
+  color: var(--ok);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
 }
-.card-done .k-ico { width: 14px; height: 14px; }
-
-/* 课程色调背景（渐变） */
-.tone-blue   { background: linear-gradient(135deg, #4a90d9, #2b6cb0); }
-.tone-orange { background: linear-gradient(135deg, #f6993f, #ed8936); }
-.tone-pink   { background: linear-gradient(135deg, #ed64a6, #d53f8c); }
-.tone-green  { background: linear-gradient(135deg, #48bb78, #38a169); }
-.tone-purple { background: linear-gradient(135deg, #9f7aea, #805ad5); }
-.tone-red    { background: linear-gradient(135deg, #f56565, #e53e3e); }
-.tone-teal   { background: linear-gradient(135deg, #4fd1c5, #38b2ac); }
-.tone-yellow { background: linear-gradient(135deg, #ecc94b, #d69e2e); }
 
 @media (min-width: 768px) {
   .course-grid {
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
+    gap: var(--gap-m);
   }
-  .card-emoji { font-size: 110px; }
-  .card-title { font-size: 19px; }
 }
-
 </style>

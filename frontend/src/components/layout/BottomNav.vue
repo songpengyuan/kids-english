@@ -83,12 +83,12 @@ function openPlayer() {
     </button>
     <div v-else class="bn-player" :class="'tone-' + player.currentSong.tone" role="button"
       aria-label="正在播放，点击打开歌词页" @click="openPlayer">
-      <span class="bp-emoji">{{ player.currentSong.emoji }}</span>
+      <span class="bp-emoji" aria-hidden="true">{{ player.currentSong.emoji }}</span>
       <span class="bp-info">
         <span class="bp-title">{{ player.currentSong.title }}</span>
         <span class="bp-progress"><i :style="{ width: Math.round(player.progress * 100) + '%' }" /></span>
       </span>
-      <button class="bp-btn" :aria-label="player.playing ? '暂停' : '播放'" @click.stop="player.togglePlay()">
+      <button class="bp-btn round" :aria-label="player.playing ? '暂停' : '播放'" @click.stop="player.togglePlay()">
         <Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" />
       </button>
     </div>
@@ -107,30 +107,34 @@ function openPlayer() {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 40;
+  z-index: var(--z-floating);
   margin-inline: auto;
   max-width: 1180px; /* 与 #app 同宽居中 */
   display: flex;
   gap: var(--gap-s);
-  padding: 6px calc(var(--pad-x) + env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) calc(var(--pad-x) + env(safe-area-inset-left));
+  padding:
+    var(--gap-xs)
+    calc(var(--pad-x) + env(safe-area-inset-right))
+    max(var(--gap-xs), env(safe-area-inset-bottom))
+    calc(var(--pad-x) + env(safe-area-inset-left));
   /* 毛玻璃：与 HeaderBar 同一套 token（--bar-bg / --bar-blur） */
   background: var(--bar-bg, var(--bg));
   -webkit-backdrop-filter: blur(var(--bar-blur, 14px));
   backdrop-filter: blur(var(--bar-blur, 14px));
-  box-shadow: 0 -2px 0 rgba(0, 0, 0, 0.06), 0 -6px 16px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-bar-up);
 }
 .bottom-nav button {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: clamp(4px, 1vh, 8px) 0;
+  gap: var(--gap-xs);
+  padding: var(--gap-xs) 0;
   border-radius: var(--radius-s);
   font-weight: var(--fw-strong);
-  font-size: 12px;
+  font-size: var(--fs-small);
   color: var(--ink-faint);
-  transition: background 0.2s, color 0.2s, transform 0.1s;
+  transition: background var(--dur-base), color var(--dur-base), transform var(--dur-fast);
   /* 移动端：消除轻滑误判成滚动/双击缩放导致的 click 丢失（"有时点不过去"） */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -144,12 +148,12 @@ function openPlayer() {
   color: var(--brand);
   background: var(--brand-soft);
 }
-/* 命中动画：图标弹跳 + 淡入（新主题色激活态） */
+/* 命中动画：图标弹跳 + 淡入 */
 .bottom-nav button.on .bn-ico {
-  animation: tab-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: tab-pop var(--dur-base) var(--ease-pop);
 }
 .bottom-nav button.on .bn-cap {
-  animation: tab-fade 0.22s ease;
+  animation: tab-fade var(--dur-base) ease;
 }
 @keyframes tab-pop {
   0% { transform: scale(0.82); }
@@ -161,11 +165,11 @@ function openPlayer() {
   to { opacity: 1; }
 }
 .bn-ico {
-  font-size: clamp(20px, min(3.4vh, 2.8vw), 28px);
+  font-size: var(--fs-title);
   line-height: 1;
 }
 .bn-cap {
-  font-size: 11px;
+  font-size: var(--fs-small);
   font-weight: var(--fw-strong);
 }
 /* ===== 迷你播放条（播放中替换磨耳朵 tab） ===== */
@@ -174,25 +178,26 @@ function openPlayer() {
   display: flex;
   align-items: center;
   gap: var(--gap-s);
-  padding: 6px 8px;
-  border-radius: 999px;
+  padding: var(--gap-xs) var(--gap-s);
+  border-radius: var(--radius-pill);
   background: var(--card-bg);
   box-shadow: var(--shadow-hard);
   min-width: 0;
   cursor: pointer;
-  transition: transform 0.08s;
+  transition: transform var(--dur-fast);
 }
 .bn-player:active {
   transform: translateY(1px);
 }
+/* 封面方块：跟着迷你条的字号缩放（比例恒定，不写像素） */
 .bp-emoji {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: var(--radius-s);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: var(--fs-body);
   flex: none;
 }
 .bp-info {
@@ -200,11 +205,11 @@ function openPlayer() {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--gap-xs);
 }
 .bp-title {
   font-weight: var(--fw-strong);
-  font-size: 12px;
+  font-size: var(--fs-small);
   color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
@@ -212,47 +217,24 @@ function openPlayer() {
 }
 .bp-progress {
   display: block;
-  height: 4px;
-  border-radius: 2px;
+  height: var(--gap-xs);
+  border-radius: var(--radius-pill);
   background: var(--line);
   overflow: hidden;
 }
 .bp-progress i {
   display: block;
   height: 100%;
-  border-radius: 2px;
+  border-radius: var(--radius-pill);
   background: var(--brand);
-  transition: width 0.3s linear;
+  transition: width var(--dur-base) linear;
 }
 .bp-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 1.9em;
+  height: 1.9em;
+  font-size: var(--fs-body);
   background: var(--brand);
-  color: #fff;
-  flex: none;
+  color: var(--on-tone);
   padding: 0;
-}
-.bp-btn .k-ico {
-  width: 18px;
-  height: 18px;
-}
-/* 宽屏档：图标/文字更大（iPad/Mac） */
-@media (min-width: 768px) {
-  .bottom-nav button {
-    font-size: 14px;
-  }
-  .bn-ico {
-    font-size: clamp(24px, min(4vh, 3.2vw), 34px);
-  }
-  .bn-cap {
-    font-size: 13px;
-  }
-  .bp-title {
-    font-size: 13px;
-  }
 }
 </style>

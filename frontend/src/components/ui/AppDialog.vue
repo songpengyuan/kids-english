@@ -40,16 +40,21 @@ function requestClose() {
 </template>
 
 <style scoped>
+/* 全部改回本项目的真实 token。
+ * 原来这里写的是 --z-modal / --surface / --text / --radius-lg / --shadow-strong ——
+ * 这一组"通用命名"在 tokens.css 里**都不存在**，靠 `var(--x, 兜底值)` 硬撑：
+ * 于是弹窗底色/字号/圆角实际上从来没有跟随过主题与设计系统，
+ * 而且变量名看起来很像真的，走查时极易漏掉。 */
 .app-dialog-mask {
   position: fixed;
   inset: 0;
-  z-index: var(--z-modal, 100);
+  z-index: var(--z-mask);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background: var(--overlay, rgba(0, 0, 0, 0.45));
-  transition: opacity 0.18s ease;
+  padding: var(--gap-l);
+  background: var(--mask-bg-soft);
+  transition: opacity var(--dur-base) ease;
 }
 .app-dialog-mask.leaving {
   opacity: 0;
@@ -59,14 +64,14 @@ function requestClose() {
   max-height: 80vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: var(--surface, #fff);
-  color: var(--text, inherit);
-  border-radius: var(--radius-lg, 20px);
-  padding: 22px 20px;
-  box-shadow: var(--shadow-strong, 0 18px 44px rgba(0, 0, 0, 0.24));
+  background: var(--card-bg);
+  color: var(--ink);
+  border-radius: var(--radius);
+  padding: var(--gap-l) var(--gap-m);
+  box-shadow: var(--shadow-float);
   transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
+    opacity var(--dur-base) ease,
+    transform var(--dur-base) ease;
 }
 .app-dialog-card.leaving {
   opacity: 0;

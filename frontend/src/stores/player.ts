@@ -12,14 +12,15 @@ import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { lessons, asset } from "../data/lessons";
 import { useProgressStore } from "./progress";
-import type { RepeatMode } from "../types";
+import type { RepeatMode, Tone } from "../types";
 
 export interface PlayableSong {
   id: string;
   title: string;
   titleZh: string;
   emoji: string;
-  tone: string;
+  /** 卡片色调板（tokens.css）：别写十六进制，交给 .tone-* 工具类 */
+  tone: Tone;
   src: string;
 }
 

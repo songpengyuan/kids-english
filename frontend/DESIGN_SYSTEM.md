@@ -1,17 +1,32 @@
 # Kids English 设计系统规范
 
+> 一句话：**页面只做编排，视觉全部来自 token 与共享组件。**
+> 页面里出现 `#xxx`、`12px`、`border-radius: 18px` 这类字面值，就说明这层约定被绕过了。
+
+## 0. 分层
+
+| 层 | 位置 | 职责 | 允许写什么 |
+|----|------|------|-----------|
+| ① Token | `src/styles/tokens.css` | 唯一的值来源 | 颜色 / 间距 / 圆角 / 字号 / 字重 / 阴影 / 时长 / 缓动 / 层级 |
+| ② 工具类 | `src/styles/base.css` | 跨 3 处以上重复出现的样式 | `.tone-*` `.card` `.entry-row` `.icon-tile` `.badge` `.progress` `.k-btn` `.field` `.empty` `.round` … |
+| ③ 基础组件 | `src/components/ui/` | 可复用积木 | `PageShell` `EmptyState` `EntryRow` `IconTile` `EmojiTile` `MetricTile` `SectionTitle` `SegmentedTabs` `SpeakWave` `BaseButton` `BaseDrawer` `AppDialog` |
+| ④ 领域组件 | `src/components/{activities,lesson,game,rewards,treasure,report}/` | 玩法/业务块 | 可以有自己的布局，但颜色/尺寸仍走 ①② |
+| ⑤ 页面 | `src/views/` | 编排：取数、串流程、摆积木 | 只允许写"这一个页面独有"的布局，不写色值/字号 |
+
+新增样式时自上而下找：**token 里有就用 token → 工具类里有就用工具类 → 3 处以上重复就下沉到 ② 或 ③**。
+
 ## 1. 设计原则
 
-- **儿童优先**：触控目标 ≥52px（手机）/64px（iPad），圆角大，颜色饱和
+- **儿童优先**：触控目标 ≥ `--tap-min`（手机 52px / iPad 64px），圆角大，颜色饱和
 - **一屏装下**：不滚动页面为主，尺寸用 `clamp(min(vh, vw))` 流体自适应
-- **立体可爱**：卡片用 `box-shadow: 0 press 0 deep-color` 做出厚度，按下下沉
+- **立体可爱**：卡片用 `box-shadow: 0 press 0 deep-color` 做厚度，按下下沉
 - **少即是多**：每页不超过 3 个主要交互元素，避免孩子迷路
 
 ## 2. 颜色体系
 
-### 2.1 中性色（亮色/暗黑自动切换）
+### 2.1 中性色（亮色/暗色自动切换）
 
-| Token | 用途 | 亮色 | 暗黑 |
+| Token | 用途 | 亮色 | 暗色 |
 |-------|------|------|------|
 | `--bg` | 页面背景 | `#fdf6e3` | `#171c2b` |
 | `--card-bg` | 卡片/按钮面 | `#ffffff` | `#242b40` |
@@ -20,204 +35,235 @@
 | `--ink-faint` | 弱化文字 | `#a89b86` | `#7f7a70` |
 | `--line` | 分割线/轨道 | `#e8e0cf` | `#39415a` |
 
-**禁止**在组件里写 `color: #fff` 或 `background: #333`，一律用变量。
+**禁止**在组件里写 `color: #fff` / `background: #333`，一律用变量。
 
-### 2.2 品牌色（水蓝系，2026-10-15 起脱离多邻国绿）
+### 2.2 品牌色（水蓝系）
 
-**品牌主色** = `--brand`（**新代码一律用 `--brand` 系列**；`--green`/`--green-dark` 为历史别名，仅兼容旧组件，tokens.css 中已改为 `var(--brand)` 引用，勿再用于新代码）：
+**新代码一律用 `--brand` 系列**；`--green` / `--green-dark` 是历史别名（tokens.css 中已指向 `--brand`），只为兼容旧代码保留。
 
-| Token | 用途 | 亮色 | 暗黑 |
+| Token | 用途 | 亮色 | 暗色 |
 |-------|------|------|------|
-| `--green` | 品牌主色（主按钮/进度/导航/选中） | `#00a3ff` | `#2f9fe0` |
-| `--green-dark` | 立体投影/按压 | `#0086d6` | `#237bb0` |
-
-**品牌辅助色 `--brand*`**（组件禁止写死 `#1e7fd0` 等，一律用 token）：
-
-| Token | 用途 | 亮色 | 暗黑 |
-|-------|------|------|------|
-| `--brand` | 品牌主色（推荐使用） | `#00a3ff` | `#2f9fe0` |
-| `--brand-dark` | 投影/按压 | `#0086d6` | `#237bb0` |
+| `--brand` | 品牌主色（主按钮/进度/导航/选中） | `#00a3ff` | `#2f9fe0` |
+| `--brand-dark` | 立体投影/按压 | `#0086d6` | `#237bb0` |
 | `--brand-deep` | 渐变端点/强调文字 | `#1e7fd0` | `#1a5c8f` |
 | `--brand-bright` | 渐变亮端/高亮 | `#6cc3f5` | `#7cc7f0` |
-| `--brand-soft` | 柔和底（选中/浅蓝卡） | `#e3f5ff` | `#16344d` |
+| `--brand-soft` | 柔和底（选中 tab/浅蓝卡） | `#e3f5ff` | `#16344d` |
 | `--brand-tint` | 更浅提示底 | `#d6efff` | `#1d3f5e` |
-| `--brand-grad` | 标准品牌渐变（Hero/主卡/选中 tab） | `135deg #1e7fd0→#38a3e8→#6cc3f5` | `135deg #1a5c8f→#2f9fe0→#7cc7f0` |
+| `--brand-grad` | 标准品牌渐变 | `135deg #1e7fd0→#38a3e8→#6cc3f5` | `135deg #1a5c8f→#2f9fe0→#7cc7f0` |
 
-**语义反馈色 `--ok`（正确=绿，独立于品牌蓝，防止孩子对错认知被污染）**：
+### 2.3 语义反馈色 `--ok`（正确=绿）
 
-| Token | 用途 | 亮色 | 暗黑 |
+| Token | 用途 | 亮色 | 暗色 |
 |-------|------|------|------|
 | `--ok` | 答对/完成/成功（边框、背景、文字） | `#58cc02` | `#7cc94a` |
 | `--ok-dark` | 立体投影/深色文字 | `#46a302` | `#5fa838` |
 
 **语义二分硬规则**：
 - **判定/完成类**（答题答对、发音 perfect、配对完成线、宝箱收取/已收集、成功徽章、报告正确统计、掌握上升、今日目标完成、词卡已听过）→ **必须 `--ok`（绿）**；
-- **进度/导航类**（关卡线、进度段、弹窗进度点、磨耳朵声波、主按钮、底部导航、翻页、Hero）→ **品牌蓝 `--green`/`--brand*`**；
+- **进度/导航类**（关卡线、进度段、弹窗进度点、磨耳朵声波、主按钮、底部导航、翻页、Hero）→ **品牌蓝 `--brand*`**；
 - 两者不可互换，走查时逐一核对。
 
-其余功能色：`--blue` 次要操作、`--yellow` 进度高亮、`--red` 错误/删除、`--purple`/`--orange`/`--pink`/`--teal` 彩色卡片。
+其余功能色：`--blue` 次要操作、`--yellow`/`--progress-hi` 进度高亮、`--red` 错误/删除。
 
-### 2.3 卡片色调板（6色，唯一色源）
+### 2.4 卡片色调板（7 色，唯一彩色来源）
 
-用 `.tone-blue` / `.tone-green` / `.tone-orange` / `.tone-purple` / `.tone-pink` / `.tone-teal` 类，**不要**自己写 `background: #xxx`。
+`.tone-blue` `.tone-green` `.tone-orange` `.tone-purple` `.tone-pink` `.tone-teal` `.tone-gold`
 
 ```html
-<button class="act tone-green">开始</button>
+<button class="entry-row tone-gold">…</button>
 ```
 
-### 2.4 音乐播放器（固定深色，不随主题切换）
+`.tone-*` 一次注入三件事，组件里不用再复述：**顶部高光渐变 + 同色调实心投影 + 文字色**（`--on-tone`，金色卡是更暖的深棕 `--on-gold`）。
 
-| Token | 值 |
-|-------|-----|
-| `--player-bg-1` | `#1e293b`（顶部） |
-| `--player-bg-2` | `#0f172a`（底部） |
-| `--player-text` | `#ffffff` |
-| `--player-text-soft` | `rgba(255,255,255,0.5)` |
-| `--player-text-faint` | `rgba(255,255,255,0.3)` |
-| `--player-accent` | `var(--green)`（高亮/进度，随品牌水蓝，不再固定 #4ade80） |
+- 每个 hue 在暗色下都有一份降亮降饱和的对应值；
+- **不要在组件里写 `background: #xxx` 或自己的 `linear-gradient`**；也不要自定义与 `.tone-*` 同名的类——scoped 样式带 `[data-v-*]`，优先级更高，会**静默覆盖全站色板**（PracticeView 曾因此用了一整页的 `#4a90d9` 蓝）。
+- 卡面上叠了大号 emoji 装饰时，文字用 `--tone-ink-shadow` 抬起来。
 
-## 3. 间距体系
-
-所有间距用流体变量，**禁止写死 px**：
+### 2.5 遮罩与覆盖层
 
 | Token | 用途 |
 |-------|------|
-| `--gap-xs` | 极小（图标内间距） |
-| `--gap-s` | 小（列表项间距） |
-| `--gap-m` | 中（卡片间距） |
-| `--gap-l` | 大（区块间距） |
-| `--pad-x` | 页面左右边距 |
-| `--pad-y` | 页面上下边距 |
+| `--mask-bg` | 全屏查看器（图片/视频）遮罩，`rgba(8,10,18,.92)` |
+| `--mask-bg-soft` | 底部抽屉遮罩，`rgba(0,0,0,.5)`——要让人看得见被压住的页面 |
+| `--mask-ink` / `--mask-ink-soft` / `--mask-control` | 遮罩内的文字与圆钮。遮罩恒为深色，这三个值**不随主题变化** |
+| `--overlay` | 彩色卡面上的浅色悬浮徽章底（完成角标等） |
+| `--scrim` | 彩色卡面上的半透明**深色**小徽章（视频卡播放键）。卡色深浅不定，只有固定黑幕能保证白图标对比度 |
+
+### 2.6 音乐播放器
+
+播放器跟随主题：`--player-bg-*` / `--player-surface` / `--player-text*` 都已指向主题变量，新代码直接引用即可，不要再写 `#1e293b` 这类固定深色。
+
+## 3. 间距
+
+| Token | 用途 |
+|-------|------|
+| `--gap-xs` | 极小（图标内间距、徽章内边距） |
+| `--gap-s` | 小（列表项之间、网格 gap） |
+| `--gap-m` | 中（卡片内边距） |
+| `--gap-l` | 大（大卡片内边距、区块间距） |
+| `--pad-x` / `--pad-y` | 页面内边距（**只由 `.view` / `.lyrics-page` 这类页面壳负责一次**） |
+| `--nav-h` | 底栏高度（`#app` 预留占位用） |
+
+⚠️ 常见坑：`.view` 已经带了左右 `--pad-x`。子块再写一次 `padding: 0 var(--pad-x)` 就变成 **2 倍内缩**（ListenView 曾因此在 iPad 上两侧空掉近 100px）。
 
 ## 4. 圆角
 
 | Token | 用途 |
 |-------|------|
-| `--radius` | 大卡片（课程卡、弹窗） |
-| `--radius-s` | 小卡片/按钮 |
-| `--radius-pill` | 胶囊（标签、进度条） |
+| `--radius` | 大卡片（课程卡、弹窗、抽屉、列表行） |
+| `--radius-s` | 小卡片/按钮/图标砖 |
+| `--radius-pill` | 胶囊（标签、进度条、正圆控件） |
 
-## 5. 字号
+正圆控件用 `.round` / `.round-sm`，**不要写 `border-radius: 50%`**——50% 在非正方元素上会拉成椭圆。
+
+## 5. 字号与字重
 
 | Token | 用途 |
 |-------|------|
-| `--fs-hero` | 大标题（结算页） |
-| `--fs-title` | 页面标题 |
+| `--fs-hero` | 大标题 / 结算页大数字 |
+| `--fs-title` | 页面标题 / 图标尺寸（PathIcon 是 1em） |
 | `--fs-body` | 正文 |
 | `--fs-small` | 辅助说明 |
 | `--fs-btn` | 按钮文字 |
-| `--fs-emoji-xl/l` | 大 emoji |
+| `--fs-emoji-xl` / `--fs-emoji-l` | 大 emoji |
+
+字重只有三档：`400`（默认）、`--fw-mid: 700`、`--fw-strong: 800`。
+⚠️ Baloo 2 的可变字重范围是 **400–800**，写 `font-weight: 900` 会触发浏览器"合成假粗体"，跨设备渲染不一致、中文发糊。**上限就是 `--fw-strong`。**
 
 ## 6. 阴影与立体
 
-- 卡片：`box-shadow: var(--shadow-hard)`
-- 彩色卡片：用 `.tone-*` 类自动注入
-- 按压：`transform: translateY(calc(var(--press) - 1px)) scale(0.97)`
+| Token | 语义 |
+|-------|------|
+| `--shadow-hard` | 贴在地面的**实心厚度**（中性卡片） |
+| `--shadow-soft` | 更轻的实心厚度（次级卡片、徽章） |
+| `--shadow-float` | **模糊型悬浮投影**（大图舞台、浮层） |
+| `--shadow-chip` | **模糊型小控件**（箭头、胶囊、圆钮） |
+| `--shadow-bar-up` | 贴底栏的向上投影 |
+| `--sticker` | 彩色卡片的白描边（由 `.tone-*` 注入） |
+| `--press` | 立体按钮的下压深度 |
+
+- 中性卡片：`.card`
+- 彩色卡片：`.tone-*`
+- 按下：`transform: translateY(calc(var(--press) - 1px)) scale(0.97)`（`.tone-*` / `.k-btn` / `.entry-row` 已内置，页面不要再写）
 
 ## 7. 动效
 
 | Token | 用途 |
 |-------|------|
 | `--dur-fast` (0.12s) | 按压反馈 |
-| `--dur-base` (0.22s) | 普通过渡 |
-| `--dur-slow` (0.45s) | 弹入/结算 |
-| `--ease-pop` | 弹性回弹 |
-| `--ease-out` | 标准减速 |
+| `--dur-base` (0.22s) | 普通过渡、抽屉进出 |
+| `--dur-slow` (0.45s) | 弹入/结算/大元素位移 |
+| `--ease-pop` / `--ease-out` / `--ease-in-out` / `--ease-bounce` | 弹性 / 减速 / 对称 / 强回弹 |
 
-动画工具类：`.anim-pop` `.anim-bounce` `.anim-shake` `.anim-wiggle` `.anim-fade-up`
+动画工具类：`.anim-pop` `.anim-bounce` `.anim-shake` `.anim-wiggle` `.anim-float` `.anim-fade-up`（都已处理 `prefers-reduced-motion`）。
 
-## 8. 组件库
+## 8. 层级（z-index）
 
-### 8.1 已有组件
+| Token | 用途 |
+|-------|------|
+| `--z-inner` (1) | 卡片内文字压住绝对定位的装饰 |
+| `--z-banner` (9) | 页面内固定小挂件（主题/声音开关） |
+| `--z-bar` (30) | 顶栏、歌词全屏页——**必须低于底部导航** |
+| `--z-floating` (40) | 底部导航、组间过场横幅 |
+| `--z-drawer` (95) | 抽屉 / 底部弹层 |
+| `--z-mask` (100) | 全屏模态（图片查看器、视频播放） |
 
-**布局/导航**
+不要在组件里写裸数字 `z-index`。
+
+## 9. 组件库
+
+### 9.1 布局 / 导航
+
 | 组件 | 路径 | 用途 |
 |------|------|------|
-| `BottomNav` | `components/layout/BottomNav.vue` | 底部三tab（学习/磨耳朵/我的），激活态水蓝 |
-| `SafeBottom` | `components/layout/SafeBottom.vue` | 手机/iPad 底部安全距离共用容器（所有带底栏页面包一层） |
-| `HeaderBar` | `components/layout/HeaderBar.vue` | **全站唯一子页面顶栏**（带返回的二级页一律用它；首页 /learn /listen /me 不使用）。返回钮 44px 圆钮 + 标题绝对居中 + 右侧徽章（`showBadges`）或自定义 `#right` |
+| `BottomNav` | `components/layout/BottomNav.vue` | 底部三 tab（学习 / 磨耳朵 / 我的）；播放中中间位升级为迷你播放条 |
+| `SafeBottom` | `components/layout/SafeBottom.vue` | 底部安全距离共用容器 |
+| `HeaderBar` | `components/layout/HeaderBar.vue` | **全站唯一子页面顶栏**；返回钮 `--tap-min` 正圆 + 标题绝对居中 + 右侧 `showBadges` 徽章或 `#right` 插槽 |
 
-**通用 UI**
-| 组件 | 路径 | 用途 |
-|------|------|------|
-| `BaseButton` | `components/ui/BaseButton.vue` | 主按钮（variant: green/blue/orange/gray, block, size: lg） |
-| `BaseDrawer` | `components/ui/BaseDrawer.vue` | 底部抽屉（dark属性切深色） |
-| `AppDialog` | `components/ui/AppDialog.vue` | 居中弹窗 |
-| `SegmentedTabs` | `components/ui/SegmentedTabs.vue` | 分段控件（正式课/加餐切换，滑块用 `--brand-grad`） |
-| `SpeakText` | `components/ui/SpeakText.vue` | 跟读文字展示 |
+### 9.2 通用 UI（③ 层）
 
-**玩法组件（activities/）**
 | 组件 | 用途 |
 |------|------|
-| `WordCard` | 词卡（可点发音，已听过角标 `--ok`） |
-| `QuizView` | 选择题（答对 `--ok`/答错红） |
-| `SpeakView` | 跟我读（评分 perfect=绿 `--ok`） |
-| `MatchView` | 连一连（完成连线/横幅 `--ok`） |
-| `Pager` | 翻页 + 圆点 |
-| `SongView` / `SongStage` | 唱歌页（进度渐变蓝） |
-| `TalkView` | 亲子对话 |
-| `LearnStage` | 学习弹窗（进度点蓝） |
-| `LessonFooter` | 底部主按钮（灰→蓝状态机；成功徽章 `--ok`） |
+| `PageShell` | **页面骨架**。`title/icon` + `@back` → 带顶栏；`bare` → 无顶栏首页；`scroll` → 内容超出可滚；`center` → 居中空态/结算；`fill` → 内容区交给页面参与 flex 分配 |
+| `EmptyState` | 空状态（`title` + `desc` + `#icon` 插槽 + 默认插槽放按钮） |
+| `EntryRow` | 入口行（图标砖 + 主/副文案 + 箭头 / `extra`）；`primary` 变体一页只能有一个 |
+| `IconTile` | 图标砖（圆角色块 + lucide 图标），用于**界面装饰** |
+| `EmojiTile` | emoji 底座，用于**内容本身**就是 emoji 的场合（歌曲/课程封面）。与 `IconTile` 分工见组件注释 |
+| `MetricTile` | 指标块（大数字 + 小分母 + 标签） |
+| `SectionTitle` | 页面级分区小标题（卡片组**之外**） |
+| `SegmentedTabs` | 分段控件（正式课/加餐、歌曲/视频） |
+| `SpeakWave` | 「正在朗读 / 正在播放」声波，`size: sm/md/lg`，`tone` 默认跟随 `currentColor` |
+| `SpeakText` | 跟读文字展示 |
+| `BaseButton` | 主按钮（`variant: green/blue/orange/gray`、`block`、`size: lg`）。**只做类名映射，样式全在 base.css** |
+| `BaseDrawer` | 底部抽屉（`dark` 属性切深色） |
+| `AppDialog` | 居中弹窗 |
 
-**课程/关卡**
-| 组件 | 用途 |
-|------|------|
-| `LessonMenu` | 课程菜单 |
-| `LessonQuestMap` | 关卡地图（已通光线品牌蓝） |
-| `LessonProgressHeader` | 关卡进度头（完成段品牌蓝） |
-| `LessonResult` | 关卡总结 |
+### 9.3 领域组件（④ 层）
 
-**奖励/报告/门禁**
-| 组件 | 用途 |
-|------|------|
-| `ChestReward` | 开宝箱（收取页/已收集 `--ok` 绿） |
-| `MasteryTrend` | 掌握度趋势（上升 `--ok`） |
-| `ParentGate` | 家长算术门禁（答对 `--ok`） |
-| `GateView` | 应用入口口令门禁（家长手机号） |
+**玩法**：`WordCard` `QuizView` `SpeakView` `MatchView` `Pager` `SongView`/`SongStage` `TalkView` `LearnStage` `LessonFooter`
+**课程**：`LessonMenu` `LessonProgressHeader` `LessonResult`
+**奖励/报告/门禁**：`ChestReward` `MasteryTrend` `ParentGate`
+**宝藏**：`HeroPoseStage` `HeroFormThumbs` `HeroInfoPanel` `HeroZoomViewer`
 
-### 8.2 通用CSS类（base.css）
+> `LessonQuestMap` 与 `LessonView` 的 `questMap` 阶段已于 2026-10 删除：闯关已改为独立的 `/game/lesson/:id`，课内不再画地图。
+
+### 9.4 通用 CSS 类（② 层，base.css）
 
 | 类 | 用途 |
 |----|------|
-| `.k-btn` | 主按钮（`.blue` `.orange` `.gray` 变体） |
-| `.progress` | 进度条 |
-| `.view` / `.view-body` / `.view-center` | 页面容器 |
-| `.k-ico` | 图标（1em 见方） |
+| `.view` / `.view-body` / `.view-body--scroll` / `.view-center` / `.view-body--fill` | 页面容器（页面壳只负责一次，块之间不要再补 margin） |
+| `.card` / `.card--soft` / `.card--flat` | 中性卡片 |
+| `.tone-*` | 彩色卡片 / 图标砖 / 徽章配色 |
+| `.entry-row` / `.entry-row--primary` / `.entry-row__*` | 入口行 |
+| `.icon-tile` / `.icon-tile--sm` | 图标砖 |
+| `.metric` / `.metric__*` | 指标块 |
+| `.badge` + `.star-badge` / `.treasure-badge` / `.streak-badge` | 数字徽章（形状 + 配色分成两个类） |
+| `.section-title` | 分区小标题（卡片组之外） |
+| `.card-title` | 卡片内标题（卡片之内） |
+| `.empty` / `.empty__title` / `.empty__desc` | 空状态 |
+| `.field` | 表单输入（跟随主题） |
+| `.k-btn` + `.k-btn-blue` / `.k-btn-orange` / `.k-btn-gray` / `.k-btn-green`(默认) / `.k-btn-block` / `.k-btn-lg` | 按钮 |
+| `.progress` + `.fill` | 进度条 |
+| `.round` / `.round-sm` | 正圆控件 |
+| `.k-ico` | 图标（1em 见方，随 `font-size` 缩放） |
+| `.anim-*` | 动画工具类 |
 
-### 8.3 新增组件约定
+### 9.5 新增组件约定
 
-- 放 `src/components/ui/` 下
-- 命名：`BaseXxx.vue`（基础组件）
+- 放 `src/components/ui/`，命名 `BaseXxx.vue` 或语义名（`EmojiTile`）
 - Props 用 `defineProps<{}>()`，事件用 `defineEmits`
-- 样式用 scoped + CSS变量，不硬编码颜色
+- **组件自身不写 `.k-btn` / `.card` 这类全局类的样式**——那会让同一个类有两处定义（BaseButton 曾经如此）
+- 样式 scoped + 只用 token
 
-## 9. 布局约定
+## 10. 布局约定
 
-- 页面根：`<div class="view">`；内容区：`<div class="view-body">`
-- **首页无顶栏**：`/learn`（学习）、`/listen`（磨耳朵）、`/me`（我的）三首页不显示顶栏（2026-10-15 起）；`/me` 顶部补刘海安全区 padding-top
-- **子页面顶栏 = `HeaderBar`（全站唯一，2026-10-16 起 AppHeader 已移除合并）**：所有带返回的二级页（课程/答题/游戏/家长中心/日历/卡片/宝藏/报告/复习/英雄详情/3D 等 13 页）统一用它——44px 圆返回钮、标题绝对居中、右侧 `showBadges` 三徽章（星/贝壳/连击）或 `#right` 自定义；答题页 = `close` 关闭按钮（房子图标）+ 顶部进度条
-- 底部导航只在 `/learn` `/listen` `/me` 三个首页显示；**闯关挑战入口在「我的」页**（stat-row 下紫色卡片）
-- 手机/iPad 底部安全距离：所有带底栏页面用共用组件 `SafeBottom` 包裹，不各自写 `env(safe-area-inset-bottom)`
-- 子页面（课程、答题、宝藏等）不显示底部导航，沉浸进入
+- 页面根：`<PageShell>`；需要"每个分支不同 body 类"的页面（如 ReviewView 三个分支）才直接用 `<div class="view">` + `.view-body`。
+- **首页无顶栏**：`/course`、`/listen`、`/me` 用 `<PageShell bare>`。
+- **带返回的二级页**：一律 `HeaderBar`（= `PageShell` 默认模式），答题中用 `close`（房子图标）。
+- 底部导航只在三个首页显示；闯关入口在「我的」页。
+- 带底栏页面的底部安全距离用 `SafeBottom`，不各自写 `env(safe-area-inset-bottom)`。
 
-## 9.1 三端适配
+## 11. 三端适配
 
-- **手机**（竖屏，主场景）：内容按 `clamp(min(vh, vw))` 流体缩放，触控 ≥52px
-- **iPad**：触控 ≥64px，内容居中限宽，底栏高度加 SafeBottom
-- **网页/Mac**：内容区限宽居中（~720px），卡片可横向排列更多列
+- **手机**（竖屏，主场景）：按 `clamp(min(vh, vw))` 流体缩放，触控 ≥52px
+- **iPad**：触控 ≥64px，内容居中限宽，间距/字号整体上调一档（`@media (min-width: 768px)`）
+- **网页/Mac**：`#app` 限宽 1180px 居中
 
-## 10. 暗黑模式
+## 12. 暗色模式
 
-- 由 `src/utils/theme.js` 切换 `<html data-theme="dark">`
-- 所有颜色用 CSS 变量，自动适配；品牌辅助色 `--brand*` 与语义色 `--ok` 在 `:root[data-theme="dark"]` 有对应降亮降饱和值（深水蓝 `--brand-deep:#1a5c8f` 等、暗绿 `--ok:#7cc94a`）
-- 播放器是固定深色主题，不随系统切换
-- 新增颜色时必须在 `:root` 和 `:root[data-theme="dark"]` 各加一份
+- 由 `src/utils/theme.js` 切 `<html data-theme="dark">`
+- 所有颜色用 CSS 变量自动适配
+- **新增颜色必须在 `:root` 与 `:root[data-theme="dark"]` 各加一份**；语义上"两种主题下都该是同一个值"的（`--mask-*`、`--scrim`）只写 `:root`，并在注释里写明原因。
 
-## 11. 禁止事项
+## 13. 禁止事项
 
-- ❌ 组件里写 `#xxx` 颜色值（播放器深色主题除外，用 `--player-*` 变量）
-- ❌ 判定/完成语义（答对、perfect、配对成功、已收集、目标完成）用 `--green`——**必须 `--ok`（绿）**，避免孩子对错认知被品牌蓝污染
-- ❌ 写死像素间距（用 `--gap-*`）
-- ❌ 自己写卡片渐变/阴影（用 `.tone-*` / `--shadow-hard` / `--brand-grad`）
-- ❌ 底部导航出现在非首页
-- ❌ 首页（/learn /listen /me）出现顶栏
+- ❌ 组件里写 `#xxx` 颜色值（唯一例外：遮罩内的白/黑是刻意的，用 `--mask-*` / `--scrim`）
+- ❌ 判定/完成语义用 `--brand`——**必须 `--ok`（绿）**
+- ❌ 写死像素间距/字号/圆角（用 `--gap-*` / `--fs-*` / `--radius*`）
+- ❌ 自己写卡片渐变/阴影（用 `.tone-*` / `--shadow-*`）
+- ❌ 自定义与全局同名的类（`.tone-*`、`.card`、`.star-badge`…）——scoped 会静默覆盖
+- ❌ 引用 tokens.css 里不存在的变量（`var(--tint)` 曾让抽屉关闭按钮一直没有底色）
+- ❌ `border-radius: 50%`（用 `.round`）
+- ❌ `font-weight: 900`（超出 Baloo 2 的 400–800 范围）
+- ❌ 在 `.view` 内部再补一次 `--pad-x`
+- ❌ 底部导航出现在非首页；首页出现顶栏

@@ -261,7 +261,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
   bottom: 18%;
   width: 9%;
   border-radius: 0 0 999px 999px;
-  background: repeating-linear-gradient(90deg, var(--pink) 0 8px, var(--pink-deep) 8px 16px);
+  background: repeating-linear-gradient(90deg, var(--c-pink) 0 8px, var(--c-pink-deep) 8px 16px);
   opacity: 0.85;
 }
 .curtain.l { left: 2%; }
@@ -361,7 +361,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
 }
 .letter-tile.t1 { left: 10%; color: var(--blue); rotate: -8deg; }
 .letter-tile.t2 { left: 45%; color: var(--orange); animation-delay: 0.6s; }
-.letter-tile.t3 { right: 10%; color: var(--pink); rotate: 8deg; animation-delay: 1.2s; }
+.letter-tile.t3 { right: 10%; color: var(--c-pink); rotate: 8deg; animation-delay: 1.2s; }
 @keyframes tile-wiggle {
   0%, 100% { transform: translateY(0) rotate(-2deg); }
   50% { transform: translateY(-8%) rotate(2deg); }

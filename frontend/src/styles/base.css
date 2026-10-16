@@ -136,7 +136,7 @@ button {
   --tone: var(--c-gold);
   --tone-deep: var(--c-gold-deep);
   /* 金底配深棕字：金色卡片辨识度最高，文字也更清晰（其它卡片是白字） */
-  --on-tone: #4d3200;
+  --on-tone: var(--on-gold);
 }
 /* 按下：整体下沉 --press 并轻微收拢，投影随之收平（所有彩色卡片一致的手感） */
 .tone-blue:active,
@@ -290,19 +290,64 @@ html.no-bottom-nav #app {
   }
 }
 
-.star-badge {
+/* ---------- 数字徽章（星星 / 贝壳 / 连击） ----------
+ * "图标 + 数字"的小标签，出现在顶栏与各统计区。
+ * 以前 base.css 和 HeaderBar 各有一份 .star-badge，字号、内边距、颜色都不一样，
+ * 于是"同一个星星数"在顶栏和宝藏页长得不同。现在只有一处：
+ *   .badge            形状（所有徽章共有）
+ *   .star-badge 等    配色变体
+ * 用法：<div class="badge star-badge"><Star class="k-ico star-fill" />12</div>
+ */
+.badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: var(--card-bg);
+  gap: var(--gap-xs);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-strong);
+  padding: var(--gap-xs) var(--gap-s);
   border-radius: var(--radius-s);
-  padding: clamp(6px, 1.2vh, 10px) clamp(10px, 1.6vw, 16px);
-  box-shadow: var(--shadow-hard);
-  font-weight: 800;
-  color: var(--gold);
-  font-size: var(--fs-body);
   white-space: nowrap;
   flex: none;
+}
+/* 星星：中性面 + 金色图形（数字要读得清，所以数字不跟着变金） */
+.star-badge {
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft);
+}
+.star-badge .star-fill {
+  color: var(--gold);
+}
+/* 贝壳：金色贴纸（可点，去宝藏罐）—— 与 .tone-gold 同一套观感 */
+.treasure-badge {
+  background: var(--c-gold);
+  color: var(--on-gold);
+  box-shadow: var(--sticker), 0 var(--press) 0 var(--c-gold-deep);
+  transition: transform var(--dur-fast);
+}
+.treasure-badge:active {
+  transform: translateY(calc(var(--press) - 1px));
+}
+/* 连击：未达成是中性面，今日达成后转成橙色贴纸（孩子一眼看出"今天已完成"） */
+.streak-badge {
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft);
+  transition: background var(--dur-base), color var(--dur-base), transform var(--dur-fast);
+}
+.streak-badge:active {
+  transform: translateY(calc(var(--press) - 1px));
+}
+.streak-badge.done {
+  background: var(--c-orange);
+  color: var(--on-tone);
+  box-shadow: var(--sticker), 0 var(--press) 0 var(--c-orange-deep);
+}
+.badge .flame-ico {
+  color: var(--orange);
+}
+.streak-badge.done .flame-ico {
+  color: var(--on-tone);
 }
 
 /* ---------- 通用按钮 ---------- */
@@ -311,7 +356,7 @@ html.no-bottom-nav #app {
   background: var(--brand);
   color: var(--on-tone);
   font-size: var(--fs-btn);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   padding: clamp(10px, 1.8vh, 14px) clamp(20px, 3vw, 32px);
   border-radius: var(--radius-s);
   box-shadow: 0 var(--press) 0 var(--brand-dark);
@@ -326,27 +371,42 @@ html.no-bottom-nav #app {
   transform: translateY(calc(var(--press) - 1px)) scale(0.97);
   box-shadow: 0 1px 0 var(--brand-dark);
 }
-.k-btn.blue {
+/* 变体。名称用 `k-btn-<variant>` 与 BaseButton 的 ButtonVariant 一一对应。
+ * 注意：`green` 变体**没有单独规则**——它是本应用的默认品牌色。
+ * 历史上品牌主色走过一段"绿色 → 水蓝"的迁移，`--green` 至今是 `--brand` 的别名，
+ * 所以 `.k-btn-green` 落到上面的 .k-btn 默认值就是对的，不需要再写一遍。
+ * （以前这里的变体写作 `.k-btn.blue` 这种复合选择器，而组件实际渲染的是
+ *  `.k-btn-blue`，两边对不上——BaseButton 因此又自带了一份 scoped 的 .k-btn 全套。
+ *  现在统一成一种命名，BaseButton 不再自带样式。） */
+.k-btn-blue {
   background: var(--blue);
   box-shadow: 0 var(--press) 0 var(--blue-dark);
 }
-.k-btn.blue:active {
+.k-btn-blue:active {
   box-shadow: 0 1px 0 var(--blue-dark);
 }
-.k-btn.orange {
+.k-btn-orange {
   background: var(--orange);
   box-shadow: 0 var(--press) 0 var(--orange-dark);
 }
-.k-btn.orange:active {
+.k-btn-orange:active {
   box-shadow: 0 1px 0 var(--orange-dark);
 }
-.k-btn.gray {
+.k-btn-gray {
   background: var(--btn-plain-bg);
   color: var(--ink);
   box-shadow: 0 var(--press) 0 var(--btn-plain-deep);
 }
-.k-btn.gray:active {
+.k-btn-gray:active {
   box-shadow: 0 1px 0 var(--btn-plain-deep);
+}
+/* 尺寸 / 布局变体 */
+.k-btn-block {
+  width: 100%;
+}
+.k-btn-lg {
+  padding: clamp(14px, 2.4vh, 20px) clamp(28px, 4vw, 48px);
+  font-size: var(--fs-title);
 }
 /* 未达成条件时的禁用态：明显变灰且不再有下压反馈，避免孩子误以为没点中 */
 .k-btn:disabled {
@@ -564,6 +624,31 @@ html.no-bottom-nav #app {
   height: 1.8em;
 }
 
+/* ---------- 正圆控件 ----------
+ * 圆形图标按钮 / 角标 / 播放键以前各写 `border-radius: 50%` —— 而 50% 在非正方
+ * 元素上会拉成椭圆（宽高只要差 1px 就明显）。统一成"胶囊圆角 + 正方形"，宽度定死就是正圆。
+ * 用法：<button class="round" style="width: var(--tap-min)">，或配合下面 .round-sm。
+ */
+.round {
+  aspect-ratio: 1;
+  border-radius: var(--radius-pill);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 小号正圆（角标）：跟父级字号缩放 */
+.round-sm {
+  aspect-ratio: 1;
+  border-radius: var(--radius-pill);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8em;
+  height: 1.8em;
+}
+
 /* ---------- 指标块：大数字 + 小分母 + 标签 ----------
  * 「3/81」这类分数以前是等宽平铺，孩子分不清哪个是成果、哪个是总量。
  * 改成两级排版：分子大且深、分母小且浅。
@@ -692,9 +777,15 @@ html.no-bottom-nav #app {
     transform: translateY(-1px);
     box-shadow: 0 calc(var(--press) + 2px) 0 var(--brand-dark);
   }
-  .k-btn.blue:hover { box-shadow: 0 calc(var(--press) + 2px) 0 var(--blue-dark); }
-  .k-btn.orange:hover { box-shadow: 0 calc(var(--press) + 2px) 0 var(--orange-dark); }
-  .k-btn.gray:hover { box-shadow: 0 calc(var(--press) + 2px) 0 var(--btn-plain-deep); }
+  .k-btn-blue:hover {
+    box-shadow: 0 calc(var(--press) + 2px) 0 var(--blue-dark);
+  }
+  .k-btn-orange:hover {
+    box-shadow: 0 calc(var(--press) + 2px) 0 var(--orange-dark);
+  }
+  .k-btn-gray:hover {
+    box-shadow: 0 calc(var(--press) + 2px) 0 var(--btn-plain-deep);
+  }
   .k-btn:disabled:hover {
     transform: none;
     box-shadow: 0 var(--press) 0 var(--btn-off-deep);

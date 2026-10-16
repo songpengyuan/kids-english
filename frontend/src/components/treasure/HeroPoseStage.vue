@@ -153,7 +153,7 @@ watch(
   border-radius: var(--radius);
   background:
     radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--tone) 26%, transparent), transparent 68%),
-    var(--card);
+    var(--card-bg);
   box-shadow: var(--shadow-float);
   overflow: hidden;
 }

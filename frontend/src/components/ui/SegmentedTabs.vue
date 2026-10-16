@@ -33,29 +33,29 @@ const activeIdx = computed(() =>
   position: relative;
   display: flex;
   align-items: center;
-  padding: 4px;
+  padding: var(--gap-xs);
   background: var(--card-bg);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: var(--shadow-hard);
 }
 .seg-ind {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
-  width: calc((100% - 8px) / var(--n));
-  background: var(--brand-grad, linear-gradient(135deg, #1e7fd0, #38a3e8, #6cc3f5));
-  border-radius: 999px;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(28, 176, 246, 0.35);
+  top: var(--gap-xs);
+  bottom: var(--gap-xs);
+  left: var(--gap-xs);
+  width: calc((100% - var(--gap-xs) * 2) / var(--n));
+  background: var(--brand-grad);
+  border-radius: var(--radius-pill);
+  transition: transform var(--dur-base) var(--ease-out);
+  box-shadow: var(--shadow-chip);
 }
 .seg-btn {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 10px 0;
+  gap: var(--gap-xs);
+  padding: var(--gap-m) 0;
   border: none;
   background: transparent;
   font-weight: var(--fw-strong);
@@ -63,14 +63,14 @@ const activeIdx = computed(() =>
   color: var(--ink-faint);
   position: relative;
   z-index: 1;
-  transition: color 0.2s;
+  transition: color var(--dur-base);
   cursor: pointer;
 }
 .seg-btn.on {
-  color: #fff;
+  color: var(--on-tone);
 }
 .seg-icon :deep(*) {
-  width: 14px;
-  height: 14px;
+  width: 1em;
+  height: 1em;
 }
 </style>

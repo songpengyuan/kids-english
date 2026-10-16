@@ -12,6 +12,7 @@
  */
 import { ref } from "vue";
 import { speak, speakZh } from "../../services/speech";
+import SpeakWave from "./SpeakWave.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -99,7 +100,7 @@ function onSpanClick(e: MouseEvent) {
     @click="play"
   >
     <slot>{{ text }}</slot>
-    <span v-if="active" class="spk-wave" aria-hidden="true"><i></i><i></i><i></i></span>
+    <SpeakWave v-if="active" size="md" tone="var(--blue)" />
   </button>
   <span
     v-else
@@ -112,7 +113,7 @@ function onSpanClick(e: MouseEvent) {
     @keydown.enter.prevent="play"
   >
     <slot>{{ text }}</slot>
-    <span v-if="active" class="spk-wave" aria-hidden="true"><i></i><i></i><i></i></span>
+    <SpeakWave v-if="active" size="md" tone="var(--blue)" />
   </span>
 </template>
 
@@ -129,49 +130,17 @@ function onSpanClick(e: MouseEvent) {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  border-radius: 6px;
+  gap: var(--gap-xs);
+  border-radius: var(--radius-s);
   -webkit-tap-highlight-color: transparent;
   line-height: inherit;
 }
 .spk:focus-visible {
-  outline: 2px solid var(--blue, #1cb0f6);
+  outline: 2px solid var(--blue);
   outline-offset: 2px;
 }
+/* 朗读中的选中底：用品牌柔和底，暗色主题自带一份降亮值（不必再写一份 dark 覆盖） */
 .spk.on {
-  background: rgba(28, 176, 246, 0.14);
-}
-/* 暗黑：14% 蓝在深底上几乎不可见，提亮选中态 */
-:root[data-theme="dark"] .spk.on {
-  background: rgba(28, 176, 246, 0.32);
-}
-/* 朗读波浪：三根跳动小竖条（与玩法页一致的语言） */
-.spk-wave {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 0.9em;
-  flex: none;
-}
-.spk-wave i {
-  width: 3px;
-  border-radius: 2px;
-  background: var(--blue, #1cb0f6);
-  animation: spk-bounce 0.9s ease-in-out infinite;
-}
-.spk-wave i:nth-child(2) {
-  animation-delay: 0.18s;
-}
-.spk-wave i:nth-child(3) {
-  animation-delay: 0.36s;
-}
-@keyframes spk-bounce {
-  0%,
-  100% {
-    height: 30%;
-  }
-  50% {
-    height: 100%;
-  }
+  background: var(--brand-soft);
 }
 </style>

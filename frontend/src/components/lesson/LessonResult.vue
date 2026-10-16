@@ -232,7 +232,7 @@ function nav(fn: () => void) {
 /* 关卡完成大徽章：暖金渐变（token 混色，暗色主题自动跟随） */
 .quest-done-badge {
   font-weight: var(--fw-strong);
-  font-size: var(--fs-big);
+  font-size: var(--fs-hero);
   color: var(--ink);
   background: linear-gradient(180deg, var(--card-bg), color-mix(in srgb, var(--yellow) 20%, var(--card-bg)));
   border: 3px solid color-mix(in srgb, var(--yellow) 70%, transparent);

@@ -3,8 +3,8 @@
  * 跨组件复用的 Props / Emits / 枚举类型放这里，避免每个文件重复定义。
  */
 
-/** 卡片色调（与 tokens.css 6 色一一对应） */
-export type Tone = "blue" | "green" | "orange" | "purple" | "pink" | "teal";
+/** 卡片色调（与 tokens.css 的 7 色卡片色调板一一对应，是唯一的彩色来源） */
+export type Tone = "blue" | "green" | "orange" | "purple" | "pink" | "teal" | "gold";
 
 /** 按钮变体 */
 export type ButtonVariant = "green" | "blue" | "orange" | "gray";

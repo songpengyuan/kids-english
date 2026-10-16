@@ -23,7 +23,12 @@ import { speak, speakZh } from "../services/speech";
 import { useCardsStore } from "../stores/cards";
 import { hapticTap } from "../services/haptics";
 
-export type LessonStage = "menu" | "questMap" | "learn" | "quiz" | "match" | "speak" | "song" | "talk" | "result";
+/**
+ * 课时流程阶段。
+ * 曾经还有一个 `questMap`（课内闯关地图）——现在闯关是独立的 `/game/lesson/:id`，
+ * 课内不再画地图，这个阶段已下线（LessonView 里的分支与 LessonQuestMap 组件一并删除）。
+ */
+export type LessonStage = "menu" | "learn" | "quiz" | "match" | "speak" | "song" | "talk" | "result";
 
 /** 调试/兼容深链：?lesson=l4&stage=learn 直接进入玩法页 */
 const STAGES = ["learn", "quiz", "match", "speak", "song", "talk"];

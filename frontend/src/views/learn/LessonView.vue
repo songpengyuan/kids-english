@@ -140,10 +140,6 @@ const menuActs = computed(() =>
   activities.value.map((a) => ({ ...a, stars: showStars(a.key) }))
 );
 
-/** 从闯关地图点节点：直接开始该关 */
-function startFromMap(a: (typeof activities.value)[number]) {
-  open(a);
-}
 /** 点击玩法卡片：读中文玩法名 + 进入玩法 */
 function openSound(a: (typeof activities.value)[number]) {
   speakZh(a.name);
@@ -227,7 +223,7 @@ const talkIdx = ref(0);
       </template>
       <template #right>
         <span v-if="stage === 'talk'" class="talk-round">第 {{ talkIdx + 1 }}/{{ lesson.words?.length || 0 }} 轮</span>
-        <div v-else class="star-badge" role="img" aria-label="已获得星星"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</div>
+        <div v-else class="badge star-badge" role="img" aria-label="已获得星星"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</div>
       </template>
     </HeaderBar>
 
@@ -242,13 +238,6 @@ const talkIdx = ref(0);
       @open-learn="openLearn"
       @open-quest="startQuest"
       @open-activity="openSound"
-    />
-
-    <!-- 课内闯关地图 -->
-    <LessonQuestMap
-      v-else-if="stage === 'questMap'"
-      :acts="menuActs"
-      @start="startFromMap"
     />
 
     <!-- 各玩法 -->
@@ -297,34 +286,34 @@ const talkIdx = ref(0);
 <style scoped>
 .hdr-title-tap {
   cursor: pointer;
-  border-radius: 6px;
-  padding: 2px 6px;
-  margin: -2px -6px;
+  border-radius: var(--radius-s);
+  padding: var(--gap-xs) var(--gap-s);
+  margin: calc(var(--gap-xs) * -1) calc(var(--gap-s) * -1);
 }
 .hdr-title-tap:active {
-  background: rgba(127, 127, 127, 0.14);
+  background: var(--btn-plain-bg);
 }
-/* 亲子对话顶部进度条 */
+/* 亲子对话顶部进度条：顶栏里放不下全局 .progress 的高度，这里用细条变体 */
 .talk-progress {
   flex: 1;
   max-width: 200px;
-  margin: 0 12px;
+  margin: 0 var(--gap-s);
 }
 .tp-track {
-  height: 6px;
-  border-radius: 999px;
+  height: var(--gap-xs);
+  border-radius: var(--radius-pill);
   background: var(--line);
   overflow: hidden;
 }
 .tp-fill {
   height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #1cb0f6, #1590c9);
-  transition: width 0.3s;
+  border-radius: var(--radius-pill);
+  background: var(--brand-grad);
+  transition: width var(--dur-base) var(--ease-out);
 }
 .talk-round {
   font-weight: var(--fw-strong);
-  font-size: 13px;
+  font-size: var(--fs-small);
   color: var(--ink-soft);
   white-space: nowrap;
 }

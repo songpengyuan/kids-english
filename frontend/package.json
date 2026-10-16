@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:ci": "node scripts/guard-build.mjs && node scripts/validate-data.mjs && vite build --outDir ${CI_OUT_DIR:-dist} --emptyOutDir",
+    "build:ci": "node scripts/guard-build.mjs && node scripts/validate-data.mjs && node scripts/guard-tokens.mjs && vite build --outDir ${CI_OUT_DIR:-dist} --emptyOutDir",
     "build:root": "BASE_PATH=/ pnpm build:ci",
     "preview": "vite preview",
     "ship": "node scripts/ship.mjs",
@@ -14,6 +14,7 @@
     "type-check": "vue-tsc --noEmit",
     "export:lessons": "node scripts/export-lessons.mjs",
     "verify": "bash ../scripts/ci-local.sh",
+    "guard:tokens": "node scripts/guard-tokens.mjs",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {

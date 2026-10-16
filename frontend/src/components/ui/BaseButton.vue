@@ -1,4 +1,12 @@
 <script setup lang="ts">
+/**
+ * BaseButton —— 通用按钮（设计系统第 ③ 层）
+ *
+ * 只负责"把 variant/size/block 翻译成 base.css 里的 .k-btn 修饰类"，
+ * **不再自带任何样式**：以前这里有一份和 base.css 重复的 .k-btn 全套 scoped 样式，
+ * 而且变体名（.k-btn-blue）和 base.css 的（.k-btn.blue）对不上，
+ * 等于同一颗按钮有两处定义、其中一处还是死的。现在 base.css 是唯一定义处。
+ */
 import { computed } from "vue";
 
 import type { ButtonVariant } from "../../types";
@@ -29,51 +37,3 @@ const cls = computed(() => ({
     <slot />
   </button>
 </template>
-
-<style scoped>
-.k-btn {
-  background: var(--brand);
-  color: var(--on-tone);
-  font-size: var(--fs-btn);
-  font-weight: var(--fw-mid);
-  padding: clamp(10px, 1.8vh, 14px) clamp(20px, 3vw, 32px);
-  border-radius: var(--radius-s);
-  box-shadow: 0 var(--press) 0 var(--brand-dark);
-  transition: transform var(--dur-fast), box-shadow var(--dur-fast);
-  min-height: var(--tap-min);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4em;
-}
-.k-btn:active {
-  transform: translateY(calc(var(--press) - 1px)) scale(0.97);
-  box-shadow: 0 1px 0 var(--brand-dark);
-}
-
-.k-btn-blue { background: var(--blue); box-shadow: 0 var(--press) 0 var(--blue-dark); }
-.k-btn-blue:active { box-shadow: 0 1px 0 var(--blue-dark); }
-.k-btn-orange { background: var(--orange); box-shadow: 0 var(--press) 0 var(--orange-dark); }
-.k-btn-orange:active { box-shadow: 0 1px 0 var(--orange-dark); }
-.k-btn-gray { background: var(--btn-plain-bg); color: var(--ink); box-shadow: 0 var(--press) 0 var(--btn-plain-deep); }
-.k-btn-gray:active { box-shadow: 0 1px 0 var(--btn-plain-deep); }
-
-.k-btn:disabled {
-  background: var(--btn-off-bg);
-  color: var(--btn-off-ink);
-  box-shadow: 0 var(--press) 0 var(--btn-off-deep);
-  cursor: default;
-}
-.k-btn:disabled:active { transform: none; box-shadow: 0 var(--press) 0 var(--btn-off-deep); }
-
-.k-btn-block { width: 100%; }
-.k-btn-lg { padding: clamp(14px, 2.4vh, 20px) clamp(28px, 4vw, 48px); font-size: var(--fs-title); }
-
-@media (hover: hover) and (pointer: fine) {
-  .k-btn:hover { transform: translateY(-1px); box-shadow: 0 calc(var(--press) + 2px) 0 var(--brand-dark); }
-  .k-btn-blue:hover { box-shadow: 0 calc(var(--press) + 2px) 0 var(--blue-dark); }
-  .k-btn-orange:hover { box-shadow: 0 calc(var(--press) + 2px) 0 var(--orange-dark); }
-  .k-btn-gray:hover { box-shadow: 0 calc(var(--press) + 2px) 0 var(--btn-plain-deep); }
-  .k-btn:disabled:hover { transform: none; box-shadow: 0 var(--press) 0 var(--btn-off-deep); }
-}
-</style>

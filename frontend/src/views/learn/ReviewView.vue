@@ -23,6 +23,7 @@ import { Check, RotateCcw, Volume2 } from "@lucide/vue";
 import HeaderBar from "../../components/layout/HeaderBar.vue";
 import PathIcon from "../../components/PathIcon.vue";
 import BaseButton from "../../components/ui/BaseButton.vue";
+import EmptyState from "../../components/ui/EmptyState.vue";
 
 const progress = useProgressStore();
 const streak = useStreakStore();
@@ -104,6 +105,13 @@ function replay() {
   const t = target.value;
   if (t) speak(t.en, { lessonId: t.lessonId, wordId: t.id });
 }
+
+/** 空态说明文案：还有排队中的词就提示一句，否则引导去学新课 */
+const emptyDesc = computed(() =>
+  unmasteredCount.value > 0
+    ? `答错或刚学会的单词会按 1 / 3 / 7 天的节奏回到这里。还有 ${unmasteredCount.value} 个词在排队，明天见～`
+    : "答错或刚学会的单词会按 1 / 3 / 7 天的节奏回到这里。先回首页学一课吧！"
+);
 </script>
 
 <template>
@@ -113,28 +121,28 @@ function replay() {
       <template #right><span class="cnt-badge">{{ dueWords.length }} 个到期</span></template>
     </HeaderBar>
 
-    <!-- 空态：今天没有到期的词 -->
-    <div v-if="dueWords.length === 0" class="empty view-body view-center">
-      <div class="empty-emoji anim-float"><PathIcon name="learn" class="empty-ico" /></div>
-      <h2>今天没有要复习的词</h2>
-      <p>
-        答错或刚学会的单词会按 1 / 3 / 7 天的节奏回到这里。
-        <template v-if="unmasteredCount > 0">还有 {{ unmasteredCount }} 个词在排队，明天见～</template>
-        <template v-else>先回首页学一课吧！</template>
-      </p>
-      <BaseButton variant="green" @click="router.push('/course')">回学习</BaseButton>
+    <!-- 空态：今天没有到期的词（用全局 EmptyState，和"没有卡片/没有宝藏"长得一样） -->
+    <div v-if="dueWords.length === 0" class="view-body view-center">
+      <EmptyState title="今天没有要复习的词" :desc="emptyDesc">
+        <template #icon>
+          <div class="empty-emoji anim-float"><PathIcon name="learn" /></div>
+        </template>
+        <BaseButton variant="green" @click="router.push('/course')">回学习</BaseButton>
+      </EmptyState>
     </div>
 
     <!-- 出题 -->
     <div v-else-if="!finished" class="quiz view-body">
-      <div class="progress" aria-label="复习进度">
-        <div class="p-bar"><div class="p-fill" :style="{ width: ((idx + 1) / total) * 100 + '%' }"></div></div>
+      <div class="quiz-head">
+        <div class="progress" aria-label="复习进度">
+          <div class="fill" :style="{ width: ((idx + 1) / total) * 100 + '%' }"></div>
+        </div>
         <span>第 {{ idx + 1 }}/{{ total }} 题</span>
       </div>
 
       <div class="prompt anim-pop">
         <p>听一听，选出对的图片</p>
-        <button class="replay" :aria-label="'再听一遍' + (target?.en ?? '')" @click="replay">
+        <button class="replay tone-gold round" :aria-label="'再听一遍' + (target?.en ?? '')" @click="replay">
           <Volume2 class="k-ico" />
         </button>
       </div>
@@ -153,8 +161,8 @@ function replay() {
         >
           <img v-if="opt.image" :src="opt.image || undefined" :alt="opt.en" />
           <span v-else class="ph">{{ opt.emoji }}</span>
-          <span v-if="picked === opt.lessonId + ':' + opt.id" class="mark hit-mark"><Check class="k-ico" /></span>
-          <span v-if="wrongPicks.has(opt.lessonId + ':' + opt.id)" class="mark miss-mark">✗</span>
+          <span v-if="picked === opt.lessonId + ':' + opt.id" class="mark hit-mark round-sm"><Check class="k-ico" /></span>
+          <span v-if="wrongPicks.has(opt.lessonId + ':' + opt.id)" class="mark miss-mark round-sm">✗</span>
         </button>
       </div>
     </div>
@@ -181,16 +189,13 @@ function replay() {
 </template>
 
 <style scoped>
-.review {
-  gap: var(--gap-s);
-}
 .cnt-badge {
   font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   color: var(--ink-soft);
   background: var(--card-bg);
   border-radius: var(--radius-pill);
-  padding: 4px var(--gap-m);
+  padding: var(--gap-xs) var(--gap-m);
   box-shadow: var(--shadow-hard);
   flex: none;
 }
@@ -201,7 +206,8 @@ function replay() {
   align-items: center;
   gap: var(--gap-s);
 }
-.progress {
+/* 进度行：进度条本身用全局 .progress（与全站同一根条），这里只负责"条 + 题号"的排布 */
+.quiz-head {
   display: flex;
   align-items: center;
   gap: var(--gap-s);
@@ -210,18 +216,9 @@ function replay() {
   font-size: var(--fs-small);
   color: var(--ink-soft);
 }
-.p-bar {
+/* 全局 .progress 是 flex:none，放进横向排布要允许它撑满剩余宽度 */
+.quiz-head .progress {
   flex: 1;
-  height: 10px;
-  background: var(--line);
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-}
-.p-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--gold), var(--yellow));
-  border-radius: var(--radius-pill);
-  transition: width 0.4s;
 }
 .prompt {
   display: flex;
@@ -231,20 +228,14 @@ function replay() {
   font-size: var(--fs-body);
   color: var(--ink);
 }
-.replay {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: clamp(46px, 8vh, 56px);
-  height: clamp(46px, 8vh, 56px);
-  border-radius: 50%;
-  background: linear-gradient(160deg, var(--yellow), var(--gold));
-  color: #6b4e00;
-  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.16);
-  transition: transform 0.1s;
+.prompt p {
+  margin: 0;
 }
-.replay:active {
-  transform: translateY(2px);
+/* 再听一遍：直接用 .tone-gold 的"金色贴纸按钮"，按下手感与全站彩色按钮一致 */
+.replay {
+  width: var(--tap-min);
+  height: var(--tap-min);
+  font-size: var(--fs-title);
 }
 
 /* 选项：2×2（窄屏）或 4 列（宽屏），方块卡片 */
@@ -267,7 +258,7 @@ function replay() {
   background: var(--card-bg);
   box-shadow: var(--shadow-hard);
   overflow: hidden;
-  transition: transform 0.1s;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 .opts.narrow .opt {
   width: min(40vw, 150px);
@@ -282,8 +273,9 @@ function replay() {
 .opt:active {
   transform: translateY(2px);
 }
+/* 对/错用语义色（绿=对、红=错），与课内的"听音选图"保持一致 */
 .opt.hit {
-  box-shadow: 0 0 0 4px var(--brand), var(--shadow-hard);
+  box-shadow: 0 0 0 var(--gap-xs) var(--ok), var(--shadow-hard);
 }
 .opt.miss {
   filter: grayscale(1);
@@ -291,24 +283,18 @@ function replay() {
 }
 .mark {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: clamp(26px, 5vh, 34px);
-  height: clamp(26px, 5vh, 34px);
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: var(--fw-strong);
+  top: var(--gap-xs);
+  right: var(--gap-xs);
   font-size: var(--fs-body);
-  color: #fff;
-  animation: pop-in 0.25s ease-out;
+  font-weight: var(--fw-strong);
+  color: var(--on-tone);
+  animation: pop-in var(--dur-base) var(--ease-pop);
 }
 .hit-mark {
-  background: var(--brand);
+  background: var(--ok);
 }
 .miss-mark {
-  background: #ff6b5e;
+  background: var(--red);
 }
 
 /* 结算 */
@@ -326,7 +312,7 @@ function replay() {
 .score {
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: var(--gap-xs);
   background: var(--card-bg);
   border-radius: var(--radius);
   padding: var(--gap-m) var(--gap-l);
@@ -334,7 +320,7 @@ function replay() {
 }
 .big {
   font-weight: var(--fw-strong);
-  font-size: clamp(22px, 4vh, 32px);
+  font-size: var(--fs-hero);
   color: var(--ink);
 }
 .of {
@@ -356,33 +342,10 @@ function replay() {
   color: var(--ok-dark);
   font-weight: var(--fw-strong);
 }
-.btn-row {
-  display: flex;
-  gap: var(--gap-s);
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.btn-row .k-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
 
-.empty {
-  text-align: center;
-  gap: var(--gap-m);
-}
 .empty-emoji {
-  font-size: clamp(40px, 10vh, 64px);
-}
-.empty h2 {
-  margin: 0;
-  font-size: var(--fs-title);
-}
-.empty p {
-  margin: 0;
-  color: var(--ink-soft);
-  font-weight: var(--fw-mid);
-  font-size: var(--fs-body);
+  font-size: var(--fs-emoji-xl);
+  line-height: 1;
+  color: var(--brand);
 }
 </style>

@@ -454,7 +454,7 @@ function unitLesson(id: string) {
   align-items: center;
   gap: 10px;
   padding: 0 16px;
-  color: var(--ink-1);
+  color: var(--ink);
   cursor: pointer;
   background: transparent;
   box-shadow: none; /* 覆盖全局 tone-* 贴纸边：横幅常态无框，吸顶阴影由 .is-stuck 自管 */
@@ -493,7 +493,7 @@ function unitLesson(id: string) {
   left: 50%;
   transform: translateX(-50%);
   max-width: 72%;
-  color: var(--tone, var(--ink-1));
+  color: var(--tone, var(--ink));
   font-weight: var(--fw-strong);
   font-size: 17px;
   line-height: 1;

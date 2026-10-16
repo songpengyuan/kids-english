@@ -147,7 +147,7 @@ function buy(formId: string) {
     @back="router.push('/me')"
   >
     <template #right>
-      <div class="star-badge"><Star class="k-ico star-fill" />{{ rewards.totalStars }}</div>
+      <div class="badge star-badge"><Star class="k-ico star-fill" />{{ rewards.totalStars }}</div>
     </template>
 
     <!-- 贝壳余额：全页唯一的实底大卡，孩子第一眼看到攒了多少 -->

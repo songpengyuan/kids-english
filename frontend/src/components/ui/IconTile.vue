@@ -13,10 +13,12 @@
  *
  * 用法：<IconTile tone="gold"><Star class="k-ico" /></IconTile>
  */
+import type { Tone } from "../../types";
+
 withDefaults(
   defineProps<{
     /** 取自 base.css 的 .tone-* 色调板，是全站唯一允许的彩色来源 */
-    tone?: "blue" | "green" | "orange" | "purple" | "pink" | "teal" | "gold";
+    tone?: Tone;
     size?: "md" | "sm";
   }>(),
   { tone: "blue", size: "md" }
