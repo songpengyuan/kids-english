@@ -10,6 +10,19 @@ permissions:
   pages: write
   id-token: write
 
+# 并发控制：GitHub Pages 同一时刻只允许**一个**部署在途。
+# 没有这段时，两次提交挨得近就会出现：
+#   "Deployment request failed for <sha> due to in progress deployment.
+#    Please cancel <other-sha> first or wait for it to complete."
+# 失败的只是 Pages 那条旁路，生产服务器其实已经部署成功 ——
+# 但 CI 会亮红，而红的原因与代码无关。这种红最危险：它训练人忽略红灯。
+#
+# cancel-in-progress 必须为 false：取消一个**正在进行**的 run 可能把 rsync
+# 或服务重启切在半路，留下不一致的服务器状态。排队（等上一轮跑完）是安全的。
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
