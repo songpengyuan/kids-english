@@ -147,7 +147,7 @@ const grainStyle = { "--grain": GRAIN };
   width: clamp(48px, 9vw, 80px);
   height: clamp(48px, 9vw, 80px);
   border-radius: 50%;
-  background: radial-gradient(circle at 38% 34%, #fff6c8, #ffd76e 62%, #ffc94d);
+  background: var(--backdrop-sun);
   box-shadow: 0 0 36px 12px rgba(255, 224, 130, 0.45);
   animation: sun-breathe 4.6s ease-in-out infinite;
 }
@@ -174,7 +174,7 @@ const grainStyle = { "--grain": GRAIN };
   position: absolute;
   bottom: -16%;
   border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-  background: linear-gradient(180deg, #9fd87a 0%, #76b85c 100%);
+  background: var(--backdrop-hill);
   pointer-events: none;
 }
 .hill.h1 { left: -12%; width: 58%; height: 36%; }
@@ -252,7 +252,7 @@ const grainStyle = { "--grain": GRAIN };
   opacity: 0.06;
 }
 :root[data-theme="dark"] .sky-sun {
-  background: radial-gradient(circle at 42% 38%, #ffffff 0%, #eef2ff 62%, #d5e0ff 100%);
+  background: var(--backdrop-moon);
   box-shadow: 0 0 36px 14px rgba(190, 210, 255, 0.55);
 }
 :root[data-theme="dark"] .backdrop.sky .cloud {
@@ -270,7 +270,7 @@ const grainStyle = { "--grain": GRAIN };
   opacity: 0.9;
 }
 :root[data-theme="dark"] .hill {
-  background: linear-gradient(180deg, #2d4d3c 0%, #1c3428 100%);
+  background: var(--backdrop-hill-night);
 }
 /* 尊重系统"减少动态效果" */
 @media (prefers-reduced-motion: reduce) {

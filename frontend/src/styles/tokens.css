@@ -135,6 +135,79 @@
    * 卡色深浅不定，只靠一个固定的半透明黑底才能保证白色图标永远有对比度。 */
   --scrim: rgba(0, 0, 0, 0.4);
 
+  /* ---------- 绝对色（不随主题变化） ----------
+   * 绝大多数场合要用"跟着主题反转"的 --card-bg / --on-tone；只有下面这类才需要绝对的白与黑：
+   *   · color-mix() 的计算端点——把主题色调亮或压暗时，端点必须是恒定的白/黑
+   *   · 视频播放器的信箱底、mask-image 的实色
+   *   · 插画里本来就该是白的面（字母积木、关卡按钮顶面）
+   * 压在彩色面上的文字仍用 --on-tone（暗色下是暖白，不刺眼），不要用 --white。
+   */
+  --white: #fff;
+  --black: #000;
+
+  /* ================= 玩法插画色板 =================
+   * 下面这些是**装饰插画**的颜色：多段渐变、场景天空、宝箱材质、麦克风按钮……
+   * 它们不表达语义（不像 --ok / --red 表示对错），也基本只服务一个玩法，
+   * 但仍然是"颜色字面值"，所以同样集中在这里 —— 组件里只允许 var(--…) 取用。
+   * 好处：想给某个玩法整体换配色时只改一处，且 CI 能守住（scripts/guard-tokens.mjs）。
+   */
+
+  /* —— 童谣动画舞台（components/activities/SongStage）：每首歌一个手绘场景 —— */
+  --scene-sea-bg: linear-gradient(180deg, #bfe9ff 0%, #e8f8ff 46%, #8ed8f7 60%, #4fb3e0 100%);
+  --scene-sea-sun: radial-gradient(circle at 35% 32%, #fff6c9, var(--yellow));
+  --scene-sea-wave: linear-gradient(180deg, #59bde8, #2f96c9);
+  --scene-stage-bg: radial-gradient(120% 90% at 50% 0%, #fff3d6 0%, #ffe6bd 44%, #ffd08a 100%);
+  --scene-rainbow-bg: linear-gradient(180deg, #dff1ff 0%, #fdeef7 52%, #fff4dc 100%);
+  --scene-rainbow-arc: radial-gradient(
+    100% 100% at 50% 100%,
+    transparent 0 56%,
+    #ff9fb2 56% 65%,
+    #ffd97a 65% 74%,
+    #9fe0a5 74% 83%,
+    #8fd4f5 83% 92%,
+    #c6b4f2 92% 100%
+  );
+  --scene-numbers-bg: linear-gradient(180deg, #e2f9f0 0%, #e9f6ff 58%, #d9f2e6 100%);
+  --scene-letters-bg: linear-gradient(180deg, #efe7ff 0%, #fdf2ff 55%, #e8f2ff 100%);
+
+  /* —— 卡通背景（components/CuteBackdrop）—— */
+  --backdrop-sun: radial-gradient(circle at 38% 34%, #fff6c8, #ffd76e 62%, #ffc94d);
+  --backdrop-moon: radial-gradient(circle at 42% 38%, #ffffff 0%, #eef2ff 62%, #d5e0ff 100%);
+  --backdrop-hill: linear-gradient(180deg, #9fd87a 0%, #76b85c 100%);
+  --backdrop-hill-night: linear-gradient(180deg, #2d4d3c 0%, #1c3428 100%);
+
+  /* —— 对话 / 语音玩法（activities/TalkView、activities/LearnStage）——
+   * 这两个玩法共用同一套「角色气泡 + 麦克风按钮」，以前各写一份、色值还不完全一样。 */
+  --talk-field: linear-gradient(180deg, #e8f7e3 0%, #d3f0c9 70%, #bfe8b4 100%);
+  --talk-warm: #fff3d6; /* 妈妈侧：头像底 */
+  --talk-cool: #d9f6ff; /* 孩子侧：头像底（也是孩子侧小标签的底） */
+  --talk-kid-bg: #cdebc4; /* 孩子侧气泡：草绿，表示"轮到你说了" */
+  --talk-ask-bg: #fff3c2; /* 提问气泡 */
+  --talk-ask-line: #f5d97a;
+  --talk-ans-line: #9fe0f5;
+  --mic-face: linear-gradient(180deg, #ff9d5c, #ff7a3c);
+  --mic-base: #e05f1e;
+  --mic-rec-face: linear-gradient(180deg, #ff5c5c, #e63939);
+  --mic-rec-base: #b02222;
+
+  /* —— 宝箱与金色实底（rewards/ChestReward、game/GamePath 的宝箱关）—— */
+  --chest-lid: linear-gradient(180deg, #d99a4e, #b5792f);
+  --chest-body: linear-gradient(180deg, #c98a3d, #8b5a2b);
+  --chest-knob: linear-gradient(180deg, #ffd87a, #e0a83e);
+  --chest-lock: linear-gradient(180deg, #ffe9a8, #d9a73e);
+  --chest-arrow-bg: linear-gradient(180deg, #fff3d6, #ffe3a8);
+  --chest-cube: linear-gradient(160deg, #ffe9a8, #ffd87a);
+  --chest-ink: #8a5a00; /* 宝箱上的礼物图标（深金棕） */
+  /* 金色实底按钮：宝箱"收取"与语音页"再听一遍"共用同一块金色（以前两处色值不同） */
+  --grad-gold: linear-gradient(160deg, #ffd87a, #f0a63a);
+
+  /* —— 闯关地图的关卡节点（game/GamePath）—— */
+  --path-face-locked: #d9dade;
+  --path-face-locked-dark: #3a3d43;
+  --path-lock-ink: #b8b0a4;
+  --ring-on-done: #ffc93c;
+  --ring-on-chest: #d98e04;
+
   /* ---------- 间距（流体） ---------- */
   --gap-xs: clamp(4px, min(0.7vh, 0.6vw), 8px);
   --gap-s: clamp(6px, min(1.1vh, 1vw), 12px);

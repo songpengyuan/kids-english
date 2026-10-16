@@ -414,7 +414,7 @@ const cap = computed(() => {
   transform: translateX(-50%);
   font-weight: var(--fw-strong);
   font-size: clamp(20px, 4.4vh, 30px);
-  color: var(--yellow, #ffd87a);
+  color: var(--yellow);
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
   pointer-events: none;
   white-space: nowrap;
@@ -550,7 +550,7 @@ const cap = computed(() => {
   width: 92%;
   height: 42%;
   border-radius: 12px 12px 4px 4px;
-  background: linear-gradient(180deg, #d99a4e, #b5792f);
+  background: var(--chest-lid);
   box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.35), 0 3px 0 rgba(0, 0, 0, 0.15);
   transform-origin: 50% 100%;
   z-index: 3;
@@ -564,7 +564,7 @@ const cap = computed(() => {
   width: 34%;
   height: 16%;
   border-radius: 999px;
-  background: linear-gradient(180deg, #ffd87a, #e0a83e);
+  background: var(--chest-knob);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
 }
 .chest.opened .lid {
@@ -578,7 +578,7 @@ const cap = computed(() => {
   width: 100%;
   height: 62%;
   border-radius: 6px 6px 16px 16px;
-  background: linear-gradient(180deg, #c98a3d, #8b5a2b);
+  background: var(--chest-body);
   box-shadow: inset 0 4px 0 rgba(255, 255, 255, 0.3), 0 6px 0 rgba(0, 0, 0, 0.18);
 }
 .lock {
@@ -589,7 +589,7 @@ const cap = computed(() => {
   width: 22%;
   height: 30%;
   border-radius: 6px;
-  background: linear-gradient(180deg, #ffe9a8, #d9a73e);
+  background: var(--chest-lock);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
   z-index: 4;
 }
@@ -680,7 +680,7 @@ const cap = computed(() => {
 }
 .arrow.on {
   border-color: var(--c-orange);
-  background: linear-gradient(180deg, #fff3d6, #ffe3a8);
+  background: var(--chest-arrow-bg);
   color: var(--c-orange);
   transform: translateY(-6px);
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12), 0 0 16px 2px rgba(255, 200, 90, 0.5);
@@ -708,7 +708,7 @@ const cap = computed(() => {
   gap: var(--gap-s);
   background: var(--card-bg);
   /* 与开箱阶段的黄色宝箱氛围区分：收取页用绿色"收获"边框 */
-  border: 3px solid var(--ok, #58cc02);
+  border: 3px solid var(--ok);
   border-radius: var(--radius);
   padding: var(--gap-m);
   min-width: min(78vw, 300px);
@@ -754,8 +754,8 @@ const cap = computed(() => {
 .cnt {
   font-weight: var(--fw-strong);
   font-size: var(--fs-body);
-  color: #6b4e00;
-  background: linear-gradient(160deg, #ffd87a, #f0a63a);
+  color: var(--on-gold);
+  background: var(--grad-gold);
   padding: 1px 8px;
   border-radius: 999px;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
@@ -768,8 +768,8 @@ const cap = computed(() => {
   width: clamp(30px, 6.5vh, 42px);
   height: clamp(30px, 6.5vh, 42px);
   border-radius: 50%;
-  background: linear-gradient(160deg, #ffd87a, #f0a63a);
-  color: #6b4e00;
+  background: var(--grad-gold);
+  color: var(--on-gold);
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18), inset 0 2px 0 rgba(255, 255, 255, 0.45);
   font-size: clamp(18px, 3.4vh, 24px);
   animation-delay: calc(var(--i, 0) * 0.05s);

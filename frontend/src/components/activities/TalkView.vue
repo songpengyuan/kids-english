@@ -309,8 +309,8 @@ function finish() {
   justify-content: center;
   font-size: 16px;
 }
-.ch-av.mom { background: #fff3d6; }
-.ch-av.kid { background: #d9f6ff; }
+.ch-av.mom { background: var(--talk-warm); }
+.ch-av.kid { background: var(--talk-cool); }
 .ch-round {
   font-weight: var(--fw-strong);
   font-size: var(--fs-small);
@@ -333,7 +333,7 @@ function finish() {
   scrollbar-width: none;
   background:
     radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.5) 0, transparent 40%),
-    linear-gradient(180deg, #e8f7e3 0%, #d3f0c9 70%, #bfe8b4 100%);
+    var(--talk-field);
   border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
 }
@@ -357,8 +357,8 @@ function finish() {
   font-size: 17px;
   box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.06);
 }
-.msg-av.mom { background: #fff3d6; }
-.msg-av.kid { background: #d9f6ff; }
+.msg-av.mom { background: var(--talk-warm); }
+.msg-av.kid { background: var(--talk-cool); }
 .msg-col {
   display: flex;
   flex-direction: column;
@@ -383,11 +383,11 @@ function finish() {
   max-width: 100%;
 }
 .msg-bubble.parent {
-  background: #fff;
+  background: var(--white);
   border-top-left-radius: 4px;
 }
 .msg-bubble.kid {
-  background: #cdebc4;
+  background: var(--talk-kid-bg);
   border-top-right-radius: 4px;
   align-items: flex-end;
 }
@@ -418,7 +418,7 @@ function finish() {
   align-items: center;
   gap: 2px;
   padding: 8px 14px;
-  background: #fff;
+  background: var(--white);
   border-radius: 12px;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.06);
 }
@@ -502,9 +502,9 @@ function finish() {
   min-height: 54px;
   border: none;
   border-radius: 22px;
-  background: linear-gradient(180deg, #ff9d5c, #ff7a3c);
-  color: #fff;
-  box-shadow: 0 4px 0 #e05f1e, var(--shadow-hard);
+  background: var(--mic-face);
+  color: var(--on-tone);
+  box-shadow: 0 4px 0 var(--mic-base), var(--shadow-hard);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -514,15 +514,15 @@ function finish() {
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.1s, box-shadow 0.1s;
 }
-.input-bar:active { transform: translateY(2px); box-shadow: 0 2px 0 #e05f1e; }
+.input-bar:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--mic-base); }
 .input-bar.talking {
-  background: linear-gradient(180deg, #ff5c5c, #e63939);
-  box-shadow: 0 4px 0 #b02222;
+  background: var(--mic-rec-face);
+  box-shadow: 0 4px 0 var(--mic-rec-base);
   animation: mic-pulse 1s ease-in-out infinite;
 }
 @keyframes mic-pulse {
-  0%, 100% { box-shadow: 0 4px 0 #b02222, 0 0 0 8px rgba(230, 57, 57, 0.16); }
-  50% { box-shadow: 0 4px 0 #b02222, 0 0 0 16px rgba(230, 57, 57, 0.3); }
+  0%, 100% { box-shadow: 0 4px 0 var(--mic-rec-base), 0 0 0 8px rgba(230, 57, 57, 0.16); }
+  50% { box-shadow: 0 4px 0 var(--mic-rec-base), 0 0 0 16px rgba(230, 57, 57, 0.3); }
 }
 .ib-ico {
   width: 22px;

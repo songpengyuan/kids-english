@@ -156,13 +156,13 @@ if [ "$MODE" = "commit" ]; then
     printf '%s  （暂存区没有 .ts/.vue，跳过类型检查）%s\n' "$D" "$N"
   fi
 
-  # 5) 设计系统守卫（秒级；改了 .vue/.css 就值得跑一遍）
-  #    查的是"引用了不存在的 CSS 变量"和"视图层硬编码颜色"——这两类都是**静默**失效，
-  #    类型检查和单测都看不见，只有真机看一眼才发现某个底色/描边没了。
-  if printf '%s\n' "$STAGED" | grep -qE '\.(vue|css)$'; then
+  # 5) 设计系统守卫（秒级；改了 .vue/.css/守卫自己就值得跑一遍）
+  #    查的是"引用了不存在的 CSS 变量""组件里硬编码颜色""CSS 掉在 </style> 外面"
+  #    ——这三类都是**静默**失效，类型检查和单测都看不见，只有真机看一眼才发现。
+  if printf '%s\n' "$STAGED" | grep -qE '\.(vue|css|js|mjs)$'; then
     step "设计系统守卫  ·  node scripts/guard-tokens.mjs"
     if (cd "$FE" && node scripts/guard-tokens.mjs); then
-      ok "无未定义变量 / 无硬编码颜色"
+      ok "无未定义变量 / 无硬编码颜色 / 无块外游离内容"
     else
       bad "设计系统守卫未通过 —— 按提示改回 token（详见 DESIGN_SYSTEM.md 第 13 节）"
       fail "设计系统守卫"

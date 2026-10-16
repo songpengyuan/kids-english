@@ -502,7 +502,7 @@ function unitLesson(id: string) {
   white-space: nowrap;
 }
 :root[data-theme="dark"] .u-name {
-  color: color-mix(in srgb, var(--tone) 78%, #fff);
+  color: color-mix(in srgb, var(--tone) 78%, var(--white));
 }
 .u-count {
   margin-left: auto;
@@ -539,16 +539,16 @@ function unitLesson(id: string) {
 /* 通关（done）：按钮圆形背景 = 课程主色调渐变（与课程横幅同款），图标白色，圆+阴影保持不变；
    宝箱关（.chest）保持金色奖励语义不变。 */
 .lv-wrap.done[class*="tone-"]:not(.chest) .gp-level {
-  --face: linear-gradient(180deg, var(--tone), color-mix(in srgb, var(--tone) 70%, #000));
-  --base: color-mix(in srgb, var(--tone) 55%, #000);
+  --face: linear-gradient(180deg, var(--tone), color-mix(in srgb, var(--tone) 70%, var(--black)));
+  --base: color-mix(in srgb, var(--tone) 55%, var(--black));
 }
 .lv-wrap.done[class*="tone-"]:not(.chest) .lv-ico {
-  color: #fff;
+  color: var(--on-tone);
 }
 /* 暗黑模式：课程色与深底混合（跟随横幅在暗色下的观感） */
 :root[data-theme="dark"] .lv-wrap.done[class*="tone-"]:not(.chest) .gp-level {
-  --face: linear-gradient(180deg, color-mix(in srgb, var(--tone) 62%, #16181c), color-mix(in srgb, var(--tone) 42%, #000));
-  --base: color-mix(in srgb, var(--tone) 32%, #000);
+  --face: linear-gradient(180deg, color-mix(in srgb, var(--tone) 62%, var(--black)), color-mix(in srgb, var(--tone) 42%, var(--black)));
+  --base: color-mix(in srgb, var(--tone) 32%, var(--black));
 }
 
 /* ---------- 关卡节点（文档流：wrap 居中 + --dx 左右位移；按钮为圆） ---------- */
@@ -580,7 +580,7 @@ function unitLesson(id: string) {
 .gp-level {
   /* 3D 立体按钮（参考图）：顶面 + 下方一圈更深的底座色构成厚度。
    * 顶面是**椭圆不是正圆** —— 参考图是俯视透视的圆柱，横向略宽、纵向略扁。 */
-  --face: #fff;
+  --face: var(--white);
   --base: rgba(0, 0, 0, 0.22);
   --depth: 7px;
   position: relative; /* 角标/星/光圈锚点 */
@@ -625,7 +625,7 @@ function unitLesson(id: string) {
   min-width: 19px;
   padding: 0 3px;
   border-radius: 999px;
-  background: #fff;
+  background: var(--white);
   border: 1px solid rgba(0, 0, 0, 0.12);
   color: var(--gold);
   font-size: 10px;
@@ -665,20 +665,20 @@ function unitLesson(id: string) {
 }
 
 /* 状态样式（状态类挂在 lv-wrap 上） */
-.lv-wrap.done .lv-ico { color: #c8860b; }
+.lv-wrap.done .lv-ico { color: var(--gold); }
 .lv-wrap.done .lv-tag { border-color: var(--gold); }
-.lv-wrap.active .gp-level { border: 4px solid var(--c-blue, #1cb0f6); }
-.lv-wrap.active .lv-ico { color: var(--c-blue, #1cb0f6); }
+.lv-wrap.active .gp-level { border: 4px solid var(--c-blue); }
+.lv-wrap.active .lv-ico { color: var(--c-blue); }
 /* 锁定关卡：只显示锁、整体置灰（灰圆面 + 灰投影 + 灰锁），不掺任何主题色 */
 .lv-wrap.locked .gp-level {
-  --face: #d9dade;
+  --face: var(--path-face-locked);
   --base: rgba(0, 0, 0, 0.18);
 }
 .lv-wrap.locked .lv-ico {
   color: rgba(0, 0, 0, 0.3);
 }
 :root[data-theme="dark"] .lv-wrap.locked .gp-level {
-  --face: #3a3d43;
+  --face: var(--path-face-locked-dark);
   --base: rgba(0, 0, 0, 0.4);
 }
 :root[data-theme="dark"] .lv-wrap.locked .lv-ico {
@@ -757,25 +757,25 @@ function unitLesson(id: string) {
   transform-origin: 50px 50px;
   transition: stroke var(--dur-base) var(--ease-out);
 }
-.lv-wrap.done .ring-seg.on { stroke: #ffc93c; }
-.lv-wrap.chest .ring-seg.on { stroke: #d98e04; }
+.lv-wrap.done .ring-seg.on { stroke: var(--ring-on-done); }
+.lv-wrap.chest .ring-seg.on { stroke: var(--ring-on-chest); }
 
 /* 未学习关卡：主体只显示大锁（玩法图标不展示） */
 .lv-wrap.locked .lv-ico-lock {
   width: 30px;
   height: 30px;
-  color: #b8b0a4;
+  color: var(--path-lock-ink);
 }
 
 /* 宝箱独立关卡：金色礼物节点 */
 .lv-wrap.chest .gp-level {
-  --face: linear-gradient(160deg, #ffe9a8, #ffd87a);
+  --face: var(--chest-cube);
   --base: rgba(176, 120, 0, 0.42);
 }
 .lv-wrap.chest .lv-ico-chest {
   width: 34px;
   height: 34px;
-  color: #8a5a00;
+  color: var(--chest-ink);
 }
 /* 已领取：稍褪色示意"开过了" */
 .lv-wrap.chest.done .gp-level {
@@ -792,7 +792,6 @@ function unitLesson(id: string) {
 :root[data-theme="dark"] .ring-seg {
   stroke: rgba(210, 210, 210, 0.14);
 }
-</style>
 
 /* active 关卡引导标签：黄色胶囊 + 下指箭头，上下弹跳提示"从这里开始" */
 .lv-guide {
@@ -803,8 +802,8 @@ function unitLesson(id: string) {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: var(--yellow, #ffc800);
-  color: #6b4e00;
+  background: var(--yellow);
+  color: var(--on-gold);
   font-size: 11px;
   font-weight: var(--fw-strong);
   line-height: 1;
@@ -824,3 +823,4 @@ function unitLesson(id: string) {
   0%, 100% { transform: translate(-50%, 0); }
   50% { transform: translate(-50%, -6px); }
 }
+</style>

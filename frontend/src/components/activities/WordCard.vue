@@ -160,8 +160,8 @@ function onWord() {
   width: clamp(20px, 3.4vh, 26px);
   height: clamp(20px, 3.4vh, 26px);
   border-radius: 50%;
-  background: var(--ok, #58cc02);
-  color: #fff;
+  background: var(--ok);
+  color: var(--on-tone);
   font-size: clamp(12px, 2vh, 15px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
   pointer-events: none; /* 角标本身不拦截点击，点卡片照样能再听 */

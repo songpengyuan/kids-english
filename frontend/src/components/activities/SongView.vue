@@ -392,7 +392,7 @@ function onTimeUpdate() {
   height: 100%;
   border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
-  background: #000;
+  background: var(--black);
   object-fit: contain;
 }
 
@@ -525,8 +525,8 @@ function onTimeUpdate() {
   overscroll-behavior: contain;
   text-align: center;
   padding: var(--gap-m) var(--pad-x);
-  mask-image: linear-gradient(180deg, transparent, #000 15%, #000 85%, transparent);
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 15%, #000 85%, transparent);
+  mask-image: linear-gradient(180deg, transparent, var(--black) 15%, var(--black) 85%, transparent);
+  -webkit-mask-image: linear-gradient(180deg, transparent, var(--black) 15%, var(--black) 85%, transparent);
 }
 .lyrics::-webkit-scrollbar { display: none; }
 .lyrics { scrollbar-width: none; }

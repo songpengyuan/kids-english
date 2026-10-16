@@ -409,8 +409,8 @@ function next() {
   padding: var(--gap-s) var(--gap-m);
   border: none;
   border-radius: var(--radius);
-  background: linear-gradient(160deg, #ffd87a, #f0b429);
-  color: #6b4e00;
+  background: var(--grad-gold);
+  color: var(--on-gold);
   box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18);
   cursor: pointer;
 }

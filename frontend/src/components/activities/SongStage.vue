@@ -141,7 +141,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
     <Transition name="sub" mode="out-in">
       <p v-if="subtitle" :key="props.line" class="subtitle">{{ subtitle }}</p>
       <p v-else :key="'idle'" class="subtitle idle">
-        <PathIcon :name="playing ? 'song' : 'song'" class="play-ico" v-if="playing" /><span v-else>{{ idle }}</span>
+        <span v-if="!playing">{{ idle }}</span>
       </p>
     </Transition>
   </div>
@@ -165,7 +165,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
 
 /* ---------- 场景：大海 ---------- */
 .scene-sea {
-  background: linear-gradient(180deg, #bfe9ff 0%, #e8f8ff 46%, #8ed8f7 60%, #4fb3e0 100%);
+  background: var(--scene-sea-bg);
 }
 .scene-sea .sun {
   position: absolute;
@@ -174,7 +174,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
   width: clamp(30px, 8vw, 54px);
   height: clamp(30px, 8vw, 54px);
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 32%, #fff6c9, var(--yellow));
+  background: var(--scene-sea-sun);
   box-shadow: 0 0 clamp(14px, 4vw, 26px) rgba(255, 214, 90, 0.75);
 }
 .cloud {
@@ -229,7 +229,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
 }
 .wave.w1 { background: rgba(255, 255, 255, 0.5); height: 108%; animation-duration: 3.4s; }
 .wave.w2 { background: rgba(120, 205, 240, 0.75); height: 76%; animation-duration: 2.6s; }
-.wave.w3 { background: linear-gradient(180deg, #59bde8, #2f96c9); height: 46%; animation-duration: 2s; }
+.wave.w3 { background: var(--scene-sea-wave); height: 46%; animation-duration: 2s; }
 @keyframes sway {
   from { translate: -3.5% 0; }
   to { translate: 3.5% 0; }
@@ -237,7 +237,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
 
 /* ---------- 场景：小小演奏会 ---------- */
 .scene-stage {
-  background: radial-gradient(120% 90% at 50% 0%, #fff3d6 0%, #ffe6bd 44%, #ffd08a 100%);
+  background: var(--scene-stage-bg);
 }
 .scene-stage .spot {
   position: absolute;
@@ -269,7 +269,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
 
 /* ---------- 场景：彩虹（颜色课） ---------- */
 .scene-rainbow {
-  background: linear-gradient(180deg, #dff1ff 0%, #fdeef7 52%, #fff4dc 100%);
+  background: var(--scene-rainbow-bg);
 }
 .scene-rainbow .rainbow {
   position: absolute;
@@ -279,15 +279,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
   width: 76%;
   height: 38%;
   border-radius: 999px 999px 0 0;
-  background: radial-gradient(
-    100% 100% at 50% 100%,
-    transparent 0 56%,
-    #ff9fb2 56% 65%,
-    #ffd97a 65% 74%,
-    #9fe0a5 74% 83%,
-    #8fd4f5 83% 92%,
-    #c6b4f2 92% 100%
-  );
+  background: var(--scene-rainbow-arc);
   opacity: 0.95;
 }
 .scene-rainbow .cloud.c1 { top: 40%; left: 4%; animation-duration: 30s; }
@@ -296,7 +288,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
 
 /* ---------- 场景：数数的小气球（数字课） ---------- */
 .scene-numbers {
-  background: linear-gradient(180deg, #e2f9f0 0%, #e9f6ff 58%, #d9f2e6 100%);
+  background: var(--scene-numbers-bg);
 }
 .scene-numbers .hill {
   position: absolute;
@@ -317,7 +309,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
   width: clamp(26px, 7vw, 46px);
   height: clamp(32px, 8.6vw, 56px);
   border-radius: 50% 50% 46% 46%;
-  color: #fff;
+  color: var(--on-tone);
   font-weight: var(--fw-strong);
   font-size: clamp(14px, 3.6vw, 24px);
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
@@ -342,7 +334,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
 
 /* ---------- 场景：字母积木（字母课） ---------- */
 .scene-letters {
-  background: linear-gradient(180deg, #efe7ff 0%, #fdf2ff 55%, #e8f2ff 100%);
+  background: var(--scene-letters-bg);
 }
 .letter-tile {
   position: absolute;
@@ -353,7 +345,7 @@ onBeforeUnmount(() => clearInterval(noteTimer));
   width: clamp(34px, 9vw, 58px);
   height: clamp(34px, 9vw, 58px);
   border-radius: 26%;
-  background: #fff;
+  background: var(--white);
   box-shadow: 0 4px 0 rgba(74, 63, 53, 0.14);
   font-weight: var(--fw-strong);
   font-size: clamp(18px, 4.8vw, 32px);

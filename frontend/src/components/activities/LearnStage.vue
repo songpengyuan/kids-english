@@ -358,7 +358,7 @@ const listening = computed(() => status.value === "listening");
   justify-content: center;
   font-size: 13px;
   font-weight: var(--fw-strong);
-  color: #fff;
+  color: var(--white);
   transition: all 0.2s;
 }
 .dlg-dot.cur {
@@ -379,7 +379,7 @@ const listening = computed(() => status.value === "listening");
   justify-content: center;
   gap: 12px;
   padding: var(--gap-s) var(--gap-m);
-  background: linear-gradient(180deg, #e8f7e3 0%, #d3f0c9 70%, #bfe8b4 100%);
+  background: var(--talk-field);
   border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
   overflow: hidden;
@@ -409,14 +409,14 @@ const listening = computed(() => status.value === "listening");
   -webkit-tap-highlight-color: transparent;
 }
 .dlg-bubble.q {
-  background: #fff3c2;
-  border: 2px solid #f5d97a;
+  background: var(--talk-ask-bg);
+  border: 2px solid var(--talk-ask-line);
   align-self: flex-start;
   margin-left: 14px;
 }
 .dlg-bubble.a {
-  background: #d9f6ff;
-  border: 2px solid #9fe0f5;
+  background: var(--talk-cool);
+  border: 2px solid var(--talk-ans-line);
   align-self: flex-end;
   margin-right: 14px;
   flex-direction: column;
@@ -461,7 +461,7 @@ const listening = computed(() => status.value === "listening");
   width: 168px;
   height: 168px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--white);
   box-shadow: 0 6px 0 rgba(0, 0, 0, 0.08), var(--shadow-hard);
   display: flex;
   flex-direction: column;
@@ -495,7 +495,7 @@ const listening = computed(() => status.value === "listening");
   height: 26px;
   border-radius: 50%;
   background: var(--brand);
-  color: #fff;
+  color: var(--on-tone);
   font-weight: var(--fw-strong);
   font-size: 15px;
   display: flex;
@@ -525,9 +525,9 @@ const listening = computed(() => status.value === "listening");
   height: 76px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(180deg, #ff9d5c, #ff7a3c);
-  color: #fff;
-  box-shadow: 0 6px 0 #e05f1e, var(--shadow-hard);
+  background: var(--mic-face);
+  color: var(--on-tone);
+  box-shadow: 0 6px 0 var(--mic-base), var(--shadow-hard);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -535,15 +535,15 @@ const listening = computed(() => status.value === "listening");
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.1s, box-shadow 0.1s;
 }
-.mic-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #e05f1e; }
+.mic-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 var(--mic-base); }
 .mic-btn.listening {
-  background: linear-gradient(180deg, #ff5c5c, #e63939);
-  box-shadow: 0 6px 0 #b02222, 0 0 0 10px rgba(230, 57, 57, 0.18);
+  background: var(--mic-rec-face);
+  box-shadow: 0 6px 0 var(--mic-rec-base), 0 0 0 10px rgba(230, 57, 57, 0.18);
   animation: mic-pulse 1s ease-in-out infinite;
 }
 @keyframes mic-pulse {
-  0%, 100% { box-shadow: 0 6px 0 #b02222, 0 0 0 8px rgba(230, 57, 57, 0.16); }
-  50% { box-shadow: 0 6px 0 #b02222, 0 0 0 16px rgba(230, 57, 57, 0.3); }
+  0%, 100% { box-shadow: 0 6px 0 var(--mic-rec-base), 0 0 0 8px rgba(230, 57, 57, 0.16); }
+  50% { box-shadow: 0 6px 0 var(--mic-rec-base), 0 0 0 16px rgba(230, 57, 57, 0.3); }
 }
 .mic-ico {
   width: 30px;
