@@ -1,9 +1,6 @@
 <script setup>
 /**
- * 应用入口口令页（#/gate）。
- *
- * 备案域名下进入学习应用的门禁：必须输入家长约定的固定口令才能进入。
- * 口令即登录凭证：验证成功 = 自动登录，一次输入完成进门 + 云端同步。
+ * 应用入口口令页（#/gate）—— DeepSeek 风格极简
  */
 import { ref } from "vue";
 import { useRouter } from "vue-router";
@@ -34,14 +31,12 @@ async function submit() {
   try {
     const ok = await gate.verify(p);
     if (!ok) {
-      error.value = "口令不对或服务暂不可用，再试一次";
+      error.value = "口令不对，再试一次";
       return;
     }
-    // gate 验证成功 = 已存 JWT：恢复登录态并做云端双向同步
     await auth.restore();
     if (auth.family) {
       content.loadFromServer();
-      // 先推本地（含访客期磨耳朵/学习时长，登录前只写本地）→ 再拉服务端（跨设备可见）
       await progress.flushReport();
       progress.syncFromServer();
     }
@@ -53,98 +48,117 @@ async function submit() {
 </script>
 
 <template>
-  <div class="view gate-view">
-    <div class="gate-card">
-      <div class="gate-lock">🔒</div>
-      <h1 class="gate-title">丞丞ABC</h1>
-      <p class="gate-tip">请输入家长口令进入</p>
-      <input
-        v-model="pass"
-        class="gate-input"
-        type="text"
-        placeholder="家长口令（手机号）"
-        maxlength="20"
-        inputmode="numeric"
-        autocomplete="off"
-        @keyup.enter="submit"
-      />
+  <div class="gate">
+    <div class="gate-inner">
+      <!-- 居中 logo 区 -->
+      <div class="brand">
+        <span class="brand-mark">📚</span>
+        <h1 class="brand-name">丞丞学英语</h1>
+        <p class="brand-slogan">每天 10 分钟 · 快乐学英语</p>
+      </div>
+
+      <!-- 输入区 -->
+      <div class="input-box">
+        <input
+          v-model="pass"
+          class="gate-input"
+          type="password"
+          placeholder="请输入家长口令"
+          maxlength="20"
+          inputmode="numeric"
+          autocomplete="off"
+          @keyup.enter="submit"
+        />
+        <button class="gate-btn" :disabled="busy" @click="submit">
+          {{ busy ? "进入中…" : "进入" }}
+        </button>
+      </div>
+
       <p v-if="error" class="gate-error">{{ error }}</p>
-      <button class="gate-btn" :disabled="busy" @click="submit">
-        {{ busy ? "请稍候…" : "进入" }}
-      </button>
-      <p class="gate-foot">口令由家长约定；本设备解锁后 7 天内免输。</p>
+      <p class="gate-foot">本设备 7 天内免重复输入</p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.gate-view {
+.gate {
   min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #fff;
   padding: 24px;
-  background: var(--bg, #f5f3ee);
 }
-.gate-card {
-  width: min(360px, 100%);
-  background: var(--card-bg, #fff);
-  border-radius: 20px;
-  padding: 36px 28px 28px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+.gate-inner {
+  width: 100%;
+  max-width: 340px;
   text-align: center;
 }
-.gate-lock {
-  font-size: 44px;
+
+/* 品牌区 */
+.brand {
+  margin-bottom: 48px;
+}
+.brand-mark {
+  font-size: 48px;
   line-height: 1;
 }
-.gate-title {
-  font-size: 22px;
-  margin: 12px 0 6px;
-  letter-spacing: 2px;
+.brand-name {
+  margin: 16px 0 8px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: 1px;
 }
-.gate-tip {
+.brand-slogan {
+  margin: 0;
   font-size: 14px;
-  color: var(--ink-soft, #666);
-  margin-bottom: 20px;
+  color: #999;
+}
+
+/* 输入区 */
+.input-box {
+  display: flex;
+  gap: 8px;
+  background: #f5f5f5;
+  border-radius: 16px;
+  padding: 6px;
 }
 .gate-input {
-  width: 100%;
+  flex: 1;
+  border: 0;
+  background: transparent;
   padding: 12px 14px;
-  border: 1px solid var(--line, #e5e2db);
-  border-radius: 12px;
-  font-size: 16px;
-  margin-bottom: 12px;
-  box-sizing: border-box;
-  background: var(--input-bg, #fff);
-  color: inherit;
-}
-.gate-input:focus {
+  font-size: 15px;
   outline: none;
-  border-color: var(--accent, #8a5a2b);
+  color: #1a1a1a;
 }
-.gate-error {
-  color: #d33;
-  font-size: 13px;
-  margin: -4px 0 10px;
+.gate-input::placeholder {
+  color: #aaa;
 }
 .gate-btn {
-  width: 100%;
-  padding: 13px;
+  flex: none;
   border: 0;
   border-radius: 12px;
-  background: var(--accent, #8a5a2b);
+  padding: 12px 22px;
+  background: #1cb0f6;
   color: #fff;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
 }
 .gate-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
+}
+
+.gate-error {
+  color: #e53e3e;
+  font-size: 13px;
+  margin-top: 12px;
 }
 .gate-foot {
-  margin-top: 16px;
+  margin-top: 32px;
   font-size: 12px;
-  color: var(--ink-soft, #999);
+  color: #bbb;
 }
 </style>
