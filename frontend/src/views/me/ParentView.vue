@@ -194,77 +194,41 @@ function sayFamily() {
 
     <div class="body view-body">
       <!-- 家庭账号（云模式） -->
-      <section class="card family-card" @click="sayFamily">
+      <section class="card family-card">
         <h3 class="f-head">
           <Shield class="k-ico" />
-          <span>家庭账号</span>
+          <span>孩子管理</span>
           <span v-if="loggedIn" class="f-badge">云同步中</span>
         </h3>
 
-        <!-- 未登录：手机号 + 口令登录 -->
-        <template v-if="!loggedIn">
-          <div class="f-mode">
-            <button :class="{ on: mode === 'login' }" @click="mode = 'login'; error = ''">登录</button>
-            <button :class="{ on: mode === 'register' }" @click="mode = 'register'; error = ''">注册</button>
+        <!-- 孩子列表 + 切换 -->
+        <div class="f-children">
+          <div v-for="c in auth.children" :key="c.id" class="f-child-wrap">
+            <button class="f-child" :class="{ on: c.id === auth.currentChildId }" @click="pickChild(c.id)">
+              <span class="fc-avatar">{{ c.avatar || "👶" }}</span>
+              <span>{{ c.name }}</span>
+            </button>
+            <button class="f-edit-btn" title="编辑名字" @click="startEditChild(c)">
+              <Pencil class="k-ico" />
+            </button>
           </div>
-          <input v-model="form.familyName" class="f-input" type="tel"
-            placeholder="手机号（11 位）" maxlength="11" inputmode="numeric" />
-          <input v-model="form.passcode" class="f-input" type="password" placeholder="口令" maxlength="20"
-            @keyup.enter="submit" />
-          <button class="f-submit" :disabled="busy" @click="submit">
-            {{ busy ? "请稍候…" : "登录并同步进度" }}
-          </button>
-          <p class="f-tip">手机号即账号；第一次输入自动注册。不登录也能用（仅存本机）。</p>
-        </template>
+        </div>
 
-        <!-- 已登录：家庭信息 + 孩子管理 -->
-        <template v-else>
-          <p class="f-name">👨‍👩‍👦 {{ auth.family!.nickname }}</p>
-          <p class="f-meta">{{ auth.family!.email ?? "未绑定邮箱" }}<span v-if="auth.family!.createdAt"> · 注册于 {{ auth.family!.createdAt.slice(0, 10) }}</span></p>
-
-          <!-- 资料编辑（昵称 / 邮箱） -->
-          <template v-if="editingProfile">
-            <input v-model="profile.nickname" class="f-input" placeholder="家长昵称" maxlength="20" />
-            <input v-model="profile.email" class="f-input" type="email" placeholder="家长邮箱（选填）" maxlength="50" />
-            <div class="f-profile-actions">
-              <button class="f-add-btn" :disabled="busy" @click="saveProfile">保存</button>
-              <button class="f-ghost-btn" @click="editingProfile = false">取消</button>
-            </div>
-          </template>
-          <button v-else class="f-ghost-btn" @click="startEditProfile">✏️ 编辑资料</button>
-
-          <div class="f-children">
-            <div v-for="c in auth.children" :key="c.id" class="f-child-wrap">
-              <button class="f-child" :class="{ on: c.id === auth.currentChildId }" @click="pickChild(c.id)">
-                <span class="fc-avatar">{{ c.avatar || "👶" }}</span>
-                <span>{{ c.name }}</span>
-              </button>
-              <button class="f-edit-btn" title="编辑资料" @click="startEditChild(c)">
-                <Pencil class="k-ico" />
-              </button>
-            </div>
+        <!-- 孩子编辑表单（名字/头像/生日） -->
+        <div v-if="editingChildId !== null" class="f-child-edit">
+          <input v-model="childForm.name" class="f-input" placeholder="名字" maxlength="20" />
+          <input v-model="childForm.avatar" class="f-input" placeholder="头像 emoji（如 🦁）" maxlength="8" />
+          <input v-model="childForm.birthDate" class="f-input" type="date" placeholder="出生日期" />
+          <div class="f-profile-actions">
+            <button class="f-add-btn" :disabled="busy" @click="saveChild">保存</button>
+            <button class="f-ghost-btn" @click="editingChildId = null">取消</button>
           </div>
-
-          <!-- 孩子编辑表单（名字/头像/生日） -->
-          <div v-if="editingChildId !== null" class="f-child-edit">
-            <input v-model="childForm.name" class="f-input" placeholder="名字" maxlength="20" />
-            <input v-model="childForm.avatar" class="f-input" placeholder="头像 emoji（如 🦁）" maxlength="8" />
-            <input v-model="childForm.birthDate" class="f-input" type="date" placeholder="出生日期" />
-            <div class="f-profile-actions">
-              <button class="f-add-btn" :disabled="busy" @click="saveChild">保存</button>
-              <button class="f-ghost-btn" @click="editingChildId = null">取消</button>
-            </div>
-          </div>
-          <div class="f-add">
-            <input v-model="newChildName" class="f-input" placeholder="添加孩子（输入名字）" maxlength="20"
-              @keyup.enter="addChild" />
-            <button class="f-add-btn" :disabled="busy" @click="addChild"><Plus class="k-ico" /> 添加</button>
-          </div>
-          <div class="f-out">
-            <button class="f-out-btn" @click="logout"><LogOut class="k-ico" /> 退出登录</button>
-            <span class="f-tip">切换孩子后各自进度独立保存</span>
-          </div>
-        </template>
+        </div>
+        <div v-else class="f-add">
+          <input v-model="newChildName" class="f-input" placeholder="添加孩子（输入名字）" maxlength="20"
+            @keyup.enter="addChild" />
+          <button class="f-add-btn" :disabled="busy" @click="addChild"><Plus class="k-ico" /> 添加</button>
+        </div>
 
         <p v-if="error" class="f-error">{{ error }}</p>
       </section>
