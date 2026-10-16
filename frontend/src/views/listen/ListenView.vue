@@ -173,10 +173,11 @@ onBeforeUnmount(() => {
 .body { display: flex; flex-direction: column; width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(80px + var(--pad-y)); }
 .today-chip { text-align: center; font-weight: 800; font-size: var(--fs-small); color: var(--ink-soft); margin-top: max(8px, env(safe-area-inset-top)); }
 .today-chip b { color: var(--brand); font-size: var(--fs-body); }
-.sub-tabs { display: flex; gap: var(--gap-s); padding: 0 var(--pad-x); margin-top: var(--gap-s); }
-.sub-tabs button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 0; border-radius: var(--radius-pill); background: var(--card-bg); box-shadow: var(--shadow-hard); font-weight: 800; font-size: var(--fs-small); color: var(--ink-faint); transition: all 0.2s; }
-.sub-tabs button.on { background: var(--yellow); color: var(--ink); }
-.sub-tabs .k-ico { width: 18px; height: 18px; }
+/* 顶部 tab 容器：与学习页「正式课/加餐」一致 */
+.type-tabs {
+  padding: 0 var(--pad-x);
+  margin: var(--gap-s) 0 var(--gap-m);
+}
 .song-list { display: flex; flex-direction: column; gap: var(--gap-s); padding: var(--gap-s) var(--pad-x) 0; }
 .song-row { display: flex; align-items: center; gap: var(--gap-m); background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: var(--gap-s) var(--gap-m); text-align: left; transition: transform 0.08s; }
 .song-row:active { transform: scale(0.98); }
