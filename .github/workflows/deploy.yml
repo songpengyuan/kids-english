@@ -42,7 +42,13 @@ jobs:
           pnpm test 2>&1 | tee /tmp/fe-test.log
           test ${PIPESTATUS[0]} -eq 0
           pnpm type-check
-          FE_TESTS="$(grep -oE 'Tests +[0-9]+ passed' /tmp/fe-test.log | tail -1 | grep -oE '[0-9]+')"
+          # 取测试数（供飞书卡片）：
+          #  1) 先剥 ANSI 颜色码 —— CI 里 vitest 输出带色，"Tests  310 passed"
+          #     实际字节是 "Tests \e[1m\e[32m310 passed"，直接用 grep 匹配不到；
+          #  2) 末尾 || true —— 命令替换返回非 0 时 bash -e 会**静默**退出 1
+          #     （无任何输出），曾把整步判成失败、部署连续红且难排查。
+          #     取数失败只应让卡片显示 "?"，绝不能让门禁本身失败。
+          FE_TESTS="$(perl -pe 's/\e\[[0-9;]*m//g' /tmp/fe-test.log | grep -oE 'Tests +[0-9]+ passed' | tail -1 | grep -oE '[0-9]+' || true)"
           echo "tests=${FE_TESTS:-?}" >> "$GITHUB_OUTPUT"
         working-directory: frontend
 
@@ -58,9 +64,12 @@ jobs:
           KIDS_JWT_SECRET=ci-secret-$(printf 'k%.0s' {1..32}) python -m pytest tests/ -q 2>&1 | tee /tmp/be-test.log
           test ${PIPESTATUS[0]} -eq 0
           python scripts/export_openapi.py
-          git diff --exit-code -- backend/openapi.json
+          # pathspec 相对当前目录（此时在 backend/ 下）——写成 backend/openapi.json
+          # 会匹配不到任何文件，git diff 恒返回 0，这项契约校验等于空转。
+          git diff --exit-code -- openapi.json
           cd ..
-          BE_TESTS="$(grep -oE '[0-9]+ passed' /tmp/be-test.log | tail -1 | grep -oE '[0-9]+')"
+          # 同 fe-gate：剥 ANSI + || true，避免取数失败把整步拖挂
+          BE_TESTS="$(perl -pe 's/\e\[[0-9;]*m//g' /tmp/be-test.log | grep -oE '[0-9]+ passed' | tail -1 | grep -oE '[0-9]+' || true)"
           echo "tests=${BE_TESTS:-?}" >> "$GITHUB_OUTPUT"
 
       - name: Build
