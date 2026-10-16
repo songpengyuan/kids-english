@@ -170,6 +170,8 @@ export const useProgressStore = defineStore("progress", () => {
   let lastReportAt = 0;
   let reportTimer: ReturnType<typeof setTimeout> | null = null;
   const REPORT_DEBOUNCE_MS = 3000;
+  /** 是否有本地变更未上云（save 置 true，pushReport 成功置 false；心跳同步据此跳过空请求） */
+  let dirty = false;
 
   /** 当前孩子 id（未登录/未选孩子返回 null → 纯本地模式） */
   function activeChildId(): number | null {
@@ -258,6 +260,7 @@ export const useProgressStore = defineStore("progress", () => {
         body: { data, meta },
       });
       cloudState.value = "done";
+      dirty = false;
     } catch {
       cloudState.value = "error";
     }
@@ -272,8 +275,15 @@ export const useProgressStore = defineStore("progress", () => {
     await pushReport();
   }
 
+  /** 定期心跳：仅当存在未上报变更时立即推一次（无变更零请求；未登录自动跳过） */
+  async function flushIfDirty(): Promise<void> {
+    if (!dirty) return;
+    await flushReport();
+  }
+
   function save() {
     localStorage.setItem(KEY, JSON.stringify(progress));
+    dirty = true;
     scheduleReport();
   }
 
@@ -575,5 +585,6 @@ export const useProgressStore = defineStore("progress", () => {
     cloudState,
     syncFromServer,
     flushReport,
+    flushIfDirty,
   };
 });

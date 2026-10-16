@@ -10,8 +10,9 @@ import { ref, computed, onBeforeUnmount } from "vue";
 import { lessons, asset } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
-import { Play, Pause, Music, Video, X, ChevronDown, ListMusic } from "@lucide/vue";
+import { Play, Pause, X, ChevronDown, ListMusic } from "@lucide/vue";
 import BaseDrawer from "../../components/ui/BaseDrawer.vue";
+import SegmentedTabs from "../../components/ui/SegmentedTabs.vue";
 import type { ListenSubTab } from "../../types";
 
 const player = usePlayerStore();
@@ -98,9 +99,16 @@ onBeforeUnmount(() => {
     <!-- ===== 列表页（无顶部 header）；非播放态显示 ===== -->
     <template v-if="!player.nowPlaying || !player.currentSong">
       <div class="today-chip">今天磨了 <b>{{ Math.floor((progStore.todayStats.listenSec ?? 0) / 60) }}</b> 分钟</div>
-      <div class="sub-tabs">
-        <button :class="{ on: subTab === 'songs' }" @click="switchTab('songs')"><Music class="k-ico" /> 歌曲</button>
-        <button :class="{ on: subTab === 'videos' }" @click="switchTab('videos')"><Video class="k-ico" /> 视频</button>
+      <!-- 顶部 tab：与学习页「正式课/加餐」同款 SegmentedTabs -->
+      <div class="type-tabs">
+        <SegmentedTabs
+          :model-value="subTab"
+          :items="[
+            { value: 'songs', label: '歌曲' },
+            { value: 'videos', label: '视频' },
+          ]"
+          @update:model-value="(v: string) => switchTab(v as ListenSubTab)"
+        />
       </div>
       <div class="body view-body">
         <template v-if="subTab === 'songs'">
