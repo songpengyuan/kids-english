@@ -477,7 +477,7 @@ function onTimeUpdate() {
 .seek-fill {
   position: absolute;
   inset: 0 auto 0 0;
-  background: linear-gradient(90deg, var(--blue), var(--green));
+  background: linear-gradient(90deg, var(--blue), var(--brand));
   border-radius: var(--radius-pill);
 }
 .seek-knob {
@@ -508,8 +508,8 @@ function onTimeUpdate() {
 }
 .loop-btn.on {
   opacity: 1;
-  background: var(--green);
-  box-shadow: 0 var(--press) 0 var(--green-dark);
+  background: var(--brand);
+  box-shadow: 0 var(--press) 0 var(--brand-dark);
 }
 .loop-btn:active {
   transform: translateY(calc(var(--press) - 1px));
@@ -548,10 +548,10 @@ function onTimeUpdate() {
   width: clamp(48px, min(11vh, 9vw), 76px);
   height: clamp(48px, min(11vh, 9vw), 76px);
   border-radius: 50%;
-  background: var(--green);
+  background: var(--brand);
   color: var(--on-tone);
   font-size: clamp(20px, min(4.4vh, 3.6vw), 30px);
-  box-shadow: 0 var(--press) 0 var(--green-dark);
+  box-shadow: 0 var(--press) 0 var(--brand-dark);
   flex: none;
   display: flex;
   align-items: center;
@@ -563,7 +563,7 @@ function onTimeUpdate() {
 }
 .play-btn:active {
   transform: translateY(calc(var(--press) - 1px));
-  box-shadow: 0 1px 0 var(--green-dark);
+  box-shadow: 0 1px 0 var(--brand-dark);
 }
 .miss {
   font-size: var(--fs-small);

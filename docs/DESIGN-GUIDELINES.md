@@ -83,7 +83,7 @@
 
 ### 3.1 颜色
 - 中性：`--bg`（米白/深蓝黑）、`--card-bg`、`--ink` 三档文字色、`--line`。
-- **品牌主色 = `--green`（实为水蓝，2026-10-15 起脱离多邻国绿）**：亮 `#00a3ff` / 暗 `#2f9fe0`；配套辅助色 `--brand*` 系（`--brand-deep` 渐变端点 / `--brand-bright` 亮端 / `--brand-soft`/`--brand-tint` 柔和底 / `--brand-grad` 标准渐变，Hero/主卡/选中 tab 统一用它）。
+- **品牌主色 = `--brand`（水蓝，2026-10-15 起脱离多邻国绿；`--green` 为废弃别名勿再用）**：亮 `#00a3ff` / 暗 `#2f9fe0`；配套辅助色 `--brand*` 系（`--brand-deep` 渐变端点 / `--brand-bright` 亮端 / `--brand-soft`/`--brand-tint` 柔和底 / `--brand-grad` 标准渐变，Hero/主卡/选中 tab 统一用它）。
 - **语义色 `--ok`（正确=绿，独立于品牌蓝）**：答对/完成/成功场景必须用 `--ok`（亮 `#58cc02` / 暗 `#7cc94a`），进度/导航用品牌蓝，二者不可互换。
 - 其余：`--blue`（次要操作）、`--yellow`（进度高亮）、`--red`（错误/删除）、`--purple/orange/pink/teal`（彩色卡片）。
 - 卡片色调板：`--c-blue/green/orange/purple/pink/teal` + 对应 `-deep` 投影色，通过 base.css `.tone-*` 工具类使用。

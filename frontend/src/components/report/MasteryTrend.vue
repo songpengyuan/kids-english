@@ -93,7 +93,7 @@ const gained = computed(() => {
 }
 .trend-sum b {
   font-size: var(--fs-title);
-  color: var(--green-dark);
+  color: var(--brand-dark);
 }
 .trend-sum .up {
   color: var(--ok-dark);

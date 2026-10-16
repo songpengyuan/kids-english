@@ -313,7 +313,7 @@ const listening = computed(() => status.value === "listening");
   color: var(--orange);
 }
 .hint-page {
-  color: var(--green-dark);
+  color: var(--brand-dark);
 }
 
 /* ===== dialog：亲子口语对话卡（逐轮对话 + 录音） ===== */
@@ -335,7 +335,7 @@ const listening = computed(() => status.value === "listening");
 .dlg-round {
   font-weight: 900;
   font-size: var(--fs-body);
-  color: var(--green-dark);
+  color: var(--brand-dark);
   white-space: nowrap;
 }
 .dlg-dots {
@@ -362,11 +362,11 @@ const listening = computed(() => status.value === "listening");
   transition: all 0.2s;
 }
 .dlg-dot.cur {
-  box-shadow: inset 0 0 0 2px var(--green);
+  box-shadow: inset 0 0 0 2px var(--brand);
   transform: scale(1.15);
 }
 .dlg-dot.done {
-  background: var(--green);
+  background: var(--brand);
   box-shadow: none;
 }
 .dlg-scene {
@@ -424,8 +424,8 @@ const listening = computed(() => status.value === "listening");
   gap: 2px;
 }
 .dlg-bubble.a.ok {
-  background: #e6fbd7;
-  border-color: var(--green-light);
+  background: var(--state-ok-bg);
+  border-color: var(--ok);
 }
 .dlg-bubble.a.talking {
   animation: dlg-talk 0.6s ease-in-out infinite;
@@ -447,13 +447,13 @@ const listening = computed(() => status.value === "listening");
 .dlg-praise {
   font-size: 13px;
   font-weight: 900;
-  color: var(--green-dark);
+  color: var(--brand-dark);
   animation: anim-pop 0.3s;
 }
 .dlg-vol {
   width: 14px;
   height: 14px;
-  color: var(--green-dark);
+  color: var(--brand-dark);
   flex: none;
 }
 .dlg-animal {
@@ -494,7 +494,7 @@ const listening = computed(() => status.value === "listening");
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: var(--green);
+  background: var(--brand);
   color: #fff;
   font-weight: 900;
   font-size: 15px;
@@ -572,7 +572,7 @@ const listening = computed(() => status.value === "listening");
 .dlg-auto {
   font-weight: 900;
   font-size: var(--fs-body);
-  color: var(--green-dark);
+  color: var(--brand-dark);
   animation: anim-pop 0.3s;
 }
 .dlg-pass {

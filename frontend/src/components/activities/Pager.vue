@@ -86,12 +86,12 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
   height: var(--tap-min);
   flex: none;
   border-radius: 50%;
-  background: var(--green);
+  background: var(--brand);
   color: var(--on-tone);
   font-size: var(--fs-btn);
   font-weight: 800;
   line-height: 1;
-  box-shadow: 0 var(--press) 0 var(--green-dark);
+  box-shadow: 0 var(--press) 0 var(--brand-dark);
   transition: transform 0.08s, box-shadow 0.08s, opacity 0.2s;
   display: flex;
   align-items: center;
@@ -99,7 +99,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
 }
 .arrow:active:not(:disabled) {
   transform: translateY(calc(var(--press) - 1px));
-  box-shadow: 0 1px 0 var(--green-dark);
+  box-shadow: 0 1px 0 var(--brand-dark);
 }
 .arrow:disabled {
   opacity: 0.4;
@@ -132,7 +132,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
   transition: background 0.2s, transform 0.2s;
 }
 .dot.on {
-  background: var(--green);
+  background: var(--brand);
   transform: scale(1.3);
 }
 .counter {

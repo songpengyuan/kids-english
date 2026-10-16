@@ -211,7 +211,7 @@ function dayNum(date: string | null): string {
 
 /* 本月汇总 */
 .sum { display: flex; align-items: center; gap: var(--gap-s); }
-.sum-ico { width: 20px; height: 20px; color: var(--green); flex: none; }
+.sum-ico { width: 20px; height: 20px; color: var(--brand); flex: none; }
 .sum-nums { font-weight: 700; font-size: var(--fs-small); color: var(--ink-soft); }
 .sum-nums b { color: var(--ink); }
 
@@ -246,13 +246,13 @@ function dayNum(date: string | null): string {
   box-sizing: border-box;
 }
 .cg-day.blank { background: transparent; cursor: default; }
-.cg-day.has { background: var(--green-soft, #e8f3ec); }
-.cg-day.today { box-shadow: inset 0 0 0 2px var(--green); }
+.cg-day.has { background: var(--brand-soft, #e3f5ff); }
+.cg-day.today { box-shadow: inset 0 0 0 2px var(--brand); }
 .cg-day.selected { box-shadow: inset 0 0 0 2px var(--accent, #8a5a2b); }
 .cg-num { font-size: 13px; font-weight: 800; line-height: 1.1; }
 .cg-tags { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
 .cg-tag { font-size: 10px; font-weight: 800; line-height: 1; padding: 2px 3px; border-radius: 4px; color: #fff; }
-.cg-tag.learn { background: var(--green, #00a3ff); }
+.cg-tag.learn { background: var(--brand, #00a3ff); }
 .cg-tag.listen { background: var(--accent, #8a5a2b); }
 
 /* 选中详情 */

@@ -267,7 +267,7 @@ function goGame() {
 .goal-head h3 { margin: 0; }
 .goal-state { font-weight: 800; font-size: var(--fs-small); color: var(--ink-soft); }
 .goal-bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
-.goal-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green), var(--green-dark)); transition: width 0.5s; }
+.goal-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--brand), var(--brand-dark)); transition: width 0.5s; }
 .goal-line { margin: 0; font-weight: 700; font-size: var(--fs-small); color: var(--ink-soft); }
 .goal-line b { color: var(--ink); }
 

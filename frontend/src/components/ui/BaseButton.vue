@@ -32,13 +32,13 @@ const cls = computed(() => ({
 
 <style scoped>
 .k-btn {
-  background: var(--green);
+  background: var(--brand);
   color: var(--on-tone);
   font-size: var(--fs-btn);
   font-weight: 700;
   padding: clamp(10px, 1.8vh, 14px) clamp(20px, 3vw, 32px);
   border-radius: var(--radius-s);
-  box-shadow: 0 var(--press) 0 var(--green-dark);
+  box-shadow: 0 var(--press) 0 var(--brand-dark);
   transition: transform var(--dur-fast), box-shadow var(--dur-fast);
   min-height: var(--tap-min);
   display: inline-flex;
@@ -48,7 +48,7 @@ const cls = computed(() => ({
 }
 .k-btn:active {
   transform: translateY(calc(var(--press) - 1px)) scale(0.97);
-  box-shadow: 0 1px 0 var(--green-dark);
+  box-shadow: 0 1px 0 var(--brand-dark);
 }
 
 .k-btn-blue { background: var(--blue); box-shadow: 0 var(--press) 0 var(--blue-dark); }
@@ -70,7 +70,7 @@ const cls = computed(() => ({
 .k-btn-lg { padding: clamp(14px, 2.4vh, 20px) clamp(28px, 4vw, 48px); font-size: var(--fs-title); }
 
 @media (hover: hover) and (pointer: fine) {
-  .k-btn:hover { transform: translateY(-1px); box-shadow: 0 calc(var(--press) + 2px) 0 var(--green-dark); }
+  .k-btn:hover { transform: translateY(-1px); box-shadow: 0 calc(var(--press) + 2px) 0 var(--brand-dark); }
   .k-btn-blue:hover { box-shadow: 0 calc(var(--press) + 2px) 0 var(--blue-dark); }
   .k-btn-orange:hover { box-shadow: 0 calc(var(--press) + 2px) 0 var(--orange-dark); }
   .k-btn-gray:hover { box-shadow: 0 calc(var(--press) + 2px) 0 var(--btn-plain-deep); }

@@ -99,7 +99,7 @@ function onClick(c: MenuCard) {
 }
 .bar-fill {
   height: 100%;
-  background: var(--green);
+  background: var(--brand);
   transition: width 0.5s;
 }
 

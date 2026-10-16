@@ -221,7 +221,7 @@ function openPlayer() {
   display: block;
   height: 100%;
   border-radius: 2px;
-  background: var(--green);
+  background: var(--brand);
   transition: width 0.3s linear;
 }
 .bp-btn {
@@ -231,7 +231,7 @@ function openPlayer() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--green);
+  background: var(--brand);
   color: #fff;
   flex: none;
   padding: 0;

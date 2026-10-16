@@ -62,8 +62,8 @@ const stepKeys = ["learn", "quiz", "match", "speak"];
   transition: background 0.25s, border-color 0.25s, transform 0.25s;
 }
 .seg.done {
-  background: var(--green);
-  border-color: var(--green);
+  background: var(--brand);
+  border-color: var(--brand);
 }
 .dot {
   flex: none;
@@ -75,8 +75,8 @@ const stepKeys = ["learn", "quiz", "match", "speak"];
   transition: background 0.25s, transform 0.25s;
 }
 .dot.done {
-  background: var(--green);
-  border-color: var(--green);
+  background: var(--brand);
+  border-color: var(--brand);
 }
 .dot.cur {
   background: var(--c-orange);

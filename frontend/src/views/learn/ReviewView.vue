@@ -283,7 +283,7 @@ function replay() {
   transform: translateY(2px);
 }
 .opt.hit {
-  box-shadow: 0 0 0 4px var(--green), var(--shadow-hard);
+  box-shadow: 0 0 0 4px var(--brand), var(--shadow-hard);
 }
 .opt.miss {
   filter: grayscale(1);
@@ -305,7 +305,7 @@ function replay() {
   animation: pop-in 0.25s ease-out;
 }
 .hit-mark {
-  background: var(--green);
+  background: var(--brand);
 }
 .miss-mark {
   background: #ff6b5e;

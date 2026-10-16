@@ -357,23 +357,23 @@ function sayFamily() {
   margin-left: 8px;
 }
 .gate-mini.on {
-  border-color: var(--green, #00a3ff);
-  color: var(--green, #00a3ff);
+  border-color: var(--brand, #00a3ff);
+  color: var(--brand, #00a3ff);
 }
-.gate-msg { font-size: 12px; color: var(--green); margin: 6px 0 0; }
+.gate-msg { font-size: 12px; color: var(--brand); margin: 6px 0 0; }
 .gate-desc { font-size: 12px; color: var(--ink-faint); margin: 8px 0 0; line-height: 1.5; }
 .foot { text-align: center; color: var(--ink-faint); font-size: 12px; margin: 0; }
 
 /* 家庭账号卡 */
-.family-card { border-left: 4px solid var(--green); }
+.family-card { border-left: 4px solid var(--brand); }
 .f-head { display: flex; align-items: center; gap: 6px; }
-.f-head .k-ico { width: 16px; height: 16px; color: var(--green); }
-.f-badge { margin-left: auto; background: var(--green); color: #fff; border-radius: 999px; padding: 2px 8px; font-size: 11px; }
+.f-head .k-ico { width: 16px; height: 16px; color: var(--brand); }
+.f-badge { margin-left: auto; background: var(--brand); color: #fff; border-radius: 999px; padding: 2px 8px; font-size: 11px; }
 .f-mode { display: flex; gap: 8px; margin-bottom: var(--gap-s); }
 .f-mode button { flex: 1; padding: 8px 0; border-radius: var(--radius); font-weight: 800; font-size: 14px; background: var(--line); color: var(--ink-soft); }
-.f-mode button.on { background: var(--green); color: #fff; }
+.f-mode button.on { background: var(--brand); color: #fff; }
 .f-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: var(--radius); border: 2px solid var(--line); font-size: 15px; margin-bottom: 8px; background: var(--bg); color: var(--ink); }
-.f-submit { width: 100%; padding: 12px 0; border-radius: var(--radius); background: var(--green); color: #fff; font-weight: 900; font-size: 15px; }
+.f-submit { width: 100%; padding: 12px 0; border-radius: var(--radius); background: var(--brand); color: #fff; font-weight: 900; font-size: 15px; }
 .f-submit:disabled { opacity: 0.6; }
 .f-tip { margin: 6px 0 0; font-size: 12px; color: var(--ink-faint); }
 .f-name { margin: 0 0 2px; font-weight: 900; font-size: 15px; }
@@ -385,7 +385,7 @@ function sayFamily() {
 .f-children { display: flex; flex-wrap: wrap; gap: 8px; }
 .f-child-wrap { display: flex; align-items: center; gap: 6px; }
 .f-child { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: var(--line); font-weight: 800; font-size: 14px; }
-.f-child.on { background: var(--green); color: #fff; }
+.f-child.on { background: var(--brand); color: #fff; }
 .fc-avatar { font-size: 16px; }
 .f-edit-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 999px; background: var(--line); color: var(--ink-faint); }
 .f-edit-btn .k-ico { width: 14px; height: 14px; }

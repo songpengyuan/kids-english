@@ -187,11 +187,11 @@ function onTap() {
   min-height: var(--tap-min);
   border: none;
   border-radius: var(--radius-pill);
-  background: var(--green);
+  background: var(--brand);
   color: var(--on-tone);
   font-weight: 900;
   font-size: var(--fs-small);
-  box-shadow: 0 var(--press) 0 var(--green-dark);
+  box-shadow: 0 var(--press) 0 var(--brand-dark);
   display: inline-flex;
   align-items: center;
   justify-content: center;

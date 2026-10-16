@@ -314,7 +314,7 @@ function finish() {
 .ch-round {
   font-weight: 900;
   font-size: var(--fs-small);
-  color: var(--green-dark);
+  color: var(--brand-dark);
   white-space: nowrap;
 }
 
@@ -488,7 +488,7 @@ function finish() {
 .ci-say-text {
   font-weight: 900;
   font-size: 18px;
-  color: var(--green-dark);
+  color: var(--brand-dark);
   letter-spacing: 0.02em;
 }
 .ci-say-vol {
@@ -552,7 +552,7 @@ function finish() {
 .ci-auto {
   font-weight: 900;
   font-size: var(--fs-body);
-  color: var(--green-dark);
+  color: var(--brand-dark);
   animation: anim-pop 0.3s;
 }
 .ci-pass {

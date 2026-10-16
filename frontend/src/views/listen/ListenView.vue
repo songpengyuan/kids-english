@@ -157,7 +157,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .body { display: flex; flex-direction: column; width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(80px + var(--pad-y)); }
 .today-chip { text-align: center; font-weight: 800; font-size: var(--fs-small); color: var(--ink-soft); margin-top: max(8px, env(safe-area-inset-top)); }
-.today-chip b { color: var(--green); font-size: var(--fs-body); }
+.today-chip b { color: var(--brand); font-size: var(--fs-body); }
 .sub-tabs { display: flex; gap: var(--gap-s); padding: 0 var(--pad-x); margin-top: var(--gap-s); }
 .sub-tabs button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 0; border-radius: var(--radius-pill); background: var(--card-bg); box-shadow: var(--shadow-hard); font-weight: 800; font-size: var(--fs-small); color: var(--ink-faint); transition: all 0.2s; }
 .sub-tabs button.on { background: var(--yellow); color: var(--ink); }
@@ -174,7 +174,7 @@ onBeforeUnmount(() => {
 .sr-play { color: var(--ink-faint); }
 .sr-play .k-ico { width: 22px; height: 22px; }
 .eq { display: flex; gap: 2px; align-items: flex-end; height: 18px; }
-.eq i { width: 3px; background: var(--green); border-radius: 2px; animation: eq 0.8s ease-in-out infinite; }
+.eq i { width: 3px; background: var(--brand); border-radius: 2px; animation: eq 0.8s ease-in-out infinite; }
 .eq i:nth-child(1) { height: 10px; animation-delay: 0s; }
 .eq i:nth-child(2) { height: 16px; animation-delay: 0.2s; }
 .eq i:nth-child(3) { height: 7px; animation-delay: 0.4s; }
@@ -238,7 +238,7 @@ onBeforeUnmount(() => {
 .drawer-list { padding: 8px 0; }
 .drawer-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 20px; text-align: left; }
 .drawer-item:active { background: var(--tint-green); }
-.drawer-item.active .di-title { color: var(--green); }
+.drawer-item.active .di-title { color: var(--brand); }
 .di-idx { width: 20px; text-align: center; color: var(--ink-faint); font-weight: 700; font-size: 13px; flex: none; }
 .di-emoji { font-size: 24px; flex: none; }
 .di-info { flex: 1; min-width: 0; }

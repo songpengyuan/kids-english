@@ -31,10 +31,11 @@
    * 亮色下是高饱和儿童向配色；暗色下整体降亮度降饱和（见 :root[data-theme="dark"]），
    * 否则在深底上会「发光」刺眼，这正是「暗黑模式调暗亮色」的落点。
    * 品牌主色 = 水蓝（避免与多邻国绿撞色，呼应汽水音乐水蓝调）。
-   * 反馈语义色保留：正确=绿（c-green）、错误=红、进行中=蓝。
+   * 反馈语义色保留：正确=绿（ok）、错误=红、进行中=蓝。
+   * 新代码请用 --brand / --brand-* 系列；--green 是历史别名（DEPRECATED，仅兼容旧组件）。
    */
-  --green: #00a3ff;
-  --green-dark: #0086d6;
+  --green: var(--brand);
+  --green-dark: var(--brand-dark);
 
   /* 品牌辅助色（水蓝系）——品牌主色在 UI 中的完整梯度
    * - brand-deep：渐变端点 / 强调文字（如 Hero 顶部）
@@ -188,9 +189,9 @@
   --ink-faint: #7f7a70;
   --line: #39415a;
 
-  /* 品牌色（水蓝）：亮度约 -20%，饱和度约 -25% */
-  --green: #2f9fe0;
-  --green-dark: #237bb0;
+  /* 品牌色（水蓝）：亮度约 -20%，饱和度约 -25%；--green 为历史别名 */
+  --green: var(--brand);
+  --green-dark: var(--brand-dark);
 
   /* 品牌辅助色（暗色：降亮降饱和的深水蓝底） */
   --brand: #2f9fe0;
@@ -289,8 +290,8 @@
   --player-text: var(--ink);
   --player-text-soft: var(--ink-soft);
   --player-text-faint: var(--ink-faint);
-  --player-accent: var(--green);
-  --player-btn: var(--green);
+  --player-accent: var(--brand);
+  --player-btn: var(--brand);
   --player-btn-ink: #fff;
 
   /* 时长 */

@@ -137,10 +137,10 @@ const emit = defineEmits<{ button: [] }>();
   font-size: var(--fs-btn);
   font-weight: 800;
   color: var(--on-tone);
-  background: var(--green);
+  background: var(--brand);
   border: none;
   border-radius: var(--radius-pill);
-  box-shadow: 0 var(--press) 0 var(--green-dark);
+  box-shadow: 0 var(--press) 0 var(--brand-dark);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -150,7 +150,7 @@ const emit = defineEmits<{ button: [] }>();
 }
 .lf-btn:active:not(:disabled) {
   transform: translateY(calc(var(--press) - 1px)) scale(0.98);
-  box-shadow: 0 1px 0 var(--green-dark);
+  box-shadow: 0 1px 0 var(--brand-dark);
 }
 .lf-btn:disabled {
   background: var(--ink-faint);
