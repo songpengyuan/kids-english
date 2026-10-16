@@ -6,12 +6,15 @@
  * 无顶部 header（沉浸式）；闯关入口在课程网格最底部。
  */
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import TodayTask from "../../components/today/TodayTask.vue";
 import PracticeView from "./practice/PracticeView.vue";
 import { ChevronLeft } from "@lucide/vue";
 import { speakZh } from "../../services/speech";
 
 defineOptions({ name: "LearnView" });
+
+const router = useRouter();
 
 /** 视图切换：true=课程列表（次级），false=今日任务（默认首页态） */
 const showLessons = ref(false);

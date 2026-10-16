@@ -53,6 +53,9 @@ export const router = createRouter({
     // 应用入口口令页（备案域名门禁）：未解锁时所有路由被守卫拦到这里
     { path: "/gate", name: "gate", component: GateView, meta: { title: "家长口令" } },
 
+    // 首次三步引导（首次进入应用，走完标记 kc-onboarded）
+    { path: "/onboarding", name: "onboarding", component: () => import("../views/OnboardingView.vue"), meta: { title: "欢迎", hideNav: true } },
+
     // ---------- 学习域 ----------
     {
       path: "/learn",
@@ -179,5 +182,15 @@ router.beforeEach((to) => {
   // 应用入口门禁：备案域名下进入学习应用需家长口令（未解锁一律回 #/gate 口令页）
   const appGate = appGateDecision(to, useGateStore().isUnlocked);
   if (appGate !== true) return appGate;
+  // 首次三步引导：未标记 kc-onboarded 时进入学习主页 → 先走引导（防冷启动流失）
+  if (to.name === "learn") {
+    let onboarded = false;
+    try {
+      onboarded = localStorage.getItem("kc-onboarded") === "1";
+    } catch {
+      onboarded = true; // 隐私模式无法持久化 → 不阻塞使用
+    }
+    if (!onboarded) return { path: "/onboarding", replace: true };
+  }
   return true;
 });
