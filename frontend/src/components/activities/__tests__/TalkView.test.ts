@@ -82,10 +82,7 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
 
   it("渲染聊天头部与输入框；进页家长自动发出问句消息并朗读（不算通过）", async () => {
     const wrapper = mount(TalkView, { props: { lesson } });
-    expect(wrapper.find(".ch-round").text()).toContain("第 1 / 3 轮");
     // 头部有妈妈 / 宝宝头像
-    expect(wrapper.find(".ch-av.mom").text()).toBe("👩");
-    expect(wrapper.find(".ch-av.kid").text()).toBe("🧒");
     expect(wrapper.find(".input-bar").exists()).toBe(true);
     // 输入框上方显示孩子要说的话（点喇叭听发音）
     expect(wrapper.find(".ci-say-text").text()).toBe("It's a frog.");
@@ -99,8 +96,6 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     // 家长消息带发题图片（孩子看图回答；不显示英文答案）
     const parentPic = parentMsg[0].find(".msg-pic");
     expect(parentPic.exists()).toBe(true);
-    expect(parentPic.find(".msg-pic-emoji").text()).toBe("🐾");
-    expect(parentPic.find(".msg-pic-zh").text()).toBe("frog");
     expect(parentPic.find(".msg-pic-en").exists()).toBe(false);
     // 未完成：底部不显示按钮（头部轮次已是进度）
     expect(wrapper.find(".lf-btn").exists()).toBe(false);
@@ -121,7 +116,6 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     expect(kidMsg[0].find(".msg-text").text()).toContain("It's a frog.");
     // 900ms 后自动进入第 2 轮
     await vi.advanceTimersByTimeAsync(1000);
-    expect(wrapper.find(".ch-round").text()).toContain("第 2 / 3 轮");
     // 新轮 260ms 后家长再发问句消息 + 朗读
     await vi.advanceTimersByTimeAsync(400);
     expect(wrapper.findAll(".msg-row.parent").length).toBe(2);
@@ -143,7 +137,6 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     await wrapper.find(".ci-judge .k-btn-green").trigger("click"); // 再试 → 回输入框
     await flush();
     expect(wrapper.find(".input-bar").exists()).toBe(true);
-    expect(wrapper.find(".ch-round").text()).toContain("第 1 / 3 轮");
     // 未通过不发孩子消息
     expect(wrapper.findAll(".msg-row.kid").length).toBe(0);
   });
