@@ -108,7 +108,7 @@ describe("auth store · 契约", () => {
     auth.children = [{ id: 1, name: "程程", avatar: "🐰", birthDate: "2022-03-15" }];
     auth.currentChildId = 1;
     mockFetch({
-      "/api/v1/auth/children/1": {
+      "/api/v1/children/1": {
         ok: true, child: { id: 1, name: "程程宝", avatar: "🦁", birth_date: "2022-06-01" },
       },
     });
@@ -168,7 +168,7 @@ describe("auth store · 契约", () => {
     auth.currentChildId = 1;
     auth.ready = true;
     mockFetch({
-      "/api/v1/auth/children": { ok: true, child: { id: 2, name: "朵朵", avatar: null } },
+      "/api/v1/children": { ok: true, child: { id: 2, name: "朵朵", avatar: null } },
     });
     const child = await auth.createChild("朵朵");
     expect(child.id).toBe(2);

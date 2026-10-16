@@ -72,6 +72,11 @@ class ChildOut(BaseModel):
     birth_date: str | None = None
 
 
+class ChildrenOut(BaseModel):
+    ok: bool = True
+    children: list[ChildOut] = []
+
+
 class RegisterOut(BaseModel):
     ok: bool = True
     token: str

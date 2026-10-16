@@ -76,15 +76,16 @@ server/
 | 方法 | 路径 | 说明 | 认证 |
 |---|---|---|---|
 | POST | /auth/login | 家庭登录（口令/家长账号） | 无 |
-| GET | /auth/children | 当前家庭的孩子列表 | JWT |
-| POST | /auth/children | 新建孩子档案 | JWT |
+| GET | /children | 当前家庭的孩子列表 | JWT |
+| POST | /children | 新建孩子档案（201） | JWT |
+| PATCH | /children/{child_id} | 编辑孩子档案 | JWT |
 | GET | /content/lessons | 课程列表（含关卡摘要） | JWT |
 | GET | /content/lessons/{id} | 课程详情（关卡/题目/音频） | JWT |
-| GET | /progress/child/{id} | 孩子全量进度（拉取） | JWT |
-| PUT | /progress/child/{id} | 进度上报（合并） | JWT |
+| GET | /children/{child_id}/progress | 孩子全量进度（拉取） | JWT |
+| PUT | /children/{child_id}/progress | 进度上报（合并） | JWT |
 | POST | /evaluation | 跟读评测（现有接口迁移 v1） | JWT |
-| GET | /reward/child/{id} | 贝壳/收集/解锁状态 | JWT |
-| PUT | /reward/child/{id} | 奖励状态上报 | JWT |
+| GET | /children/{child_id}/rewards | 贝壳/收集/解锁状态 | JWT |
+| PUT | /children/{child_id}/rewards | 奖励状态上报 | JWT |
 | POST | /subscription/… | 订阅（后期） | JWT |
 
 ### 4.3 数据模型（SQLite 初版）

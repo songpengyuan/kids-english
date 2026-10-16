@@ -188,7 +188,7 @@ export const useProgressStore = defineStore("progress", () => {
     cloudState.value = "syncing";
     try {
       const res = await requestWithTimeout<components["schemas"]["ProgressOut"]>(
-        `/progress/child/${childId}`,
+        `/children/${childId}/progress`,
       );
       if (res.ok) {
         const data = (res.data ?? {}) as Record<string, LessonProgress>;
@@ -239,7 +239,7 @@ export const useProgressStore = defineStore("progress", () => {
       _dailyLog: progress._dailyLog ?? {},
     };
     try {
-      await requestWithTimeout<components["schemas"]["ProgressPutOut"]>(`/progress/child/${childId}`, {
+      await requestWithTimeout<components["schemas"]["ProgressPutOut"]>(`/children/${childId}/progress`, {
         method: "PUT",
         body: { data, meta },
       });

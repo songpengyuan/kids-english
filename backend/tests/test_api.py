@@ -54,7 +54,7 @@ def _auth(name="测试家", passcode="1234"):
 class TestAuth:
     def test_register_then_login(self):
         r = _register()
-        assert r.status_code == 200
+        assert r.status_code == 201  # REST：创建家庭资源返回 201
         data = r.json()
         assert data["ok"] is True
         assert data["token"]
@@ -84,7 +84,7 @@ class TestChildren:
     def test_create_child_and_me(self):
         token = _auth()
         r = client.post(
-            "/api/v1/auth/children",
+            "/api/v1/children",
             headers={"Authorization": f"Bearer {token}"},
             json={"name": "程程", "avatar": "🐰"},
         )
@@ -97,14 +97,14 @@ class TestChildren:
     def test_cross_family_cannot_access_child(self):
         t1 = _auth()
         client.post(
-            "/api/v1/auth/children",
+            "/api/v1/children",
             headers={"Authorization": f"Bearer {t1}"},
             json={"name": "孩子A"},
         )
         t2 = _auth("别人家", "5678")
         # 家庭2 无权读取家庭1 的孩子
         assert client.get(
-            "/api/v1/progress/child/1", headers={"Authorization": f"Bearer {t2}"}
+            "/api/v1/children/1/progress", headers={"Authorization": f"Bearer {t2}"}
         ).status_code == 404
 
 
@@ -137,44 +137,65 @@ class TestProgress:
     def test_put_then_get_roundtrip(self):
         token = _auth()
         client.post(
-            "/api/v1/auth/children",
+            "/api/v1/children",
             headers={"Authorization": f"Bearer {token}"},
             json={"name": "程程"},
         )
         put = client.put(
-            "/api/v1/progress/child/1",
+            "/api/v1/children/1/progress",
             headers={"Authorization": f"Bearer {token}"},
             json={
                 "data": {"l4": {"learn": 3, "quiz": 2, "completed": ["learn", "quiz"],
                                "words": {"sea": {"seen": 2, "correct": 1}}}},
-                "meta": {"_last": "l4", "_daily": {"date": "2026-10-14", "durationSec": 60, "activities": 1}},
+                "meta": {"_last": "l4", "_daily": {"date": "2026-10-14", "durationSec": 60, "activities": 1, "listenSec": 55}},
             },
         )
         assert put.json()["ok"] is True
 
         got = client.get(
-            "/api/v1/progress/child/1", headers={"Authorization": f"Bearer {token}"}
+            "/api/v1/children/1/progress", headers={"Authorization": f"Bearer {token}"}
         ).json()
         assert got["data"]["l4"]["learn"] == 3
         assert got["data"]["l4"]["words"]["sea"]["correct"] == 1
         assert got["meta"]["_last"] == "l4"
         assert got["meta"]["_daily"]["activities"] == 1
+        assert got["meta"]["_daily"]["listenSec"] == 55  # 磨耳朵时长须随 _daily 持久化
+
+    def test_daily_listensec_merge_takes_max(self):
+        token = _auth()
+        client.post(
+            "/api/v1/children",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"name": "程程"},
+        )
+        # 第一次上报 30s，第二次上报 45s（同日期）→ 应保留较大值
+        for sec in (30, 45):
+            r = client.put(
+                "/api/v1/children/1/progress",
+                headers={"Authorization": f"Bearer {token}"},
+                json={"data": {}, "meta": {"_daily": {"date": "2026-10-14", "durationSec": 10, "activities": 1, "listenSec": sec}}},
+            )
+            assert r.json()["ok"] is True
+        got = client.get(
+            "/api/v1/children/1/progress", headers={"Authorization": f"Bearer {token}"}
+        ).json()
+        assert got["meta"]["_daily"]["listenSec"] == 45
 
     def test_put_overwrite_same_lesson(self):
         token = _auth()
         client.post(
-            "/api/v1/auth/children",
+            "/api/v1/children",
             headers={"Authorization": f"Bearer {token}"},
             json={"name": "程程"},
         )
         for stars in (1, 3):
             client.put(
-                "/api/v1/progress/child/1",
+                "/api/v1/children/1/progress",
                 headers={"Authorization": f"Bearer {token}"},
                 json={"data": {"l4": {"learn": stars}}},
             )
         got = client.get(
-            "/api/v1/progress/child/1", headers={"Authorization": f"Bearer {token}"}
+            "/api/v1/children/1/progress", headers={"Authorization": f"Bearer {token}"}
         ).json()
         assert got["data"]["l4"]["learn"] == 3  # 合并语义：星级取 max
 
@@ -301,17 +322,17 @@ def _register_with_email(name, email, passcode="1234"):
         "/api/v1/auth/register",
         json={"family_name": name, "passcode": passcode, "email": email},
     )
-    assert r.status_code == 200, r.text
+    assert r.status_code == 201, r.text  # REST：注册=创建家庭 → 201
     return r.json()["token"]
 
 
 def _make_child(token, name="程程", avatar="🐰", birth_date="2022-03-15"):
     r = client.post(
-        "/api/v1/auth/children",
+        "/api/v1/children",
         headers={"Authorization": f"Bearer {token}"},
         json={"name": name, "avatar": avatar, "birth_date": birth_date},
     )
-    assert r.status_code == 200, r.text
+    assert r.status_code == 201, r.text  # REST：创建孩子 → 201
     return r.json()["child"]["id"]
 
 
@@ -331,18 +352,18 @@ class TestChildProfile:
         """存量路径：不填生日仍可建孩子（birth_date 可空）。"""
         token = _auth()
         r = client.post(
-            "/api/v1/auth/children",
+            "/api/v1/children",
             headers={"Authorization": f"Bearer {token}"},
             json={"name": "朵朵"},
         )
-        assert r.status_code == 200
+        assert r.status_code == 201
         assert r.json()["child"]["birth_date"] is None
 
     def test_patch_child_name_avatar_birth(self):
         token = _auth()
         cid = _make_child(token)
         r = client.patch(
-            f"/api/v1/auth/children/{cid}",
+            f"/api/v1/children/{cid}",
             headers={"Authorization": f"Bearer {token}"},
             json={"name": "程程宝", "avatar": "🦁", "birth_date": "2022-06-01"},
         )
@@ -356,7 +377,7 @@ class TestChildProfile:
         token = _auth()
         cid = _make_child(token)
         r = client.patch(
-            f"/api/v1/auth/children/{cid}",
+            f"/api/v1/children/{cid}",
             headers={"Authorization": f"Bearer {token}"},
             json={"name": "程程宝"},
         )
@@ -371,7 +392,7 @@ class TestChildProfile:
         token = _auth()
         cid = _make_child(token)
         r = client.patch(
-            f"/api/v1/auth/children/{cid}",
+            f"/api/v1/children/{cid}",
             headers={"Authorization": f"Bearer {token}"},
             json={"avatar": None},
         )
@@ -382,7 +403,7 @@ class TestChildProfile:
         token = _auth()
         cid = _make_child(token)
         r = client.patch(
-            f"/api/v1/auth/children/{cid}",
+            f"/api/v1/children/{cid}",
             headers={"Authorization": f"Bearer {token}"},
             json={},
         )
@@ -393,7 +414,7 @@ class TestChildProfile:
         cid = _make_child(token)
         t2 = _auth("别人家", "5678")
         assert client.patch(
-            f"/api/v1/auth/children/{cid}",
+            f"/api/v1/children/{cid}",
             headers={"Authorization": f"Bearer {t2}"},
             json={"name": "抢"},
         ).status_code == 404
@@ -406,7 +427,7 @@ class TestRewards:
         token = _auth()
         cid = _make_child(token)
         got = client.get(
-            f"/api/v1/rewards/{cid}", headers={"Authorization": f"Bearer {token}"}
+            f"/api/v1/children/{cid}/rewards", headers={"Authorization": f"Bearer {token}"}
         ).json()
         assert got["ok"] is True
         assert got["data"] == {"shells": 0, "forms": {}, "chestsOpened": 0}
@@ -415,13 +436,13 @@ class TestRewards:
         token = _auth()
         cid = _make_child(token)
         put = client.put(
-            f"/api/v1/rewards/{cid}",
+            f"/api/v1/children/{cid}/rewards",
             headers={"Authorization": f"Bearer {token}"},
             json={"shells": 42, "forms": {"leo": 2, "doli": 1}, "chestsOpened": 9},
         )
         assert put.json()["ok"] is True
         got = client.get(
-            f"/api/v1/rewards/{cid}", headers={"Authorization": f"Bearer {token}"}
+            f"/api/v1/children/{cid}/rewards", headers={"Authorization": f"Bearer {token}"}
         ).json()
         assert got["data"]["shells"] == 42
         assert got["data"]["forms"]["leo"] == 2
@@ -433,12 +454,12 @@ class TestRewards:
         cid = _make_child(token)
         for shells in (10, 20):
             client.put(
-                f"/api/v1/rewards/{cid}",
+                f"/api/v1/children/{cid}/rewards",
                 headers={"Authorization": f"Bearer {token}"},
                 json={"shells": shells, "forms": {}, "chestsOpened": 0},
             )
         got = client.get(
-            f"/api/v1/rewards/{cid}", headers={"Authorization": f"Bearer {token}"}
+            f"/api/v1/children/{cid}/rewards", headers={"Authorization": f"Bearer {token}"}
         ).json()
         assert got["data"]["shells"] == 20  # 覆盖写入，取最后一次
 
@@ -447,10 +468,10 @@ class TestRewards:
         cid = _make_child(token)
         t2 = _auth("别人家", "5678")
         assert client.get(
-            f"/api/v1/rewards/{cid}", headers={"Authorization": f"Bearer {t2}"}
+            f"/api/v1/children/{cid}/rewards", headers={"Authorization": f"Bearer {t2}"}
         ).status_code == 404
         assert client.put(
-            f"/api/v1/rewards/{cid}",
+            f"/api/v1/children/{cid}/rewards",
             headers={"Authorization": f"Bearer {t2}"},
             json={"shells": 1, "forms": {}, "chestsOpened": 0},
         ).status_code == 404
@@ -459,7 +480,7 @@ class TestRewards:
         token = _auth()
         cid = _make_child(token)
         r = client.put(
-            f"/api/v1/rewards/{cid}",
+            f"/api/v1/children/{cid}/rewards",
             headers={"Authorization": f"Bearer {token}"},
             json={"shells": -1, "forms": {}, "chestsOpened": 0},
         )
@@ -478,7 +499,7 @@ class TestConcurrency:
 
     def _put(self, token, cid, data=None, meta=None):
         r = client.put(
-            f"/api/v1/progress/child/{cid}",
+            f"/api/v1/children/{cid}/progress",
             headers={"Authorization": f"Bearer {token}"},
             json={"data": data or {}, "meta": meta},
         )
@@ -486,7 +507,7 @@ class TestConcurrency:
 
     def _get(self, token, cid):
         return client.get(
-            f"/api/v1/progress/child/{cid}", headers={"Authorization": f"Bearer {token}"}
+            f"/api/v1/children/{cid}/progress", headers={"Authorization": f"Bearer {token}"}
         ).json()
 
     def test_two_devices_different_lessons_both_kept(self):
@@ -533,17 +554,17 @@ class TestConcurrency:
         token = _auth()
         cid = self._child(token)
         client.put(
-            f"/api/v1/rewards/{cid}",
+            f"/api/v1/children/{cid}/rewards",
             headers={"Authorization": f"Bearer {token}"},
             json={"shells": 42, "forms": {"leo": 2}, "chestsOpened": 9},
         )
         client.put(
-            f"/api/v1/rewards/{cid}",
+            f"/api/v1/children/{cid}/rewards",
             headers={"Authorization": f"Bearer {token}"},
             json={"shells": 10, "forms": {"leo": 1, "bun": 3}, "chestsOpened": 2},
         )
         got = client.get(
-            f"/api/v1/rewards/{cid}", headers={"Authorization": f"Bearer {token}"}
+            f"/api/v1/children/{cid}/rewards", headers={"Authorization": f"Bearer {token}"}
         ).json()["data"]
         assert got["shells"] == 42      # max
         assert got["forms"]["leo"] == 2  # max

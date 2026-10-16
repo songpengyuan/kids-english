@@ -83,24 +83,31 @@ export interface paths {
         patch: operations["patch_me_api_v1_auth_me_patch"];
         trace?: never;
     };
-    "/api/v1/auth/children": {
+    "/api/v1/children": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Children
+         * @description 当前家庭的孩子列表。
+         */
+        get: operations["list_children_api_v1_children_get"];
         put?: never;
-        /** Create Child */
-        post: operations["create_child_api_v1_auth_children_post"];
+        /**
+         * Create Child
+         * @description 创建孩子（201 Created）。
+         */
+        post: operations["create_child_api_v1_children_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/children/{child_id}": {
+    "/api/v1/children/{child_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -115,9 +122,9 @@ export interface paths {
         head?: never;
         /**
          * Patch Child
-         * @description 孩子档案编辑：改名字/头像/出生日期（至少一项；缺席=不改，显式 null=清空）。
+         * @description 编辑孩子档案：改名字/头像/出生日期（至少一项；缺席=不改，显式 null=清空）。
          */
-        patch: operations["patch_child_api_v1_auth_children__child_id__patch"];
+        patch: operations["patch_child_api_v1_children__child_id__patch"];
         trace?: never;
     };
     "/api/v1/content/lessons": {
@@ -157,7 +164,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/progress/child/{child_id}": {
+    "/api/v1/children/{child_id}/progress": {
         parameters: {
             query?: never;
             header?: never;
@@ -165,9 +172,9 @@ export interface paths {
             cookie?: never;
         };
         /** Get Progress */
-        get: operations["get_progress_api_v1_progress_child__child_id__get"];
+        get: operations["get_progress_api_v1_children__child_id__progress_get"];
         /** Put Progress */
-        put: operations["put_progress_api_v1_progress_child__child_id__put"];
+        put: operations["put_progress_api_v1_children__child_id__progress_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -175,7 +182,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/rewards/{child_id}": {
+    "/api/v1/children/{child_id}/rewards": {
         parameters: {
             query?: never;
             header?: never;
@@ -183,9 +190,9 @@ export interface paths {
             cookie?: never;
         };
         /** Get Rewards */
-        get: operations["get_rewards_api_v1_rewards__child_id__get"];
+        get: operations["get_rewards_api_v1_children__child_id__rewards_get"];
         /** Put Rewards */
-        put: operations["put_rewards_api_v1_rewards__child_id__put"];
+        put: operations["put_rewards_api_v1_children__child_id__rewards_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -213,7 +220,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/recordings/{child_id}": {
+    "/api/v1/children/{child_id}/recordings": {
         parameters: {
             query?: never;
             header?: never;
@@ -224,20 +231,20 @@ export interface paths {
          * List Recordings
          * @description 孩子录音列表（新→旧，最多 200 条；不暴露服务器文件路径）。
          */
-        get: operations["list_recordings_api_v1_recordings__child_id__get"];
+        get: operations["list_recordings_api_v1_children__child_id__recordings_get"];
         put?: never;
         /**
          * Create Recording
          * @description 上传一段孩子发音原音：落盘 + 元数据入库。评测分（scores_json）P2-3 接入时填充。
          */
-        post: operations["create_recording_api_v1_recordings__child_id__post"];
+        post: operations["create_recording_api_v1_children__child_id__recordings_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/recordings/{rid}/audio": {
+    "/api/v1/children/{child_id}/recordings/{rid}/audio": {
         parameters: {
             query?: never;
             header?: never;
@@ -248,7 +255,7 @@ export interface paths {
          * Replay Audio
          * @description 回放：流式返回原始录音。仅本家庭可访问。
          */
-        get: operations["replay_audio_api_v1_recordings__rid__audio_get"];
+        get: operations["replay_audio_api_v1_children__child_id__recordings__rid__audio_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -302,8 +309,8 @@ export interface components {
             /** Text */
             text: string;
         };
-        /** Body_create_recording_api_v1_recordings__child_id__post */
-        Body_create_recording_api_v1_recordings__child_id__post: {
+        /** Body_create_recording_api_v1_children__child_id__recordings_post */
+        Body_create_recording_api_v1_children__child_id__recordings_post: {
             /** File */
             file: string;
             /**
@@ -368,6 +375,19 @@ export interface components {
             avatar?: string | null;
             /** Birth Date */
             birth_date?: string | null;
+        };
+        /** ChildrenOut */
+        ChildrenOut: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+            /**
+             * Children
+             * @default []
+             */
+            children: components["schemas"]["ChildOut"][];
         };
         /**
          * GateIn
@@ -798,7 +818,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -949,7 +969,38 @@ export interface operations {
             };
         };
     };
-    create_child_api_v1_auth_children_post: {
+    list_children_api_v1_children_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChildrenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_child_api_v1_children_post: {
         parameters: {
             query?: never;
             header?: {
@@ -965,7 +1016,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -984,7 +1035,7 @@ export interface operations {
             };
         };
     };
-    patch_child_api_v1_auth_children__child_id__patch: {
+    patch_child_api_v1_children__child_id__patch: {
         parameters: {
             query?: never;
             header?: {
@@ -1085,7 +1136,7 @@ export interface operations {
             };
         };
     };
-    get_progress_api_v1_progress_child__child_id__get: {
+    get_progress_api_v1_children__child_id__progress_get: {
         parameters: {
             query?: never;
             header?: {
@@ -1118,7 +1169,7 @@ export interface operations {
             };
         };
     };
-    put_progress_api_v1_progress_child__child_id__put: {
+    put_progress_api_v1_children__child_id__progress_put: {
         parameters: {
             query?: never;
             header?: {
@@ -1155,7 +1206,7 @@ export interface operations {
             };
         };
     };
-    get_rewards_api_v1_rewards__child_id__get: {
+    get_rewards_api_v1_children__child_id__rewards_get: {
         parameters: {
             query?: never;
             header?: {
@@ -1188,7 +1239,7 @@ export interface operations {
             };
         };
     };
-    put_rewards_api_v1_rewards__child_id__put: {
+    put_rewards_api_v1_children__child_id__rewards_put: {
         parameters: {
             query?: never;
             header?: {
@@ -1258,7 +1309,7 @@ export interface operations {
             };
         };
     };
-    list_recordings_api_v1_recordings__child_id__get: {
+    list_recordings_api_v1_children__child_id__recordings_get: {
         parameters: {
             query?: never;
             header?: {
@@ -1291,7 +1342,7 @@ export interface operations {
             };
         };
     };
-    create_recording_api_v1_recordings__child_id__post: {
+    create_recording_api_v1_children__child_id__recordings_post: {
         parameters: {
             query?: never;
             header?: {
@@ -1304,12 +1355,12 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_create_recording_api_v1_recordings__child_id__post"];
+                "multipart/form-data": components["schemas"]["Body_create_recording_api_v1_children__child_id__recordings_post"];
             };
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1328,13 +1379,14 @@ export interface operations {
             };
         };
     };
-    replay_audio_api_v1_recordings__rid__audio_get: {
+    replay_audio_api_v1_children__child_id__recordings__rid__audio_get: {
         parameters: {
             query?: never;
             header?: {
                 authorization?: string;
             };
             path: {
+                child_id: number;
                 rid: number;
             };
             cookie?: never;

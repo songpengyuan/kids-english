@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse
 from ..db import connect
 from .auth import _require_family
 
-router = APIRouter(prefix="/api/v1/recordings", tags=["recordings"])
+router = APIRouter(prefix="/api/v1/children/{child_id}", tags=["recordings"])
 
 # 媒体根目录（测试用 KIDS_MEDIA_ROOT 指向临时目录）
 MEDIA_ROOT = Path(
@@ -50,7 +50,7 @@ def _ext_for(filename: str, ctype: str) -> str:
     return _EXT_BY_CTYPE.get((ctype or "").split(";")[0].strip().lower(), ".webm")
 
 
-@router.post("/{child_id}")
+@router.post("/recordings", status_code=201)
 async def create_recording(
     child_id: int,
     family_id: int = Depends(_require_family),
@@ -70,7 +70,7 @@ async def create_recording(
 
     data = await file.read()
     if len(data) < 256:
-        return {"ok": False, "error": "audio_too_short", "msg": "音频太短，请大声再说一次"}
+        raise HTTPException(400, "音频太短，请大声再说一次")
 
     ext = _ext_for(file.filename or "", file.content_type or "")
     rel = f"{child_id}/{uuid.uuid4().hex}{ext}"
@@ -79,7 +79,7 @@ async def create_recording(
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
     except OSError as e:
-        return {"ok": False, "error": "storage_error", "msg": f"音频保存失败：{e}"}
+        raise HTTPException(500, f"音频保存失败：{e}")
 
     conn = connect()
     try:
@@ -96,7 +96,7 @@ async def create_recording(
     return {"ok": True, "id": rid}
 
 
-@router.get("/{child_id}")
+@router.get("/recordings")
 def list_recordings(child_id: int, family_id: int = Depends(_require_family)):
     """孩子录音列表（新→旧，最多 200 条；不暴露服务器文件路径）。"""
     conn = connect()
@@ -123,15 +123,17 @@ def list_recordings(child_id: int, family_id: int = Depends(_require_family)):
     return {"ok": True, "data": data}
 
 
-@router.get("/{rid}/audio")
-def replay_audio(rid: int, family_id: int = Depends(_require_family)):
+@router.get("/recordings/{rid}/audio")
+def replay_audio(
+    child_id: int, rid: int, family_id: int = Depends(_require_family)
+):
     """回放：流式返回原始录音。仅本家庭可访问。"""
     conn = connect()
     try:
         row = conn.execute(
             "SELECT child_id, file_path FROM recordings WHERE id=?", (rid,)
         ).fetchone()
-        if not row:
+        if not row or row["child_id"] != child_id:
             raise HTTPException(404, "录音不存在")
         if not _child_belongs(conn, row["child_id"], family_id):
             raise HTTPException(404, "录音不存在")

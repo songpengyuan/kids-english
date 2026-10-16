@@ -80,7 +80,7 @@ systemctl start kids-api && systemctl status kids-api
 ssh hw
 cd /www/wwwroot/kids-english
 tar xzf backups/media-YYYYMMDD.tar.gz -C backend/   # 解出 backend/media/
-# 恢复后抽查一条：GET /api/v1/recordings/{id}/audio 应 200
+# 恢复后抽查一条：GET /api/v1/children/{child_id}/recordings/{rid}/audio 应 200
 ```
 
 ### 6.3 服务/代码回滚

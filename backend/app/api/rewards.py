@@ -11,7 +11,7 @@ from ..db import connect
 from ..schemas import RewardsIn, RewardsOut, RewardsPutOut
 from .auth import _require_family
 
-router = APIRouter(prefix="/api/v1/rewards", tags=["rewards"])
+router = APIRouter(prefix="/api/v1/children/{child_id}", tags=["rewards"])
 
 
 def _child_belongs(conn, child_id: int, family_id: int) -> bool:
@@ -37,7 +37,7 @@ def _merge_rewards(existing: dict, incoming: dict) -> dict:
     }
 
 
-@router.get("/{child_id}", response_model=RewardsOut)
+@router.get("/rewards", response_model=RewardsOut)
 def get_rewards(child_id: int, family_id: int = Depends(_require_family)):
     conn = connect()
     try:
@@ -54,7 +54,7 @@ def get_rewards(child_id: int, family_id: int = Depends(_require_family)):
         conn.close()
 
 
-@router.put("/{child_id}", response_model=RewardsPutOut)
+@router.put("/rewards", response_model=RewardsPutOut)
 def put_rewards(
     child_id: int, body: RewardsIn, family_id: int = Depends(_require_family)
 ):

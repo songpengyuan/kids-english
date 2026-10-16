@@ -37,10 +37,12 @@ async function submit() {
       error.value = "口令不对或服务暂不可用，再试一次";
       return;
     }
-    // gate 验证成功 = 已存 JWT：恢复登录态并拉取云端数据
+    // gate 验证成功 = 已存 JWT：恢复登录态并做云端双向同步
     await auth.restore();
     if (auth.family) {
       content.loadFromServer();
+      // 先推本地（含访客期磨耳朵/学习时长，登录前只写本地）→ 再拉服务端（跨设备可见）
+      await progress.flushReport();
       progress.syncFromServer();
     }
     router.replace("/learn");

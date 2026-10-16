@@ -79,7 +79,7 @@ def _auth(fid):
 def _upload(cid, payload=None, headers=None, name="a.webm", ctype="audio/webm", text="It is a frog."):
     payload = payload or _fake_webm()
     return client.post(
-        f"/api/v1/recordings/{cid}",
+        f"/api/v1/children/{cid}/recordings",
         files={"file": (name, payload, ctype)},
         data={"text": text, "activity_type": "follow", "lesson_id": "l10", "duration_ms": 3000},
         headers=headers or {},
@@ -111,7 +111,7 @@ def test_upload_persists_file_and_row():
     fid, cid = _setup_family(connect())
     r = _upload(cid, headers=_auth(fid))
     body = r.json()
-    assert r.status_code == 200
+    assert r.status_code == 201  # REST：创建录音返回 201
     assert body["ok"] is True
     rid = body["id"]
     assert isinstance(rid, int)
@@ -135,9 +135,8 @@ def test_upload_too_short_rejected():
     from app.db import connect
     fid, cid = _setup_family(connect())
     r = _upload(cid, payload=b"x" * 64, headers=_auth(fid))
-    assert r.status_code == 200
-    assert r.json()["ok"] is False
-    assert r.json()["error"] == "audio_too_short"
+    assert r.status_code == 400  # REST：太短是客户端错误，非创建成功
+    assert "音频太短" in r.json()["detail"]
 
 
 def test_upload_wav_keeps_extension():
@@ -162,7 +161,7 @@ def test_list_returns_newest_first():
     ids = []
     for i in range(3):
         ids.append(_upload(cid, payload=_fake_webm(4096 + i), headers=h).json()["id"])
-    r = client.get(f"/api/v1/recordings/{cid}", headers=h)
+    r = client.get(f"/api/v1/children/{cid}/recordings", headers=h)
     body = r.json()
     assert body["ok"] is True
     data = body["data"]
@@ -178,7 +177,7 @@ def test_list_other_family_forbidden():
     conn = connect()
     fid, _ = _setup_family(conn)
     _, other_cid = _setup_other_family(conn)
-    r = client.get(f"/api/v1/recordings/{other_cid}", headers=_auth(fid))
+    r = client.get(f"/api/v1/children/{other_cid}/recordings", headers=_auth(fid))
     assert r.status_code == 404
 
 
@@ -188,7 +187,7 @@ def test_audio_replay_returns_bytes():
     conn = connect()
     fid, cid = _setup_family(conn)
     rid = _upload(cid, headers=_auth(fid)).json()["id"]
-    r = client.get(f"/api/v1/recordings/{rid}/audio", headers=_auth(fid))
+    r = client.get(f"/api/v1/children/{cid}/recordings/{rid}/audio", headers=_auth(fid))
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("audio/")
     assert len(r.content) > 1000
@@ -200,12 +199,12 @@ def test_audio_replay_other_family_forbidden():
     fid, cid = _setup_family(conn)
     rid = _upload(cid, headers=_auth(fid)).json()["id"]
     _, other_fid = _setup_other_family(conn)
-    r = client.get(f"/api/v1/recordings/{rid}/audio", headers=_auth(other_fid))
+    r = client.get(f"/api/v1/children/{cid}/recordings/{rid}/audio", headers=_auth(other_fid))
     assert r.status_code == 404
 
 
 def test_audio_missing_404():
     from app.db import connect
     fid, _ = _setup_family(connect())
-    r = client.get("/api/v1/recordings/99999/audio", headers=_auth(fid))
+    r = client.get("/api/v1/children/99999/recordings/audio", headers=_auth(fid))
     assert r.status_code == 404

@@ -2,13 +2,10 @@
 import os
 import re
 
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, status
 
 from ..db import connect
 from ..schemas import (
-    ChildCreatedOut,
-    ChildIn,
-    ChildPatchIn,
     GateIn,
     GateOut,
     LoginIn,
@@ -62,7 +59,7 @@ def _family_row(conn, family_id: int):
     return row
 
 
-@router.post("/register", response_model=RegisterOut)
+@router.post("/register", response_model=RegisterOut, status_code=status.HTTP_201_CREATED)
 def register(body: RegisterIn):
     email = _normalize_email(body.email)
     conn = connect()
@@ -255,55 +252,6 @@ def patch_me(body: MePatchIn, family_id: int = Depends(_require_family)):
             "nickname": new_nickname,
             "created_at": row["created_at"],
             "children": _family_children(conn, family_id),
-        }
-    finally:
-        conn.close()
-
-
-@router.post("/children", response_model=ChildCreatedOut)
-def create_child(body: ChildIn, family_id: int = Depends(_require_family)):
-    conn = connect()
-    try:
-        cur = conn.execute(
-            "INSERT INTO children (family_id, name, avatar, birth_date) VALUES (?,?,?,?)",
-            (family_id, body.name, body.avatar, body.birth_date),
-        )
-        conn.commit()
-        return {
-            "ok": True,
-            "child": {"id": cur.lastrowid, "name": body.name, "avatar": body.avatar, "birth_date": body.birth_date},
-        }
-    finally:
-        conn.close()
-
-
-@router.patch("/children/{child_id}", response_model=ChildCreatedOut)
-def patch_child(
-    child_id: int, body: ChildPatchIn, family_id: int = Depends(_require_family)
-):
-    """孩子档案编辑：改名字/头像/出生日期（至少一项；缺席=不改，显式 null=清空）。"""
-    if not body.model_fields_set:
-        raise HTTPException(400, "至少提供 name/avatar/birth_date 一项")
-    conn = connect()
-    try:
-        row = conn.execute(
-            "SELECT id, name, avatar, birth_date FROM children WHERE id=? AND family_id=?",
-            (child_id, family_id),
-        ).fetchone()
-        if not row:
-            raise HTTPException(404, "孩子不存在")
-        fields = set(body.model_fields_set)
-        name = body.name if "name" in fields else row["name"]
-        avatar = body.avatar if "avatar" in fields else row["avatar"]
-        birth_date = body.birth_date if "birth_date" in fields else row["birth_date"]
-        conn.execute(
-            "UPDATE children SET name=?, avatar=?, birth_date=? WHERE id=?",
-            (name, avatar, birth_date, child_id),
-        )
-        conn.commit()
-        return {
-            "ok": True,
-            "child": {"id": child_id, "name": name, "avatar": avatar, "birth_date": birth_date},
         }
     finally:
         conn.close()

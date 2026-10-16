@@ -48,7 +48,7 @@ describe("progress store · 云同步", () => {
 
   it("拉取合并：服务端有本地无 → 补入；本地有 → 保留本地", async () => {
     const { calls } = mockFetch({
-      "/api/v1/progress/child/1": {
+      "/api/v1/children/1/progress": {
         ok: true,
         data: {
           l4: { learn: 3, completed: ["learn"], words: { sea: { seen: 2 } } },
@@ -72,7 +72,7 @@ describe("progress store · 云同步", () => {
 
   it("进度变更后防抖上报（3s 内合并，携带 data + meta）", async () => {
     const { calls, fn } = mockFetch({
-      "/api/v1/progress/child/1": { ok: true },
+      "/api/v1/children/1/progress": { ok: true },
     });
     const p = useProgressStore();
     p.setGameStars("l4", "learn", 3); // 触发 save → scheduleReport
@@ -82,7 +82,7 @@ describe("progress store · 云同步", () => {
     vi.advanceTimersByTime(3100);
     await vi.runAllTimersAsync();
 
-    const put = calls.find((c) => c.url === "/api/v1/progress/child/1");
+    const put = calls.find((c) => c.url === "/api/v1/children/1/progress");
     expect(put).toBeTruthy();
     expect(put!.init!.method).toBe("PUT");
     const body = JSON.parse(put!.init!.body as string) as {
@@ -109,19 +109,19 @@ describe("progress store · 云同步", () => {
 
   it("flushReport：立即上报并置 done", async () => {
     const { calls } = mockFetch({
-      "/api/v1/progress/child/1": { ok: true },
+      "/api/v1/children/1/progress": { ok: true },
     });
     const p = useProgressStore();
     p.setGameStars("l4", "learn", 3);
 
     await p.flushReport();
 
-    const put = calls.find((c) => c.url === "/api/v1/progress/child/1");
+    const put = calls.find((c) => c.url === "/api/v1/children/1/progress");
     expect(put).toBeTruthy();
     expect(p.cloudState).toBe("done");
     // 清掉了待上报定时器：再推时间也不会有第二次
     vi.advanceTimersByTime(5000);
     await vi.runAllTimersAsync();
-    expect(calls.filter((c) => c.url === "/api/v1/progress/child/1").length).toBe(1);
+    expect(calls.filter((c) => c.url === "/api/v1/children/1/progress").length).toBe(1);
   });
 });

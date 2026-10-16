@@ -80,15 +80,11 @@ export const useGateStore = defineStore("gate", () => {
   /**
    * 验证口令（后端校验）：
    *  - 调 POST /auth/gate，成功后存 JWT（= 登录）并解锁门禁；
-   *  - 口令错误 / 后端不可用 → 返回 false（不降级放行，fail closed）。
+   *  - 口令错误 / 后端不可用 → 返回 false（不降级放行，fail closed）；
+   *  - 本地调试兜底：后端不可达时自动放行（纯本地模式，不登录不上云）。
    */
   async function verify(pass: string): Promise<boolean> {
     if (!enabled.value) return true;
-    if (isLocalOrigin()) {
-      unlockedAt.value = Date.now();
-      persist();
-      return true;
-    }
     try {
       const res = await request<GateVerifyOut>(
         "/auth/gate",
@@ -100,6 +96,12 @@ export const useGateStore = defineStore("gate", () => {
       persist();
       return true;
     } catch {
+      if (isLocalOrigin()) {
+        // 本地调试兜底：后端没起/不可达时自动放行，孩子照常玩（纯本地，数据不上云）
+        unlockedAt.value = Date.now();
+        persist();
+        return true;
+      }
       return false;
     }
   }

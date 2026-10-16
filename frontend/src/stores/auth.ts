@@ -171,7 +171,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   /** 新建孩子档案（成功后自动选中） */
   async function createChild(name: string, avatar?: string, birthDate?: string): Promise<Child> {
-    const res = await request<ChildCreatedOut>("/auth/children", {
+    const res = await request<ChildCreatedOut>("/children", {
       method: "POST",
       body: { name, avatar, birth_date: birthDate || null },
     });
@@ -191,7 +191,7 @@ export const useAuthStore = defineStore("auth", () => {
     if (patch.name !== undefined) body.name = patch.name;
     if (patch.avatar !== undefined) body.avatar = patch.avatar;
     if (patch.birthDate !== undefined) body.birth_date = patch.birthDate;
-    const res = await request<ChildCreatedOut>(`/auth/children/${childId}`, { method: "PATCH", body });
+    const res = await request<ChildCreatedOut>(`/children/${childId}`, { method: "PATCH", body });
     const child = toChild(res.child);
     children.value = children.value.map((c) => (c.id === childId ? child : c));
     return child;

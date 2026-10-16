@@ -13,7 +13,7 @@ from ..db import connect
 from ..schemas import ProgressIn, ProgressOut, ProgressPutOut
 from .auth import _require_family
 
-router = APIRouter(prefix="/api/v1/progress", tags=["progress"])
+router = APIRouter(prefix="/api/v1/children/{child_id}", tags=["progress"])
 
 _STAR_KEYS = ("learn", "quiz", "match", "speak", "song", "talk")
 
@@ -81,6 +81,7 @@ def _merge_meta(existing: dict, incoming: dict) -> dict:
                 "date": db["date"],
                 "durationSec": max(da.get("durationSec", 0) if same else 0, db.get("durationSec", 0) or 0),
                 "activities": max(da.get("activities", 0) if same else 0, db.get("activities", 0) or 0),
+                "listenSec": max(da.get("listenSec", 0) if same else 0, db.get("listenSec", 0) or 0),
             }
     la, lb = existing.get("_dailyLog") or {}, incoming.get("_dailyLog") or {}
     if la or lb:
@@ -94,6 +95,7 @@ def _merge_meta(existing: dict, incoming: dict) -> dict:
                 "durationSec": max(cur.get("durationSec", 0) or 0, snap.get("durationSec", 0) or 0),
                 "activities": max(cur.get("activities", 0) or 0, snap.get("activities", 0) or 0),
                 "mastered": max(cur.get("mastered", 0) or 0, snap.get("mastered", 0) or 0),
+                "listenSec": max(cur.get("listenSec", 0) or 0, snap.get("listenSec", 0) or 0),
             }
         merged["_dailyLog"] = log
     if "_last" in incoming:
@@ -101,7 +103,7 @@ def _merge_meta(existing: dict, incoming: dict) -> dict:
     return merged
 
 
-@router.get("/child/{child_id}", response_model=ProgressOut)
+@router.get("/progress", response_model=ProgressOut)
 def get_progress(child_id: int, family_id: int = Depends(_require_family)):
     conn = connect()
     try:
@@ -123,7 +125,7 @@ def get_progress(child_id: int, family_id: int = Depends(_require_family)):
         conn.close()
 
 
-@router.put("/child/{child_id}", response_model=ProgressPutOut)
+@router.put("/progress", response_model=ProgressPutOut)
 def put_progress(
     child_id: int, body: ProgressIn, family_id: int = Depends(_require_family)
 ):

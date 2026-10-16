@@ -197,7 +197,7 @@ describe("rewards store · 云同步（奖励上云）", () => {
     const r = useRewardsStore();
     r.grant({ shells: 5, formId: null, isNew: false });
     await vi.waitFor(() => expect(fn).toHaveBeenCalled());
-    const put = calls.find((c) => c.url === "/api/v1/rewards/1");
+    const put = calls.find((c) => c.url === "/api/v1/children/1/rewards");
     expect(put).toBeTruthy();
     expect(put!.init!.method).toBe("PUT");
     const body = JSON.parse(put!.init!.body as string) as {
@@ -220,7 +220,7 @@ describe("rewards store · 云同步（奖励上云）", () => {
   it("syncFromServer：各字段取 max 合并，不覆盖本地更高值", async () => {
     loginAsParent();
     mockFetch({
-      "/api/v1/rewards/1": {
+      "/api/v1/children/1/rewards": {
         ok: true,
         data: { shells: 42, forms: { leo: 2, bun: 3 }, chestsOpened: 9 },
         updated_at: "2026-10-15 10:00:00",

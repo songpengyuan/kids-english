@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
-from app.api import auth, content, evaluation, progress, recordings, rewards  # noqa: E402
+from app.api import auth, children, content, evaluation, progress, recordings, rewards  # noqa: E402
 from app.db import init_db  # noqa: E402
 from app.ratelimit import hit  # noqa: E402
 from app.schemas import PongOut  # noqa: E402
@@ -72,6 +72,7 @@ async def rate_limit(request, call_next):
 
 
 app.include_router(auth.router)
+app.include_router(children.router)
 app.include_router(content.router)
 app.include_router(progress.router)
 app.include_router(rewards.router)

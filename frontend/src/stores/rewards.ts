@@ -95,7 +95,7 @@ export const useRewardsStore = defineStore("rewards", () => {
     const childId = activeChildId();
     if (childId === null) return;
     try {
-      const res = await requestWithTimeout<RewardsOut>(`/rewards/${childId}`);
+      const res = await requestWithTimeout<RewardsOut>(`/children/${childId}/rewards`);
       if (res.ok) {
         const d = res.data;
         shells.value = Math.max(shells.value, d.shells || 0);
@@ -114,7 +114,7 @@ export const useRewardsStore = defineStore("rewards", () => {
   function report(): void {
     const childId = activeChildId();
     if (childId === null) return;
-    void requestWithTimeout<components["schemas"]["RewardsPutOut"]>(`/rewards/${childId}`, {
+    void requestWithTimeout<components["schemas"]["RewardsPutOut"]>(`/children/${childId}/rewards`, {
       method: "PUT",
       body: { shells: shells.value, forms: { ...forms.value }, chestsOpened: chestsOpened.value },
     }).catch(() => {
