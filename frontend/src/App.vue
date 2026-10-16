@@ -51,9 +51,12 @@ onMounted(() => {
   // 「在首页 = 可安全刷新」：有新版本时首页静默刷新，玩法中不打断
   initPWA(() => location.hash === "" || location.hash === "#/");
   // 云模式初始化：恢复登录 → 拉取课程内容 + 同步学习进度（失败静默，保持本地模式）
+  // 同步机制：先 flushReport 把本地未上报数据推上云（上次会话异常退出/关页未及时上报的时长），
+  // 再 syncFromServer 拉云端合并（时长取 max，只增不减）
   auth.restore().then((ok) => {
     if (ok) {
       content.loadFromServer();
+      progress.flushReport();
       progress.syncFromServer();
     }
   });
@@ -68,6 +71,12 @@ onMounted(() => {
   };
   document.addEventListener("visibilitychange", onVisible);
   onVisible();
+  // 离开兜底上报：切后台 / 关标签页时立即把本地未上报数据推上云
+  // （3s 防抖的 setTimeout 在关页时会被浏览器终止，最后一次时长必须在这里补上；未登录自动跳过）
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) progress.flushReport();
+  });
+  window.addEventListener("pagehide", () => progress.flushReport());
 });
 </script>
 
