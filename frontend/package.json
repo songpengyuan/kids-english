@@ -12,6 +12,7 @@
     "ship": "node scripts/ship.mjs",
     "test": "vitest run",
     "type-check": "vue-tsc --noEmit",
+    "export:lessons": "node scripts/export-lessons.mjs",
     "verify": "bash ../scripts/ci-local.sh",
     "smoke": "node scripts/smoke.mjs"
   },

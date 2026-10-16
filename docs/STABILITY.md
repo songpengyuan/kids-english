@@ -12,6 +12,7 @@
 | 数据库 | SQLite `backend/kids.db`（WAL 模式） |
 | 录音资产 | `backend/media/`（webm/wav 等原始音频，孩子隐私数据） |
 | 前端 | 静态产物 `/www/wwwroot/kids-english/www/`（nginx 伺服） |
+| 部署 | 前端与后端均由 CI（`.github/workflows/deploy.yml`）rsync 到服务器；后端重启后强制 `/api/ping` 健康校验（ADR-003） |
 | 公网 | 家庭账号 JWT 鉴权；录音回放同样走鉴权，禁止 nginx 直出 media |
 
 ## 2. 数据库：WAL 加固（2026-10-16）
@@ -39,6 +40,25 @@
 
 **异地双副本**：`backend/scripts/pull-backups.sh` 从服务器拉取到本机
 `~/kids-english-backups/`（建议每周执行一次，或配置本机 launchd 定时）。
+
+### 3.1 每日维护任务（ADR-004 / ADR-005）
+
+同一 cron 体系下另有两个每日任务（cwd = `backend`）：
+
+| 任务 | 脚本 | 作用 |
+|---|---|---|
+| 事件汇总 + 明细清理 | `scripts/rollup_events.py` | 事件 → `daily_stats`（北极星口径，见 `PROGRESS-DATA.md §7`）；清理 >180 天的原始事件 |
+| 录音保留期清理 | `scripts/purge_media.py` | 删 >90 天的音频文件（**行与分数保留**，见 ADR-005）；清理孤儿文件 |
+
+服务器 `/etc/cron.d/kids-maintenance` 示例（按实际路径调整）：
+
+```cron
+30 3 * * * root cd /www/wwwroot/kids-english/backend && .venv/bin/python scripts/rollup_events.py >> /var/log/kids-maintenance.log 2>&1
+40 3 * * * root cd /www/wwwroot/kids-english/backend && .venv/bin/python scripts/purge_media.py >> /var/log/kids-maintenance.log 2>&1
+```
+
+> **保留期的影响**：`media/` 不再单调增长（音频 90 天滚动 × 14 份快照），
+> 备份体积与恢复时间变为**可预测**。数据边界与删除能力详见 `docs/DATA-INVENTORY.md`。
 
 ## 4. 健康检查（每 5 分钟）
 
@@ -85,8 +105,22 @@ tar xzf backups/media-YYYYMMDD.tar.gz -C backend/   # 解出 backend/media/
 
 ### 6.3 服务/代码回滚
 
-后端无 git 仓库，部署方式是 scp 具体文件 → `systemctl restart kids-api`。
-若某次改动异常，用本地 git 仓库检出上一提交的文件重新 scp 即可（`git log --oneline` 找上版 commit）。
+后端已纳入 CI 部署（ADR-003）：push → 门禁 → `rsync backend/` 到
+`/www/wwwroot/kids-english/backend/` → `systemctl restart kids-api` → `/api/ping` 健康校验。
+生产状态由 Actions run 的 commit SHA 决定 —— **不再是"后端无 git 仓库"**。
+
+回滚路径：在 Actions 里对**上一版 commit** 重跑 `workflow_dispatch`
+（GitHub → Actions → Deploy to GitHub Pages → Run workflow，或 revert 一次并 push）。
+无需自建版本目录或蓝绿部署。
+
+> ⚠️ 迁移**只增不减**（ADR-002）：回滚代码**不会**回滚表结构。
+> 若某次迁移与旧代码不兼容，需同时处理数据（见 §6.1）。
+> `/api/ping` 会回显 `schema_version`，可用来确认生产库当前的 schema 版本。
+
+应急通道（CI 到服务器的 SSH 不可用时）：`bash frontend/scripts/deploy-server.sh`
+—— 从本机把代码同步到服务器 staging（已排除数据与凭据，执行前二次确认），
+再触发服务器侧 `deploy.sh`。注意该脚本**只做 staging 同步**，服务器侧如何装配见
+`/www/wwwroot/kids-english/deploy.sh`（不在本仓库内）。
 
 ### 6.4 整机重建（最坏情况）
 

@@ -8,6 +8,7 @@ import { useAuthStore } from "./stores/auth";
 import { useContentStore } from "./stores/content";
 import { useProgressStore } from "./stores/progress";
 import { initPWA, applyUpdateIfIdle } from "./services/pwa";
+import { flush as flushTelemetry, setSessionContext, track } from "./services/telemetry";
 
 const router = useRouter();
 const route = useRoute();
@@ -34,13 +35,22 @@ onMounted(() => {
   // 云模式初始化：恢复登录 → 拉取课程内容 + 同步学习进度（失败静默，保持本地模式）
   // 同步机制：先 flushReport 把本地未上报数据推上云（上次会话异常退出/关页未及时上报的时长），
   // 再 syncFromServer 拉云端合并（时长取 max，只增不减）
+  // 埋点（ADR-004）：会话开始。active =「本会话由孩子自己发起」——
+  // 冷启动落在门禁页，说明这次是家长在操作（进门/家长中心），据此区分主动与被动学习。
+  const entryHash = location.hash || "#/";
+  const sessionActive = !entryHash.startsWith("#/gate");
   auth.restore().then((ok) => {
+    setSessionContext({ active: sessionActive, childId: auth.currentChildId ?? null });
+    track("session_start", { entry: entryHash, active: sessionActive });
     if (ok) {
       content.loadFromServer();
       progress.flushReport();
       progress.syncFromServer();
     }
+    void flushTelemetry();
   });
+  // 会话中切换孩子 → 同步埋点上下文（之后的事件带上正确的 child_id）
+  watch(() => auth.currentChildId, (id) => setSessionContext({ childId: id ?? null }));
   // 回首页时若有挂起的版本更新，正好是安全刷新时机
   //（路由名是 "learn" —— 路由 /learn → /course 重构后 path 改了、name 没改，
   //  这里若还写 "home" 会永远不命中，PWA 新版本就一直不生效）
@@ -57,12 +67,21 @@ onMounted(() => {
   // 离开兜底上报：切后台 / 关标签页时立即把本地未上报数据推上云
   // （3s 防抖的 setTimeout 在关页时会被浏览器终止，最后一次时长必须在这里补上；未登录自动跳过）
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) progress.flushReport();
+    if (document.hidden) {
+      progress.flushReport();
+      void flushTelemetry(); // 切后台时把埋点队列一并推走
+    }
   });
-  window.addEventListener("pagehide", () => progress.flushReport());
+  window.addEventListener("pagehide", () => {
+    progress.flushReport();
+    void flushTelemetry();
+  });
   // 定期心跳同步：每 60s 如有未上报变更即推上云（无变更零请求）。
   // 多设备切换时云端始终接近最新，孩子/家长在不同设备看到的数据更准确。
-  window.setInterval(() => void progress.flushIfDirty(), 60_000);
+  window.setInterval(() => {
+    void progress.flushIfDirty();
+    void flushTelemetry();
+  }, 60_000);
 });
 </script>
 

@@ -182,6 +182,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/children/{child_id}/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Calendar
+         * @description 学习日历：返回指定年月每天的学习时长/磨耳朵时长/玩法数。
+         */
+        get: operations["get_calendar_api_v1_children__child_id__calendar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/children/{child_id}/rewards": {
         parameters: {
             query?: never;
@@ -230,12 +250,18 @@ export interface paths {
         /**
          * List Recordings
          * @description 孩子录音列表（新→旧，最多 200 条；不暴露服务器文件路径）。
+         *
+         *     ``has_audio`` 告诉前端这条还有没有音频 —— 过保留期后被清理的记录**仍在列表里**
+         *     （分数与文本保留），但不能再播放。UI 应显示"音频已过保留期"而不是报错
+         *     （ADR-005：否则会表现为"点播放没反应"这种最差的失败形态）。
          */
         get: operations["list_recordings_api_v1_children__child_id__recordings_get"];
         put?: never;
         /**
          * Create Recording
          * @description 上传一段孩子发音原音：落盘 + 元数据入库。评测分（scores_json）P2-3 接入时填充。
+         *
+         *     边界（ADR-005）：单条 ≤5MB（超限 413）、单孩子 ≤200 条 / ≤200MB（超限 429）。
          */
         post: operations["create_recording_api_v1_children__child_id__recordings_post"];
         delete?: never;
@@ -258,6 +284,78 @@ export interface paths {
         get: operations["replay_audio_api_v1_children__child_id__recordings__rid__audio_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/children/{child_id}/recordings/{rid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Recording
+         * @description 删除单条录音（音频文件 + 行）。归属校验同回放，跨家庭一律 404。
+         *
+         *     先删行、后删文件：即便文件删除失败，也不会留下"指向已删行的文件引用"
+         *     （游离文件由 retention.purge_orphans 兜底清理）。
+         */
+        delete: operations["delete_recording_api_v1_children__child_id__recordings__rid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/children/{child_id}/recordings/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Recordings
+         * @description 打包导出该孩子的录音（zip：``audio/`` + ``recordings.json``）。
+         *
+         *     家长数据主权：家长随时能拿回自己孩子的数据。
+         *     已过保留期（音频被清理）的记录仍会出现在 ``recordings.json`` 里，
+         *     只是 ``audio`` 字段为 null —— 导出的是"记录 + 现存音频"，不掩盖事实。
+         */
+        get: operations["export_recordings_api_v1_children__child_id__recordings_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Events
+         * @description 批量接收埋点事件。按 ``client_event_id`` 幂等；跨家庭一律 404。
+         *
+         *     单次条数上限由 ``EventsIn`` 的 ``max_length``（50）保证 —— 超限在请求校验层
+         *     直接 422，契约里可见。
+         *     payload 超 1KB 时截断（保留 ``_truncated`` 标记），避免客户端把大对象塞进事件表
+         *     把单 worker 的写入路径拖慢。
+         */
+        post: operations["create_events_api_v1_events_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -335,6 +433,48 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** CalendarDayOut */
+        CalendarDayOut: {
+            /** Date */
+            date: string;
+            /**
+             * Durationsec
+             * @default 0
+             */
+            durationSec: number;
+            /**
+             * Listensec
+             * @default 0
+             */
+            listenSec: number;
+            /**
+             * Activities
+             * @default 0
+             */
+            activities: number;
+            /**
+             * Mastered
+             * @default 0
+             */
+            mastered: number;
+        };
+        /** CalendarOut */
+        CalendarOut: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /**
+             * Days
+             * @default []
+             */
+            days: components["schemas"]["CalendarDayOut"][];
+        };
         /** ChildCreatedOut */
         ChildCreatedOut: {
             /**
@@ -388,6 +528,43 @@ export interface components {
              * @default []
              */
             children: components["schemas"]["ChildOut"][];
+        };
+        /**
+         * EventIn
+         * @description 单条客户端事件。client_event_id 由客户端生成，服务端据此幂等去重。
+         */
+        EventIn: {
+            /** Client Event Id */
+            client_event_id: string;
+            /** Type */
+            type: string;
+            /** Child Id */
+            child_id?: number | null;
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            } | null;
+            /** Client Ts */
+            client_ts?: string | null;
+            /** App Version */
+            app_version?: string | null;
+        };
+        /** EventsIn */
+        EventsIn: {
+            /** Events */
+            events?: components["schemas"]["EventIn"][];
+        };
+        /** EventsOut */
+        EventsOut: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+            /** Received */
+            received: number;
+            /** Accepted */
+            accepted: number;
         };
         /**
          * GateIn
@@ -610,6 +787,8 @@ export interface components {
             ok: boolean;
             /** Msg */
             msg: string;
+            /** Schema Version */
+            schema_version?: number | null;
         };
         /**
          * ProgressIn
@@ -1206,6 +1385,42 @@ export interface operations {
             };
         };
     };
+    get_calendar_api_v1_children__child_id__calendar_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+            };
+            header?: {
+                authorization?: string;
+            };
+            path: {
+                child_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_rewards_api_v1_children__child_id__rewards_get: {
         parameters: {
             query?: never;
@@ -1400,6 +1615,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_recording_api_v1_children__child_id__recordings__rid__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path: {
+                child_id: number;
+                rid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_recordings_api_v1_children__child_id__recordings_export_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path: {
+                child_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_events_api_v1_events_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventsOut"];
                 };
             };
             /** @description Validation Error */

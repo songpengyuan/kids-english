@@ -45,10 +45,11 @@ def fresh_db():
     reset_ratelimit()
     if Path(os.environ["KIDS_DB_PATH"]).exists():
         Path(os.environ["KIDS_DB_PATH"]).unlink()
-    for p in MEDIA.iterdir():
-        if p.is_dir():
-            import shutil
-            shutil.rmtree(p)
+    if MEDIA.is_dir():
+        for p in MEDIA.iterdir():
+            if p.is_dir():
+                import shutil
+                shutil.rmtree(p)
     init_db()
     seed_lessons()
     yield
@@ -124,7 +125,9 @@ def test_upload_persists_file_and_row():
         assert row["activity_type"] == "follow"
         assert row["lesson_id"] == "l10"
         assert row["duration_ms"] == 3000
-        f = Path(row["file_path"])
+        # ADR-005：file_path 存相对路径，解析需与 MEDIA_ROOT 拼接
+        assert not row["file_path"].startswith("/")
+        f = MEDIA / row["file_path"]
         assert f.exists() and f.stat().st_size > 0
         assert f.name.endswith(".webm")
     finally:
@@ -150,6 +153,67 @@ def test_upload_wav_keeps_extension():
         assert row["file_path"].endswith(".wav")
     finally:
         conn.close()
+
+
+# ---------- 上传边界（ADR-005）----------
+def _media_files(cid):
+    d = MEDIA / str(cid)
+    return [p for p in d.iterdir() if p.is_file()] if d.is_dir() else []
+
+
+def test_upload_stores_relative_path():
+    """file_path 必须是相对路径 —— 媒体根迁移（OSS/换机/灾备恢复）后历史行才不失效。"""
+    from app.db import connect
+    fid, cid = _setup_family(connect())
+    rid = _upload(cid, headers=_auth(fid)).json()["id"]
+    conn = connect()
+    try:
+        row = conn.execute("SELECT file_path FROM recordings WHERE id=?", (rid,)).fetchone()
+        assert not row["file_path"].startswith("/")
+        assert row["file_path"].startswith(f"{cid}/")
+    finally:
+        conn.close()
+
+
+def test_upload_over_size_limit_rejected():
+    """单条超过上限 → 413，且不落盘（读文件前就拒绝）。"""
+    from app.api import recordings
+    from app.db import connect
+    fid, cid = _setup_family(connect())
+    payload = b"x" * (recordings.MAX_UPLOAD_BYTES + 1024)
+    r = _upload(cid, payload=payload, headers=_auth(fid))
+    assert r.status_code == 413
+    assert "过大" in r.json()["detail"]
+    assert _media_files(cid) == []  # 不留半成品
+
+
+def test_upload_count_quota_rejected():
+    """单孩子条数配额 → 429。"""
+    from app.api import recordings
+    from app.db import connect
+    conn = connect()
+    fid, cid = _setup_family(conn)
+    for i in range(recordings.MAX_RECORDINGS_PER_CHILD):
+        conn.execute(
+            "INSERT INTO recordings (child_id, activity_type, file_path) VALUES (?, 'follow', ?)",
+            (cid, f"{cid}/seed{i}.webm"),
+        )
+    conn.commit()
+    conn.close()
+    r = _upload(cid, headers=_auth(fid))
+    assert r.status_code == 429
+    assert "上限" in r.json()["detail"]
+
+
+def test_upload_bytes_quota_rejected(monkeypatch):
+    """单孩子容量配额 → 429，且刚写入的半成品被清理。"""
+    from app.api import recordings
+    from app.db import connect
+    monkeypatch.setattr(recordings, "MAX_BYTES_PER_CHILD", 1024)
+    fid, cid = _setup_family(connect())
+    r = _upload(cid, payload=_fake_webm(4096), headers=_auth(fid))
+    assert r.status_code == 429
+    assert _media_files(cid) == []
 
 
 # ---------- 列表 ----------
@@ -206,5 +270,26 @@ def test_audio_replay_other_family_forbidden():
 def test_audio_missing_404():
     from app.db import connect
     fid, _ = _setup_family(connect())
-    r = client.get("/api/v1/children/99999/recordings/audio", headers=_auth(fid))
+    # 不存在的录音 id（此前这条 URL 少了一段 rid，属测试自身笔误 ——
+    # 新增 DELETE /recordings/{rid} 后该路径会被 {rid} 模式吞掉、返回 405 而非 404）
+    r = client.get("/api/v1/children/99999/recordings/99999/audio", headers=_auth(fid))
     assert r.status_code == 404
+
+
+def test_replay_supports_legacy_absolute_path():
+    """历史行可能存的是绝对路径 —— 回放的兼容分支必须仍然可用。"""
+    from app.db import connect
+    conn = connect()
+    fid, cid = _setup_family(conn)
+    p = MEDIA / str(cid) / "legacy.webm"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_bytes(_fake_webm())
+    conn.execute(
+        "INSERT INTO recordings (child_id, activity_type, file_path) VALUES (?, 'follow', ?)",
+        (cid, str(p)),  # 绝对路径
+    )
+    rid = conn.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
+    conn.commit()
+    conn.close()
+    r = client.get(f"/api/v1/children/{cid}/recordings/{rid}/audio", headers=_auth(fid))
+    assert r.status_code == 200

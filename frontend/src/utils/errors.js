@@ -1,11 +1,13 @@
 /**
- * 轻量错误上报（纯前端静态站，无后端）。
+ * 轻量错误捕获（ADR-004 起已接上后端目的地）。
  *
- * 策略：window error / unhandledrejection 摘要写入 localStorage 环形缓冲（最近 20 条），
- * 控制台同时输出。未来接入后端时，只需把 push 里的 localStorage 落盘换成
- * fetch("<endpoint>", { method: "POST", body: JSON.stringify(entry) }) 即可，
- * 调用方（main.js）不用改。
+ * 双层职责：
+ *  1. **本地环形缓冲**（最近 20 条，localStorage）：离线自检，控制台 `__kidsErrors()` 可查；
+ *  2. **上报后端**：同一条错误推入 telemetry 队列 → 批量 `POST /api/v1/events`
+ *     （离线自动留队、下次重试；带 `app_version`，可精确绑到某一次构建）。
  */
+import { track } from "../services/telemetry";
+
 const KEY = "kids-english-errors-v1";
 const LIMIT = 20;
 
@@ -34,6 +36,18 @@ function push(kind, msg, stack) {
   }
   // eslint-disable-next-line no-console
   console.error(`[kids-error] ${kind}:`, msg, stack);
+  // 上报后端：让开发者能看见线上故障（此前只存在孩子手机的环形缓冲里）。
+  // 上报失败绝不影响业务 —— track 内部只入队，flush 失败静默留队。
+  try {
+    track("client_error", {
+      kind,
+      msg: String(msg).slice(0, 300),
+      stack: String(stack || "").slice(0, 800),
+      url: typeof location !== "undefined" ? location.hash || location.pathname : ""
+    });
+  } catch {
+    /* 静默 */
+  }
 }
 
 export function initErrorCapture() {

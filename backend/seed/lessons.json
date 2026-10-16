@@ -965,7 +965,7 @@
     "tone": "green",
     "type": "official",
     "date": "2026-10-14",
-    "stageStyle": "dialog",
+    "stageStyle": "cards",
     "song": {
       "audio": "/lessons/l10/song.mp3",
       "video": "/lessons/l10/song.mp4",
@@ -1059,7 +1059,7 @@
         "en": "frog",
         "zh": "青蛙",
         "emoji": "🐸",
-        "image": null,
+        "image": "/lessons/l10/words/frog.png",
         "audio": "/lessons/l10/audio/frog.mp3"
       },
       {
@@ -1067,7 +1067,7 @@
         "en": "monkey",
         "zh": "猴子",
         "emoji": "🐒",
-        "image": null,
+        "image": "/lessons/l10/words/monkey.png",
         "audio": "/lessons/l10/audio/monkey.mp3"
       },
       {
@@ -1075,7 +1075,7 @@
         "en": "tiger",
         "zh": "老虎",
         "emoji": "🐯",
-        "image": null,
+        "image": "/lessons/l10/words/tiger.png",
         "audio": "/lessons/l10/audio/tiger.mp3"
       },
       {
@@ -1083,7 +1083,7 @@
         "en": "toucan",
         "zh": "巨嘴鸟",
         "emoji": "🦜",
-        "image": null,
+        "image": "/lessons/l10/words/toucan.png",
         "audio": "/lessons/l10/audio/toucan.mp3"
       },
       {
@@ -1091,7 +1091,7 @@
         "en": "afraid",
         "zh": "害怕的",
         "emoji": "😨",
-        "image": null,
+        "image": "/lessons/l10/words/afraid.png",
         "audio": "/lessons/l10/audio/afraid.mp3"
       },
       {
@@ -1099,7 +1099,7 @@
         "en": "jungle",
         "zh": "丛林",
         "emoji": "🌴",
-        "image": null,
+        "image": "/lessons/l10/words/jungle.png",
         "audio": "/lessons/l10/audio/jungle.mp3"
       },
       {
@@ -1107,7 +1107,7 @@
         "en": "listen",
         "zh": "听",
         "emoji": "👂",
-        "image": null,
+        "image": "/lessons/l10/words/listen.png",
         "audio": "/lessons/l10/audio/listen.mp3"
       }
     ],

@@ -19,8 +19,9 @@
 #   2. 前端类型检查    pnpm type-check    （CI: fe-gate）
 #   3. 后端单测        pytest tests/ -q   （CI: be-gate）
 #   4. OpenAPI 契约    导出后 git diff 必须为空（CI: be-gate）
-#   5. 生产构建        BASE_PATH=/ pnpm build:ci（CI: build 步的 build:root）
-#   6. 白屏冒烟        无头 Chrome 打开 /app/#/，断言应用真的渲染出来
+#   5. 课程种子同步    导出后 git diff 必须为空（CI: Content seed drift check）
+#   6. 生产构建        BASE_PATH=/ pnpm build:ci（CI: build 步的 build:root）
+#   7. 白屏冒烟        无头 Chrome 打开 /app/#/，断言应用真的渲染出来
 #                      （CI 没有这一步 —— 而白屏正是这个项目的头号线上故障）
 #
 # 用法：
@@ -56,7 +57,7 @@ for a in "$@"; do
     --commit)   MODE="commit" ;;
     --frontend) MODE="frontend" ;;
     --no-smoke) RUN_SMOKE=0 ;;
-    -h|--help)  sed -n '2,45p' "$0"; exit 0 ;;
+    -h|--help)  sed -n '2,46p' "$0"; exit 0 ;;
     *) echo "未知参数: $a（可用: --commit / --frontend / --no-smoke）"; exit 2 ;;
   esac
 done
@@ -217,7 +218,28 @@ else
     fi
   fi
 
-  # ---------- 5) 生产构建 ----------
+  # ---------- 5) 课程内容种子同步（ADR-001）----------
+  # lessons.ts 是唯一人工书写源，backend/seed/lessons.json 是它的生成物。
+  # 前端 content store「远端优先」：种子过期 → 后端旧内容盖掉前端新内容，
+  # 表现为"改了课、也部署了，线上就是不变"，本地起前端时复现不出。
+  if [ -z "$FAILED_STEP" ]; then
+    step "课程种子同步  ·  pnpm export:lessons + git diff"
+    if (cd "$FE" && pnpm export:lessons); then
+      if git -C "$ROOT" diff --exit-code -- backend/seed/lessons.json >/dev/null 2>&1; then
+        ok "lessons.json 与 lessons.ts 一致"
+      else
+        bad "课程种子漂移：改了 src/data/lessons.ts 却没重跑导出 —— 后端会用旧内容盖掉新内容"
+        warn "本次导出已写回 backend/seed/lessons.json，检查后一起提交即可"
+        git -C "$ROOT" --no-pager diff --stat -- backend/seed/lessons.json
+        fail "课程种子漂移"
+      fi
+    else
+      bad "导出课程种子失败 —— 复现：cd frontend && pnpm export:lessons"
+      fail "课程种子导出"
+    fi
+  fi
+
+  # ---------- 6) 生产构建 ----------
   BUILD_DIR="${CI_LOCAL_DIST:-}"
   if [ -z "$BUILD_DIR" ]; then
     BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/kids-ci-dist.XXXXXX")"
@@ -233,7 +255,7 @@ else
     fi
   fi
 
-  # ---------- 6) 白屏冒烟 ----------
+  # ---------- 7) 白屏冒烟 ----------
   # CI 不跑这一步：它能拦住「构建成功但运行时崩了」——这个项目最痛的线上故障。
   if [ -z "$FAILED_STEP" ] && [ "$RUN_SMOKE" = 1 ]; then
     step "白屏冒烟  ·  无头 Chrome 打开 /app/#/ 断言应用渲染出来"

@@ -77,6 +77,20 @@ jobs:
           BE_TESTS="$(perl -pe 's/\e\[[0-9;]*m//g' /tmp/be-test.log | grep -oE '[0-9]+ passed' | tail -1 | grep -oE '[0-9]+' || true)"
           echo "tests=${BE_TESTS:-?}" >> "$GITHUB_OUTPUT"
 
+      # 课程内容单一事实源防漂移（ADR-001）：
+      # frontend/src/data/lessons.ts 是唯一人工书写源，backend/seed/lessons.json 是它的生成物
+      # （git 跟踪）。前端 content store 是「远端优先」——种子过期时后端会拿旧内容**盖掉**
+      # 前端新内容，表现为「改了课、也部署了，线上就是不变」，且本地（后端没起）完全复现不出。
+      # 与 openapi.json 契约校验完全同构：生成物入库 + 导出后 git diff 必须为空。
+      - name: Content seed drift check
+        run: |
+          cd frontend
+          pnpm export:lessons
+          cd ..
+          # pathspec 必须相对仓库根写全（backend/seed/lessons.json）；写 openapi.json 那种
+          # 相对当前目录的写法在这里会匹配不到文件、git diff 恒返回 0，校验等于空转。
+          git diff --exit-code -- backend/seed/lessons.json
+
       - name: Build
         # 自定义域名（zelab.cn）部署在根路径，必须用 build:root（BASE_PATH=/）；
         # 无自定义域名走 GitHub Pages 子路径时改回 GH_REPO=... pnpm build:ci
@@ -104,6 +118,56 @@ jobs:
           cd frontend
           rsync -az --delete -e "ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=accept-new" \
             dist/ root@110.41.61.4:/www/wwwroot/kids-english/www/
+
+      # 后端部署（ADR-003）：给后端与前端同等的交付待遇 —— 代码 rsync + 重启 + 健康校验。
+      # 目标目录与 systemd 单元（2026-10-17 已 SSH 核对）：
+      #   WorkingDirectory=/www/wwwroot/kids-english/backend
+      #   ExecStart=.../backend/.venv/bin/uvicorn main:app
+      # 红线：**代码同步，数据与凭据永不同步** —— 生产库/录音/.env/.venv 只属于服务器。
+      - name: Deploy backend to Huawei server (rsync + health check)
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        run: |
+          if [ -z "$DEPLOY_KEY" ]; then
+            echo "::warning::未配置 DEPLOY_KEY secret，跳过后端部署"
+            exit 0
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          SSH="ssh -i $HOME/.ssh/id_deploy -o StrictHostKeyChecking=accept-new"
+          BE=/www/wwwroot/kids-english/backend
+
+          # 依赖只在 requirements.txt 真变化时才装（避免每次部署都跑 pip）
+          REQ_BEFORE=$($SSH root@110.41.61.4 "md5sum $BE/requirements.txt 2>/dev/null" | awk '{print $1}')
+
+          rsync -az --delete -e "$SSH" \
+            --exclude '.venv' --exclude '__pycache__/' --exclude '.pytest_cache/' \
+            --include '.env.example' --exclude '.env' --exclude '.env.*' \
+            --exclude '*.db' --exclude '*.db-wal' --exclude '*.db-shm' \
+            --exclude 'media/' \
+            backend/ root@110.41.61.4:$BE/
+
+          REQ_AFTER=$($SSH root@110.41.61.4 "md5sum $BE/requirements.txt 2>/dev/null" | awk '{print $1}')
+          if [ -n "$REQ_AFTER" ] && [ "$REQ_BEFORE" != "$REQ_AFTER" ]; then
+            echo "requirements.txt 有变化 → 安装依赖"
+            $SSH root@110.41.61.4 "cd $BE && .venv/bin/python -m pip install -q -r requirements.txt"
+          fi
+
+          echo "重启 kids-api（迁移在启动时运行；失败则服务起不来，下方探测会失败）"
+          $SSH root@110.41.61.4 'systemctl restart kids-api'
+
+          # 健康校验：非 200 即让 job 失败 —— 否则 Actions 报绿、服务其实是死的
+          for i in $(seq 1 15); do
+            if curl -sf -m 5 http://110.41.61.4/api/ping >/dev/null; then
+              echo "✅ /api/ping 正常（第 $i 次探测）"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::重启后 /api/ping 在 30s 内未返回 200 —— 回显 journal 供排查"
+          $SSH root@110.41.61.4 'journalctl -u kids-api -n 60 --no-pager' || true
+          exit 1
 
       # 构建耗时（供飞书卡片展示）
       - name: Record build duration

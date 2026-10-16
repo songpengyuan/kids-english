@@ -1322,10 +1322,19 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
      - 应急跳过：`git push --no-verify` / `CI_LOCAL_SKIP=1 git push`。
      - **`pnpm ship` 也会先跑这道门禁**，且失败时**不会**走 `push-via-api.py` 的 API 兜底 ——
        否则"git 通道被代理拦截"和"钩子把这次推送拦下了"无法区分，门禁会被 API 绕过去。
-3. **数据校验**：改 `src/data/*` 后跑 `node scripts/validate-data.mjs`（结构/引用/去重/
+3. **数据校验 + 课程种子同步**：改 `src/data/*` 后跑 `node scripts/validate-data.mjs`（结构/引用/去重/
    song.mp3 资源硬校验）——防课时 id 重复、关卡引用不存在玩法、音频误删上线白屏。
+   - **改 `src/data/lessons.ts` 后必须重跑 `pnpm export:lessons`** 并一起提交
+     `backend/seed/lessons.json`。课程内容有两个事实源（TS 手写 → 生成 JSON 种子，见 ADR-001），
+     而前端 content store 是「**远端优先**」：种子过期时后端会拿**旧内容盖掉**前端新内容，
+     表现为"改了课、也部署了，线上就是不变"，且本地（后端没起）完全复现不出。
+     CI（`Content seed drift check`）与本地门禁都会在导出后 `git diff`，非空即失败。
 4. **PWA 回归**：动 sw.js / vite.config.js / 路由后跑 `node scripts/verify-pwa.mjs`（基线 14/14）。
 5. **布局走查**：改布局后按 §7 多视口实测（`layout-audit.mjs` 不稳定时可自建 CDP 探测）。
+6. **埋点与敏感数据**：新增埋点调 `services/telemetry.ts` 的 `track()`（**不要**直接 `fetch`，
+   否则丢掉离线队列与幂等）；口径以 `docs/PROGRESS-DATA.md §7` 为准。
+   任何孩子相关数据的**采集范围 / 保留期**变更，必须同步 `docs/DATA-INVENTORY.md`
+   与对应 ADR（004 埋点 / 005 录音），不能只改代码。
 
 ### 14.6 本周期踩坑记录（下次遇到直接对照）
 

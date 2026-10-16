@@ -47,7 +47,11 @@ try {
       audio: w.audio,
     })),
     phrases: l.phrases.map((p) => ({ en: p.en, zh: p.zh, audio: p.audio })),
-  }));
+  }))
+    // 按 order 稳定输出：数组顺序在 seed 里**不该有意义**（课程顺序由每条的 order 字段表达，
+    // 后端 seed_lessons 也只用 order_no）。若沿用 lessons.ts 的数组顺序，
+    // 每次调整 TS 里的课程排列都会产生整份 JSON 的 diff，把真实内容变化淹没在噪声里。
+    .sort((a, b) => Number(a.order) - Number(b.order));
 
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify(lessons, null, 2));

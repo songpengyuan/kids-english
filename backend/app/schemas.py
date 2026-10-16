@@ -208,3 +208,28 @@ class ProgressPutOut(BaseModel):
 class PongOut(BaseModel):
     ok: bool = True
     msg: str
+    # ADR-002：排查时一眼看到生产库的 schema 版本，不用登服务器翻代码
+    schema_version: int | None = None
+
+
+# ---------- 埋点事件（ADR-004）----------
+
+class EventIn(BaseModel):
+    """单条客户端事件。client_event_id 由客户端生成，服务端据此幂等去重。"""
+
+    client_event_id: str = Field(min_length=1, max_length=64)
+    type: str = Field(min_length=1, max_length=40)
+    child_id: int | None = None
+    payload: dict[str, Any] | None = None
+    client_ts: str | None = None
+    app_version: str | None = Field(default=None, max_length=40)
+
+
+class EventsIn(BaseModel):
+    events: list[EventIn] = Field(default_factory=list, max_length=50)
+
+
+class EventsOut(BaseModel):
+    ok: bool = True
+    received: int
+    accepted: int

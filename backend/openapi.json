@@ -824,7 +824,7 @@
           "recordings"
         ],
         "summary": "Create Recording",
-        "description": "上传一段孩子发音原音：落盘 + 元数据入库。评测分（scores_json）P2-3 接入时填充。",
+        "description": "上传一段孩子发音原音：落盘 + 元数据入库。评测分（scores_json）P2-3 接入时填充。\n\n边界（ADR-005）：单条 ≤5MB（超限 413）、单孩子 ≤200 条 / ≤200MB（超限 429）。",
         "operationId": "create_recording_api_v1_children__child_id__recordings_post",
         "parameters": [
           {
@@ -883,7 +883,7 @@
           "recordings"
         ],
         "summary": "List Recordings",
-        "description": "孩子录音列表（新→旧，最多 200 条；不暴露服务器文件路径）。",
+        "description": "孩子录音列表（新→旧，最多 200 条；不暴露服务器文件路径）。\n\n``has_audio`` 告诉前端这条还有没有音频 —— 过保留期后被清理的记录**仍在列表里**\n（分数与文本保留），但不能再播放。UI 应显示\"音频已过保留期\"而不是报错\n（ADR-005：否则会表现为\"点播放没反应\"这种最差的失败形态）。",
         "operationId": "list_recordings_api_v1_children__child_id__recordings_get",
         "parameters": [
           {
@@ -972,6 +972,171 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/children/{child_id}/recordings/{rid}": {
+      "delete": {
+        "tags": [
+          "recordings"
+        ],
+        "summary": "Delete Recording",
+        "description": "删除单条录音（音频文件 + 行）。归属校验同回放，跨家庭一律 404。\n\n先删行、后删文件：即便文件删除失败，也不会留下\"指向已删行的文件引用\"\n（游离文件由 retention.purge_orphans 兜底清理）。",
+        "operationId": "delete_recording_api_v1_children__child_id__recordings__rid__delete",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "rid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Rid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/children/{child_id}/recordings/export": {
+      "get": {
+        "tags": [
+          "recordings"
+        ],
+        "summary": "Export Recordings",
+        "description": "打包导出该孩子的录音（zip：``audio/`` + ``recordings.json``）。\n\n家长数据主权：家长随时能拿回自己孩子的数据。\n已过保留期（音频被清理）的记录仍会出现在 ``recordings.json`` 里，\n只是 ``audio`` 字段为 null —— 导出的是\"记录 + 现存音频\"，不掩盖事实。",
+        "operationId": "export_recordings_api_v1_children__child_id__recordings_export_get",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events": {
+      "post": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Create Events",
+        "description": "批量接收埋点事件。按 ``client_event_id`` 幂等；跨家庭一律 404。\n\n单次条数上限由 ``EventsIn`` 的 ``max_length``（50）保证 —— 超限在请求校验层\n直接 422，契约里可见。\npayload 超 1KB 时截断（保留 ``_truncated`` 标记），避免客户端把大对象塞进事件表\n把单 worker 的写入路径拖慢。",
+        "operationId": "create_events_api_v1_events_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventsOut"
+                }
               }
             }
           },
@@ -1349,6 +1514,112 @@
         },
         "type": "object",
         "title": "ChildrenOut"
+      },
+      "EventIn": {
+        "properties": {
+          "client_event_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Client Event Id"
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Type"
+          },
+          "child_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Child Id"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payload"
+          },
+          "client_ts": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Ts"
+          },
+          "app_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client_event_id",
+          "type"
+        ],
+        "title": "EventIn",
+        "description": "单条客户端事件。client_event_id 由客户端生成，服务端据此幂等去重。"
+      },
+      "EventsIn": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/EventIn"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "title": "EventsIn"
+      },
+      "EventsOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "received": {
+            "type": "integer",
+            "title": "Received"
+          },
+          "accepted": {
+            "type": "integer",
+            "title": "Accepted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "received",
+          "accepted"
+        ],
+        "title": "EventsOut"
       },
       "GateIn": {
         "properties": {
@@ -1834,6 +2105,17 @@
           "msg": {
             "type": "string",
             "title": "Msg"
+          },
+          "schema_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema Version"
           }
         },
         "type": "object",

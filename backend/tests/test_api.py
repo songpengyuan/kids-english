@@ -4,16 +4,14 @@
 运行：server/.venv/bin/pytest tests/ -q（需要 pytest 依赖）。
 """
 import os
-import tempfile
 from pathlib import Path
 
 import pytest
 
-# 用临时数据库，避免污染真实数据（必须在 import app 之前设置）
-_tmp = tempfile.mkdtemp(prefix="kids-test-")
-os.environ["KIDS_DB_PATH"] = str(Path(_tmp) / "test.db")
-# 测试用强密钥（生产由 assert_secret_configured 强制 ≥32 位）
-os.environ["KIDS_JWT_SECRET"] = "test-secret-" + "k" * 32
+# 测试环境（临时 DB / 强密钥 / 临时媒体根）由 tests/conftest.py 统一设置 ——
+# conftest 先于测试收集加载，保证在任何测试模块 import `main` 之前完成。
+# 这里不再重复设置：曾因各文件各自设置，导致 recordings.MEDIA_ROOT 被
+# 第一个 import 它的文件定格成真实 backend/media（单跑通过、合跑失败）。
 
 from fastapi.testclient import TestClient  # noqa: E402
 

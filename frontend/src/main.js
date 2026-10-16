@@ -10,6 +10,7 @@ import App from './App.vue'
 import { initHaptics, hapticsInfo } from './services/haptics'
 import { initTheme } from './services/theme'
 import { initErrorCapture } from './utils/errors'
+import { pendingEvents } from './services/telemetry'
 
 // 先应用主题再挂载，避免暗色用户刷新时闪白
 initTheme()
@@ -26,5 +27,7 @@ createApp(App).use(createPinia()).use(router).mount('#app')
 initHaptics()
 // 便于在 Safari 控制台自检：输入 __kidsHaptics()
 window.__kidsHaptics = hapticsInfo
-// 错误上报：未捕获异常/未处理 Promise 写入本地环形缓冲（控制台输入 __kidsErrors() 查看）
+// 错误上报：未捕获异常/未处理 Promise 写入本地环形缓冲 + 上报后端（控制台 __kidsErrors() 查看）
 initErrorCapture()
+// 埋点队列自检（ADR-004）：输入 __kidsTelemetry() 查看待上报事件
+window.__kidsTelemetry = pendingEvents

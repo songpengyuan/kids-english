@@ -16,8 +16,8 @@ from fastapi.responses import JSONResponse
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
-from app.api import auth, children, content, evaluation, progress, recordings, rewards  # noqa: E402
-from app.db import init_db  # noqa: E402
+from app.api import auth, children, content, evaluation, events, progress, recordings, rewards  # noqa: E402
+from app.db import connect, init_db, schema_version  # noqa: E402
 from app.ratelimit import hit  # noqa: E402
 from app.schemas import PongOut  # noqa: E402
 from app.security import assert_secret_configured  # noqa: E402
@@ -61,6 +61,9 @@ async def rate_limit(request, call_next):
         "/api/v1/auth/gate",
     ):
         key, window, limit = f"login:{ip}", 60.0, 10
+    elif request.url.path == "/api/v1/events":
+        # 事件是批量写入接口，防「写入放大器」（ADR-004）
+        key, window, limit = f"events:{ip}", 60.0, 60
     else:
         key, window, limit = f"api:{ip}", 60.0, 300
     if not hit(key, window, limit):
@@ -78,11 +81,21 @@ app.include_router(progress.router)
 app.include_router(rewards.router)
 app.include_router(evaluation.router)
 app.include_router(recordings.router)
+app.include_router(events.router)
 
 
 @app.get("/api/ping", response_model=PongOut)
 def ping():
-    return {"ok": True, "msg": "kids-english backend ready"}
+    # schema_version 是附加信息：DB 偶发不可读时不拖垮存活探测本身
+    try:
+        conn = connect()
+        try:
+            ver = schema_version(conn)
+        finally:
+            conn.close()
+    except Exception:
+        ver = None
+    return {"ok": True, "msg": "kids-english backend ready", "schema_version": ver}
 
 
 # 兼容旧前端路径：评测端点保留 /api/evaluate（新前端迁移到 /api/v1/evaluation）
