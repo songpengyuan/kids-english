@@ -86,3 +86,67 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # 飞书机器人通知：每次构建「无论成败」都推送到家长飞书群，第一时间知道部署状态。
+  # 需先在 repo Settings → Secrets and variables → Actions 添加 FEISHU_WEBHOOK
+  # （飞书群「自定义机器人」webhook 完整 URL，含签名）；未配置时自动跳过，不影响部署。
+  notify:
+    needs: [build, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compose Feishu message
+        id: compose
+        env:
+          BUILD: ${{ needs.build.result }}
+          DEPLOY: ${{ needs.deploy.result }}
+        run: |
+          # 整体状态：构建失败 > 部署失败 > 成功（build 失败时 deploy 会 skipped）
+          if [ "$BUILD" = "failure" ]; then
+            OVERALL="failure"
+          elif [ "$DEPLOY" = "failure" ]; then
+            OVERALL="deploy-fail"
+          else
+            OVERALL="success"
+          fi
+
+          # 从 GitHub 事件里取提交信息（workflow_dispatch 手动触发时 head_commit 为空）
+          COMMIT_MSG="$(jq -r '.head_commit.message // "手动触发"' "$GITHUB_EVENT_PATH" 2>/dev/null | tr '\n' ' ' | head -c 80)"
+          AUTHOR="$(jq -r '.head_commit.author.name // "unknown"' "$GITHUB_EVENT_PATH" 2>/dev/null)"
+          SHA_SHORT="${GITHUB_SHA:0:7}"
+
+          # 构造飞书交互卡片 JSON（文本消息即可被 curl 直接投递）
+          jq -n \
+            --arg title "$([ "$OVERALL" = "success" ] && echo '✅ kids-english 部署成功' || echo '❌ kids-english 构建/部署未通过')" \
+            --arg template "$([ "$OVERALL" = "success" ] && echo 'green' || echo 'red')" \
+            --arg build "$BUILD" --arg deploy "$DEPLOY" \
+            --arg commit "${SHA_SHORT} · ${COMMIT_MSG}" --arg author "$AUTHOR" \
+            --arg time "$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M')" \
+            --arg run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            '{
+              msg_type: "interactive",
+              card: {
+                config: { wide_screen_mode: true },
+                header: { title: { tag: "plain_text", content: $title }, template: $template },
+                elements: [
+                  { tag: "div", text: { tag: "lark_md", content: "**构建：** \($build) ｜ **部署：** \($deploy)" } },
+                  { tag: "div", text: { tag: "lark_md", content: "**提交：** \($commit)\n**作者：** \($author)\n**时间：** \($time) (UTC+8)" } },
+                  { tag: "action", actions: [{ tag: "button", text: { tag: "plain_text", content: "查看构建详情" }, type: "primary", url: $run }] }
+                ]
+              }
+            }' > /tmp/feishu-payload.json
+          cat /tmp/feishu-payload.json
+      - name: Send to Feishu bot
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+        run: |
+          if [ -z "$FEISHU_WEBHOOK" ]; then
+            echo "::warning::未配置 FEISHU_WEBHOOK secret，跳过飞书通知（不影响部署）"
+            exit 0
+          fi
+          curl -sS -X POST -H "Content-Type: application/json" \
+            -d @/tmp/feishu-payload.json "$FEISHU_WEBHOOK" | tee /tmp/feishu-resp.json
+          # 飞书返回 code!=0 视为发送失败，让 CI 可见但不阻断部署结果
+          if ! jq -e '.code == 0' /tmp/feishu-resp.json >/dev/null 2>&1; then
+            echo "::error::飞书机器人发送失败: $(cat /tmp/feishu-resp.json)"
+          fi
