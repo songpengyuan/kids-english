@@ -48,7 +48,9 @@ Proposed（建议在**第一条真实录音入库之前**落地；当前生产 `
 
 ### 2. 保留期：删音频，不删学习记录
 
-- 默认保留 **90 天**（可配置），由现有 cron 体系每日执行。
+- 默认保留 **90 天**（可配置），由 `backend/scripts/maintenance.sh` 每日执行
+  （03:30，`/etc/cron.d/kids-maintenance`；与 ADR-004 的事件汇总合并为同一入口，
+  顺序是「先汇总后清理」，汇总失败则本轮跳过清理）。安装与心跳验证见 `STABILITY.md §3.1`。
 - **关键取舍**：清理时删除音频文件并把 `file_path` 置空、标记 `purged_at`，
   **但保留 `recordings` 行与 `scores_json`**。
 

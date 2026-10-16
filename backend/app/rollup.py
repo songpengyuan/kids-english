@@ -5,10 +5,17 @@
 
 口径见 ``docs/PROGRESS-DATA.md``：主动/被动由事件 payload 的 ``active`` 标志区分，
 学习秒数取 ``activity_done`` 的 ``payload.seconds``。
+
+**时间口径**（详见 ``app/timeutil.py``）：
+- ``day`` 参数是 ``KIDS_TZ``（默认 ``Asia/Shanghai``）下的日期，不是 UTC 日；
+- 查询先经 ``datetime()`` 归一 —— ``client_ts``（ISO 带 ``Z``）与
+  ``server_ts``（空格分隔）两种格式**文本不可比较**，直接比会算错。
 """
 import json
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
+
+from .timeutil import local_day_bounds_utc, to_sqlite, utc_now
 
 RETENTION_DAYS = int(os.environ.get("KIDS_EVENT_RETENTION_DAYS", 180))
 
@@ -16,13 +23,16 @@ RETENTION_DAYS = int(os.environ.get("KIDS_EVENT_RETENTION_DAYS", 180))
 def rollup_day(conn, day: str) -> int:
     """把某天的事件累加进 daily_stats。幂等：先算后覆盖（可安全重跑/回填）。
 
+    ``day`` 是本地（``KIDS_TZ``）日期字符串；内部换算成 UTC 半开区间再查。
     返回受影响的「孩子-日」数量。
     """
+    start, end = local_day_bounds_utc(day)
     rows = conn.execute(
         """SELECT child_id, payload_json FROM events
            WHERE child_id IS NOT NULL
-             AND date(COALESCE(client_ts, server_ts)) = ?""",
-        (day,),
+             AND datetime(COALESCE(client_ts, server_ts)) >= ?
+             AND datetime(COALESCE(client_ts, server_ts)) < ?""",
+        (start, end),
     ).fetchall()
     agg: dict[int, list[int]] = {}
     for r in rows:
@@ -56,7 +66,10 @@ def rollup_day(conn, day: str) -> int:
 
 
 def purge(conn, keep_days: int = RETENTION_DAYS) -> int:
-    """删除超过保留期的原始事件（汇总已落 daily_stats，明细不长期留）。"""
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=keep_days)).strftime("%Y-%m-%d")
-    cur = conn.execute("DELETE FROM events WHERE date(server_ts) < ?", (cutoff,))
+    """删除超过保留期的原始事件（汇总已落 daily_stats，明细不长期留）。
+
+    同样经 ``datetime()`` 归一后再比，避免 ``server_ts`` 之外的格式混入时失准。
+    """
+    cutoff = to_sqlite(utc_now() - timedelta(days=keep_days))
+    cur = conn.execute("DELETE FROM events WHERE datetime(server_ts) < ?", (cutoff,))
     return cur.rowcount

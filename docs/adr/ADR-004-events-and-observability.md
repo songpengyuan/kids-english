@@ -83,6 +83,31 @@ CREATE INDEX IF NOT EXISTS idx_events_child_ts ON events(child_id, server_ts);
 - 汇总：每日 cron 把事件算进 `daily_stats(child_id, date, active_seconds, activities)`，
   北极星只查汇总表，不扫原始事件。
 
+### 2.1 时间口径：时间戳格式与「学习日」（落地时补的决策）
+
+落地过程中发现两处会让指标**静默失真**的问题，现固化为约定（实现在
+`backend/app/timeutil.py`，测试在 `backend/tests/test_timeutil.py`）：
+
+**a) 两个时间戳列格式不同，文本不可比较。**
+`server_ts` 是 SQLite `datetime('now')` → `2026-10-17 06:31:09`（空格分隔）；
+前端 `client_ts` 是 `new Date().toISOString()` → `2026-10-17T06:31:09.123Z`（带 `T`/`Z`）。
+SQLite 里 `'2026-10-17T06:00:00.000Z' < '2026-10-17 23:00:00'` 是 **false**（`'T'` > `' '`）——
+直接比字符串会算错。所以：写入时把 `client_ts` **归一**成与 `server_ts` 相同的 UTC 格式；
+查询一律先过 `datetime()` 归一。
+
+**b) 「天」是用户感知的那一天（`KIDS_TZ`，默认 `Asia/Shanghai`），不是 UTC 日。**
+生产服务器 TZ 恰好是 `Asia/Shanghai`，`date.today()` 看起来"对"——但那是**巧合**：
+库里存 UTC，两者只在服务器 TZ=UTC 时才自洽。按 UTC 分桶时，CST 00:00–08:00 与
+21:00–24:00（上学前 / 睡前，正是真实使用高峰）会被算到相邻日。
+故 `day` 参数一律是本地日，内部换算成 UTC 半开区间 `[start, end)` 再查。
+
+**降级原则**：`client_ts` 解析失败 → 存 `NULL`，由 `COALESCE` 退回 `server_ts`，
+**绝不因此拒收事件**（埋点是观测手段，不能反过来把业务请求搞挂）；
+`KIDS_TZ` 非法/缺 tzdata → **启动即失败**，不静默退回 UTC（那正是要防的坑）。
+
+> 修复窗口很关键：改动时 `events` / `daily_stats` 都是 0 行，所以**无需回填**，
+> 口径修正零迁移成本。若在已有数据后才发现，就得连带重算历史汇总。
+
 ### 3. 前端错误上报（把 `errors.js` 的目的地补上）
 
 - 保留 localStorage 环形缓冲作为**离线队列**（它现在的职责），在其上增加批量 flush：

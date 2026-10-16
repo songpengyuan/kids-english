@@ -66,7 +66,7 @@
 | 后端 | FastAPI，7 个域路由：`auth` · `children` · `content` · `progress` · `rewards` · `evaluation` · `recordings` |
 | 后端内部 | 手写 SQL（无 ORM）· `security.py`(JWT) · `ratelimit.py`(内存限流) · `seed.py` · 启动时建表 + 幂等迁移 |
 | 存储 | SQLite（WAL + busy_timeout + FK）· `backend/media/` |
-| 运维 | cron：每日 02:30 DB 快照 + media tar（留 14 天）/ 每 5 min 健康检查（仅写日志）· systemd `Restart=always` |
+| 运维 | cron（`/etc/cron.d/kids-*`）：每日 02:30 DB 快照 + media tar（留 14 天）· 每日 03:30 事件汇总 + 录音保留期清理（`scripts/maintenance.sh`）· 每 5 min 健康检查（含维护心跳反查）· systemd `Restart=always` |
 
 ### 关键数据流（三条，各自的可信边界不同）
 
@@ -221,6 +221,14 @@
 
 ## 8. 建议执行顺序
 
+> **落地回执（2026-10-17）**：下列 1-6 已全部实施并上线；第一批三项与 ADR-004/005
+> 的接口、迁移版本化、CI 后端部署均已在生产验证（CI 全绿 + `/api/ping` 回显
+> `schema_version=3` + l10 内容修正生效）。
+> 另在落地过程中发现并修复了两个**指标静默失真**问题（事件时间戳格式不可比较、
+> 「学习日」按 UTC 分桶错 8 小时）——见 ADR-004 §2.1 与 `app/timeutil.py`。
+> 唯一仍欠的是**埋点覆盖**：`track()` 目前只接了 `session_start` 与 `client_error`，
+> 课时/活动组件尚未埋点，因此北极星口径目前仍取不到真实数值。
+
 ### 第一批（本周，全部为小时级，互不依赖）
 
 1. ADR-001 的 CI 闸门（改课程内容忘导出 → 立刻变红）——**30 分钟**
@@ -247,10 +255,18 @@
 
 ## 附：与既有文档需要同步的地方
 
+**状态：以下 5 项已于 2026-10-17 全部同步完毕。**
+
+| 文档 | 已更新内容 |
+|---|---|
+| `ARCHITECTURE-2026.md` | 状态从"草案待确认"改为"P0 已完成"，并指向本文 |
+| `STABILITY.md` §6.3 | 改为 CI 部署（ADR-003），并补 `rsync --delete` 会删掉"不在 git 里的文件"这条运维陷阱 |
+| `STABILITY.md` §3.1 | 重写为 `maintenance.sh` 单入口：防重叠/心跳/日志轮转/时区口径/验证方式 |
+| `PROGRESS-DATA.md` §7 | 补事件与分析口径，含「学习日」边界定义（`KIDS_TZ`） |
+| `DEVELOPMENT.md` §14.5 | 补"改 `lessons.ts` 后必须重跑导出" |
+
+### 后续需要同步的地方（新增）
+
 | 文档 | 需要更新 | 原因 |
 |---|---|---|
-| `ARCHITECTURE-2026.md` | 状态从"草案待确认"改为"P0 已完成"，并指向本文 | 其 §2 描述的"后端仅有评测接口"已不成立；§8 三个待确认决策已被实施事实决定 |
-| `STABILITY.md` §6.3 | "后端无 git 仓库"将不再成立（ADR-003 落地后） | 部署方式变更 |
-| `STABILITY.md` §3 | 补 media 保留期（ADR-005 落地后） | 备份体积与保留策略 |
-| `PROGRESS-DATA.md` | 补"事件与分析口径"一节（ADR-004 落地后） | 说明展示口径 ≠ 分析口径 |
-| `DEVELOPMENT.md` §14.5 | 补"改 `lessons.ts` 后必须重跑导出" | ADR-001 的手工约定 |
+| `STABILITY.md` §6.4 | `kids-db-backup` / `kids-health` 的 cron 现在仍只存在于服务器 | 只有 `kids-maintenance` 收进了仓库；另两条重建时需照文档重写 |

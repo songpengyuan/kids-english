@@ -6,7 +6,7 @@
   两者的合并语义绝不能互相污染，所以事件走独立表。
 
 北极星（每周主动学习分钟数）**不直接扫本表** —— 由每日 cron 汇总进 ``daily_stats``
-（``scripts/rollup-events.py``），查询走汇总表，避免全表扫描。
+（``scripts/rollup_events.py``），查询走汇总表，避免全表扫描。
 """
 import json
 
@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ..db import connect
 from ..schemas import EventsIn, EventsOut
+from ..timeutil import normalize_client_ts
 from ._common import child_belongs
 from .auth import _require_family
 
@@ -31,6 +32,10 @@ def create_events(body: EventsIn, family_id: int = Depends(_require_family)):
     直接 422，契约里可见。
     payload 超 1KB 时截断（保留 ``_truncated`` 标记），避免客户端把大对象塞进事件表
     把单 worker 的写入路径拖慢。
+
+    ``client_ts`` 写入前归一成与 ``server_ts`` 相同的 UTC 格式
+    （见 ``app/timeutil.py``）—— 两种格式并存会让按时间的范围查询静默算错。
+    归一失败不拒收，落 ``NULL`` 由 ``COALESCE`` 退回 ``server_ts``。
     """
     conn = connect()
     try:
@@ -56,7 +61,7 @@ def create_events(body: EventsIn, family_id: int = Depends(_require_family)):
                     e.child_id,
                     e.type[:MAX_TYPE_LEN],
                     raw,
-                    e.client_ts,
+                    normalize_client_ts(e.client_ts),
                     e.app_version,
                 ),
             )

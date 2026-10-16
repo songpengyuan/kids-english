@@ -1,0 +1,30 @@
+# kids-english 每日维护：事件汇总（ADR-004）+ 录音保留期清理（ADR-005）
+#
+# 安装（服务器上执行一次）：
+#   install -m 644 /www/wwwroot/kids-english/backend/deploy/kids-maintenance.cron \
+#                  /etc/cron.d/kids-maintenance
+#
+# 为什么放在 /etc/cron.d/ 而不是 `crontab -e`：
+#   它是**文件** —— 能进仓库、能被 review、能被 diff、重建服务器时能一眼恢复。
+#   `crontab -e` 改的是一份不透明的用户表，服务器挂了就再也说不清当时跑的是什么。
+#   （本项目此前 kids-db-backup / kids-health 两处就只存在于服务器上，
+#     仓库里查不到，属于同类欠账。）
+#
+# 校验安装结果：
+#   diff /etc/cron.d/kids-maintenance backend/deploy/kids-maintenance.cron  # 一致即无漂移
+#   systemctl list-timers --all | grep -i cron ; systemctl is-active cron
+#   grep CRON /var/log/syslog | tail
+#
+# 为什么只调一个 bash 脚本、而把路径/时区都放脚本里：
+#   cron 的环境极简（没有 PATH/HOME），也不读 ~/.bashrc。
+#   把 `cd` 和相对路径写进 cron 行，会在"目录改名/换 shell"时静默失效。
+#
+# 时间：03:30 CST。在 02:30 的 DB 备份之后（备份要的是"当天已跑完"的快照），
+#      又完全避开孩子白天的使用时段。
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# 服务器无 MTA：不设 MAILTO 会让 cron 每轮都记一条"无法投递邮件"的失败日志。
+# 失败可见性改由 maintenance.sh 的日志 + health-check.sh 的心跳反查承担。
+MAILTO=""
+
+30 3 * * * root bash /www/wwwroot/kids-english/backend/scripts/maintenance.sh

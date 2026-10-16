@@ -1335,6 +1335,19 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
    否则丢掉离线队列与幂等）；口径以 `docs/PROGRESS-DATA.md §7` 为准。
    任何孩子相关数据的**采集范围 / 保留期**变更，必须同步 `docs/DATA-INVENTORY.md`
    与对应 ADR（004 埋点 / 005 录音），不能只改代码。
+7. **服务端脚本与 cron（`backend/scripts/*.sh`、`backend/deploy/*`）**：
+   - 这些是 cron **直接调用**的入口，改完要在服务器上实跑一遍；
+     `maintenance.sh` 的路径可用 `KIDS_APP_ROOT` / `KIDS_PY` / `KIDS_MAINT_LOG` 等覆盖，
+     因此能在本地搭临时目录验证（见 `backend/scripts/maintenance.sh` 头部注释）。
+   - **禁止在服务端代码里用 `date.today()` 判断"某一天"** —— 一律走 `app/timeutil.py`
+     （`local_today()` / `local_day_bounds_utc()`）。进程本地时区与库内 UTC 不同源，
+     生产服务器 TZ 恰好是 CST 只是**巧合**，换机器就静默错 8 小时。
+   - 事件时间戳：写入前过 `normalize_client_ts()`；按时间做范围查询必须先过
+     `datetime()` 归一（两种格式**文本不可比较**，直接比会算错且不报错）。
+   - 新增 `/etc` 下的配置（cron / logrotate / systemd）时，**把定义文件一起提交到
+     `backend/deploy/`** —— `rsync --delete` 会删掉 `backend/` 下不在 git 里的文件，
+     服务器侧新增的东西下次部署就会静默消失（详见 `STABILITY.md §6.3`）。
+   - 新增写 `/var/log/` 的服务端脚本，要加进 `backend/deploy/kids-maintenance.logrotate`。
 
 ### 14.6 本周期踩坑记录（下次遇到直接对照）
 
@@ -1361,6 +1374,16 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
   和因代理失败，都只吐一句 `error: failed to push some refs to ...`，调用方无法区分。
   所以任何"git 失败就换通道重推"的脚本（`scripts/ship.mjs` → `scripts/push-via-api.py`）
   都必须**自己在推送前跑一遍门禁**，失败即中止、不进兜底。
+- **`if ! cmd` 会把"命令不存在"和"命令返回失败"混为一谈**：`if ! flock -n 9; then ... echo SKIP; exit 0; fi`
+  在 `flock` 未安装时同样成立（shell 返回 127），于是"缺依赖"被误判成"上一轮还在跑"，
+  任务从此**每轮静默跳过** —— 缺依赖伪装成了正常运行。
+  → 依赖存在性（`command -v`）与返回值解释**必须分开写**，见 `scripts/maintenance.sh`。
+- **`stat -c %Y` 是 GNU 语法**（macOS 用 `-f %m`）：取不到时若用 `|| echo 0` 兜底，
+  会把"读不到修改时间"变成"1970 年"，让陈旧检查**永久误报**（每 5 分钟一条）。
+  取不到应报"未知"，不要兜 0 —— 长期误报的告警等于没有告警。
+- **给 venv 的 python 做软链接会让它找不到 site-packages**：venv 的 `sys.prefix` 由
+  可执行文件**路径**推出，软链到别处后 `import fastapi` 直接 `ModuleNotFoundError`。
+  搭临时环境验证时用真实路径（或 `KIDS_PY` 显式指过去），别用软链。
 
 
 ### 14.7 数据单源化（第二份手写数据会漂移）

@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.api.recordings import MEDIA_ROOT  # noqa: E402
-from app.db import connect  # noqa: E402
+from app.db import connect, init_db  # noqa: E402
 from app.retention import MEDIA_RETENTION_DAYS, purge_expired, purge_orphans  # noqa: E402
 
 
@@ -20,6 +20,9 @@ def main() -> None:
     ap.add_argument("--keep-days", type=int, default=MEDIA_RETENTION_DAYS)
     ap.add_argument("--dry-run", action="store_true", help="只统计，不实际删除")
     args = ap.parse_args()
+
+    # 同 rollup_events.py：不依赖"服务已经启动过"，幂等地保证 schema 就位。
+    init_db()
 
     conn = connect()
     try:

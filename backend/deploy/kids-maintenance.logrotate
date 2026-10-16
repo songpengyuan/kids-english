@@ -1,0 +1,24 @@
+# kids-english 运维日志轮转
+#
+# 安装：install -m 644 backend/deploy/kids-maintenance.logrotate \
+#                  /etc/logrotate.d/kids-maintenance
+# 验证：logrotate -d /etc/logrotate.d/kids-maintenance   # -d = dry-run，只打印不动作
+#
+# 为什么需要：这两个日志由 cron 长期追加，**没人轮转就会无限增长**。
+# 无界日志最终会吃满磁盘——而 health-check.sh 的 DISK_HIGH 告警只能事后发现。
+#
+# 用 copytruncate 而不是默认的 create：
+#   写入方是「每次运行都重新 open 的短命进程」，正常情况 create 也够；
+#   但若某次维护跑得久、恰好跨过轮转时刻，旧 fd 会继续写已改名的文件，
+#   日志就此分裂到两个文件里。copytruncate 先拷贝再清空，写入方无需重新 open。
+#   （代价：拷贝与清空之间写入的极少量行可能丢——对追加型运维日志可接受。）
+/var/log/kids-maintenance.log /var/log/kids-health.log {
+  weekly
+  rotate 8
+  compress
+  delaycompress
+  missingok
+  notifempty
+  copytruncate
+  su root root
+}

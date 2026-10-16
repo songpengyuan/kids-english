@@ -164,7 +164,49 @@ def test_app_version_and_client_ts_persisted():
     finally:
         conn.close()
     assert row["app_version"] == "abc123"
-    assert row["client_ts"].startswith("2026-10-17")
+    # 归一成与 server_ts 相同的 UTC 格式（去掉 T/Z）——否则两种格式文本不可比较，
+    # 按时间的范围查询会静默算错（见 app/timeutil.py 的模块注释）。
+    assert row["client_ts"] == "2026-10-17 10:00:00"
+
+
+def test_client_ts_with_offset_is_normalized_to_utc():
+    """带时区的上报按其时区换算，而不是照抄字符串。"""
+    from app.db import connect
+    conn = connect()
+    fid, cid = _setup_family(conn)
+    conn.close()
+    _post([_evt(1, client_ts="2026-10-17T18:00:00+08:00")], fid, cid=cid)  # = 10:00 UTC
+    conn = connect()
+    try:
+        got = conn.execute("SELECT client_ts FROM events WHERE client_event_id='e1'").fetchone()[
+            "client_ts"
+        ]
+    finally:
+        conn.close()
+    assert got == "2026-10-17 10:00:00"
+
+
+def test_garbage_client_ts_does_not_reject_event():
+    """时间戳不可解析时降级为 NULL（落 server_ts），**绝不**因此拒收事件。
+
+    埋点是观测手段，不能反过来把业务请求搞挂。
+    """
+    from app.db import connect
+    conn = connect()
+    fid, cid = _setup_family(conn)
+    conn.close()
+    r = _post([_evt(1, client_ts="昨天下午")], fid, cid=cid)
+    assert r.status_code == 201
+    assert r.json()["accepted"] == 1
+    conn = connect()
+    try:
+        row = conn.execute(
+            "SELECT client_ts, server_ts FROM events WHERE client_event_id='e1'"
+        ).fetchone()
+    finally:
+        conn.close()
+    assert row["client_ts"] is None
+    assert row["server_ts"]  # COALESCE 会退回它
 
 
 # ---------- 汇总与保留期 ----------
@@ -175,11 +217,12 @@ def test_rollup_writes_daily_stats():
     conn = connect()
     fid, cid = _setup_family(conn)
     conn.close()
+    # 三条都落在 CST 2026-10-16 这一天内（09:00 / 09:05 / 20:00 CST）。
     _post(
         [
-            _evt(1, payload={"seconds": 60, "active": True}, client_ts="2026-10-16T09:00:00Z"),
-            _evt(2, payload={"seconds": 40, "active": True}, client_ts="2026-10-16T09:05:00Z"),
-            _evt(3, payload={"seconds": 20, "active": False}, client_ts="2026-10-16T20:00:00Z"),
+            _evt(1, payload={"seconds": 60, "active": True}, client_ts="2026-10-16T01:00:00Z"),
+            _evt(2, payload={"seconds": 40, "active": True}, client_ts="2026-10-16T01:05:00Z"),
+            _evt(3, payload={"seconds": 20, "active": False}, client_ts="2026-10-16T12:00:00Z"),
         ],
         fid,
         cid=cid,
@@ -197,6 +240,79 @@ def test_rollup_writes_daily_stats():
     assert row["active_seconds"] == 100
     assert row["passive_seconds"] == 20
     assert row["activities"] == 3
+
+
+def test_rollup_day_boundary_is_local_not_utc():
+    """「学习日」按 KIDS_TZ（默认 Asia/Shanghai）切，不是 UTC 日。
+
+    2026-10-16T20:00:00Z == 2026-10-17 04:00 CST → 属于 **10-17**。
+
+    这正是修复前的错位：CST 清晨（上学前）与夜间（睡前）两段使用高峰
+    在 UTC 分桶下会被推到相邻日，北极星「每周主动学习分钟数」随之失真。
+    """
+    from app.db import connect
+    from app.rollup import rollup_day
+
+    conn = connect()
+    fid, cid = _setup_family(conn)
+    conn.close()
+    _post(
+        [
+            # CST 10-16 深夜 23:00（= 15:00 UTC）
+            _evt(1, payload={"seconds": 10, "active": True}, client_ts="2026-10-16T15:00:00Z"),
+            # CST 10-17 清晨 04:00（= 10-16 20:00 UTC）—— UTC 下是"前一天"
+            _evt(2, payload={"seconds": 20, "active": True}, client_ts="2026-10-16T20:00:00Z"),
+        ],
+        fid,
+        cid=cid,
+    )
+    conn = connect()
+    try:
+        rollup_day(conn, "2026-10-16")
+        rollup_day(conn, "2026-10-17")
+        conn.commit()
+        got = {
+            r["date"]: r["active_seconds"]
+            for r in conn.execute(
+                "SELECT date, active_seconds FROM daily_stats WHERE child_id=?", (cid,)
+            )
+        }
+    finally:
+        conn.close()
+    assert got == {"2026-10-16": 10, "2026-10-17": 20}
+
+
+def test_rollup_counts_mixed_timestamp_formats():
+    """client_ts（ISO 带 Z）与 server_ts（空格分隔）必须能一起被正确统计。
+
+    两种格式**文本不可比较** —— 换算区间若直接比字符串，这里会漏计。
+    """
+    from app.db import connect
+    from app.rollup import rollup_day
+
+    conn = connect()
+    fid, cid = _setup_family(conn)
+    conn.close()
+    # 一条走 client_ts（ISO），一条只有 server_ts（空格分隔），同在 CST 10-16。
+    _post([_evt(1, payload={"seconds": 60, "active": True}, client_ts="2026-10-16T01:00:00Z")], fid, cid=cid)
+
+    conn = connect()
+    try:
+        conn.execute(
+            """INSERT INTO events (client_event_id, family_id, child_id, type, payload_json, server_ts)
+               VALUES ('s1', ?, ?, 'activity_done', '{"seconds": 40, "active": true}', '2026-10-16 02:00:00')""",
+            (fid, cid),
+        )
+        conn.commit()
+        rollup_day(conn, "2026-10-16")
+        conn.commit()
+        row = conn.execute(
+            "SELECT active_seconds, activities FROM daily_stats WHERE child_id=?", (cid,)
+        ).fetchone()
+    finally:
+        conn.close()
+    assert row["active_seconds"] == 100
+    assert row["activities"] == 2
 
 
 def test_rollup_is_idempotent():

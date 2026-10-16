@@ -43,18 +43,91 @@
 
 ### 3.1 每日维护任务（ADR-004 / ADR-005）
 
-同一 cron 体系下另有两个每日任务（cwd = `backend`）：
+两个每日任务**合并为一个入口脚本** `backend/scripts/maintenance.sh`：
 
-| 任务 | 脚本 | 作用 |
+| 顺序 | 内部脚本 | 作用 |
 |---|---|---|
-| 事件汇总 + 明细清理 | `scripts/rollup_events.py` | 事件 → `daily_stats`（北极星口径，见 `PROGRESS-DATA.md §7`）；清理 >180 天的原始事件 |
-| 录音保留期清理 | `scripts/purge_media.py` | 删 >90 天的音频文件（**行与分数保留**，见 ADR-005）；清理孤儿文件 |
+| 1 | `scripts/rollup_events.py` | 事件 → `daily_stats`（北极星口径，见 `PROGRESS-DATA.md §7`）；清理 >180 天的原始事件 |
+| 2 | `scripts/purge_media.py` | 删 >90 天的音频文件（**行与分数保留**，见 ADR-005）；清理孤儿文件 |
 
-服务器 `/etc/cron.d/kids-maintenance` 示例（按实际路径调整）：
+**为什么不让 cron 直接调两个 python**（早期文档就是这么写的）：
 
-```cron
-30 3 * * * root cd /www/wwwroot/kids-english/backend && .venv/bin/python scripts/rollup_events.py >> /var/log/kids-maintenance.log 2>&1
-40 3 * * * root cd /www/wwwroot/kids-english/backend && .venv/bin/python scripts/purge_media.py >> /var/log/kids-maintenance.log 2>&1
+1. **防重叠** —— cron 不保证上一轮跑完才起下一轮。两个实例同时写 SQLite，
+   WAL 下"写-写"会互相等锁，`busy_timeout=5000` 一超时就报错。
+   `maintenance.sh` 用 `flock` 保证同一时刻只有一个实例；拿不到锁记 `SKIP` 并退出 0
+   （那是"正常跳过"，不是故障，不应触发告警）。
+2. **可追溯** —— cron 是静默的。统一写 `/var/log/kids-maintenance.log`
+   （含开始/结束、时区、耗时、退出状态），并落心跳文件。
+3. **时区显式** —— `KIDS_TZ` 决定「学习日」口径。
+4. **失败不放大** —— 汇总失败时**跳过**媒体清理：清理是"减法"，
+   在数据链路状态未知时先停一轮，比带着坏状态继续删安全（两者都幂等，下一轮会补上）。
+
+**顺序敏感**：先汇总后清理。反过来会先删掉还没汇总的原始事件。
+
+#### 时间口径：`KIDS_TZ`（默认 `Asia/Shanghai`）
+
+`daily_stats.date` 是**用户感知的那一天**，不是 UTC 日。存储一律 UTC，
+分桶时才按 `KIDS_TZ` 换算（见 `backend/app/timeutil.py`）。
+
+> 为什么必须显式：生产服务器 TZ 恰好是 `Asia/Shanghai`，`date.today()` 看起来"对"——
+> 但那是**巧合**。库里存的是 UTC，一旦换到 TZ=UTC 的机器，CST 00:00–08:00 与
+> 21:00–24:00 两段使用高峰（上学前 / 睡前）就会被算到相邻日，
+> 北极星「每周主动学习分钟数」随之失真，且**数值看着完全合理**，很难察觉。
+
+改 `KIDS_TZ` 属于**口径变更**：只影响之后汇总的行，历史 `daily_stats` 不会自动重算。
+
+#### 安装（服务器上执行一次）
+
+```bash
+install -m 644 /www/wwwroot/kids-english/backend/deploy/kids-maintenance.cron \
+               /etc/cron.d/kids-maintenance
+install -m 644 /www/wwwroot/kids-english/backend/deploy/kids-maintenance.logrotate \
+               /etc/logrotate.d/kids-maintenance
+```
+
+cron 与 logrotate 的**定义文件随仓库版本化**（`backend/deploy/`），
+不写进 `crontab -e` —— 后者是不透明的用户表，重建服务器时说不清当时跑的是什么。
+
+#### 怎么确认它真的在跑
+
+这是 cron 最容易失效的地方：**脚本还在、cron 还在，但永远不再执行**
+（改了名、路径失效、被 `rsync --delete` 带走）。三层可见性：
+
+```bash
+# 1) 最近一次运行的结论与耗时
+cat /www/wwwroot/kids-english/backups/maintenance-state.json
+# 2) 明细（每轮 START/rollup/media/END 各一行）
+tail -30 /var/log/kids-maintenance.log
+# 3) 由 health-check.sh 每 5 分钟反查心跳，把静默故障变成日志
+grep MAINTENANCE /var/log/kids-health.log
+```
+
+**心跳机制**：`maintenance.sh` 每轮结束原子地写 `backups/maintenance-state.json`
+（`last_run` / `status` / `tz` / `duration_s`），`health-check.sh` 据此报三类异常：
+
+| 日志标记 | 含义 |
+|---|---|
+| `MAINTENANCE_MISSING` | 心跳文件不存在（从未成功跑过，或目录被清） |
+| `MAINTENANCE_FAILED status=…` | 上一轮非 ok（每个不同的 `last_run` 只记一次） |
+| `MAINTENANCE_STALE age=…h` | 超过 26h 没更新（每小时最多记一次） |
+| `MAINTENANCE_UNKNOWN` | 读不到心跳文件时间 —— **"未知"不当作"陈旧"**，避免永久误报 |
+
+> 去重是刻意的：停摆一天若每 5 分钟记一行就是 288 行噪音，会把别的告警淹掉；
+> 告警一旦长期误报/刷屏，就会被无视，等于没有告警。
+
+日志轮转见 `backend/deploy/kids-maintenance.logrotate`（周轮转、留 8 份、
+用 `copytruncate` 以适配"每次运行才 open 一次"的短命进程）。**不轮转的运维日志
+最终会吃满磁盘**，而 `DISK_HIGH` 只能事后发现。
+
+#### 手工执行
+
+```bash
+# 正常跑一轮（幂等，可安全重跑/回填）
+bash /www/wwwroot/kids-english/backend/scripts/maintenance.sh
+# 只看媒体清理会做什么，不实际删除
+cd /www/wwwroot/kids-english/backend && .venv/bin/python scripts/purge_media.py --dry-run
+# 回填最近 7 天的事件汇总
+cd /www/wwwroot/kids-english/backend && .venv/bin/python scripts/rollup_events.py --days 7
 ```
 
 > **保留期的影响**：`media/` 不再单调增长（音频 90 天滚动 × 14 份快照），
@@ -117,6 +190,13 @@ tar xzf backups/media-YYYYMMDD.tar.gz -C backend/   # 解出 backend/media/
 > 若某次迁移与旧代码不兼容，需同时处理数据（见 §6.1）。
 > `/api/ping` 会回显 `schema_version`，可用来确认生产库当前的 schema 版本。
 
+> ⚠️ **rsync 用了 `--delete`，而 rsync 不读 `.gitignore`。**
+> 意味着 `backend/` 下**任何不在 git 里的文件，下次部署都会被删掉**。
+> 服务器侧新增脚本/配置后必须同时提交到仓库，否则它会在下一次 push 时静默消失
+> （表现是"任务突然不再执行"，而文件已经没了）。
+> 排除项只有 `.venv` / `.env*` / `*.db*` / `media/` / `__pycache__` / `.pytest_cache`
+> —— 数据与凭据在排除名单里，这就是「代码同步、数据与凭据永不同步」的落地方式。
+
 应急通道（CI 到服务器的 SSH 不可用时）：`bash frontend/scripts/deploy-server.sh`
 —— 从本机把代码同步到服务器 staging（已排除数据与凭据，执行前二次确认），
 再触发服务器侧 `deploy.sh`。注意该脚本**只做 staging 同步**，服务器侧如何装配见
@@ -126,8 +206,23 @@ tar xzf backups/media-YYYYMMDD.tar.gz -C backend/   # 解出 backend/media/
 
 1. 宝塔面板 + Python 3.x + nginx
 2. scp `backend/`（含 `.env`、`kids.db`、`media/`）与 `www/` 产物
-3. `pip install`（requirements.txt）+ 建立 systemd 单元 + 恢复 cron（本文档第 3/4 节）
-4. 验证：`/api/ping` 200、登录接口可用、录音回放 200
+3. `pip install`（requirements.txt）+ 建立 systemd 单元
+4. **恢复 cron**：cron 定义已随仓库版本化，逐个安装即可（不再依赖记忆）：
+
+   ```bash
+   for f in /www/wwwroot/kids-english/backend/deploy/*.cron; do
+     install -m 644 "$f" "/etc/cron.d/$(basename "${f%.cron}")"
+   done
+   install -m 644 /www/wwwroot/kids-english/backend/deploy/kids-maintenance.logrotate \
+                  /etc/logrotate.d/kids-maintenance
+   systemctl is-active cron && ls -l /etc/cron.d/kids-*
+   ```
+
+   > 目前只有 `kids-maintenance` 收进了仓库；`kids-db-backup` / `kids-health`
+   > 仍只存在于服务器上（重建时需照第 3/4 节的描述重写）—— 属已知欠账。
+
+5. 验证：`/api/ping` 200（且带 `schema_version`）、登录接口可用、录音回放 200、
+   手工跑一次 `maintenance.sh` 后心跳文件出现且 `status=ok`
 
 ## 7. 已知边界与后续（P4 稳定性 backlog）
 
