@@ -113,3 +113,50 @@ describe("HeroDetailView · 招牌技能整卡朗读", () => {
     expect(allCalls.filter((t) => t === skills[1])).toHaveLength(1);
   });
 });
+
+/**
+ * 拆分回归：背面资料的朗读状态原本和页面存在同一个文件里，2026-10 拆分后
+ * 移到 HeroInfoPanel 内部，父级要打断它只能通过递增 resetToken。
+ * 这条契约（翻面 / 换形态 → 背面朗读必须停）跨了两个组件，最容易被拆坏。
+ */
+describe("HeroDetailView · 翻面与切形态打断背面朗读", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(speakZh).mockResolvedValue(undefined);
+  });
+
+  it("翻到背面时，背面正在朗读的条目被打断并清掉高亮", async () => {
+    const w = await mountHero("tiga");
+
+    // 让朗读挂起，停在「介绍」卡上
+    vi.mocked(speakZh).mockImplementation(() => new Promise(() => {}));
+    await w.findAll(".info-card")[0].trigger("click");
+    await flushPromises();
+    expect(w.findAll(".info-card")[0].classes()).toContain("speaking");
+
+    // 翻面 → 应打断（否则会出现"正面读着、背面翻开还在读"的串台）
+    vi.mocked(stopSpeaking).mockClear();
+    await w.find(".detail-btn").trigger("click");
+    await flushPromises();
+    expect(stopSpeaking).toHaveBeenCalled();
+    expect(w.findAll(".info-card")[0].classes()).not.toContain("speaking");
+  });
+
+  it("切换形态时，背面正在朗读的条目被打断", async () => {
+    const w = await mountHero("tiga");
+
+    vi.mocked(speakZh).mockImplementation(() => new Promise(() => {}));
+    await w.findAll(".info-card")[0].trigger("click");
+    await flushPromises();
+    expect(w.findAll(".info-card")[0].classes()).toContain("speaking");
+
+    // 换个形态（tiga 有 3 个形态，缩略图一定存在）
+    const thumbs = w.findAll(".thumb");
+    expect(thumbs.length).toBeGreaterThan(1);
+    vi.mocked(stopSpeaking).mockClear();
+    await thumbs[1].trigger("click");
+    await flushPromises();
+    expect(stopSpeaking).toHaveBeenCalled();
+    expect(w.findAll(".info-card")[0].classes()).not.toContain("speaking");
+  });
+});

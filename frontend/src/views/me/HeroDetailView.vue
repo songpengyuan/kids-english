@@ -1,25 +1,40 @@
 <script setup lang="ts">
 /**
- * 奥特曼详情页（宝藏库点击已收集角色进入）——2026-09-27 交互重设计。
+ * 奥特曼详情页（/me/treasure/hero/:id，从宝藏罐点已收集角色进入）。
  *
- * 设计要点（交互设计师视角）：
- * 1. **大图可放大**：点击形象图打开全屏查看器（深色底、图片最大化、多形态可点图切换），
- *    解决"孩子想看清奥特曼细节但小图看不清"的核心诉求；放大入口用"🔍 放大看"胶囊提示可发现性。
- * 2. **朗读可听清、可停止**：
- *    - 中文 TTS 按语言选音色（修复此前写死英文音色导致中文怪音/无声）；
- *    - 英文名读完再读中文名（串联播报，不再固定延时掐断）；
- *    - 正在朗读的条目高亮 + 声波动画，再点一下立即停止（儿童可主动控制）。
- * 3. **形态切换有反馈**：切换时大图淡入淡出，换形态自动停止朗读（避免张冠李戴）。
- * 4. 简介/技能/常用语朗读属"学习内容"，不再受全局音效静音开关影响（静音只管提示音/庆祝语）。
+ * ── 这个文件只做「编排」 ──
+ * 2026-10 设计系统统一时做过一次拆分：原文件 1289 行，把四块各自独立的东西
+ * 拆了出去，页面层只留状态编排：
+ *
+ *   HeroPoseStage    正面大图 + 多姿势轮播（含箭头/小点/放大入口）
+ *   HeroFormThumbs   形态缩略切换条（页面内 / 全屏查看器两种底色）
+ *   HeroInfoPanel    背面资料（简介/小档案/技能/常用语 + 朗读交互）
+ *   HeroZoomViewer   全屏图片查看器
+ *
+ * 页面自己负责的只剩四件事，都是"跨组件共享"的状态：
+ *   1. 从路由解析当前英雄与形态（深链 ?form= 优先）
+ *   2. 当前姿势下标（主图区与全屏查看器共用同一份，避免两处不同步）
+ *   3. 角色名/形态名的朗读（顶栏与查看器都要触发）
+ *   4. 翻转与放大两个开关，以及切形态时要打断朗读
+ *
+ * 交互要点（沿用原设计）：
+ *   · 朗读可听清、可停止：点正在读的条目即停止，条目高亮 + 声波动画；
+ *   · 英文名读完再读中文名（串联播报，不固定延时掐断）；
+ *   · 切换形态时停朗读并回到第一张姿势（避免"读着 A 看 B"）。
  */
-import { computed, ref, watch, onBeforeUnmount } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { HEROES, formById, introOf, type FlatForm } from "../../data/heroes";
 import { useRewardsStore } from "../../stores/rewards";
 import { speak, speakZh, stopSpeaking } from "../../services/speech";
 import { sfxTap } from "../../services/effects";
-import HeaderBar from "../../components/layout/HeaderBar.vue";
+import PageShell from "../../components/ui/PageShell.vue";
 import PathIcon from "../../components/PathIcon.vue";
+import SpeakWave from "../../components/ui/SpeakWave.vue";
+import HeroPoseStage from "../../components/treasure/HeroPoseStage.vue";
+import HeroFormThumbs from "../../components/treasure/HeroFormThumbs.vue";
+import HeroInfoPanel from "../../components/treasure/HeroInfoPanel.vue";
+import HeroZoomViewer from "../../components/treasure/HeroZoomViewer.vue";
 import { ZoomIn } from "@lucide/vue";
 
 const route = useRoute();
@@ -45,7 +60,7 @@ const currentForm = computed<FlatForm | null>(() =>
   currentFormId.value ? formById(currentFormId.value) : null
 );
 
-/** 详情资料（随 ROSTER 维护，见 data/heroes.ts；缺省时给占位文案） */
+/** 详情资料（随 ROSTER 维护，见 data/heroes.ts） */
 const detail = computed(() => hero.value?.detail ?? null);
 
 /** 形态缩略（转 FlatForm：带 image/fallback/heroId） */
@@ -55,24 +70,21 @@ const formThumbs = computed<FlatForm[]>(() =>
     : []
 );
 
+/** 加载失败的图片地址（主图区与查看器共用，记录一次两处都不再试） */
 const imgFailed = ref<Record<string, boolean>>({});
 
-function srcOf(f: FlatForm) {
-  return imgFailed.value[f.image] ? f.fallback : f.image;
-}
-
-/* ---------- 顶部大图：多姿势轮播（左右滑动 + 小点 + 箭头，放大保留） ---------- */
-/** 当前形态所有姿势图（加载失败的运行时跳过）；主图也失败则退回单张占位图 */
+/** 当前形态的所有姿势图（跳过加载失败的）；主图全失败则退回单张占位图 */
 const poses = computed<string[]>(() => {
   const f = currentForm.value;
   if (!f) return [];
   const list = f.images.filter((u) => !imgFailed.value[u]);
   return list.length ? list : [f.fallback];
 });
-const poseIndex = ref(0);
-const poseEl = ref<HTMLElement | null>(null);
 
-/** 形态切换：轮播回到第一张 */
+/** 当前姿势下标：主图区与全屏查看器共用，两份索引迟早会不同步 */
+const poseIndex = ref(0);
+
+/** 形态切换：轮播回到第一张（新形态的姿势数量不同，停在旧下标会错位） */
 watch(
   () => currentForm.value?.id,
   () => {
@@ -81,92 +93,18 @@ watch(
 );
 
 function onPoseError(src: string) {
+  if (!src) return;
   imgFailed.value[src] = true;
-  if (poseIndex.value >= poses.value.length) poseIndex.value = 0;
-}
-
-function poseCellWidth(): number {
-  return poseEl.value?.querySelector<HTMLElement>(".pose-cell")?.offsetWidth ?? 0;
-}
-
-function syncPose() {
-  const w = poseCellWidth();
-  if (!w) return;
-  const idx = Math.round((poseEl.value?.scrollLeft ?? 0) / w);
-  poseIndex.value = Math.max(0, Math.min(idx, poses.value.length - 1));
-}
-
-function jumpPose(i: number) {
-  const w = poseCellWidth();
-  poseIndex.value = Math.max(0, Math.min(i, poses.value.length - 1));
-  const el = poseEl.value;
-  if (!el) return;
-  el.scrollTo?.({ left: poseIndex.value * w, behavior: "smooth" });
-  // 兜底：个别环境 smooth 动画不触发时，直接定位到目标位（保证箭头/小点点击后画面一定跟随）
-  setTimeout(() => {
-    if (Math.abs((el.scrollLeft ?? 0) - poseIndex.value * w) > 8) {
-      el.scrollLeft = poseIndex.value * w;
-    }
-  }, 420);
-}
-
-function stepPose(d: number) {
-  jumpPose(poseIndex.value + d);
+  // 下标越界由 HeroPoseStage 内部夹回（它才知道新列表长度）
 }
 
 /* ---------- 朗读（单声道：一次只读一条，可停止） ---------- */
-/** 当前朗读条目 key（'hero' / 'bio' / `sk-${s}` / `q-${p}` / `form`） */
+/** 'hero'=角色名 / 'form'=形态名（其余条目由 HeroInfoPanel 自己管） */
 const speaking = ref<string | null>(null);
 
-/** 点正在读的 → 停止；点新的 → 打断旧的开始新的 */
-async function sayZh(key: string, text: string) {
-  sfxTap();
-  if (speaking.value === key) {
-    stopSpeaking();
-    speaking.value = null;
-    return;
-  }
+function stopSpeech() {
   stopSpeaking();
-  speaking.value = key;
-  await speakZh(text, 1, { bypassMute: true });
-  if (speaking.value === key) speaking.value = null;
-}
-
-/* ---------- 招牌技能：点整卡依次朗读全部（孩子少点几下） ---------- */
-/** 整卡朗读当前技能（null=未在读） */
-const skillReading = ref<string | null>(null);
-
-/** 点整卡 → 从第一个技能依次读完；再点一下停止 */
-async function sayAllSkills() {
-  const list = detail.value?.skills ?? [];
-  if (!list.length) return;
-  sfxTap();
-  if (skillReading.value) {
-    stopSpeaking();
-    skillReading.value = null;
-    return;
-  }
-  stopSpeaking();
-  skillReading.value = list[0] ?? null;
-  for (const s of list) {
-    if (!skillReading.value) return; // 被用户停止/打断
-    skillReading.value = s;
-    await speakZh(s, 1, { bypassMute: true });
-  }
-  skillReading.value = null;
-}
-
-function onSkillsCardClick() {
-  void sayAllSkills();
-}
-
-/** chip 点击：打断整卡朗读，只读当前技能 */
-function onChipClick(s: string) {
-  if (skillReading.value) {
-    stopSpeaking();
-    skillReading.value = null;
-  }
-  sayZh(`sk-${s}`, s);
+  speaking.value = null;
 }
 
 /** 角色名：英文读完再接中文（串联不掐断；中途被其它朗读打断则放弃后半段） */
@@ -175,14 +113,13 @@ async function sayHero() {
   if (!h) return;
   sfxTap();
   if (speaking.value === "hero") {
-    stopSpeaking();
-    speaking.value = null;
+    stopSpeech();
     return;
   }
   stopSpeaking();
   speaking.value = "hero";
   await speak(h.en, { ttsOnly: true });
-  if (speaking.value !== "hero") return; // 用户已切换/点了别的
+  if (speaking.value !== "hero") return; // 用户已切换 / 点了别的
   await speakZh(h.name, 1, { bypassMute: true });
   if (speaking.value === "hero") speaking.value = null;
 }
@@ -194,8 +131,7 @@ async function sayFormName() {
   if (!intro) return;
   sfxTap();
   if (speaking.value === "form") {
-    stopSpeaking();
-    speaking.value = null;
+    stopSpeech();
     return;
   }
   stopSpeaking();
@@ -206,167 +142,46 @@ async function sayFormName() {
   if (speaking.value === "form") speaking.value = null;
 }
 
-/** 切换形态：停止朗读避免"读着 A 看 B" */
-function pick(f: FlatForm) {
-  sfxTap();
-  currentFormId.value = f.id;
-}
-watch(currentFormId, () => {
-  stopSpeaking();
-  speaking.value = null;
-});
-
-onBeforeUnmount(stopSpeaking);
-
-/* ---------- 全屏图片查看器 ---------- */
-const zoomOpen = ref(false);
-const zoomLeaving = ref(false);
-
-function openZoom() {
-  sfxTap();
-  zoomOpen.value = true;
-  zoomLeaving.value = false;
-}
-
-function closeZoom() {
-  if (zoomLeaving.value) return;
-  zoomLeaving.value = true;
-  window.setTimeout(() => {
-    zoomOpen.value = false;
-    zoomLeaving.value = false;
-  }, 160);
-}
-
-/** 多形态时点大图切换下一个形态（循环）；单形态点图不响应 */
-function nextForm() {
-  if (formThumbs.value.length <= 1) return;
-  const idx = formThumbs.value.findIndex((f) => f.id === currentFormId.value);
-  const next = formThumbs.value[(idx + 1) % formThumbs.value.length];
-  if (next) pick(next);
-}
-
-function goBack() {
-  router.push("/me/treasure");
-}
-
-/** 小档案朗读文案：把有值的字段拼成一句孩子听得懂的话 */
-function factsText(): string {
-  const d = detail.value;
-  if (!d) return "";
-  const parts: string[] = [];
-  if (d.origin) parts.push(`来自${d.origin}`);
-  if (d.height) parts.push(`身高${d.height}`);
-  if (d.weight) parts.push(`体重${d.weight}`);
-  if (d.debut) parts.push(`首次登场是${d.debut}`);
-  return parts.join("。");
-}
-/** 小档案是否有内容（决定卡片显不显示） */
-function hasFacts(): boolean {
-  const d = detail.value;
-  return !!d && !!(d.origin || d.height || d.weight || d.debut);
-}
-
-/* ---------- 翻转卡片：正面形象+名字，背面资料 ---------- */
-/** 是否翻到背面（详情资料） */
+/* ---------- 翻转卡片：正面形象 + 名字，背面资料 ---------- */
 const flipped = ref(false);
+
+/** 递增即打断朗读，传给 HeroInfoPanel（它有自己的朗读状态，不该被外面翻） */
+const resetToken = ref(0);
 
 /** 翻转（开/关）：带提示音；翻转时停朗读，避免"正面读着、背面翻开"串台 */
 function toggleFlip(open = !flipped.value) {
   sfxTap();
   flipped.value = open;
-  stopSpeaking();
-  speaking.value = null;
+  stopSpeech();
+  resetToken.value++;
+}
+
+/** 切换形态：停朗读 + 通知面板打断（避免"读着 A 看 B"） */
+function pick(f: FlatForm) {
+  sfxTap();
+  currentFormId.value = f.id;
+  stopSpeech();
+  resetToken.value++;
+}
+
+/* ---------- 全屏图片查看器 ---------- */
+const zoomOpen = ref(false);
+
+function openZoom() {
+  sfxTap();
+  zoomOpen.value = true;
+}
+
+function goBack() {
+  router.push("/me/treasure");
 }
 </script>
 
 <template>
-  <div class="hero-detail view" v-if="hero && currentForm">
-    <HeaderBar show-back back-label="返回宝藏库" @back="goBack">
-      <template #title>
-        <span
-          class="hd-title"
-          :class="{ speaking: speaking === 'hero' }"
-          role="button"
-          tabindex="0"
-          aria-label="朗读角色名"
-          @click="sayHero"
-          @keydown.enter.prevent="sayHero"
-        >
-          <PathIcon name="volume" class="hd-vol" />
-          {{ hero.name }}<span class="hd-en">{{ hero.en }}</span>
-          <span v-if="speaking === 'hero'" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
-        </span>
-      </template>
-      <template #right>
-        <!-- 右上角操作：放大查看大图（内容区同类按钮保留，孩子两手都够得到） -->
-        <button
-          class="hd-zoom"
-          aria-label="放大查看图片"
-          title="放大查看"
-          @click="openZoom"
-        >
-          <ZoomIn class="k-ico" />
-        </button>
-      </template>
-    </HeaderBar>
-
-    <div class="flip-scene">
-      <div class="flip-card" :class="{ flipped }">
-        <!-- 正面：形象 + 名字 + 详情按钮 -->
-        <div class="flip-face front">
-          <div class="face-scroll">
-      <!-- 形象大图：多姿势左右滑动轮播（小点/箭头指示）；点"放大看"进全屏查看器 -->
-      <div class="hero-stage" :style="{ '--tone': currentForm.color }">
-        <div class="pose-view">
-          <div ref="poseEl" class="pose-strip" @scroll.passive="syncPose">
-            <figure v-for="(src, i) in poses" :key="src" class="pose-cell" :class="{ sil: !rewards.isOwned(currentForm.id) }">
-              <img :src="src" :alt="`${hero.name}${currentForm.name}${poses.length > 1 ? ' 姿势' + (i + 1) : ''}`" @error="onPoseError(src)" />
-            </figure>
-          </div>
-        </div>
-        <button v-if="poses.length > 1" class="pose-arrow prev" aria-label="上一张" @click="stepPose(-1)">
-          <PathIcon name="chevron-left" />
-        </button>
-        <button v-if="poses.length > 1" class="pose-arrow next" aria-label="下一张" @click="stepPose(1)">
-          <PathIcon name="chevron-right" />
-        </button>
-        <button class="zoom-hint" aria-label="放大查看图片" @click="openZoom">
-          🔍 放大看
-        </button>
-        <span class="form-tag">{{ currentForm.name }}</span>
-        <div v-if="poses.length > 1" class="pose-dots" role="tablist" :aria-label="`${hero.name}${currentForm.name}的姿势`">
-          <button
-            v-for="(src, i) in poses"
-            :key="'d' + i"
-            class="pose-dot"
-            :class="{ on: i === poseIndex }"
-            role="tab"
-            :aria-selected="i === poseIndex"
-            :aria-label="`姿势${i + 1}`"
-            @click="jumpPose(i)"
-          />
-        </div>
-      </div>
-
-      <!-- 多形态缩略切换 -->
-      <div v-if="hero.forms.length > 1" class="form-thumbs" role="tablist" :aria-label="`${hero.name}的形态`">
-        <button
-          v-for="f in formThumbs"
-          :key="f.id"
-          class="thumb"
-          :class="{ on: f.id === currentForm.id, sil: !rewards.isOwned(f.id) }"
-          role="tab"
-          :aria-selected="f.id === currentForm.id"
-          :aria-label="f.name"
-          @click="pick(f)"
-        >
-          <img :src="srcOf(f)" :alt="f.name" @error="imgFailed[f.image] = true" />
-        </button>
-      </div>
-
-      <!-- 名字：大字可点朗读 -->
-      <div
-        class="front-name"
+  <PageShell v-if="hero && currentForm" fill back-label="返回宝藏库" @back="goBack">
+    <template #title>
+      <span
+        class="hero-title"
         :class="{ speaking: speaking === 'hero' }"
         role="button"
         tabindex="0"
@@ -374,189 +189,105 @@ function toggleFlip(open = !flipped.value) {
         @click="sayHero"
         @keydown.enter.prevent="sayHero"
       >
-        <span class="fn-cn">{{ hero.name }}</span>
-        <span class="fn-en">{{ hero.en }}</span>
-        <PathIcon name="volume" class="fn-vol" />
-        <span v-if="speaking === 'hero'" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
-      </div>
+        <PathIcon name="volume" class="hero-title__vol" />
+        {{ hero.name }}<span class="hero-title__en">{{ hero.en }}</span>
+        <SpeakWave v-if="speaking === 'hero'" />
+      </span>
+    </template>
 
-      <!-- 详情按钮：翻到背面看介绍/技能/常用语 -->
-      <button class="detail-btn" @click="toggleFlip(true)">
-        <PathIcon name="book" />查看详情
+    <!-- 右上角放大入口（内容区同类按钮保留，孩子两手都够得到） -->
+    <template #right>
+      <button class="hero-zoom" aria-label="放大查看图片" title="放大查看" @click="openZoom">
+        <ZoomIn class="k-ico" />
       </button>
+    </template>
+
+    <div class="flip-scene">
+      <div class="flip-card" :class="{ flipped }">
+        <!-- 正面：形象 + 名字 + 详情按钮 -->
+        <div class="flip-face front">
+          <div class="face-scroll">
+            <HeroPoseStage
+              v-model:index="poseIndex"
+              :poses="poses"
+              :tone="currentForm.color"
+              :form-name="currentForm.name"
+              :silhouette="!rewards.isOwned(currentForm.id)"
+              :hero-name="hero.name"
+              @zoom="openZoom"
+              @image-error="onPoseError"
+            />
+
+            <HeroFormThumbs
+              :forms="formThumbs"
+              :current-id="currentForm.id"
+              :hero-name="hero.name"
+              @pick="pick"
+            />
+
+            <!-- 名字：大字可点朗读 -->
+            <div
+              class="front-name"
+              :class="{ speaking: speaking === 'hero' }"
+              role="button"
+              tabindex="0"
+              aria-label="朗读角色名"
+              @click="sayHero"
+              @keydown.enter.prevent="sayHero"
+            >
+              <span class="front-name__cn">{{ hero.name }}</span>
+              <span class="front-name__en">{{ hero.en }}</span>
+              <PathIcon name="volume" class="front-name__vol" />
+              <SpeakWave v-if="speaking === 'hero'" />
+            </div>
+
+            <button class="detail-btn" @click="toggleFlip(true)">
+              <PathIcon name="book" />查看详情
+            </button>
           </div>
         </div>
 
-        <!-- 背面：介绍 / 小档案 / 技能 / 常用语（可滚动） -->
+        <!-- 背面：介绍 / 小档案 / 技能 / 常用语 -->
         <div class="flip-face back">
           <div class="back-top">
-            <button class="back-front" @click="toggleFlip(false)"><PathIcon name="back" />返回</button>
+            <button class="back-front" @click="toggleFlip(false)">
+              <PathIcon name="back" />返回
+            </button>
             <span class="back-title">{{ hero.name }} · 资料</span>
           </div>
           <div class="face-scroll">
-          <div class="back-body">
-      <!-- 简介：点卡朗读；朗读中高亮 -->
-      <section
-        v-if="detail"
-        class="hd-card intro"
-        :class="{ speaking: speaking === 'bio' }"
-        role="button"
-        tabindex="0"
-        @click="sayZh('bio', detail.bio)"
-        @keydown.enter.prevent="sayZh('bio', detail.bio)"
-      >
-        <h2 class="hd-h2">
-          <PathIcon name="volume" />介绍
-          <span v-if="speaking === 'bio'" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
-        </h2>
-        <p class="bio">{{ detail.bio }}</p>
-        <span class="tap-hint">
-          <PathIcon name="volume" />{{ speaking === "bio" ? "再点一下停止" : "点一点听介绍" }}
-        </span>
-      </section>
-
-      <!-- 小档案：身高/体重/出身地/首次登场（有值才显示，点卡朗读） -->
-      <section
-        v-if="hasFacts()"
-        class="hd-card facts"
-        :class="{ speaking: speaking === 'facts' }"
-        role="button"
-        tabindex="0"
-        @click="sayZh('facts', factsText())"
-        @keydown.enter.prevent="sayZh('facts', factsText())"
-      >
-        <h2 class="hd-h2">
-          <PathIcon name="volume" />小档案
-          <span v-if="speaking === 'facts'" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
-        </h2>
-        <dl class="fact-rows">
-          <div v-if="detail?.origin" class="fact-row"><dt>出身地</dt><dd>{{ detail?.origin }}</dd></div>
-          <div v-if="detail?.height" class="fact-row"><dt>身高</dt><dd>{{ detail?.height }}</dd></div>
-          <div v-if="detail?.weight" class="fact-row"><dt>体重</dt><dd>{{ detail?.weight }}</dd></div>
-          <div v-if="detail?.debut" class="fact-row"><dt>首次登场</dt><dd>{{ detail?.debut }}</dd></div>
-        </dl>
-        <span class="tap-hint">
-          <PathIcon name="volume" />{{ speaking === "facts" ? "再点一下停止" : "点一点听档案" }}
-        </span>
-      </section>
-
-      <!-- 招牌技能：点整卡依次朗读全部（当前技能高亮）；点单个 chip 只读它 -->
-      <section
-        v-if="detail"
-        class="hd-card skills-card"
-        :class="{ speaking: !!skillReading }"
-        @click="onSkillsCardClick"
-      >
-        <h2 class="hd-h2">
-          招牌技能
-          <span class="tap-hint">
-            <PathIcon name="volume" />{{ skillReading ? "再点一下停止" : "点这里听全部" }}
-          </span>
-        </h2>
-        <div class="chips">
-          <button
-            v-for="s in detail.skills"
-            :key="`sk-${s}`"
-            class="chip"
-            :class="{ speaking: speaking === `sk-${s}` || skillReading === s }"
-            @click.stop="onChipClick(s)"
-          >
-            <PathIcon name="sparkles" />{{ s }}
-            <span v-if="speaking === `sk-${s}` || skillReading === s" class="wave mini" aria-hidden="true"><i></i><i></i><i></i></span>
-          </button>
-        </div>
-      </section>
-
-      <!-- 常用语：点句朗读；朗读中高亮 -->
-      <section v-if="detail" class="hd-card">
-        <h2 class="hd-h2">常用语</h2>
-        <div class="quotes">
-          <button
-            v-for="p in detail.phrases"
-            :key="`q-${p}`"
-            class="quote"
-            :class="{ speaking: speaking === `q-${p}` }"
-            @click="sayZh(`q-${p}`, p)"
-          >
-            <span class="q-mark">“</span>{{ p }}<span class="q-mark">”</span>
-            <span v-if="speaking === `q-${p}`" class="wave mini" aria-hidden="true"><i></i><i></i><i></i></span>
-          </button>
-        </div>
-          </section>
-
-          <!-- 翻回正面 -->
-          <button class="back-btn" @click="toggleFlip(false)"><PathIcon name="back" />翻回正面</button>
-          </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 全屏图片查看器 -->
-    <div v-if="zoomOpen" class="zoom-mask" :class="{ leaving: zoomLeaving }" @click.self="closeZoom">
-      <div class="zoom-card" role="dialog" :aria-label="`${hero.name}${currentForm.name}大图`">
-        <button class="zoom-close" aria-label="关闭大图" @click="closeZoom">
-          <PathIcon name="close" />
-        </button>
-
-        <div class="zoom-stage" :style="{ '--tone': currentForm.color }">
-          <Transition name="form-fade" mode="out-in">
-            <img
-              :key="poses[poseIndex]"
-              class="zoom-img"
-              :class="{ sil: !rewards.isOwned(currentForm.id) }"
-              :src="poses[poseIndex]"
-              :alt="`${hero.name}${currentForm.name}放大图${poses.length > 1 ? ' 姿势' + (poseIndex + 1) : ''}`"
-              @error="onPoseError(poses[poseIndex])"
+            <HeroInfoPanel
+              :detail="detail"
+              :reset-token="resetToken"
+              @back="toggleFlip(false)"
             />
-          </Transition>
-          <button v-if="poses.length > 1" class="zoom-arrow prev" aria-label="上一张" @click="stepPose(-1)">
-            <PathIcon name="chevron-left" />
-          </button>
-          <button v-if="poses.length > 1" class="zoom-arrow next" aria-label="下一张" @click="stepPose(1)">
-            <PathIcon name="chevron-right" />
-          </button>
+          </div>
         </div>
-
-        <p
-          class="zoom-name"
-          role="button"
-          tabindex="0"
-          aria-label="朗读形态名"
-          @click="sayFormName"
-          @keydown.enter.prevent="sayFormName"
-        >
-          {{ hero.name }} · {{ currentForm.name }} <PathIcon name="volume" />
-          <span v-if="speaking === 'form'" class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
-        </p>
-
-        <div v-if="formThumbs.length > 1" class="form-thumbs zoom-thumbs" role="tablist" :aria-label="`${hero.name}的形态`">
-          <button
-            v-for="f in formThumbs"
-            :key="f.id"
-            class="thumb"
-            :class="{ on: f.id === currentForm.id, sil: !rewards.isOwned(f.id) }"
-            role="tab"
-            :aria-selected="f.id === currentForm.id"
-            :aria-label="f.name"
-            @click="pick(f)"
-          >
-            <img :src="srcOf(f)" :alt="f.name" @error="imgFailed[f.image] = true" />
-          </button>
-        </div>
-
-        <p v-if="formThumbs.length > 1" class="zoom-tip">左右箭头换姿势，下方缩略图换形态</p>
       </div>
     </div>
-  </div>
+
+    <HeroZoomViewer
+      v-if="zoomOpen"
+      :poses="poses"
+      :index="poseIndex"
+      :tone="currentForm.color"
+      :hero-name="hero.name"
+      :form-name="currentForm.name"
+      :forms="formThumbs"
+      :current-id="currentForm.id"
+      :silhouette="!rewards.isOwned(currentForm.id)"
+      :speaking="speaking === 'form'"
+      @update:index="poseIndex = $event"
+      @close="zoomOpen = false"
+      @pick="pick"
+      @say-name="sayFormName"
+      @image-error="onPoseError"
+    />
+  </PageShell>
 </template>
 
 <style scoped>
-.hero-detail {
-  gap: 0;
-}
-
-/* ---------- 翻转卡片 ---------- */
+/* ---------- 翻转舞台 ---------- */
 .flip-scene {
   position: relative;
   flex: 1;
@@ -567,7 +298,7 @@ function toggleFlip(open = !flipped.value) {
   position: absolute;
   inset: 0;
 }
-/* 3D 翻转：两面各自 rotateY，翻转中点（0.275s=动画一半）切换可见性。
+/* 3D 翻转：两面各自 rotateY，翻转中点（0.275s = 动画一半）切换可见性。
    不依赖 backface-visibility（部分渲染内核不可靠），视觉等效 3D 翻卡。 */
 .flip-face {
   position: absolute;
@@ -588,7 +319,7 @@ function toggleFlip(open = !flipped.value) {
   transform: rotateY(0deg);
   visibility: visible;
 }
-/* 翻转面自身不设 overflow（否则打断 preserve-3d，backface 失效两面同时可见）；
+/* 翻转面自身不设 overflow（否则打断 preserve-3d，backface 失效、两面同时可见）；
    滚动交给内部 .face-scroll */
 .flip-face.front,
 .flip-face.back {
@@ -613,12 +344,14 @@ function toggleFlip(open = !flipped.value) {
 .flip-face.front .face-scroll {
   justify-content: center;
 }
+
+/* ---------- 背面顶部条 ---------- */
 .back-top {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px 6px;
+  gap: var(--gap-s);
+  padding: var(--gap-s) var(--gap-m) 6px;
 }
 .back-front {
   display: inline-flex;
@@ -626,54 +359,25 @@ function toggleFlip(open = !flipped.value) {
   gap: 5px;
   padding: 8px 16px;
   border: none;
-  border-radius: var(--radius-pill, 999px);
+  border-radius: var(--radius-pill);
   background: var(--card-bg);
   color: var(--ink);
   font-weight: var(--fw-strong);
-  font-size: 14px;
+  font-size: var(--fs-small);
   box-shadow: var(--shadow-hard);
   cursor: pointer;
-  transition: transform 0.1s;
+  transition: transform var(--dur-fast);
 }
 .back-front:active {
   transform: translateY(2px);
 }
 .back-title {
   font-weight: var(--fw-strong);
-  font-size: 15px;
+  font-size: var(--fs-body);
   opacity: 0.7;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.back-body {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--gap-s);
-  padding: var(--gap-s) var(--gap-s) var(--gap-m);
-}
-.back-btn {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 0 auto var(--gap-m);
-  padding: 12px 32px;
-  border: none;
-  border-radius: var(--radius-pill, 999px);
-  background: var(--card-bg);
-  color: var(--ink);
-  font-weight: var(--fw-strong);
-  font-size: 16px;
-  box-shadow: var(--shadow-hard);
-  cursor: pointer;
-  transition: transform 0.1s;
-}
-.back-btn:active {
-  transform: translateY(2px);
 }
 
 /* ---------- 正面：名字 + 详情按钮 ---------- */
@@ -682,62 +386,64 @@ function toggleFlip(open = !flipped.value) {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  border-radius: 12px;
+  border-radius: var(--radius-s);
   padding: 4px 12px;
   margin: -4px -12px;
-  transition: background 0.15s;
+  transition: background var(--dur-base);
 }
 .front-name:active {
   background: rgba(127, 127, 127, 0.14);
 }
 .front-name.speaking {
-  background: color-mix(in srgb, var(--gold, #f0b429) 16%, transparent);
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
 }
-.fn-cn {
-  font-size: clamp(26px, 6vw, 34px);
+.front-name__cn {
+  font-size: var(--fs-hero);
   font-weight: var(--fw-strong);
   letter-spacing: 0.04em;
 }
-.fn-en {
-  font-size: 15px;
+.front-name__en {
+  font-size: var(--fs-small);
   font-weight: var(--fw-strong);
   opacity: 0.6;
 }
-.fn-vol {
-  color: var(--gold, #f0b429);
-  font-size: 20px;
+.front-name__vol {
+  color: var(--gold);
+  font-size: var(--fs-body);
 }
+
+/* 详情按钮：正面唯一的行动，用金色立体按钮突出（全页只有这一个） */
 .detail-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 12px 30px;
   border: none;
-  border-radius: var(--radius-pill, 999px);
-  background: linear-gradient(180deg, #ffd54f, #f0a724);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, var(--c-gold), var(--c-gold-deep));
   color: #5b4300;
-  font-size: 17px;
+  font-size: var(--fs-body);
   font-weight: var(--fw-strong);
   box-shadow:
     0 4px 0 rgba(160, 110, 10, 0.55),
-    0 8px 18px rgba(0, 0, 0, 0.18);
+    var(--shadow-chip);
   cursor: pointer;
   transition:
-    transform 0.1s,
-    box-shadow 0.1s;
+    transform var(--dur-fast),
+    box-shadow var(--dur-fast);
 }
 .detail-btn:active {
   transform: translateY(3px);
   box-shadow:
     0 1px 0 rgba(160, 110, 10, 0.55),
-    0 4px 10px rgba(0, 0, 0, 0.15);
+    var(--shadow-soft);
 }
 .detail-btn .path-icon {
-  font-size: 20px;
+  font-size: var(--fs-body);
 }
 
-/* ---------- 顶栏标题（可点朗读） ---------- */
-.hd-zoom {
+/* ---------- 顶栏 ---------- */
+.hero-zoom {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -748,542 +454,34 @@ function toggleFlip(open = !flipped.value) {
   color: var(--ink);
   box-shadow: var(--shadow-hard);
   font-size: 20px;
-  transition: transform 0.1s;
+  transition: transform var(--dur-fast);
 }
-.hd-zoom:active {
+.hero-zoom:active {
   transform: translateY(2px);
 }
-.hd-title {
+.hero-title {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: var(--radius-s);
   padding: 2px 8px;
   margin: -2px -8px;
-  transition: background 0.15s;
+  transition: background var(--dur-base);
 }
-.hd-title:active {
+.hero-title:active {
   background: rgba(127, 127, 127, 0.14);
 }
-.hd-title.speaking {
-  background: color-mix(in srgb, var(--gold, #f0b429) 16%, transparent);
+.hero-title.speaking {
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
 }
-.hd-vol {
+.hero-title__vol {
   flex: none;
-  color: var(--gold, #f0b429);
+  color: var(--gold);
 }
-.hd-en {
+.hero-title__en {
   font-size: 0.62em;
   font-weight: var(--fw-mid);
   opacity: 0.65;
-}
-
-/* ---------- 大图舞台 ---------- */
-.hero-stage {
-  position: relative;
-  flex: none;
-  width: min(72vw, 44vh, 420px);
-  aspect-ratio: 1 / 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-l, 24px);
-  background:
-    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--tone) 26%, transparent), transparent 68%),
-    var(--card);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
-  overflow: hidden;
-}
-/* 多姿势轮播：单格 = 76% 方形画布（与旧大图同尺寸），横向 snap 滑动 */
-.pose-view {
-  width: 76%;
-  height: 76%;
-  position: relative;
-}
-.pose-strip {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.pose-strip::-webkit-scrollbar {
-  display: none;
-}
-.pose-cell {
-  flex: none;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  scroll-snap-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.pose-cell img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
-}
-.pose-cell.sil img {
-  filter: brightness(0.22) drop-shadow(0 6px 12px rgba(0, 0, 0, 0.3));
-}
-/* 左右箭头（孩子友好的大按点） */
-.pose-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.9);
-  color: #3a3a3a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
-  cursor: pointer;
-  font-size: 20px;
-  transition: transform 0.1s;
-}
-.pose-arrow:active {
-  transform: translateY(-50%) scale(0.94);
-}
-.pose-arrow.prev {
-  left: 8px;
-}
-.pose-arrow.next {
-  right: 8px;
-}
-/* 小点指示器：当前页拉长胶囊（与课程轮播一致） */
-.pose-dots {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 7px;
-  padding: 4px 8px;
-  border-radius: var(--radius-pill, 999px);
-  background: rgba(255, 255, 255, 0.55);
-}
-.pose-dot {
-  width: 9px;
-  height: 9px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.22);
-  cursor: pointer;
-  transition:
-    width 0.22s var(--ease-out, ease),
-    background 0.22s ease;
-}
-.pose-dot.on {
-  width: 22px;
-  background: var(--tone, var(--c-blue, #1cb0f6));
-}
-.form-tag {
-  position: absolute;
-  left: 12px;
-  top: 12px;
-  padding: 4px 12px;
-  border-radius: var(--radius-pill, 999px);
-  background: color-mix(in srgb, var(--tone) 22%, var(--bar-bg, #fff));
-  font-weight: var(--fw-strong);
-  font-size: 13px;
-  color: var(--ink);
-}
-/* 放大入口：显眼但克制，孩子一眼知道大图可点 */
-.zoom-hint {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 7px 12px;
-  border-radius: var(--radius-pill, 999px);
-  background: rgba(255, 255, 255, 0.88);
-  color: #3a3a3a;
-  font-weight: var(--fw-strong);
-  font-size: 13px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
-  cursor: pointer;
-  transition: transform 0.1s;
-}
-.zoom-hint:active {
-  transform: translateY(1px) scale(0.97);
-}
-
-/* 形态切换淡入淡出 */
-.form-fade-enter-active,
-.form-fade-leave-active {
-  transition:
-    opacity 0.16s ease,
-    transform 0.16s ease;
-}
-.form-fade-enter-from {
-  opacity: 0;
-  transform: scale(0.94);
-}
-.form-fade-leave-to {
-  opacity: 0;
-  transform: scale(0.96);
-}
-
-/* ---------- 形态缩略 ---------- */
-.form-thumbs {
-  flex: none;
-  display: flex;
-  gap: 10px;
-  padding: 2px;
-  overflow-x: auto;
-  max-width: 100%;
-}
-.thumb {
-  /* 5 岁适龄：手机 66px / 平板 ~81px / 桌面 96px */
-  width: clamp(66px, 10vw, 96px);
-  height: clamp(66px, 10vw, 96px);
-  flex: none;
-  border-radius: 14px;
-  background: var(--card);
-  border: 2.5px solid transparent;
-  padding: 4px;
-  cursor: pointer;
-}
-.thumb.on {
-  border-color: var(--gold, #f0b429);
-}
-.thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.thumb.sil img {
-  filter: brightness(0.25);
-}
-
-/* ---------- 信息卡 ---------- */
-.hd-card {
-  width: 100%;
-  max-width: 520px;
-  border-radius: var(--radius, 16px);
-  background: var(--card);
-  padding: var(--gap-s, 12px) 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  transition: box-shadow 0.15s;
-}
-/* 招牌技能整卡可点：点一下依次读完所有技能 */
-.skills-card {
-  cursor: pointer;
-}
-.skills-card:active {
-  transform: translateY(1px);
-}
-.hd-h2 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 15px;
-  color: var(--gold, #f0b429);
-  margin: 0;
-}
-.intro {
-  cursor: pointer;
-  transition: transform 0.1s;
-}
-.intro:active {
-  transform: scale(0.99);
-}
-/* 朗读中：金色边框 + 背景 tint，条目与"正在读"的对应关系一目了然 */
-.hd-card.speaking {
-  box-shadow: 0 0 0 2.5px var(--gold, #f0b429), 0 6px 18px rgba(0, 0, 0, 0.12);
-  background: color-mix(in srgb, var(--gold, #f0b429) 8%, var(--card));
-}
-.bio {
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.65;
-}
-.tap-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  opacity: 0.55;
-}
-.fact-rows {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.fact-row {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  font-size: 15px;
-  line-height: 1.5;
-}
-.fact-row dt {
-  flex: none;
-  min-width: 64px;
-  font-weight: var(--fw-strong);
-  color: var(--gold, #f0b429);
-}
-.fact-row dd {
-  margin: 0;
-  color: var(--ink);
-  font-weight: var(--fw-mid);
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: var(--radius-pill, 999px);
-  background: var(--line, rgba(127, 127, 127, 0.16));
-  color: var(--ink);
-  font-weight: var(--fw-strong);
-  font-size: 15px;
-  cursor: pointer;
-  transition:
-    transform 0.1s,
-    background 0.15s,
-    box-shadow 0.15s;
-}
-.chip:active {
-  transform: scale(0.96);
-}
-.chip.speaking {
-  background: color-mix(in srgb, var(--gold, #f0b429) 18%, transparent);
-  box-shadow: 0 0 0 2px var(--gold, #f0b429);
-  color: #6b4e00;
-}
-
-.quotes {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.quote {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  text-align: left;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: var(--line, rgba(127, 127, 127, 0.14));
-  color: var(--ink);
-  font-weight: var(--fw-mid);
-  font-size: 16px;
-  cursor: pointer;
-  transition:
-    transform 0.1s,
-    background 0.15s,
-    box-shadow 0.15s;
-}
-.quote:active {
-  transform: scale(0.98);
-}
-.quote.speaking {
-  background: color-mix(in srgb, var(--gold, #f0b429) 14%, transparent);
-  box-shadow: 0 0 0 2px var(--gold, #f0b429);
-  color: #6b4e00;
-}
-.q-mark {
-  color: var(--gold, #f0b429);
-  font-weight: var(--fw-strong);
-}
-
-/* ---------- 声波动画（朗读中） ---------- */
-.wave {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 12px;
-  margin-left: 2px;
-}
-.wave i {
-  width: 3px;
-  height: 4px;
-  border-radius: 2px;
-  background: currentColor;
-  animation: wave-bounce 0.7s ease-in-out infinite;
-}
-.wave i:nth-child(2) {
-  animation-delay: 0.14s;
-}
-.wave i:nth-child(3) {
-  animation-delay: 0.28s;
-}
-.wave.mini {
-  height: 10px;
-}
-@keyframes wave-bounce {
-  0%,
-  100% {
-    height: 4px;
-  }
-  50% {
-    height: 11px;
-  }
-}
-
-/* ---------- 全屏图片查看器 ---------- */
-.zoom-mask {
-  position: fixed;
-  inset: 0;
-  z-index: 120; /* 高于底部导航(40)与顶栏(30)，全屏沉浸 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: rgba(8, 10, 18, 0.92);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  transition: opacity 0.16s ease;
-}
-.zoom-mask.leaving {
-  opacity: 0;
-}
-.zoom-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  width: min(94vw, 640px);
-  animation: zoom-in 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
-}
-.zoom-mask.leaving .zoom-card {
-  animation: none;
-  transform: scale(0.96);
-  transition: transform 0.16s ease;
-}
-@keyframes zoom-in {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-.zoom-close {
-  position: absolute;
-  top: -8px;
-  right: -6px;
-  z-index: 2;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
-  color: #222;
-  font-size: 22px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-  transition: transform 0.1s;
-}
-.zoom-close:active {
-  transform: scale(0.92);
-}
-.zoom-stage {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  max-height: 64vh;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--tone) 30%, transparent), transparent 68%),
-    rgba(255, 255, 255, 0.08);
-}
-/* 查看器内姿势切换箭头（与主图区同款） */
-.zoom-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.9);
-  color: #3a3a3a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
-  cursor: pointer;
-  font-size: 22px;
-  transition: transform 0.1s;
-}
-.zoom-arrow:active {
-  transform: translateY(-50%) scale(0.94);
-}
-.zoom-arrow.prev {
-  left: 10px;
-}
-.zoom-arrow.next {
-  right: 10px;
-}
-.zoom-img {
-  width: 84%;
-  height: 84%;
-  object-fit: contain;
-  filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.5));
-}
-.zoom-img.sil {
-  filter: brightness(0.22) drop-shadow(0 10px 26px rgba(0, 0, 0, 0.5));
-}
-.zoom-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-  color: #fff;
-  font-weight: var(--fw-strong);
-  font-size: 17px;
-  cursor: pointer;
-  border-radius: 10px;
-  padding: 4px 10px;
-}
-.zoom-name:active {
-  background: rgba(255, 255, 255, 0.14);
-}
-.zoom-thumbs {
-  max-width: 88vw;
-}
-.zoom-thumbs .thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: transparent;
-}
-.zoom-thumbs .thumb.on {
-  border-color: var(--gold, #f0b429);
-}
-.zoom-tip {
-  margin: 0;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
 }
 </style>

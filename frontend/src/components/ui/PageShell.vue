@@ -34,6 +34,13 @@ withDefaults(
     scroll?: boolean;
     /** 内容垂直 + 水平居中（空状态 / 结算页） */
     center?: boolean;
+    /**
+     * 填充模式：内容区交给页面自己撑满整块剩余空间（`display:flex` 列），
+     * 同时骨架不再插入顶栏与内容之间的间距。
+     * 用于"内容本身就是一整块舞台"的页面（如英雄详情的 3D 翻转卡），
+     * 这类页面需要精确控制高度，多出来的 gap 会把舞台压扁。
+     */
+    fill?: boolean;
   }>(),
   { showBack: true }
 );
@@ -42,7 +49,7 @@ const emit = defineEmits<{ back: [] }>();
 </script>
 
 <template>
-  <div class="view">
+  <div class="view" :class="{ 'view--fill': fill }">
     <HeaderBar
       v-if="!bare"
       :show-back="showBack"
@@ -62,7 +69,7 @@ const emit = defineEmits<{ back: [] }>();
 
     <div
       class="view-body"
-      :class="{ 'view-body--scroll': scroll, 'view-center': center }"
+      :class="{ 'view-body--scroll': scroll, 'view-center': center, 'view-body--fill': fill }"
     >
       <slot />
     </div>
@@ -72,5 +79,16 @@ const emit = defineEmits<{ back: [] }>();
 <style scoped>
 .ps-ico {
   color: var(--brand);
+}
+</style>
+
+<style>
+/* 骨架的模式变体改的是 base.css 里的全局类，所以放在非 scoped 块里 */
+.view--fill {
+  gap: 0;
+}
+.view-body--fill {
+  display: flex;
+  flex-direction: column;
 }
 </style>

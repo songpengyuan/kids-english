@@ -113,6 +113,9 @@
   --tint-cream: #fff7de; /* 听音选图答案条底色 */
   --overlay: rgba(255, 255, 255, 0.92); /* 悬浮徽章底色 */
   --overlay-strong: rgba(253, 246, 227, 0.88); /* 组间过场横幅：需盖住下方卡片 */
+  /* 全屏模态遮罩（图片查看器、抽屉）。深色是刻意的：遮罩越深，里面的大图越突出；
+   * 且暗色主题下无需变化——两种主题下都该是这个值。 */
+  --mask-bg: rgba(8, 10, 18, 0.92);
 
   /* ---------- 间距（流体） ---------- */
   --gap-xs: clamp(4px, min(0.7vh, 0.6vw), 8px);
@@ -135,6 +138,15 @@
   --sticker: inset 0 0 0 3px rgba(255, 255, 255, 0.32);
   --shadow-hard: 0 6px 0 rgba(0, 0, 0, 0.12);
   --shadow-soft: 0 2px 0 rgba(0, 0, 0, 0.08);
+  /* 悬浮投影（模糊型）：用于"浮在内容之上"的元素——大图舞台、轮播箭头、
+   * 全屏查看器、胶囊按钮。与 --shadow-hard/soft 的**立体厚度**语义不同，
+   * 后者是贴在地面的实心投影。以前没有这组，各处就自己写
+   * `0 4px 12px rgba(0,0,0,.16)`，值不统一。
+   *  · --shadow-float：大块悬浮物（舞台 / 弹层）
+   *  · --shadow-chip：小块悬浮控件（箭头 / 胶囊 / 圆形按钮）
+   */
+  --shadow-float: 0 10px 28px rgba(0, 0, 0, 0.18);
+  --shadow-chip: 0 4px 12px rgba(0, 0, 0, 0.16);
   /* 顶栏/底栏毛玻璃：半透明 + 模糊，让背景质感透出来，同时仍能挡住滚动内容 */
   --bar-bg: color-mix(in srgb, var(--bg) 80%, transparent);
   --bar-blur: 14px;
@@ -171,6 +183,9 @@
   --z-floating: 40;
   /* 页面内的固定小挂件（主题切换按钮等），只需高于普通内容 */
   --z-banner: 9;
+  /* 全屏模态（图片查看器 / 抽屉）：必须盖住底部导航与顶栏，所以明显高于上面几档。
+   * 用绝对值而不是"比 --z-floating 大 1"——模态是另一个层级体系，不该和内容层联动。 */
+  --z-mask: 100;
 
   font-family:
     "Baloo 2", "ZCOOL KuaiLe", "Chalkboard SE", "Comic Sans MS", "PingFang SC",
@@ -269,6 +284,9 @@
   --sticker: inset 0 0 0 3px rgba(255, 255, 255, 0.14);
   --shadow-hard: 0 6px 0 rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
   --shadow-soft: 0 2px 0 rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  /* 深底上模糊投影要更重才看得见层次 */
+  --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --shadow-chip: 0 4px 14px rgba(0, 0, 0, 0.45);
   /* 暗色下顶栏/底栏再透一点（深底上的半透明不容易糊成一片） */
   --bar-bg: color-mix(in srgb, var(--bg) 74%, transparent);
 }
