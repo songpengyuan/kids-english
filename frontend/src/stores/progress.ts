@@ -201,7 +201,21 @@ export const useProgressStore = defineStore("progress", () => {
           if (!(id in progress)) progress[id] = data[id];
         }
         if (meta) {
-          if (!progress._daily) progress._daily = meta._daily ?? null;
+          // _daily 同日期取 max 合并：跨设备时云端更大时长必须覆盖本地小值，防"今日 0 分钟"假象
+          const cloudDaily = meta._daily;
+          const local = progress._daily;
+          if (cloudDaily) {
+            if (!local || local.date !== cloudDaily.date) {
+              progress._daily = cloudDaily;
+            } else if (local.date === cloudDaily.date) {
+              progress._daily = {
+                date: cloudDaily.date,
+                durationSec: Math.max(local.durationSec ?? 0, cloudDaily.durationSec ?? 0),
+                activities: Math.max(local.activities ?? 0, cloudDaily.activities ?? 0),
+                listenSec: Math.max(local.listenSec ?? 0, cloudDaily.listenSec ?? 0),
+              };
+            }
+          }
           if (!progress._last) progress._last = meta._last ?? null;
           const log = meta._dailyLog ?? {};
           progress._dailyLog = { ...log, ...progress._dailyLog };

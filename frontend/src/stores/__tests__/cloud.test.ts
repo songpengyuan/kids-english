@@ -70,6 +70,33 @@ describe("progress store · 云同步", () => {
     expect(p.cloudState).toBe("done");
   });
 
+  it("今日时长合并取 max：本地有今日 _daily 小值时，云端更大值必须覆盖（跨设备不丢时长）", async () => {
+    const today = "2026-09-27";
+    mockFetch({
+      "/api/v1/children/1/progress": {
+        ok: true,
+        data: {},
+        meta: {
+          _daily: { date: today, durationSec: 180, activities: 3, listenSec: 300 },
+          _last: null,
+          _dailyLog: {},
+        },
+      },
+    });
+    const p = useProgressStore();
+    // 本地今天已磨耳朵 60s（设备B 刚打开应用，云端设备A 已累计 300s）
+    p.addListenActivity(60);
+    p.addDailyActivity(120); // 本地学习 120s
+
+    await p.syncFromServer();
+
+    const d = p.todayStats;
+    expect(d.date).toBe(today);
+    expect(d.listenSec).toBe(300); // 云端更大值覆盖本地 60
+    expect(d.durationSec).toBe(180); // 云端更大值覆盖本地 120
+    expect(d.activities).toBe(3);
+  });
+
   it("进度变更后防抖上报（3s 内合并，携带 data + meta）", async () => {
     const { calls, fn } = mockFetch({
       "/api/v1/children/1/progress": { ok: true },

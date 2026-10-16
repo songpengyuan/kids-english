@@ -60,6 +60,8 @@ onMounted(() => {
     showGate.value = true;
     router.replace({ query: {} });
   }
+  // 进入"我的"页拉一次云端最新进度（今日学习/磨耳朵跨设备可见；失败静默，保留本地）
+  progress.syncFromServer();
 });
 
 /** 身份：云模式登录后显示当前孩子（未登录保持"丞丞的学习小屋"） */
