@@ -79,6 +79,13 @@
 - 每个 hue 在暗色下都有一份降亮降饱和的对应值；
 - **不要在组件里写 `background: #xxx` 或自己的 `linear-gradient`**；也不要自定义与 `.tone-*` 同名的类——scoped 样式带 `[data-v-*]`，优先级更高，会**静默覆盖全站色板**（PracticeView 曾因此用了一整页的 `#4a90d9` 蓝）。
 - 卡面上叠了大号 emoji 装饰时，文字用 `--tone-ink-shadow` 抬起来。
+- ⚠️ **`.tone-*` 与「自己上底色的全局类」互斥，绝不能挂在同一个元素上**：
+  `.card` / `.field` / `.k-btn-*`。两套方案特异性同为 `(0,1,0)`，胜负只由 base.css 里的
+  **先后顺序**决定；而输的一方不会整块失效——`background` 简写会重置 `background-color/image`，
+  但 `color: var(--on-tone)` 不是它声明的，于是苟活下来 → **白底白字**。
+  症状就是「整页看起来是空的卡片」（LessonMenu 曾如此，且只有金色的那张正常，
+  因为 `.tone-gold` 把 `--on-tone` 改写成了深棕）。组件自己的卡面请用独立类名（如 `.tile`），
+  不要借用 `.card`。守卫第 ④ 项会拦这一条。
 
 ### 2.5 遮罩与覆盖层
 
@@ -232,8 +239,8 @@
 | 类 | 用途 |
 |----|------|
 | `.view` / `.view-body` / `.view-body--scroll` / `.view-center` / `.view-body--fill` | 页面容器（页面壳只负责一次，块之间不要再补 margin） |
-| `.card` / `.card--soft` / `.card--flat` | 中性卡片 |
-| `.tone-*` | 彩色卡片 / 图标砖 / 徽章配色 |
+| `.card` / `.card--soft` / `.card--flat` | 中性卡片（**与 `.tone-*` 互斥**，见 §2.4） |
+| `.tone-*` | 彩色卡片 / 图标砖 / 徽章配色（**与 `.card` 等自带上底色的类互斥**） |
 | `.entry-row` / `.entry-row--primary` / `.entry-row__*` | 入口行 |
 | `.icon-tile` / `.icon-tile--sm` | 图标砖 |
 | `.metric` / `.metric__*` | 指标块 |
@@ -286,6 +293,9 @@
 - ❌ 写死像素间距/字号/圆角（用 `--gap-*` / `--fs-*` / `--radius*`）
 - ❌ 自己写卡片渐变/阴影（用 `.tone-*` / `--shadow-*`）
 - ❌ 自定义与全局同名的类（`.tone-*`、`.card`、`.star-badge`…）——scoped 会静默覆盖
+- ❌ **同一个元素上同时挂 `.tone-*` 和 `.card` / `.field` / `.k-btn-*`**——两套上色方案互相覆盖，
+  结果是**白底白字**（LessonMenu 的整页空白卡片就是这么来的；只有金卡侥幸可见）
+- ❌ 组件自己的卡面借用 `.card` 这个全局中性卡片类——想有独立外观就用独立类名（如 `.tile`）
 - ❌ 引用 tokens.css 里不存在的变量（`var(--tint)` 曾让抽屉关闭按钮一直没有底色）
 - ❌ 写 `var(--x, 兜底值)` 来"假装"变量存在——兜底掩盖了变量名写错（`--yellow, #ffd87a` 就是这种情况）
 - ❌ 把 CSS 写在 `</style>` 之后——**SFC 解析器不报错，直接丢弃**（GamePath 曾因此丢掉 31 行 `.lv-guide`，线上从未生效）
@@ -297,11 +307,18 @@
 
 ## 14. 守卫（把规范变成会失败的检查）
 
-`frontend/scripts/guard-tokens.mjs` 检查三件事，任何一项都会让 CI 失败：
+`frontend/scripts/guard-tokens.mjs` 检查四件事，任何一项都会让 CI 失败：
 
 1. 引用了不存在的 CSS 变量（且没有 fallback）——这类声明会被**静默丢弃**
 2. **样式里的硬编码颜色**：`.vue` 的 `<style>` / `.css` 中除 `src/styles/` 之外一个都不许有
-3. `.vue` 里有"飘"在 `<template>`/`<script>`/`<style>` 之外的代码
+3. `.vue` 里有"飘"在 `<template>`/`<script>`/`<style>` 之外的代码——典型是 `</style>` 写早了，
+   解析器**不报错、直接丢弃**
+4. **同一个元素上把 `.tone-*` 和「会自己上底色的全局类」混用**——会互相覆盖成白底白字。
+   互斥清单（`.card` / `.field` / `.k-btn-*`）不写死在脚本里，而是**从 base.css 现推**：
+   凡是单类选择器且声明里带 `background` 的，就是独立的一套上色方案；以后新增这类面类自动纳入。
+
+这四项的共同点：**都是构建、类型检查、单测全都看不见的静默失效**，只有真机看一眼才发现
+「某个底色/描边/文字没了」。所以它们的价值全在于"不用靠人肉走查发现"。
 
 2026-10 分四批推进，当前状态：**除 `src/styles/` 外，整个 `src/` 零硬编码颜色**
 （views → components/ui+layout → activities/rewards/game/CuteBackdrop → lesson/gate，已全部收口）。

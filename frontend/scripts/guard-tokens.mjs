@@ -29,6 +29,17 @@
  *     而构建、类型检查、测试全都是绿的。这里用真正的 SFC 解析器量出各块范围，
  *     检查块之外还有没有非空白内容。
  *
+ *  ④ **同一个元素上把 .tone-* 和「会自己上底色的全局类」混用**
+ *     （.card / .field / .k-btn-* —— 清单从 base.css 现推，不写死）。
+ *     这是两个互斥的"上色方案"：中性面类自己声明 background，色调板声明
+ *     background-color + color: var(--on-tone)。特异性同为 (0,1,0)，
+ *     胜负只由 base.css 里的**先后顺序**决定，后写的赢 —— 而且输的一方
+ *     不是整块失效：background 简写会重置 background-color/image，
+ *     但 color: var(--on-tone) 不是它声明的，于是苟活下来 → **白底白字**。
+ *     实际症状就是 LessonMenu 那一整页"空白卡片"（74020dc 加入全局 .card 时
+ *     静默引入；金色那张因为 .tone-gold 把 --on-tone 改写成深棕 --on-gold
+ *     而侥幸可见，所以只有它看起来是正常的）。
+ *
  * 定义来源：任何文件里出现 `--name:` 都算已定义 —— 既覆盖 tokens.css / base.css，
  * 也覆盖组件里 `:style="{ '--n': … }"` 这种运行时注入的局部变量。
  */
@@ -155,6 +166,74 @@ for (const f of files) {
   }
 }
 
+/* ---------- ④ .tone-* 与「会自己上底色的全局类」混用 ---------- */
+/** 色调板族（与 base.css 的 .tone-* 定义保持一致） */
+const TONES = ['blue', 'green', 'orange', 'purple', 'pink', 'teal', 'gold']
+
+/**
+ * 「会自己上底色的全局类」—— 从 base.css 现推，而不是写死清单：
+ * 凡是**单类选择器**且声明里出现 `background` 的，就是一套自己的上色方案，
+ * 与 .tone-* 混用必然互相覆盖。以后新增这类面类会被自动纳入检查。
+ * （媒体查询里的规则推不到，但 base.css 的面类都在顶层，够用。）
+ */
+const surfaceClasses = (() => {
+  const css = stripComments(readFileSync(join(SRC, 'styles', 'base.css'), 'utf8'))
+  const out = new Set()
+  for (const m of css.matchAll(/(?:^|\})\s*([^{}]+?)\s*\{([^{}]*)\}/g)) {
+    if (!m[2].includes('background')) continue
+    for (const sel of m[1].split(',')) {
+      const s = sel.trim()
+      if (/^\.[a-zA-Z][\w-]*$/.test(s)) out.add(s.slice(1))
+    }
+  }
+  // 色调板自身不算"中性面类"
+  for (const t of TONES) out.delete(`tone-${t}`)
+  return out
+})()
+
+/** 这段 class 表述里有没有 .tone-*（静态写法、`'tone-' + x`、`tone-${x}` 都算） */
+const TONE_IN_TEXT = new RegExp(
+  `\\btone-(?:${TONES.join('|')})\\b|\\btone-\\s*['"\`]|\\btone-\\$\\{`
+)
+
+const classClash = []
+for (const f of files) {
+  if (!f.endsWith('.vue')) continue
+  const rel = relative(SRC, f)
+  const { descriptor } = parseSfc(readFileSync(f, 'utf8'), { filename: f })
+  const root = descriptor.template?.ast
+  if (!root) continue
+  ;(function visit(node) {
+    if (node.type === 1) {
+      const classes = new Set()
+      let hasTone = false
+      for (const p of node.props) {
+        if (p.type === 6 && p.name === 'class') {
+          const text = p.value?.content ?? ''
+          for (const t of text.split(/\s+/).filter(Boolean)) classes.add(t)
+          if (TONE_IN_TEXT.test(text)) hasTone = true
+        } else if (p.type === 7 && p.name === 'bind' && (p.arg?.content ?? p.arg?.name) === 'class') {
+          const exp = p.exp?.content ?? ''
+          if (TONE_IN_TEXT.test(exp)) hasTone = true
+          // 动态表达式里字面量写出的面类，如 :class="['card', x]"
+          for (const s of surfaceClasses) {
+            if (new RegExp(`['"\`]${s}['"\`]`).test(exp)) classes.add(s)
+          }
+        }
+      }
+      if (hasTone) {
+        const clash = [...classes].filter((c) => surfaceClasses.has(c))
+        if (clash.length) {
+          classClash.push(
+            `${rel}:${node.loc.start.line}  <${node.tag} class="${[...classes].join(' ')}"> 与 tone-* 混用 → ${clash.join('、')}`
+          )
+        }
+      }
+    }
+    for (const c of node.children ?? []) visit(c)
+  })(root)
+}
+
 /* ---------- 汇总 ---------- */
 let failed = false
 
@@ -180,9 +259,18 @@ if (orphans.length) {
   console.error('   最常见的原因是 `</style>` 写早了，后面的 CSS 成了顶层游离文本。\n')
 }
 
+if (classClash.length) {
+  failed = true
+  console.error(`\n✋ .tone-* 与「会自己上底色的全局类」混用（${classClash.length} 处）—— 会互相覆盖成白底白字：`)
+  for (const c of classClash) console.error('   ' + c)
+  console.error(`   互斥的全局面类：${[...surfaceClasses].sort().join(' / ')}`)
+  console.error('   .card 与 .tone-* 只能二选一：要么中性白卡（.card），要么彩色卡（.tone-*）。')
+  console.error('   组件自己的瓷片请用独立类名（如 LessonMenu 的 .tile），别借用 .card。\n')
+}
+
 if (failed) process.exit(1)
 
 console.log(
   `✅ 设计系统守卫通过：${files.length} 个文件，${defined.size} 个 token，` +
-    `无未定义变量、无块外游离内容、除 src/${COLOR_SOURCE.join('/')}/ 外无硬编码颜色`
+    `无未定义变量、无块外游离内容、无 tone 与全局面类混用、除 src/${COLOR_SOURCE.join('/')}/ 外无硬编码颜色`
 )

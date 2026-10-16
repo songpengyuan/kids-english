@@ -67,16 +67,16 @@ function onClick(c: MenuCard) {
       <button
         v-for="(c, i) in cards"
         :key="c.key"
-        class="card anim-fade-up"
+        class="tile anim-fade-up"
         :class="['tone-' + c.tone, { quest: c.quest }]"
         :style="{ animationDelay: (i * 0.06) + 's', gridColumn: c.quest ? 'span 2' : 'span 1' }"
         @click="onClick(c)"
       >
-        <component :is="c.icon" class="card-ico" />
-        <span class="card-name">{{ c.name }}</span>
-        <span v-if="c.desc" class="card-desc">{{ c.desc }}</span>
-        <span v-if="c.stars" class="card-badge"><Star class="k-ico star-fill" />{{ c.stars }}</span>
-        <span v-if="c.questText" class="card-badge quest-badge">{{ c.questText }}</span>
+        <component :is="c.icon" class="tile-ico" />
+        <span class="tile-name">{{ c.name }}</span>
+        <span v-if="c.desc" class="tile-desc">{{ c.desc }}</span>
+        <span v-if="c.stars" class="tile-badge"><Star class="k-ico star-fill" />{{ c.stars }}</span>
+        <span v-if="c.questText" class="tile-badge quest-badge">{{ c.questText }}</span>
       </button>
     </div>
   </div>
@@ -116,7 +116,18 @@ function onClick(c: MenuCard) {
   .grid { grid-template-columns: repeat(4, 1fr); }
 }
 
-.card {
+/* 玩法瓷片。
+ *
+ * 类名刻意叫 .tile 而**不是** .card —— 两者会打架：
+ *   · 全局 .card 是"中性白卡"（background: var(--card-bg) + --shadow-hard）
+ *   · 全局 .tone-* 是"彩色卡"（background-color: var(--tone) + --on-tone 文字色）
+ * 特异性同为 (0,1,0)，而 .card 在 base.css 里排在色调板**之后**，于是它的
+ * background 简写把 tone 的底色整个重置掉；可 color: var(--on-tone)（白）不是
+ * .card 声明的，活了下来 —— 白底白字，整块瓷片看上去是空的。
+ * （74020dc 五层重构加入全局 .card 时静默引入，金卡因为 --on-tone 被 tone-gold
+ *   改成深棕 --on-gold 而侥幸可见，所以只有它看起来是正常的。）
+ * 结论：.card 与 .tone-* 互斥，永不混用。 */
+.tile {
   border-radius: var(--radius);
   padding: var(--gap-m) var(--gap-s);
   display: flex;
@@ -128,11 +139,11 @@ function onClick(c: MenuCard) {
   justify-content: center;
   transition: transform 0.08s;
 }
-.card:active { transform: scale(0.96); }
-.card-ico { font-size: clamp(28px, 5vh, 40px); }
-.card-name { font-size: clamp(14px, 2.5vh, 18px); font-weight: var(--fw-strong); }
-.card-desc { font-size: clamp(11px, 1.8vh, 13px); font-weight: var(--fw-mid); opacity: 0.8; }
-.card-badge {
+.tile:active { transform: scale(0.96); }
+.tile-ico { font-size: clamp(28px, 5vh, 40px); }
+.tile-name { font-size: clamp(14px, 2.5vh, 18px); font-weight: var(--fw-strong); }
+.tile-desc { font-size: clamp(11px, 1.8vh, 13px); font-weight: var(--fw-mid); opacity: 0.8; }
+.tile-badge {
   position: absolute;
   top: 6px;
   right: 8px;
@@ -148,7 +159,7 @@ function onClick(c: MenuCard) {
 }
 .quest-badge { color: var(--gold); background: rgba(240, 180, 41, 0.15); }
 
-.card.quest {
+.tile.quest {
   border: 3px solid var(--c-gold);
 }
 </style>
