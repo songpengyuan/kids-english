@@ -124,8 +124,8 @@ onMounted(() => {
   color: var(--ink);
 }
 .gate-input.wrong {
-  color: #dc2626;
-  border-color: #dc2626;
+  color: var(--red);
+  border-color: var(--red);
 }
 .gate-pad {
   display: grid;
@@ -149,6 +149,6 @@ onMounted(() => {
 }
 .g-ok {
   background: var(--ok);
-  color: #fff;
+  color: var(--on-tone);
 }
 </style>

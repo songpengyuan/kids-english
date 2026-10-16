@@ -102,12 +102,16 @@
 | 组 | 前缀 | 用途 |
 |----|------|------|
 | 绝对色 | `--white` / `--black` | 少数场合要的是"绝对的白与黑"：`color-mix()` 的计算端点、视频信箱底、`mask-image` 的实色、插画里本来就该是白的面。**压在彩色面上的文字请用 `--on-tone`**（暗色下是暖白），不要用 `--white` |
-| 玩法插画色板 | `--scene-*` `--backdrop-*` `--talk-*` `--mic-*` `--chest-*` `--grad-gold` `--path-*` `--ring-*` | 装饰插画里的颜色：童谣舞台的五个场景、卡通背景的太阳与山丘、对话玩法的角色气泡与麦克风、宝箱的木纹与金饰 |
+| 玩法插画色板 | `--scene-*` `--backdrop-*` `--talk-*` `--mic-*` `--chest-*` `--path-*` `--ring-*` | 装饰插画里的颜色：童谣舞台的五个场景、卡通背景的太阳与山丘、对话玩法的角色气泡与麦克风、宝箱的木纹与金饰 |
+| 结算页奖励 | `--star-gold` `--star-dim` `--rarity-*` `--streak-*` | 结算页的三颗星、稀有度奖励卡、连击达成横幅 |
 
 插画色板是**刻意不随主题变化**的（场景就是那幅画）。要给某个玩法整体换配色，只改 tokens.css 一处即可。
 
 金色实底（`--grad-gold`）在宝箱"收取"与语音页"再听一遍"两处共用——以前两处色值不同（`#f0a63a` vs `#f0b429`），已统一。
 金底上的深棕字一律 `--on-gold`（历史散落的 `#6b4e00` / `#92400e` / `#b45309` 都已收编）。
+
+奖励卡的稀有度描边（`sr` → `--c-purple`、`ssr` → `--c-gold`）与 `views/me/CardsView` 的
+`rarity-N/R/SR/SSR` 同源——同一个稀有度在任何页面都必须同色。
 
 ## 3. 间距
 
@@ -273,8 +277,11 @@
 
 ## 13. 禁止事项
 
-- ❌ 组件里写 `#xxx` 颜色值——**颜色字面值只允许写在 `src/styles/`（tokens.css / base.css）**。
-  唯一例外是 `rgba()`/`color-mix()` 这类带透明度的投影、描边（它们不是"色板"，是光效）。
+- ❌ **样式里写 `#xxx` 颜色值**——颜色字面值只允许出现在 `src/styles/`（tokens.css / base.css），
+  即唯一的"上色层"。检查对象是 `.vue` 的 `<style>` 与 `.css`；
+  `rgba()` / `color-mix()` 这类带透明度的投影、描边不算"色板"，是光效，允许。
+  不在检查范围的两类：JS 里必须给字面值的地方（canvas 彩带、`<meta theme-color>`）、
+  `data/` 里的英雄配色素材（那是内容不是规范）。
 - ❌ 判定/完成语义用 `--brand`——**必须 `--ok`（绿）**
 - ❌ 写死像素间距/字号/圆角（用 `--gap-*` / `--fs-*` / `--radius*`）
 - ❌ 自己写卡片渐变/阴影（用 `.tone-*` / `--shadow-*`）
@@ -282,6 +289,7 @@
 - ❌ 引用 tokens.css 里不存在的变量（`var(--tint)` 曾让抽屉关闭按钮一直没有底色）
 - ❌ 写 `var(--x, 兜底值)` 来"假装"变量存在——兜底掩盖了变量名写错（`--yellow, #ffd87a` 就是这种情况）
 - ❌ 把 CSS 写在 `</style>` 之后——**SFC 解析器不报错，直接丢弃**（GamePath 曾因此丢掉 31 行 `.lv-guide`，线上从未生效）
+- ❌ 把整块规则复制第二遍放在媒体查询里（LessonResult 曾有一份 48 行的逐字重复）——要覆盖就只写要覆盖的那几条
 - ❌ `border-radius: 50%`（用 `.round`）
 - ❌ `font-weight: 900`（超出 Baloo 2 的 400–800 范围）
 - ❌ 在 `.view` 内部再补一次 `--pad-x`
@@ -292,14 +300,14 @@
 `frontend/scripts/guard-tokens.mjs` 检查三件事，任何一项都会让 CI 失败：
 
 1. 引用了不存在的 CSS 变量（且没有 fallback）——这类声明会被**静默丢弃**
-2. 受控路径里出现硬编码颜色
+2. **样式里的硬编码颜色**：`.vue` 的 `<style>` / `.css` 中除 `src/styles/` 之外一个都不许有
 3. `.vue` 里有"飘"在 `<template>`/`<script>`/`<style>` 之外的代码
 
-**受控路径**（当前零硬编码颜色）：
-`views/`、`components/ui/`、`components/layout/`、`components/activities/`、`components/rewards/`、`components/game/`、`components/CuteBackdrop.vue`
+2026-10 分四批推进，当前状态：**除 `src/styles/` 外，整个 `src/` 零硬编码颜色**
+（views → components/ui+layout → activities/rewards/game/CuteBackdrop → lesson/gate，已全部收口）。
 
 接入点：
 - `npm run build:ci`（`guard-build` → `validate-data` → `guard-tokens` → `vite build`）——CI 跑的就是它
 - `npm run guard:tokens` 单独跑
-- `scripts/ci-local.sh --commit`：暂存区含 `.vue`/`.css` 时自动跑一次
+- `scripts/ci-local.sh --commit`：暂存区含 `.vue`/`.css`/`.js`/`.mjs` 时自动跑一次
 

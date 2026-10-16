@@ -135,8 +135,8 @@ function nav(fn: () => void) {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* 星星实心金色（原 --star-gold 未定义导致深色，这里直接给值） */
-  color: #ffb020;
+  /* 星星实心亮金（--star-gold，比通用 --gold 更亮更暖） */
+  color: var(--star-gold);
 }
 /* 拿到手的星：金色实心 + 光晕 + 逐个弹出（第 1/2/3 颗错峰 0.28s 出现） */
 .star-fill {
@@ -161,7 +161,7 @@ function nav(fn: () => void) {
 }
 /* 没拿到的星：淡灰，也要逐个淡入但不出光 */
 .star.dim {
-  color: #d8d0be;
+  color: var(--star-dim);
   filter: none;
 }
 .star.dim .star-fill {
@@ -220,7 +220,7 @@ function nav(fn: () => void) {
     float-y 2.4s ease-in-out 0.9s infinite;
 }
 .star-num {
-  color: #ffb020;
+  color: var(--star-gold);
   font-size: 1.2em;
 }
 .btn-row {
@@ -261,19 +261,19 @@ function nav(fn: () => void) {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  background: linear-gradient(180deg, #fff, #fef3c7);
-  border: 3px solid var(--gold, #f0b429);
+  background: var(--rarity-face);
+  border: 3px solid var(--c-gold);
   box-shadow: 0 4px 20px rgba(240, 180, 41, 0.4);
 }
 .card.rarity-SR {
-  border-color: #a855f7;
+  border-color: var(--c-purple);
   box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
-  background: linear-gradient(180deg, #fff, #f3e8ff);
+  background: var(--rarity-sr-face);
 }
 .card.rarity-SSR {
-  border-color: #f59e0b;
+  border-color: var(--c-gold);
   box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
-  background: linear-gradient(180deg, #fffbeb, #fef3c7);
+  background: var(--rarity-ssr-face);
 }
 .card-emoji {
   font-size: 48px;
@@ -285,7 +285,7 @@ function nav(fn: () => void) {
 .card-rarity {
   font-size: 12px;
   font-weight: var(--fw-strong);
-  color: var(--gold, #f0b429);
+  color: var(--c-gold);
   background: rgba(240, 180, 41, 0.15);
   padding: 2px 10px;
   border-radius: var(--radius-pill);
@@ -299,13 +299,13 @@ function nav(fn: () => void) {
   align-items: center;
   gap: 8px;
   font-weight: var(--fw-strong);
-  color: #b45309;
-  background: #fef3c7;
+  color: var(--streak-ink);
+  background: var(--streak-bg);
   border-radius: var(--radius-pill);
   padding: 8px 16px;
 }
 .flame-ico {
-  color: #ea580c;
+  color: var(--streak-flame);
 }
 
 /* 手机横屏（项目约定断点）：纵向空间珍贵，星星/徽章/按钮全线收紧 */
@@ -333,54 +333,11 @@ function nav(fn: () => void) {
     border-width: 2px;
   }
   /* 奥特曼卡片奖励 */
-.card-reward {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.card {
-  width: clamp(120px, 22vh, 160px);
-  border-radius: var(--radius);
-  padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  background: linear-gradient(180deg, #fff, #fef3c7);
-  border: 3px solid var(--gold, #f0b429);
-  box-shadow: 0 4px 20px rgba(240, 180, 41, 0.4);
-}
-.card.rarity-SR {
-  border-color: #a855f7;
-  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
-  background: linear-gradient(180deg, #fff, #f3e8ff);
-}
-.card.rarity-SSR {
-  border-color: #f59e0b;
-  box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
-  background: linear-gradient(180deg, #fffbeb, #fef3c7);
-}
-.card-emoji {
-  font-size: 48px;
-}
-.card-name {
-  font-weight: var(--fw-strong);
-  font-size: 14px;
-}
-.card-rarity {
-  font-size: 12px;
-  font-weight: var(--fw-strong);
-  color: var(--gold, #f0b429);
-  background: rgba(240, 180, 41, 0.15);
-  padding: 2px 10px;
-  border-radius: var(--radius-pill);
-}
-.card-tip {
-  margin: 0;
-  font-weight: var(--fw-strong);
-}
-.streak-banner {
+  /* ⚠️ 这里曾有一份 .card-reward / .card / .card.rarity-* / .card-tip 的**逐字重复**定义，
+   * 而且因为上面 @media 的大括号多撑了一段，整块被吞进"手机横屏"媒体查询里 ——
+   * 只在矮屏生效、且与媒体查询外的同名规则值完全相同，纯冗余（2026-10 删除）。
+   * 奖励卡的样式只有媒体查询外那一份，改色改版请改那里。 */
+  .streak-banner {
     padding: 5px 12px;
     font-size: var(--fs-small);
   }

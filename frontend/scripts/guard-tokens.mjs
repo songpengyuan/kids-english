@@ -14,10 +14,14 @@
  *       · var(--tint)      —— 从来不存在              → 抽屉关闭钮没有底色
  *     `var(--x, fallback)` 是**故意**的可选覆盖（如 --bar-bg 的兜底），放行。
  *
- *  ② **组件里的硬编码颜色**（`#rgb` `#rrggbb`）
- *     颜色字面值只允许写在 src/styles/（tokens.css / base.css）。
- *     视图层、UI 层、玩法层（activities / rewards / game / CuteBackdrop）都必须
- *     通过 token 或 .tone-* 取色 —— 它们是"所有页面共用同一套规范"的落点。
+ *  ② **样式里的硬编码颜色**（`#rgb` `#rrggbb`）
+ *     颜色字面值只允许写在 src/styles/（tokens.css / base.css）—— 那是唯一的"上色层"。
+ *     检查对象是**样式**：.vue 的 <style> 块与 .css 文件。
+ *     2026-10 分四批把 views / components 全部清零，最后收口为"除 styles 外一个都不许有"。
+ *     不在检查范围的两类（各有正当理由，见下）：
+ *       · JS/TS 里必须用字面值的地方：canvas 画面颜色（services/effects.js 的彩带）、
+ *         `<meta name="theme-color">`（浏览器 UI 色，只能给字符串）
+ *       · data/ 里的内容数据：每个英雄自己的配色（data/heroes.ts）——那是"素材"不是"规范"
  *
  *  ③ **.vue 里"飘"在 SFC 块外面的内容**
  *     症状：CSS 写在 `</style>` 之后。SFC 解析器对这种顶层游离文本**不报错**、
@@ -36,20 +40,11 @@ import { parse as parseSfc } from 'vue/compiler-sfc'
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url))
 
-/** 必须零硬编码颜色的目录（相对 src/）。按批次推进，目标是最终收掉整个 src/。 */
-const STRICT_DIRS = [
-  'views',
-  'components/ui',
-  'components/layout',
-  'components/activities',
-  'components/rewards',
-  'components/game',
-]
-/** 不在上面目录里的单文件（背景装饰等），同样要求零硬编码颜色 */
-const STRICT_FILES = ['components/CuteBackdrop.vue']
+/** 唯一允许出现颜色字面值的目录（相对 src/）——即 tokens.css / base.css 所在的层 */
+const COLOR_SOURCE = ['styles']
 
-const isStrict = (rel) =>
-  STRICT_DIRS.some((d) => rel === d || rel.startsWith(d + '/')) || STRICT_FILES.includes(rel)
+const isColorSource = (rel) =>
+  COLOR_SOURCE.some((d) => rel === d || rel.startsWith(d + '/'))
 
 const SKIP_DIRS = new Set(['node_modules', 'dist', '.git'])
 
@@ -101,11 +96,12 @@ for (const f of files) {
   })
 }
 
-/* ---------- ② 组件里的硬编码颜色 ---------- */
+/* ---------- ② 样式里的硬编码颜色 ---------- */
 const hardcoded = []
 for (const f of files) {
   const rel = relative(SRC, f)
-  if (!isStrict(rel)) continue
+  if (isColorSource(rel)) continue
+  if (!/\.(vue|css)$/.test(rel)) continue // 只管样式层；JS/TS 的 canvas 色与 data/ 的素材色不算
   const text = readFileSync(f, 'utf8')
   // 只看 <style> 块（.vue）；纯 css 全部算
   const styleBlocks = [...text.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1])
@@ -171,10 +167,10 @@ if (undefinedVars.length) {
 
 if (hardcoded.length) {
   failed = true
-  console.error(`\n✋ 组件里出现硬编码颜色（${hardcoded.length} 处）—— 应改用 token 或 .tone-*：`)
+  console.error(`\n✋ 样式里出现硬编码颜色（${hardcoded.length} 处）—— 应改用 token 或 .tone-*：`)
   for (const h of hardcoded) console.error('   ' + h)
-  console.error('   颜色字面值只允许写在 src/styles/（tokens.css / base.css）。')
-  console.error('   覆盖目录：' + [...STRICT_DIRS, ...STRICT_FILES].join('、') + '（详见 DESIGN_SYSTEM.md 第 13 节）\n')
+  console.error(`   颜色字面值只允许写在 src/${COLOR_SOURCE.join('/')}/（tokens.css / base.css），`)
+  console.error('   那里是唯一的"上色层"。如需新色板，加 token 而不是写在这里（详见 DESIGN_SYSTEM.md §2.7 / §13）。\n')
 }
 
 if (orphans.length) {
@@ -188,5 +184,5 @@ if (failed) process.exit(1)
 
 console.log(
   `✅ 设计系统守卫通过：${files.length} 个文件，${defined.size} 个 token，` +
-    `无未定义变量、无块外游离内容、${STRICT_DIRS.length + STRICT_FILES.length} 个受控路径无硬编码颜色`
+    `无未定义变量、无块外游离内容、除 src/${COLOR_SOURCE.join('/')}/ 外无硬编码颜色`
 )

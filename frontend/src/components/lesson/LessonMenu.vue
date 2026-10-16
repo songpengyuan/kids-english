@@ -149,6 +149,6 @@ function onClick(c: MenuCard) {
 .quest-badge { color: var(--gold); background: rgba(240, 180, 41, 0.15); }
 
 .card.quest {
-  border: 3px solid var(--gold, #f0b429);
+  border: 3px solid var(--c-gold);
 }
 </style>

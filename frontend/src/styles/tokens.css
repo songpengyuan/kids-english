@@ -198,6 +198,18 @@
   --chest-arrow-bg: linear-gradient(180deg, #fff3d6, #ffe3a8);
   --chest-cube: linear-gradient(160deg, #ffe9a8, #ffd87a);
   --chest-ink: #8a5a00; /* 宝箱上的礼物图标（深金棕） */
+
+  /* —— 结算页的星星与奖励卡（components/lesson/LessonResult）——
+   * 奖励卡的描边色与 views/me/CardsView 的 rarity-N/R/SR/SSR **同源**
+   * （N=teal R=blue SR=purple SSR=gold），两处同一个稀有度永远同色。 */
+  --star-gold: #ffb020; /* 已拿到的星：亮金，比 --gold 更亮更暖（要"发光"） */
+  --star-dim: #d8d0be; /* 没拿到的星：米灰 */
+  --rarity-face: linear-gradient(180deg, #fff, #fef3c7); /* 奖励卡面：默认（金） */
+  --rarity-sr-face: linear-gradient(180deg, #fff, #f3e8ff); /* SR：紫 */
+  --rarity-ssr-face: linear-gradient(180deg, #fffbeb, #fef3c7); /* SSR：琥珀 */
+  --streak-bg: #fef3c7; /* 连击达成横幅底 */
+  --streak-ink: #b45309; /* 连击达成横幅文字 */
+  --streak-flame: #ea580c; /* 连胜火苗图标 */
   /* 金色实底按钮：宝箱"收取"与语音页"再听一遍"共用同一块金色（以前两处色值不同） */
   --grad-gold: linear-gradient(160deg, #ffd87a, #f0a63a);
 
