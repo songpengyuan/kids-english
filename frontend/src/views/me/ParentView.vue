@@ -279,31 +279,6 @@ function sayFamily() {
         <ChevronRight class="k-ico arrow" />
       </button>
 
-      <!-- 今日统计 -->
-      <section class="stats card">
-        <h3>今日学习</h3>
-        <div class="stat-row">
-          <Clock class="k-ico" />
-          <span>时长</span>
-          <b>{{ fmtDuration(progress.todayStats.durationSec) }}</b>
-        </div>
-        <div class="stat-row">
-          <Activity class="k-ico" />
-          <span>玩法次数</span>
-          <b>{{ progress.todayStats.activities }} 次</b>
-        </div>
-        <div class="stat-row">
-          <span>🐚</span>
-          <span>贝壳</span>
-          <b>{{ rewards.shells }}</b>
-        </div>
-        <div class="stat-row">
-          <span>🦸</span>
-          <span>英雄图鉴</span>
-          <b>{{ rewards.ownedCount }}/{{ FORM_TOTAL }}</b>
-        </div>
-      </section>
-
       <!-- 设置 -->
       <section class="settings card">
         <h3>设置</h3>
@@ -323,10 +298,9 @@ function sayFamily() {
           </button>
         </div>
         <p v-if="gateMsg" class="gate-msg">{{ gateMsg }}</p>
-        <p class="gate-desc">进入应用前必须输入家长口令（备案合规门禁，口令由家长约定）。本设备解锁后 7 天内免输；孩子每次重新输入顺便记下家长电话。</p>
+        <p class="gate-desc">进入应用前必须输入家长口令。本设备解锁后 7 天内免输。</p>
       </section>
 
-      <p class="foot">登录家庭账号后，学习记录云端同步（多设备不丢）</p>
       <p class="foot">建议每次陪学 10~15 分钟</p>
     </div>
   </div>
@@ -334,13 +308,13 @@ function sayFamily() {
 
 <style scoped>
 .body { display: flex; flex-direction: column; gap: var(--gap-s); width: 100%; overflow-y: auto; padding-bottom: var(--pad-y); }
-.entry { display: flex; align-items: center; gap: var(--gap-s); background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: var(--gap-m); text-align: left; width: 100%; }
+.entry { display: flex; align-items: center; gap: 12px; background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); padding: 14px 16px; text-align: left; width: 100%; }
 .entry > .k-ico { width: 24px; height: 24px; color: var(--ink-soft); }
 .e-body { flex: 1; }
 .e-name { font-weight: 800; }
 .e-desc { font-size: 12px; color: var(--ink-faint); font-weight: 700; }
 .arrow { color: var(--ink-faint); }
-.card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: var(--gap-m); }
+.card { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); padding: 16px; }
 .card h3 { margin: 0 0 var(--gap-s); font-size: var(--fs-small); color: var(--ink-soft); }
 .stat-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-weight: 700; font-size: 14px; }
 .stat-row > .k-ico { width: 18px; height: 18px; color: var(--ink-faint); }
