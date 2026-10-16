@@ -11,7 +11,7 @@ function route(path: string): RouteLocationNormalizedLoadedGeneric {
 
 describe("appGateDecision", () => {
   it("未解锁时，非 /gate 路由一律重定向到口令页", () => {
-    for (const p of ["/learn", "/learn/l4/learn", "/game", "/me", "/listen"]) {
+    for (const p of ["/course", "/course/l4/learn", "/game", "/me", "/listen"]) {
       const d = appGateDecision(route(p), false);
       expect(d).toEqual({ path: "/gate", replace: true });
     }
@@ -22,11 +22,11 @@ describe("appGateDecision", () => {
   });
 
   it("已解锁时，/gate 不再停留，直接进学习主页", () => {
-    expect(appGateDecision(route("/gate"), true)).toEqual({ path: "/learn", replace: true });
+    expect(appGateDecision(route("/gate"), true)).toEqual({ path: "/course", replace: true });
   });
 
   it("已解锁时，其余路由全部放行", () => {
-    for (const p of ["/learn", "/game", "/me", "/listen", "/me/parent"]) {
+    for (const p of ["/course", "/game", "/me", "/listen", "/me/parent"]) {
       expect(appGateDecision(route(p), true)).toBe(true);
     }
   });
