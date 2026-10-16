@@ -142,11 +142,10 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it("学习主页（今日任务默认首页态）", async () => {
+  it("学习主页（自由练习）", async () => {
     const w = await mountPage(LearnView, "/learn");
-    expect(w.text()).toContain("今日任务");
-    expect(w.text()).toContain("磨耳朵");
-    expect(w.text()).toContain("全部课程");
+    expect(w.text()).toContain("Walking In The Jungle");
+    expect(w.text()).toContain("加餐");
     expect(errors).toEqual([]);
   });
 
