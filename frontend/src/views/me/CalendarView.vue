@@ -8,6 +8,7 @@
  *  - 月份可前后翻（有数据的月份才有内容）。
  */
 import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
 import { useProgressStore } from "../../stores/progress";
 import HeaderBar from "../../components/layout/HeaderBar.vue";
 import PathIcon from "../../components/PathIcon.vue";
@@ -15,6 +16,7 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "@lucide/vue";
 import { speakZh } from "../../services/speech";
 
 const progress = useProgressStore();
+const router = useRouter();
 
 const now = new Date();
 const viewYear = ref(now.getFullYear());
@@ -142,7 +144,7 @@ function dayNum(date: string | null): string {
 
 <template>
   <div class="cal view">
-    <HeaderBar show-back>
+    <HeaderBar show-back back-label="返回" @back="router.push('/me')">
       <template #title><PathIcon name="me" class="hdr-ico" /> 学习日历</template>
     </HeaderBar>
 
