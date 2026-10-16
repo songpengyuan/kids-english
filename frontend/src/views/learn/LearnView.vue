@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 学习主页（自由练习）：独立路由 #/learn。
+ * 学习主页（自由练习）：独立路由 #/course。
  * 无顶部 header（沉浸式）；闯关入口在课程网格最底部。
  */
 import { useRouter } from "vue-router";

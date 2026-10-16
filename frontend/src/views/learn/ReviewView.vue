@@ -108,7 +108,7 @@ function replay() {
 
 <template>
   <div class="review view">
-    <HeaderBar show-back back-label="返回" @back="router.push('/learn')">
+    <HeaderBar show-back back-label="返回" @back="router.push('/course')">
       <template #title><PathIcon name="learn" class="title-ico" /> 到期复习</template>
       <template #right><span class="cnt-badge">{{ dueWords.length }} 个到期</span></template>
     </HeaderBar>
@@ -122,7 +122,7 @@ function replay() {
         <template v-if="unmasteredCount > 0">还有 {{ unmasteredCount }} 个词在排队，明天见～</template>
         <template v-else>先回首页学一课吧！</template>
       </p>
-      <BaseButton variant="green" @click="router.push('/learn')">回学习</BaseButton>
+      <BaseButton variant="green" @click="router.push('/course')">回学习</BaseButton>
     </div>
 
     <!-- 出题 -->
@@ -174,7 +174,7 @@ function replay() {
         <BaseButton v-if="againCount > 0" @click="start">
           <RotateCcw class="k-ico" />再练一次
         </BaseButton>
-        <BaseButton variant="green" @click="router.push('/learn')">回学习</BaseButton>
+        <BaseButton variant="green" @click="router.push('/course')">回学习</BaseButton>
       </div>
     </div>
   </div>

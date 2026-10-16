@@ -3,7 +3,7 @@
  *
  * 规则：备案域名下，进入学习应用前需家长口令解锁。
  *  - 未解锁：任何非 /gate 路径 → 强制回 /gate 口令页；
- *  - 已解锁：访问 /gate 不再停留，直接进学习主页 /learn。
+ *  - 已解锁：访问 /gate 不再停留，直接进课程主页 /course。
  */
 import type { RouteLocationNormalizedLoadedGeneric } from "vue-router";
 
