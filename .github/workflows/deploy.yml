@@ -41,7 +41,12 @@ jobs:
         run: |
           pnpm test 2>&1 | tee /tmp/fe-test.log
           test ${PIPESTATUS[0]} -eq 0
-          pnpm type-check
+          # vue-tsc 曾在本环境静默 exit 1（无任何诊断输出）。tee 保留日志、
+          # 限制内存防 OOM、失败时回显尾部 —— 定位到根因后再精简。
+          NODE_OPTIONS="--max-old-space-size=4096" pnpm type-check 2>&1 | tee /tmp/fe-tsc.log
+          TSC_EXIT=${PIPESTATUS[0]}
+          if [ "$TSC_EXIT" -ne 0 ]; then echo "--- type-check log tail ---"; tail -60 /tmp/fe-tsc.log; fi
+          test "$TSC_EXIT" -eq 0
           # 取测试数（供飞书卡片）：
           #  1) 先剥 ANSI 颜色码 —— CI 里 vitest 输出带色，"Tests  310 passed"
           #     实际字节是 "Tests \e[1m\e[32m310 passed"，直接用 grep 匹配不到；
