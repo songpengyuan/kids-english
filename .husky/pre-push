@@ -1,10 +1,25 @@
-#!/bin/bash
-echo "🔍 Pre-push checks..."
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
-command -v pnpm >/dev/null || { echo "pnpm not found in PATH"; exit 1; }
-cd frontend
-pnpm type-check || exit 1
-npx vitest run --reporter=dot 2>&1 | tail -3
-GH_REPO=songpengyuan/kids-english pnpm build:ci || exit 1
-echo "✅ All checks passed, pushing..."
+#!/usr/bin/env bash
+# ============================================================================
+# pre-push：本地 CI 镜像门禁（唯一实现在 scripts/ci-local.sh）
+# ============================================================================
+# 拦截目标：一切「推上去才会在 CI 暴露」的失败 —— 单测、类型、后端测试、
+# OpenAPI 契约漂移、生产构建，以及「构建成功但页面白屏」。
+# 一次 push 约 30~40s；拦下一次 CI 红 + deploy 被 skip 是划算的。
+#
+# 应急跳过：
+#   git push --no-verify
+#   CI_LOCAL_SKIP=1 git push
+# 只改前端想快一点：
+#   bash scripts/ci-local.sh --frontend
+#
+# 历史坑（旧版本就栽在这，别再犯）：
+#   npx vitest run --reporter=dot | tail -3    ← 退出码是 tail 的，恒为 0，
+#                                                单测挂了照样 push 上去。
+# ============================================================================
+set -uo pipefail
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+[ -f "$ROOT/scripts/ci-local.sh" ] || { echo "⏭️  找不到 scripts/ci-local.sh，跳过门禁"; exit 0; }
+
+# pre-push 会从 stdin 拿到待推的 ref 列表；钩子不需要读它
+exec bash "$ROOT/scripts/ci-local.sh"

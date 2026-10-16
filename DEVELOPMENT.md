@@ -1312,6 +1312,16 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
    搬完跑 `grep` 残留检查（import 路径、组件名、注释里的旧路径）。
 2. **质量三件套**：`pnpm test`（当前 25 文件 / 206 用例）+ `pnpm type-check` + `GH_REPO=kids-english pnpm build`
    全绿才算完成；CI 里 test + type-check + build:ci（含数据校验）是部署门禁。
+   - **本机已把这套门禁前移到 git 钩子**（2026-10-16 加）：`bash scripts/ci-local.sh` 是唯一实现，
+     逐条对齐 CI 的 Quality gate / Build —— 前端单测 → 类型检查 → 后端 pytest → OpenAPI 契约
+     `git diff` → 生产构建（build:ci）→ **白屏冒烟**（无头 Chrome 打开 `/app/#/` 断言应用真渲染出来，
+     CI 没有这一步，而"构建成功但运行时崩了"正是本项目最痛的线上故障）。
+     - `.husky/pre-push` 跑全量（约 30~40s）；`.husky/pre-commit` 只跑秒级快检
+       （冲突标记 / 误提交 `.only()` / 硬编码密钥 / 暂存了 .ts|.vue 时跑类型检查）。
+     - 走查加速：`bash scripts/ci-local.sh --frontend`（跳过后端）、`--no-smoke`、`pnpm verify`。
+     - 应急跳过：`git push --no-verify` / `CI_LOCAL_SKIP=1 git push`。
+     - **`pnpm ship` 也会先跑这道门禁**，且失败时**不会**走 `push-via-api.py` 的 API 兜底 ——
+       否则"git 通道被代理拦截"和"钩子把这次推送拦下了"无法区分，门禁会被 API 绕过去。
 3. **数据校验**：改 `src/data/*` 后跑 `node scripts/validate-data.mjs`（结构/引用/去重/
    song.mp3 资源硬校验）——防课时 id 重复、关卡引用不存在玩法、音频误删上线白屏。
 4. **PWA 回归**：动 sw.js / vite.config.js / 路由后跑 `node scripts/verify-pwa.mjs`（基线 14/14）。
@@ -1330,6 +1340,18 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
   脚本仍用旧选择器导致误报失败——脚本与组件共用同一份 class 约定，改名时同步脚本。
 - **页面内若把死样式留着**（组件化后 scoped 不穿透、模板不再引用），会让人误以为还在生效；
   拆分组件时顺手清掉（LessonView 的 .qs-*/.quest-* 死样式就是这样删的）。
+- **`cmd | tail` 会把退出码吃掉**：`pnpm test 2>&1 | tail -3` 的退出码是 `tail` 的（恒为 0），
+  单测挂了照样放行 —— 旧的 `.husky/pre-push` 就栽在这，等于没有门禁。要么不接管道，
+  要么脚本开头 `set -o pipefail`（注意：设在子 shell 里对管道的归属 shell 无效）。
+- **CI 里"取数据"和"判失败"不能共用一条命令**：`grep` 取测试数匹配不到 → 命令替换返回 1 →
+  `bash -e` **静默**退出 1（日志只有 `Process completed with exit code 1`，无任何报错，
+  而同一步的 test / type-check 都是绿的）。取数一律加 `|| true` 兜底；
+  vitest 汇总行带 ANSI 色码（`Tests \e[1m\e[32m310 passed`），匹配前先剥色：
+  `perl -pe 's/\e\[[0-9;]*m//g'`。参见 `scripts/ci-local.sh` 头部的约定。
+- **pre-push 钩子拦下的失败，会被"网络兜底"悄悄绕过**：`git push` 因钩子失败（本机钩子非 0 退出）
+  和因代理失败，都只吐一句 `error: failed to push some refs to ...`，调用方无法区分。
+  所以任何"git 失败就换通道重推"的脚本（`scripts/ship.mjs` → `scripts/push-via-api.py`）
+  都必须**自己在推送前跑一遍门禁**，失败即中止、不进兜底。
 
 
 ### 14.7 数据单源化（第二份手写数据会漂移）

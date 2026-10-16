@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# ============================================================================
+# pre-commit：只做「秒级」快检，重量级检查交给 pre-push（scripts/ci-local.sh）
+# ============================================================================
+# 每次 commit 都要跑的东西必须足够快，否则会被 --no-verify 绕过，等于没有。
+# 这里只拦「提交了就一定出问题、而且事后很难查」的几类：
+#   1. 未解决的冲突标记      → 必然语法错误 / 白屏
+#   2. 误提交 .only()        → CI 只跑 1 个用例却报 "Tests passed"，绿着漏测
+#   3. 硬编码 token / 私钥   → 推上去就洗不掉了
+#   4. 类型检查（仅当暂存了 .ts/.vue，约 6s）
+#
+# 应急跳过：
+#   git commit --no-verify
+#   CI_LOCAL_SKIP=1 git commit
+# ============================================================================
+set -uo pipefail
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+[ -f "$ROOT/scripts/ci-local.sh" ] || exit 0
+
+exec bash "$ROOT/scripts/ci-local.sh" --commit

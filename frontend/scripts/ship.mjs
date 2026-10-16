@@ -161,6 +161,31 @@ async function main() {
   }
 
   if (relation !== "remote-has") {
+    /* ---------- 门禁：推送前显式跑本地 CI 镜像 ----------
+       为什么必须在这里显式跑，而不能只依赖 .husky/pre-push 钩子：
+       下面这段「git 失败 → 走 API 兜底」的逻辑无法区分「钩子把本次推送拦下了」
+       和「代理把 HTTP 通道掐了」—— git 两种情况都只吐一句
+       error: failed to push some refs to ...。于是钩子拦下的失败会被当成网络问题，
+       绕开钩子从 API 直推上去，门禁形同虚设。
+       所以：门禁在推送之前跑，失败直接退出，绝不进入 API 兜底。 */
+    if (process.env.CI_LOCAL_SKIP !== "1") {
+      const root = execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: REPO, encoding: "utf8" }).trim();
+      const gate = path.join(root, "scripts", "ci-local.sh");
+      if (fs.existsSync(gate)) {
+        say("运行本地门禁（scripts/ci-local.sh）—— 与 CI 同款检查 ...");
+        const g = spawnSync("bash", [gate], { cwd: root, stdio: "inherit" });
+        if (g.status !== 0) {
+          console.error("ship: 本地门禁未通过，已中止推送（不会走 API 兜底）。");
+          console.error("ship: 应急跳过 → CI_LOCAL_SKIP=1 pnpm ship \"...\"");
+          process.exit(1);
+        }
+      } else {
+        say("⚠️ 找不到 scripts/ci-local.sh，跳过本地门禁");
+      }
+    } else {
+      say("CI_LOCAL_SKIP=1 —— 跳过本地门禁（应急通道）");
+    }
+
     /* ---------- 推送：两级 git 重试 + API 兜底 ---------- */
     let pushed = false;
     const attempts = [
@@ -169,7 +194,8 @@ async function main() {
     ];
     for (const [name, args] of attempts) {
       try {
-        execFileSync("git", args, { cwd: REPO, stdio: "pipe" });
+        // CI_LOCAL_SKIP=1：门禁已在上面跑过，别让 pre-push 钩子再跑一遍（省 30s）
+        execFileSync("git", args, { cwd: REPO, stdio: "pipe", env: { ...process.env, CI_LOCAL_SKIP: "1" } });
         say(`推送成功（${name}）`);
         pushed = true;
         break;
