@@ -253,7 +253,8 @@ function goGame() {
 .hn-divider { width: 1px; height: 54px; background: rgba(255, 255, 255, 0.35); }
 .hero-foot { margin: 14px 0 0; text-align: center; font-size: 12px; font-weight: 700; opacity: 0.85; }
 
-/* ---------- 统一卡片样式 ---------- */
+/* ---------- 数据小卡行 ---------- */
+.stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--gap-s); }
 .stat { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); padding: 14px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: transform 0.08s; }
 .stat:active { transform: scale(0.96); }
 .st-emoji { font-size: 28px; line-height: 1.2; }
