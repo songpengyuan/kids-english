@@ -7,7 +7,7 @@
  *   - 到期复习
  *   家长内容（报告/设置/统计）收进"家长中心"
  */
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useProgressStore } from "../../stores/progress";
 import { useRewardsStore } from "../../stores/rewards";
 import { FORM_TOTAL } from "../../data/heroes";
@@ -62,6 +62,15 @@ onMounted(() => {
   }
   // 进入"我的"页拉一次云端最新进度（今日学习/磨耳朵跨设备可见；失败静默，保留本地）
   progress.syncFromServer();
+  rewards.syncFromServer();
+});
+
+// 每次切到"我的"tab 都重新拉一次云端（跨设备/刚学完课回来要看到最新数）
+watch(() => route.path, (p) => {
+  if (p === "/me") {
+    progress.syncFromServer();
+    rewards.syncFromServer();
+  }
 });
 
 /** 身份：云模式登录后显示当前孩子（未登录保持"丞丞的学习小屋"） */
