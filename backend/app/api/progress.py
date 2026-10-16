@@ -7,7 +7,8 @@
 """
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 
 from ..db import connect
 from ..schemas import ProgressIn, ProgressOut, ProgressPutOut
@@ -165,5 +166,57 @@ def put_progress(
             )
         conn.commit()
         return {"ok": True}
+    finally:
+        conn.close()
+
+
+class CalendarDayOut(BaseModel):
+    date: str
+    durationSec: int = 0
+    listenSec: int = 0
+    activities: int = 0
+    mastered: int = 0
+
+
+class CalendarOut(BaseModel):
+    ok: bool = True
+    year: int
+    month: int
+    days: list[CalendarDayOut] = []
+
+
+@router.get("/calendar", response_model=CalendarOut)
+def get_calendar(
+    child_id: int,
+    year: int = Query(ge=2020, le=2100),
+    month: int = Query(ge=1, le=12),
+    family_id: int = Depends(_require_family),
+):
+    """学习日历：返回指定年月每天的学习时长/磨耳朵时长/玩法数。"""
+    conn = connect()
+    try:
+        if not _child_belongs(conn, child_id, family_id):
+            raise HTTPException(404, "孩子不存在")
+        row = conn.execute(
+            "SELECT data_json FROM progress WHERE child_id=? AND lesson_id='__meta'",
+            (child_id,),
+        ).fetchone()
+        if not row:
+            return {"ok": True, "year": year, "month": month, "days": []}
+        meta = json.loads(row["data_json"])
+        log = meta.get("_dailyLog") or {}
+        prefix = f"{year}-{month:02d}"
+        days: list[CalendarDayOut] = []
+        for date, snap in sorted(log.items()):
+            if not date.startswith(prefix):
+                continue
+            days.append(CalendarDayOut(
+                date=date,
+                durationSec=snap.get("durationSec", 0),
+                listenSec=snap.get("listenSec", 0),
+                activities=snap.get("activities", 0),
+                mastered=snap.get("mastered", 0),
+            ))
+        return {"ok": True, "year": year, "month": month, "days": days}
     finally:
         conn.close()

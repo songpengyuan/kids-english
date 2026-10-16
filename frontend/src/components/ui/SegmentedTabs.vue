@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, type Component } from "vue";
 const props = defineProps<{
   modelValue: string;
-  items: { value: string; label: string }[];
+  items: { value: string; label: string; icon?: Component }[];
 }>();
 const emit = defineEmits<{
   "update:modelValue": [v: string];
@@ -22,6 +22,7 @@ const activeIdx = computed(() =>
       :class="{ on: it.value === modelValue }"
       @click="emit('update:modelValue', it.value)"
     >
+      <span v-if="it.icon" class="seg-icon"><component :is="it.icon" /></span>
       {{ it.label }}
     </button>
   </div>
@@ -31,6 +32,7 @@ const activeIdx = computed(() =>
 .seg {
   position: relative;
   display: flex;
+  align-items: center;
   padding: 4px;
   background: var(--card-bg);
   border-radius: 999px;
@@ -49,6 +51,10 @@ const activeIdx = computed(() =>
 }
 .seg-btn {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   padding: 10px 0;
   border: none;
   background: transparent;
@@ -62,5 +68,9 @@ const activeIdx = computed(() =>
 }
 .seg-btn.on {
   color: #fff;
+}
+.seg-icon :deep(*) {
+  width: 14px;
+  height: 14px;
 }
 </style>

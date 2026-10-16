@@ -2,14 +2,16 @@
 /**
  * 学习日历（/me/calendar）——点「我的 → 今日学习卡片」进入。
  *
- * 月历网格展示每天学习情况（数据源 progress.dailyLog，保留最近 30 天）：
+ * 月历网格展示每天学习情况（数据来自 GET /children/{id}/calendar?year=&month=）：
  *  - 每格显示当天「学习时长 / 磨耳朵时长」；
  *  - 点击某天 → 底部详情条：学习 X 分钟、磨耳朵 Y 分钟、完成玩法 N 次；
- *  - 月份可前后翻（有数据的月份才有内容）。
+ *  - 月份可前后翻，切月时按需请求对应月份数据。
  */
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useProgressStore } from "../../stores/progress";
+import { useAuthStore } from "../../stores/auth";
+import { request } from "../../services/api";
 import HeaderBar from "../../components/layout/HeaderBar.vue";
 import PathIcon from "../../components/PathIcon.vue";
 import { CalendarDays, ChevronLeft, ChevronRight } from "@lucide/vue";
@@ -17,11 +19,16 @@ import { speakZh } from "../../services/speech";
 
 const progress = useProgressStore();
 const router = useRouter();
+const auth = useAuthStore();
 
 const now = new Date();
 const viewYear = ref(now.getFullYear());
 const viewMonth = ref(now.getMonth()); // 0-11
 const selected = ref<string | null>(null);
+
+/** 服务器返回的当月日历数据 */
+const monthDays = ref<Record<string, { durationSec: number; listenSec: number; activities: number; mastered: number }>>({});
+const loading = ref(false);
 
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
 
@@ -60,11 +67,18 @@ interface DayInfo {
   activities: number;
 }
 
-/** 当天数据（无记录返回空档） */
+/** 当天数据（优先用服务器拉的当月数据，没有则查本地缓存） */
 function dayInfo(date: string | null): DayInfo | null {
   if (!date) return null;
-  const d = progress.dailyLog[date];
-  if (!d || (d.durationSec <= 0 && (d.listenSec ?? 0) <= 0)) return null;
+  // 当月数据优先（接口拉的）
+  let d = monthDays.value[date];
+  if (!d) {
+    // fallback：本地 progress.dailyLog
+    const local = progress.dailyLog[date];
+    if (!local) return null;
+    d = { durationSec: local.durationSec, listenSec: local.listenSec ?? 0, activities: local.activities, mastered: local.mastered };
+  }
+  if (d.durationSec <= 0 && (d.listenSec ?? 0) <= 0) return null;
   return { date, durationSec: d.durationSec, listenSec: d.listenSec ?? 0, activities: d.activities };
 }
 
@@ -140,6 +154,38 @@ function fmtFull(sec: number): string {
 function dayNum(date: string | null): string {
   return date ? String(Number(date.slice(-2))) : "";
 }
+
+/** 请求当月日历数据 */
+async function fetchCalendar() {
+  const childId = auth.currentChildId;
+  if (!childId) return;
+  loading.value = true;
+  try {
+    const json = await request<{ ok: boolean; days: Array<{ date: string; durationSec?: number; listenSec?: number; activities?: number; mastered?: number }> }>(
+      `/children/${childId}/calendar?year=${viewYear.value}&month=${viewMonth.value + 1}`,
+    );
+    if (json.ok && json.days) {
+      const map: Record<string, { durationSec: number; listenSec: number; activities: number; mastered: number }> = {};
+      for (const d of json.days) {
+        map[d.date] = {
+          durationSec: d.durationSec ?? 0,
+          listenSec: d.listenSec ?? 0,
+          activities: d.activities ?? 0,
+          mastered: d.mastered ?? 0,
+        };
+      }
+      monthDays.value = map;
+    }
+  } catch {
+    // 后端不可用时静默降级到本地数据
+  } finally {
+    loading.value = false;
+  }
+}
+
+// 初始加载 + 切月时重新请求
+fetchCalendar();
+watch([viewYear, viewMonth], fetchCalendar);
 </script>
 
 <template>

@@ -10,7 +10,7 @@ import { ref, computed, onBeforeUnmount } from "vue";
 import { lessons, asset } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
-import { Play, Pause, X, ChevronDown, ListMusic } from "@lucide/vue";
+import { Play, Pause, X, ChevronDown, ListMusic, Music, Film } from "@lucide/vue";
 import BaseDrawer from "../../components/ui/BaseDrawer.vue";
 import SegmentedTabs from "../../components/ui/SegmentedTabs.vue";
 import type { ListenSubTab } from "../../types";
@@ -104,8 +104,8 @@ onBeforeUnmount(() => {
         <SegmentedTabs
           :model-value="subTab"
           :items="[
-            { value: 'songs', label: '歌曲' },
-            { value: 'videos', label: '视频' },
+            { value: 'songs', label: '歌曲', icon: Music },
+            { value: 'videos', label: '视频', icon: Film },
           ]"
           @update:model-value="(v: string) => switchTab(v as ListenSubTab)"
         />
