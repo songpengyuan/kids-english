@@ -269,4 +269,4 @@
 
 | 文档 | 需要更新 | 原因 |
 |---|---|---|
-| `STABILITY.md` §6.4 | `kids-db-backup` / `kids-health` 的 cron 现在仍只存在于服务器 | 只有 `kids-maintenance` 收进了仓库；另两条重建时需照文档重写 |
+| `STABILITY.md` §6.4 | cron 定义已全部收进 `backend/deploy/`（三条），重建时逐个 `install` 即可 | 消除"配置只存在于服务器、重建时无从恢复"的欠账 |

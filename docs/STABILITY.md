@@ -15,6 +15,38 @@
 | 部署 | 前端与后端均由 CI（`.github/workflows/deploy.yml`）rsync 到服务器；后端重启后强制 `/api/ping` 健康校验（ADR-003） |
 | 公网 | 家庭账号 JWT 鉴权；录音回放同样走鉴权，禁止 nginx 直出 media |
 
+### 1.1 定时任务总览（全部版本化在 `backend/deploy/`）
+
+三条 cron 的定义文件都在仓库里，服务器 `/etc/cron.d/` 只是它们的**安装结果**：
+
+| 时间（CST） | 仓库文件 → `/etc/cron.d/` | 脚本 | 作用 |
+|---|---|---|---|
+| 02:30 每日 | `kids-db-backup.cron` | `scripts/backup-db.sh` | DB 一致性快照 + media tar，保留 14 天（§3） |
+| 03:30 每日 | `kids-maintenance.cron` | `scripts/maintenance.sh` | 事件汇总 + 过期媒体清理 + 过期事件清理（§3.1） |
+| 每 5 分钟 | `kids-health.cron` | `scripts/health-check.sh` | API/服务/磁盘巡检 + **维护心跳反查**（§4） |
+
+**为什么必须版本化**：`crontab -e` 改的是一份不透明的用户表。服务器一旦重装，
+没人说得清当时跑的是什么。曾经 `kids-db-backup` / `kids-health` 就只存在于服务器上，
+属于同类欠账 —— 现已补齐。`/etc/cron.d/` 里带点的文件名（如 `foo.old` / `foo.bak`）
+会被 cron **忽略**，所以残留文件不会重复执行，但容易误导，应清理。
+
+安装 / 校验（服务器上，代码部署后执行）：
+
+```bash
+cd /www/wwwroot/kids-english/backend
+for f in kids-db-backup kids-maintenance kids-health; do
+  install -m 644 deploy/$f.cron /etc/cron.d/$f
+done
+systemctl restart cron          # 注意：cron 无 reload job type，只能 restart
+
+# 校验三件事：内容无漂移、调度行不含 `%`、cron 服务在跑
+for f in kids-db-backup kids-maintenance kids-health; do
+  diff /etc/cron.d/$f deploy/$f.cron && echo "$f: 一致 ✓"
+done
+grep -hE '^[0-9*]' /etc/cron.d/kids-* | grep -c '%'   # 期望 0（原因见 §3.1）
+systemctl is-active cron
+```
+
 ## 2. 数据库：WAL 加固（2026-10-16）
 
 `app/db.py` 的 `connect()` 统一设置：
@@ -29,7 +61,8 @@
 
 ## 3. 备份策略（每日 02:30）
 
-由 `/etc/cron.d/kids-db-backup` 调用 `backend/scripts/backup-db.sh`：
+由 `backend/deploy/kids-db-backup.cron`（安装为 `/etc/cron.d/kids-db-backup`）
+调用 `backend/scripts/backup-db.sh`：
 
 1. **DB 在线一致性快照**：Python `sqlite3.backup()` API（替代早期直接 `cp`，杜绝拷贝不一致）
 2. **完整性校验**：对快照执行 `PRAGMA integrity_check`，非 `ok` 即告警并退出非零
@@ -143,13 +176,23 @@ cd /www/wwwroot/kids-english/backend && .venv/bin/python scripts/rollup_events.p
 
 ## 4. 健康检查（每 5 分钟）
 
-`/etc/cron.d/kids-health` → `backend/scripts/health-check.sh`：
+`backend/deploy/kids-health.cron`（安装为 `/etc/cron.d/kids-health`）
+→ `backend/scripts/health-check.sh`：
 
 - API 存活：curl `/api/ping` 非 200 → 告警
 - 服务状态：`kids-api` 非 active → 告警
 - 磁盘：`/www` 使用率 > 85% → 告警
+- **维护心跳反查**：比对 `backups/maintenance-state.json` 的状态与新鲜度，
+  把「脚本还在、cron 还在，但永远不再执行」这类静默故障变成一条日志：
+  `MAINTENANCE_MISSING` / `MAINTENANCE_FAILED` / `MAINTENANCE_STALE`（超 26h 未更新）
 
 告警写入 `/var/log/kids-health.log`（后续可接邮件/飞书/企业微信 webhook）。
+
+> 只管告警、**不自动重启**：重启是"动作"，误判时会把正在自愈的服务打断。
+> 自愈交给 systemd（§5），巡检只负责让人知道。
+>
+> `MAINTENANCE_*` 带**去重**（失败按 `last_run` 去重、陈旧按小时去重），
+> 避免同一异常每 5 分钟刷一条，把日志淹掉、让人开始忽略它。
 
 ## 5. 服务自愈与日志
 
@@ -226,8 +269,8 @@ tar xzf backups/media-YYYYMMDD.tar.gz -C backend/   # 解出 backend/media/
    systemctl is-active cron && ls -l /etc/cron.d/kids-*
    ```
 
-   > 目前只有 `kids-maintenance` 收进了仓库；`kids-db-backup` / `kids-health`
-   > 仍只存在于服务器上（重建时需照第 3/4 节的描述重写）—— 属已知欠账。
+   > 三条 cron 现已全部收进仓库（`kids-db-backup` / `kids-maintenance` / `kids-health`），
+   > 上面这个 `for` 循环会把它们一次装齐，重建不再依赖记忆。
 
 5. 验证：`/api/ping` 200（且带 `schema_version`）、登录接口可用、录音回放 200、
    手工跑一次 `maintenance.sh` 后心跳文件出现且 `status=ok`

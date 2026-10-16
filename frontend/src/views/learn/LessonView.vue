@@ -24,6 +24,7 @@ import { speak, speakZh } from "../../services/speech";
 import { useProgressStore } from "../../stores/progress";
 import { useStreakStore } from "../../stores/streak";
 import { useCardsStore, type Card } from "../../stores/cards";
+import { track } from "../../services/telemetry";
 import { useRoute, useRouter } from "vue-router";
 import { useViewport } from "../../composables/useViewport";
 import { useQuest, type QuestAct } from "../../composables/useQuest";
@@ -49,6 +50,9 @@ watch(
   lessonId,
   async (id) => {
     lesson.value = getLocalLesson(id) ?? null;
+    // 埋点（ADR-004）：进入某课。带 lesson_id —— 没有它就无法回答
+    // "哪一课没人去"这个问题（北极星之外的次关键指标：课程吸引力）。
+    if (id) track("lesson_enter", { lesson_id: id });
     const l = await content.getLesson(id);
     if (l) lesson.value = l;
   },

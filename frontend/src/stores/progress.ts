@@ -23,6 +23,7 @@ import {
   type SrsState,
 } from "../utils/reviewSchedule";
 import { getToken, requestWithTimeout } from "../services/api";
+import { track } from "../services/telemetry";
 import type { components } from "../types/api";
 import { useAuthStore } from "./auth";
 
@@ -517,6 +518,17 @@ export const useProgressStore = defineStore("progress", () => {
   }
 
   /**
+   * 磨耳朵埋点累加器（ADR-004）。
+   * player store 与视频计时都是**每 5 秒**调一次 addListenActivity —— 若每次都发事件，
+   * 半小时磨耳朵就是 360 条，会瞬间撑爆离线队列（上限 200）并淹没事件表，
+   * 而汇总侧要的只是「分钟级」的主动学习时长，粒度不需要这么细。
+   * 所以按 LISTEN_REPORT_EVERY_SEC 聚合成一条 listen_play；
+   * 不足的余量留在累加器里等下轮补齐（最多损失一个 tick 的精度）。
+   */
+  let listenAccumSec = 0;
+  const LISTEN_REPORT_EVERY_SEC = 60;
+
+  /**
    * 磨耳朵时长累加：播放（音频/视频）期间按真实经过秒数调用。
    * 同时累计 listenSec（磨耳朵）与 durationSec（学习总时长，磨耳朵 ⊆ 学习）；
    * 不增加 activities（玩法数只由玩法结算计入）。
@@ -534,6 +546,14 @@ export const useProgressStore = defineStore("progress", () => {
     const days = Object.keys(log).sort();
     for (const old of days.slice(0, Math.max(0, days.length - 30))) delete log[old];
     save();
+    // 埋点：按 60 秒粒度聚合上报（见 listenAccumSec 的说明）。
+    if (sec > 0) {
+      listenAccumSec += sec;
+      if (listenAccumSec >= LISTEN_REPORT_EVERY_SEC) {
+        track("listen_play", { seconds: listenAccumSec });
+        listenAccumSec = 0;
+      }
+    }
   }
 
   /** 最近 n 天的每日快照（含今天），按日期升序 —— 家长报告趋势用 */

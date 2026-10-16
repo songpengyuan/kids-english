@@ -70,7 +70,14 @@ export function setSessionContext(ctx: Partial<{ active: boolean; childId: numbe
   sessionContext = { ...sessionContext, ...ctx };
 }
 
-/** 记录一条事件（同步入队，必要时异步 flush）。 */
+/** 记录一条事件（同步入队，必要时异步 flush）。
+ *
+ * `active`（是否「主动学习」）在这里统一注入 —— 口径见 `docs/PROGRESS-DATA.md §7.2`：
+ * 它由**会话来源**决定（孩子自己发起 vs 家长开门进来），与具体玩法无关。
+ * 放在这个单点，是为了避免每个调用点各自判断、最后口径分裂
+ * （汇总侧只认 `payload.active`，错一处就静默少算时长）。
+ * 调用方显式传了则以调用方为准。
+ */
 export function track(
   type: string,
   payload: Record<string, unknown> = {},
@@ -80,7 +87,7 @@ export function track(
     client_event_id: uuid(),
     type,
     child_id: childId ?? sessionContext.childId,
-    payload,
+    payload: "active" in payload ? payload : { ...payload, active: sessionContext.active },
     client_ts: new Date().toISOString(),
     app_version: APP_VERSION,
   });

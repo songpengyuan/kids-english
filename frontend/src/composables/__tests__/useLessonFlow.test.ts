@@ -23,10 +23,13 @@ import { useLessonFlow, type UseLessonFlow } from "../useLessonFlow";
 vi.mock("../../services/effects", () => ({ bigCelebrate: vi.fn(), celebrate: vi.fn() }));
 vi.mock("../../services/speech", () => ({ speak: vi.fn(), speakZh: vi.fn() }));
 vi.mock("../../services/haptics", () => ({ hapticTap: vi.fn() }));
+// 埋点：这里只关心"上报了什么"，不关心队列实现（那部分在 telemetry 自己的测试里）
+vi.mock("../../services/telemetry", () => ({ track: vi.fn() }));
 
 import { bigCelebrate, celebrate } from "../../services/effects";
 import { speak, speakZh } from "../../services/speech";
 import { hapticTap } from "../../services/haptics";
+import { track } from "../../services/telemetry";
 
 const acts: QuestAct[] = [
   { key: "learn", name: "学单词", icon: undefined as never, tone: "orange", game: "learn", desc: "看图听发音" },
@@ -244,5 +247,80 @@ describe("useLessonFlow 结算", () => {
     push.mockClear();
     flow.back();
     expect(push).toHaveBeenCalledWith("/game/lesson/l4");
+  });
+});
+
+describe("useLessonFlow 埋点（ADR-004）", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  /** 取某类事件的调用参数（track(type, payload)） */
+  function payloadsOf(type: string): Array<Record<string, unknown>> {
+    return (track as unknown as { mock: { calls: unknown[][] } }).mock.calls
+      .filter((c) => c[0] === type)
+      .map((c) => (c[1] ?? {}) as Record<string, unknown>);
+  }
+
+  it("玩法完成 → 上报 activity_done，带课时/玩法名/秒数", async () => {
+    const { flow } = await bootHost("/course/l4");
+    flow.boot();
+    vi.useFakeTimers();
+    flow.open(acts[1]); // quiz（听音选图）
+    vi.advanceTimersByTime(4200);
+    flow.afterGame(3);
+    const [p] = payloadsOf("activity_done");
+    expect(p).toBeDefined();
+    expect(p.lesson_id).toBe("l4");
+    expect(p.activity).toBe("quiz");
+    expect(p.seconds).toBe(4);
+  });
+
+  it("afterSong 里 stage 已改成 result，activity 仍须是真实的玩法名", async () => {
+    // 这条专防一类静默失真：结算函数在改完 stage 之后再埋点，
+    // 会把所有童谣时长记成 activity="result"，看板上还看不出异常
+    const { flow } = await bootHost("/course/l4");
+    flow.boot();
+    vi.useFakeTimers();
+    flow.open(acts[2]); // song（唱童谣）
+    vi.advanceTimersByTime(9000);
+    flow.afterSong();
+    expect(flow.stage.value).toBe("result");
+    const [p] = payloadsOf("activity_done");
+    expect(p.activity).toBe("song");
+    expect(p.seconds).toBe(9);
+  });
+
+  it("不足 1 秒的点击视为误触，不上报（防菜单来回点刷出大量 0 秒事件）", async () => {
+    const { flow } = await bootHost("/course/l4");
+    flow.boot();
+    vi.useFakeTimers();
+    flow.open(acts[0]);
+    vi.advanceTimersByTime(300);
+    flow.afterGame(1);
+    expect(payloadsOf("activity_done")).toHaveLength(0);
+  });
+
+  it("闯关模式过关 → 上报 level_pass（带关卡序号）", async () => {
+    const { flow } = await bootHost("/game/quest/l4?step=quiz");
+    flow.boot();
+    flow.open(acts[1]);
+    flow.afterGame(3);
+    const [p] = payloadsOf("level_pass");
+    expect(p).toBeDefined();
+    expect(p.lesson_id).toBe("l4");
+    expect(typeof p.level).toBe("number");
+  });
+
+  it("自由模式结算（非闯关）不应误报 level_pass", async () => {
+    const { flow } = await bootHost("/course/l4");
+    flow.boot();
+    vi.useFakeTimers();
+    flow.open(acts[0]);
+    vi.advanceTimersByTime(2000);
+    flow.afterGame(3);
+    expect(payloadsOf("level_pass")).toHaveLength(0);
   });
 });

@@ -153,14 +153,29 @@
 客户端行为以**追加式事件**记录，与服务端 `progress` 解耦（合并语义完全不同：
 事件是高频追加、进度是低写入量合并）。
 
-| 事件 `type` | 何时产生 | 关键 payload |
-|---|---|---|
-| `session_start` | App 每次冷启动 | `entry`（入口 hash）、`active`（是否主动） |
-| `lesson_enter` | 进入某课 | `lesson_id` |
-| `activity_done` | 完成一个玩法 / 一段播放 | `seconds`、`active`、`lesson_id` |
-| `level_pass` | 通过关卡 | `lesson_id`、`level` |
-| `listen_play` | 磨耳朵播放 | `seconds` |
-| `client_error` | 未捕获异常 / 未处理 Promise | `kind`、`msg`、`stack`、`url` |
+| 事件 `type` | 何时产生 | 关键 payload | 上报位置 |
+|---|---|---|---|
+| `session_start` | App 每次冷启动 | `entry`（入口 hash）、`active`（是否主动） | `App.vue` |
+| `lesson_enter` | 进入某课 | `lesson_id` | `views/learn/LessonView.vue` |
+| `activity_done` | 完成一个玩法 / 一段播放 | `seconds`、`active`、`lesson_id`、`activity` | `composables/useLessonFlow.ts`（`settleActivity`） |
+| `level_pass` | 通过关卡 | `lesson_id`、`level` | `composables/useLessonFlow.ts` |
+| `listen_play` | 磨耳朵播放 | `seconds` | `stores/progress.ts`（`addListenActivity`） |
+| `client_error` | 未捕获异常 / 未处理 Promise | `kind`、`msg`、`stack`、`url` | `utils/errors.js` |
+
+**上报位置的取舍**（新增事件前先读）：
+
+- `activity_done` 埋在 `useLessonFlow.settleActivity()`，因为那是**所有玩法 `@done` 的唯一汇聚点**，
+  且已经持有 `actStart`（会话起始时刻）—— 埋在这里一处即可覆盖 6 个玩法组件，
+  不必逐个改。玩法名取局部变量 `actKey` 而不是 `stage.value`：
+  结算函数会先把 `stage` 改成 `result` 再结算，就地读会把所有时长记成 `activity: "result"`，
+  而**看板上只是分类错乱，不会有任何报错**（已有测试钉住这一点）。
+- `listen_play` 埋在 `progress.addListenActivity()`：它是磨耳朵时长的唯一汇聚点
+  （全局 player 与视频播放都经过它）。这里**必须聚合**：调用方是每 5 秒一次的 tick，
+  原样上报会让半小时磨耳朵产生 360 条事件，撑爆离线队列（上限 200）并淹没事件表。
+  现按 60 秒粒度合成一条，`daily_stats` 只要分钟级就够。
+- `active` 由 `services/telemetry.ts` 的 `track()` **统一注入**（口径见 §7.2），
+  调用方不用各自判断 —— 否则漏一处就静默少算时长。
+- 不足 1 秒的玩法会话不上报：菜单来回点会刷出大量 0 秒事件。
 
 - 每条事件带 `client_event_id`（客户端生成）→ 服务端 `INSERT OR IGNORE` **幂等去重**；
 - 每条事件带 `app_version`（= 前端 `__BUILD_ID__`）→ 线上错误可**精确绑到某一次构建**；

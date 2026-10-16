@@ -1,0 +1,24 @@
+# kids-english 每日数据库 + 媒体备份（sqlite backup API 一致性快照 + media tar
+# + 完整性校验），保留 14 天。脚本：backend/scripts/backup-db.sh
+#
+# 安装（服务器上执行一次）：
+#   install -m 644 /www/wwwroot/kids-english/backend/deploy/kids-db-backup.cron \
+#                  /etc/cron.d/kids-db-backup
+#
+# 校验安装结果：
+#   diff /etc/cron.d/kids-db-backup backend/deploy/kids-db-backup.cron   # 一致即无漂移
+#   cat /var/log/... （备份自写日志，见 backup-db.sh）
+#
+# 为什么备份在 backend/ 之外（/www/wwwroot/kids-english/backups/）：
+#   CI 用 `rsync --delete` 同步 backend/，服务器上任何**不在 git 里**的文件
+#   都会在下次部署时被删掉。备份若放在 backend/ 下会自我毁灭。
+#
+# ⚠️ cron 行里不要出现 `%`（第一个未转义的 `%` 之后整段会被当作标准输入、命令被截断，
+#    且不报错）。逻辑一律放进脚本。详见 kids-maintenance.cron 的说明。
+#
+# 时间：02:30 CST。早于 03:30 的维护任务（维护脚本要先有当日快照可退）。
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+MAILTO=""
+
+30 2 * * * root bash /www/wwwroot/kids-english/backend/scripts/backup-db.sh

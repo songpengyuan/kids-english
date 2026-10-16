@@ -22,6 +22,7 @@ import { bigCelebrate, celebrate } from "../services/effects";
 import { speak, speakZh } from "../services/speech";
 import { useCardsStore } from "../stores/cards";
 import { hapticTap } from "../services/haptics";
+import { track } from "../services/telemetry";
 
 /**
  * 课时流程阶段。
@@ -86,6 +87,9 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   const streakJustHit = ref(false);
   /** 当前玩法会话开始时间戳（0 = 未开始），结算时累计进今日学情 */
   let actStart = 0;
+  /** 当前玩法名（与 actStart 同步设置）。结算时 stage 可能已被改成 result，
+   *  所以不能就地读 stage —— 那样埋点里的 activity 会全变成 "result"。 */
+  let actKey = "";
 
   /* ---------- 引导（路由解析） ---------- */
   function boot() {
@@ -103,12 +107,14 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
       if (a) {
         stage.value = (a.game === "song" ? "song" : a.key) as LessonStage;
         actStart = Date.now();
+        actKey = stage.value;
       } else {
         stage.value = "menu";
       }
     } else if (STAGES.includes(s)) {
       stage.value = s as LessonStage;
       actStart = Date.now();
+      actKey = stage.value;
     } else {
       // 无直达 stage（含 URL 从玩法回退到 /course/:id）：回菜单，
       // 并报出主题歌名（英文），给孩子"这一课唱什么"的预期
@@ -122,8 +128,9 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
    *  · replace 不堆历史（孩子误触返回键不至于层层回退） */
   function open(a: QuestAct) {
     hapticTap();
-    actStart = Date.now();
     const key = (a.game === "song" ? "song" : a.key) as LessonStage;
+    actStart = Date.now();
+    actKey = key;
     stage.value = key;
     const lid = lesson.value?.id;
     if (!lid) return;
@@ -135,9 +142,18 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     return (progress.progress[lesson.value?.id ?? ""]?.[key] as number) || 0;
   }
 
+  /** 通过一关（闯关模式）：埋点。视觉反馈由调用方按场景决定（大画面 / 直接下一关） */
+  function markLevelPass() {
+    track("level_pass", {
+      lesson_id: lesson.value?.id ?? "",
+      level: quest.questLevel.value,
+    });
+  }
+
   /** 单关完成：直接进关卡完成大画面（多邻国：一课一节，完成即点亮 + 开宝箱） */
   function finishQuestStep() {
     quest.finish();
+    markLevelPass();
     bigCelebrate();
     speakZh("关卡完成，太棒了");
     stage.value = "result";
@@ -155,10 +171,25 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     router.push(`/game/quest/${quest.nextLevel.value.lessonId}?step=${quest.nextLevel.value.actKey}`);
   }
 
-  /** 结算一次玩法会话：累计今日时长与玩法数（家长报告数据源） */
+  /** 结算一次玩法会话：累计今日时长与玩法数（家长报告数据源），并上报埋点 */
   function settleActivity() {
-    progress.addDailyActivity(actStart ? (Date.now() - actStart) / 1000 : 0);
+    const sec = actStart ? (Date.now() - actStart) / 1000 : 0;
+    const key = actKey;
+    progress.addDailyActivity(sec);
     actStart = 0;
+    actKey = "";
+    // 埋点（ADR-004）：把这次玩法会话记为一条 activity_done。
+    // 与 addDailyActivity **同源但不同口径**：这条进 events → daily_stats，
+    // 供北极星「每周主动学习分钟数」用；addDailyActivity 是家长报告的展示口径。
+    // 两者数字不一致是正常的，不要互相读（见 docs/PROGRESS-DATA.md §7）。
+    // <1s 视为误触，不上报 —— 否则菜单来回点会刷出大量 0 秒事件。
+    if (sec >= 1) {
+      track("activity_done", {
+        lesson_id: lesson.value?.id ?? "",
+        activity: key,
+        seconds: Math.round(sec),
+      });
+    }
   }
 
   function afterGame(stars?: number) {
@@ -187,6 +218,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
         // 最后一关完成 → 通关结算 + 抽卡片
         lessonQuest.value = false;
         quest.finish();
+        markLevelPass();
         useCardsStore().collect();
         bigCelebrate();
         speakZh("闯关完成，获得新卡片");

@@ -1,0 +1,23 @@
+# kids-english 健康检查（API 存活 / systemd 服务状态 / 磁盘水位），每 5 分钟一次。
+# 脚本：backend/scripts/health-check.sh（只写日志，不做自动重启 —— 见该脚本注释）
+#
+# 除基础三项外，本脚本还承担**维护任务的心跳反查**：
+#   maintenance.sh 每轮写 backups/maintenance-state.json，这里比对它的状态与新鲜度，
+#   把「脚本还在、cron 还在，但永远不再执行」这类静默故障变成一条日志：
+#   MAINTENANCE_MISSING / MAINTENANCE_FAILED / MAINTENANCE_STALE
+#   （带去重，不会每 5 分钟刷屏）
+#
+# 安装（服务器上执行一次）：
+#   install -m 644 /www/wwwroot/kids-english/backend/deploy/kids-health.cron \
+#                  /etc/cron.d/kids-health
+#
+# 校验安装结果：
+#   diff /etc/cron.d/kids-health backend/deploy/kids-health.cron
+#   grep -c MAINTENANCE /var/log/kids-health.log     # 0 即无异常（文件不存在也是 0）
+#
+# ⚠️ cron 行里不要出现 `%`（会被当标准输入、命令被截断且不报错）。
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+MAILTO=""
+
+*/5 * * * * root bash /www/wwwroot/kids-english/backend/scripts/health-check.sh
