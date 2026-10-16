@@ -59,7 +59,7 @@ async function submit() {
       <input
         v-model="pass"
         class="gate-input"
-        type="password"
+        type="text"
         placeholder="家长口令（手机号）"
         maxlength="20"
         inputmode="numeric"

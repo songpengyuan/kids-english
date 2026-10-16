@@ -60,24 +60,53 @@ export const usePlayerStore = defineStore("player", () => {
     return lesson?.song?.lyrics ?? [];
   });
 
-  /* ---------- 磨耳朵时长累计（播放中每 5s 计一次，独立于学习时长） ---------- */
+  /* ---------- 磨耳朵时长累计（结算式：播放段按墙钟时间结算，独立于学习时长） ----------
+   * 为什么不用「每 5s 累加 5s」：标签页在后台时浏览器会节流 setInterval（Chrome 约降到 1 次/分钟），
+   * 孩子磨耳朵时切到别的页面/家长输口令开新 tab，时长就会严重少算。
+   * 改为「记录段起点 + 恢复/暂停/切歌/前台时结算真实时长」，后台播放的时长也能算上。
+   */
   let listenTimer: number | null = null;
-  let lastTick = 0;
+  /** 当前连续播放段的开始时间戳（0 = 无进行中的段） */
+  let listenStartAt = 0;
+
+  /** 结算当前播放段（按墙钟时间，含后台隐藏期），随后重置段起点 */
+  function settleListen(): void {
+    if (listenStartAt === 0) return;
+    const sec = (Date.now() - listenStartAt) / 1000;
+    listenStartAt = 0;
+    if (sec > 0.5) useProgressStore().addListenActivity(sec);
+  }
+
   function startListenTimer() {
     stopListenTimer();
-    lastTick = Date.now();
+    listenStartAt = Date.now();
     listenTimer = window.setInterval(() => {
-      const sec = (Date.now() - lastTick) / 1000;
-      lastTick = Date.now();
-      useProgressStore().addListenActivity(sec);
+      // 前台持续落盘：每 5s 结算一段并开启新段；后台被节流时此 interval 不跑，
+      // 时长由「回前台/暂停/切歌时的 settleListen」按真实时间补上
+      settleListen();
+      listenStartAt = Date.now();
     }, 5000);
   }
   function stopListenTimer() {
+    settleListen();
     if (listenTimer) {
       clearInterval(listenTimer);
       listenTimer = null;
     }
   }
+
+  /** 页面可见性：后台停 interval（避免节流干扰），回前台且仍在播放时按真实时间补计 */
+  function onVisibilityChange() {
+    if (document.hidden) {
+      if (listenTimer) {
+        clearInterval(listenTimer);
+        listenTimer = null;
+      }
+    } else if (playing.value) {
+      startListenTimer();
+    }
+  }
+  document.addEventListener("visibilitychange", onVisibilityChange);
 
   function bindAudio() {
     audio.addEventListener("timeupdate", () => {
