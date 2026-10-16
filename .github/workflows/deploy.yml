@@ -13,6 +13,11 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 给飞书通知卡片输出：前端/后端测试数、构建耗时
+    outputs:
+      tests_frontend: ${{ steps.fe-gate.outputs.tests }}
+      tests_backend: ${{ steps.be-gate.outputs.tests }}
+      duration: ${{ steps.time.outputs.duration }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -30,10 +35,15 @@ jobs:
 
       # 质量门禁：测试或类型检查不过就不部署。
       # 之前 CI 只 build —— 白屏级的语法错误（如 setup 里漏 import）照样能上线。
+      # 提取测试数（如 "Tests 312 passed"）供飞书卡片展示。
       - name: Quality gate (frontend test + type-check)
+        id: fe-gate
         run: |
-          pnpm test
+          pnpm test 2>&1 | tee /tmp/fe-test.log
+          test ${PIPESTATUS[0]} -eq 0
           pnpm type-check
+          FE_TESTS="$(grep -oE 'Tests +[0-9]+ passed' /tmp/fe-test.log | tail -1 | grep -oE '[0-9]+')"
+          echo "tests=${FE_TESTS:-?}" >> "$GITHUB_OUTPUT"
         working-directory: frontend
 
       # 后端质量门禁 + OpenAPI 契约同步校验：
@@ -41,13 +51,17 @@ jobs:
       # 后端接口变更后必须重新导出并提交；此处 export 后 git diff 非空 → 构建失败，
       # 防止"后端改了、前端类型没同步"的静默漂移。
       - name: Backend test + OpenAPI contract check
+        id: be-gate
         run: |
           cd backend
           python -m pip install -q -r requirements.txt
-          KIDS_JWT_SECRET=ci-secret-$(printf 'k%.0s' {1..32}) python -m pytest tests/ -q
+          KIDS_JWT_SECRET=ci-secret-$(printf 'k%.0s' {1..32}) python -m pytest tests/ -q 2>&1 | tee /tmp/be-test.log
+          test ${PIPESTATUS[0]} -eq 0
           python scripts/export_openapi.py
           git diff --exit-code -- backend/openapi.json
           cd ..
+          BE_TESTS="$(grep -oE '[0-9]+ passed' /tmp/be-test.log | tail -1 | grep -oE '[0-9]+')"
+          echo "tests=${BE_TESTS:-?}" >> "$GITHUB_OUTPUT"
 
       - name: Build
         # 自定义域名（zelab.cn）部署在根路径，必须用 build:root（BASE_PATH=/）；
@@ -77,9 +91,19 @@ jobs:
           rsync -az --delete -e "ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=accept-new" \
             dist/ root@110.41.61.4:/www/wwwroot/kids-english/www/
 
+      # 构建耗时（供飞书卡片展示）
+      - name: Record build duration
+        id: time
+        if: always()
+        run: |
+          START_EPOCH=$(date -d "${{ job.started_at }}" +%s)
+          echo "duration=$(($(date +%s) - START_EPOCH))" >> "$GITHUB_OUTPUT"
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -100,38 +124,86 @@ jobs:
         env:
           BUILD: ${{ needs.build.result }}
           DEPLOY: ${{ needs.deploy.result }}
+          FE_TESTS: ${{ needs.build.outputs.tests_frontend }}
+          BE_TESTS: ${{ needs.build.outputs.tests_backend }}
+          DURATION: ${{ needs.build.outputs.duration }}
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
         run: |
           # 整体状态：构建失败 > 部署失败 > 成功（build 失败时 deploy 会 skipped）
           if [ "$BUILD" = "failure" ]; then
             OVERALL="failure"
+            FAIL_AT="构建阶段"
           elif [ "$DEPLOY" = "failure" ]; then
             OVERALL="deploy-fail"
+            FAIL_AT="部署阶段"
           else
             OVERALL="success"
+            FAIL_AT=""
           fi
 
           # 从 GitHub 事件里取提交信息（workflow_dispatch 手动触发时 head_commit 为空）
-          COMMIT_MSG="$(jq -r '.head_commit.message // "手动触发"' "$GITHUB_EVENT_PATH" 2>/dev/null | tr '\n' ' ' | head -c 80)"
+          COMMIT_MSG="$(jq -r '.head_commit.message // "手动触发"' "$GITHUB_EVENT_PATH" 2>/dev/null | tr '\n' ' ' | head -c 120)"
           AUTHOR="$(jq -r '.head_commit.author.name // "unknown"' "$GITHUB_EVENT_PATH" 2>/dev/null)"
           SHA_SHORT="${GITHUB_SHA:0:7}"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          ACTOR="${GITHUB_ACTOR:-unknown}"
+          RUN_NO="${GITHUB_RUN_NUMBER:-?}"
 
-          # 构造飞书交互卡片 JSON（文本消息即可被 curl 直接投递）
+          # 耗时格式化：X 分 Y 秒
+          if [ -n "$DURATION" ] && [ "$DURATION" -gt 0 ] 2>/dev/null; then
+            DUR_MIN=$((DURATION / 60)); DUR_SEC=$((DURATION % 60))
+            DUR_TXT="${DUR_MIN}分${DUR_SEC}秒"
+          else
+            DUR_TXT="—"
+          fi
+
+          # 状态文案：success / failure / cancelled / skipped
+          ok() { [ "$1" = "success" ] && echo '✅' || { [ "$1" = "failure" ] && echo '❌' || echo '⏭️'; }; }
+          BUILD_ICON="$(ok "$BUILD")"; DEPLOY_ICON="$(ok "$DEPLOY")"
+
+          # 构建/部署状态行（失败时标注失败阶段）
+          if [ "$OVERALL" = "success" ]; then
+            STATUS_LINE="构建 ${BUILD_ICON} ｜ 部署 ${DEPLOY_ICON} ｜ 耗时 ${DUR_TXT}"
+          else
+            STATUS_LINE="构建 ${BUILD_ICON} ｜ 部署 ${DEPLOY_ICON} ｜ 耗时 ${DUR_TXT}\n**❌ 失败于：** ${FAIL_AT}"
+          fi
+
+          # 测试行（后端契约/质量门禁都通过才展示数字）
+          TESTS_LINE="测试：前端 ${FE_TESTS:-?} ｜ 后端 ${BE_TESTS:-?}"
+
+          # 部署地址行
+          if [ "$OVERALL" = "success" ]; then
+            DEPLOY_LINE="**部署地址：** https://zelab.cn\n${PAGE_URL:+GitHub Pages：$PAGE_URL}"
+          else
+            DEPLOY_LINE="**部署地址：** https://zelab.cn（本次未更新）"
+          fi
+
+          # 构造飞书交互卡片 JSON
           jq -n \
             --arg title "$([ "$OVERALL" = "success" ] && echo '✅ kids-english 部署成功' || echo '❌ kids-english 构建/部署未通过')" \
             --arg template "$([ "$OVERALL" = "success" ] && echo 'green' || echo 'red')" \
-            --arg build "$BUILD" --arg deploy "$DEPLOY" \
+            --arg status "$STATUS_LINE" --arg tests "$TESTS_LINE" \
             --arg commit "${SHA_SHORT} · ${COMMIT_MSG}" --arg author "$AUTHOR" \
             --arg time "$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M')" \
             --arg run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg deploy_line "$DEPLOY_LINE" --arg branch "$BRANCH" --arg actor "$ACTOR" --arg runno "$RUN_NO" \
             '{
               msg_type: "interactive",
               card: {
                 config: { wide_screen_mode: true },
                 header: { title: { tag: "plain_text", content: $title }, template: $template },
                 elements: [
-                  { tag: "div", text: { tag: "lark_md", content: "**构建：** \($build) ｜ **部署：** \($deploy)" } },
-                  { tag: "div", text: { tag: "lark_md", content: "**提交：** \($commit)\n**作者：** \($author)\n**时间：** \($time) (UTC+8)" } },
-                  { tag: "action", actions: [{ tag: "button", text: { tag: "plain_text", content: "查看构建详情" }, type: "primary", url: $run }] }
+                  { tag: "div", text: { tag: "lark_md", content: $status } },
+                  { tag: "hr" },
+                  { tag: "div", text: { tag: "lark_md", content: $tests } },
+                  { tag: "div", text: { tag: "lark_md", content: "**提交：** \($commit)\n**分支：** \($branch) ｜ **作者：** \($author) ｜ **触发：** \($actor)" } },
+                  { tag: "div", text: { tag: "lark_md", content: "**时间：** \($time) (UTC+8) ｜ **Run #** \($runno)" } },
+                  { tag: "div", text: { tag: "lark_md", content: $deploy_line } },
+                  { tag: "hr" },
+                  { tag: "action", actions: [
+                      { tag: "button", text: { tag: "plain_text", content: "查看构建详情" }, type: "primary", url: $run },
+                      { tag: "button", text: { tag: "plain_text", content: "打开网站" }, type: "default", url: "https://zelab.cn" }
+                    ] }
                 ]
               }
             }' > /tmp/feishu-payload.json
