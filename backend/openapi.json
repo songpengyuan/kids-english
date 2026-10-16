@@ -1105,7 +1105,7 @@
           "events"
         ],
         "summary": "Create Events",
-        "description": "批量接收埋点事件。按 ``client_event_id`` 幂等；跨家庭一律 404。\n\n单次条数上限由 ``EventsIn`` 的 ``max_length``（50）保证 —— 超限在请求校验层\n直接 422，契约里可见。\npayload 超 1KB 时截断（保留 ``_truncated`` 标记），避免客户端把大对象塞进事件表\n把单 worker 的写入路径拖慢。",
+        "description": "批量接收埋点事件。按 ``client_event_id`` 幂等；跨家庭一律 404。\n\n单次条数上限由 ``EventsIn`` 的 ``max_length``（50）保证 —— 超限在请求校验层\n直接 422，契约里可见。\npayload 超 1KB 时截断（保留 ``_truncated`` 标记），避免客户端把大对象塞进事件表\n把单 worker 的写入路径拖慢。\n\n``client_ts`` 写入前归一成与 ``server_ts`` 相同的 UTC 格式\n（见 ``app/timeutil.py``）—— 两种格式并存会让按时间的范围查询静默算错。\n归一失败不拒收，落 ``NULL`` 由 ``COALESCE`` 退回 ``server_ts``。",
         "operationId": "create_events_api_v1_events_post",
         "parameters": [
           {
