@@ -62,8 +62,16 @@ CREATE INDEX IF NOT EXISTS idx_recordings_child ON recordings(child_id, id);
 
 
 def connect() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
+    """连接 SQLite：WAL + busy_timeout + 外键，提升多设备并发读写稳定性。"""
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
     conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA busy_timeout=5000")
+        conn.execute("PRAGMA foreign_keys=ON")
+    except sqlite3.Error:
+        pass  # 只读介质等场景不阻断
     return conn
 
 
