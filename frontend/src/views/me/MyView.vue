@@ -122,7 +122,7 @@ function goGame() {
         <div class="hero-id">
           <span class="hero-avatar" aria-hidden="true" @click.stop="sayProfile">{{ kidAvatar }}</span>
           <div class="hero-id-info">
-            <p class="hero-name">{{ kidName }}的学习小屋</p>
+            <p class="hero-name">{{ kidName }}</p>
             <p class="hero-meta">
               <span><Star class="k-ico star-fill" />{{ progress.totalStars }} 颗星</span>
               <span><Flame class="k-ico flame" />{{ streak.streak }} 天连击</span>
@@ -253,27 +253,26 @@ function goGame() {
 .hn-divider { width: 1px; height: 54px; background: rgba(255, 255, 255, 0.35); }
 .hero-foot { margin: 14px 0 0; text-align: center; font-size: 12px; font-weight: 700; opacity: 0.85; }
 
-/* ---------- 数据小卡行 ---------- */
-.stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--gap-s); }
-.stat { background: var(--card-bg); border-radius: 16px; box-shadow: var(--shadow-hard); padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; transition: transform 0.08s; }
+/* ---------- 统一卡片样式 ---------- */
+.stat { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); padding: 14px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: transform 0.08s; }
 .stat:active { transform: scale(0.96); }
-.st-emoji { font-size: 26px; line-height: 1.2; }
-.st-num { font-size: 16px; font-weight: 900; color: var(--ink); line-height: 1.2; }
+.st-emoji { font-size: 28px; line-height: 1.2; }
+.st-num { font-size: 17px; font-weight: 900; color: var(--ink); line-height: 1.2; }
 .st-label { font-size: 11px; font-weight: 700; color: var(--ink-faint); }
 
 /* ---------- 今日目标 ---------- */
-.card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: var(--gap-m); }
-.goal { display: flex; flex-direction: column; gap: var(--gap-s); }
-.goal.done { box-shadow: var(--shadow-hard), inset 0 0 0 2px var(--ok); }
+.card { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); padding: 16px; }
+.goal { display: flex; flex-direction: column; gap: 8px; }
+.goal.done { box-shadow: var(--shadow-soft), inset 0 0 0 2px var(--ok); }
 .goal-head { display: flex; justify-content: space-between; align-items: baseline; }
-.goal-head h3 { margin: 0; }
-.goal-state { font-weight: 800; font-size: var(--fs-small); color: var(--ink-soft); }
-.goal-bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.goal-head h3 { margin: 0; font-size: 15px; font-weight: 900; }
+.goal-state { font-weight: 800; font-size: 12px; color: var(--ink-soft); }
+.goal-bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
 .goal-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--brand), var(--brand-dark)); transition: width 0.5s; }
-.goal-line { margin: 0; font-weight: 700; font-size: var(--fs-small); color: var(--ink-soft); }
+.goal-line { margin: 0; font-weight: 700; font-size: 12px; color: var(--ink-soft); }
 .goal-line b { color: var(--ink); }
 
-/* ---------- 复习 & 家长中心 ---------- */
+/* ---------- 入口行（闯关 / 复习 / 家长） ---------- */
 .game-entry {
   display: flex;
   align-items: center;
@@ -282,20 +281,31 @@ function goGame() {
   border-radius: 18px;
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: #fff;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
   text-align: left;
 }
 .game-entry:active { transform: scale(0.98); }
 .ge-emoji { font-size: 28px; }
 .ge-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.ge-title { font-size: 16px; font-weight: 900; }
+.ge-title { font-size: 15px; font-weight: 900; }
 .ge-sub { font-size: 12px; font-weight: 700; opacity: 0.85; }
-.ge-arrow { width: 20px; height: 20px; opacity: 0.8; }
-.entry { display: flex; align-items: center; gap: var(--gap-m); background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-hard); padding: var(--gap-s) var(--gap-m); text-align: left; }
+.ge-arrow { width: 18px; height: 18px; opacity: 0.8; }
+
+.entry {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft);
+  padding: 14px 16px; text-align: left;
+}
 .en-ico { font-size: 24px; }
-.en-cap { font-weight: 800; flex: none; }
-.en-desc { flex: 1; text-align: right; font-size: var(--fs-small); color: var(--ink-faint); font-weight: 700; }
-.en-arrow { color: var(--ink-faint); }
-.parent-entry { display: flex; align-items: center; justify-content: center; gap: 6px; padding: var(--gap-s); margin-top: auto; font-size: 13px; font-weight: 700; color: var(--ink-faint); background: none; }
+.en-cap { font-weight: 800; font-size: 14px; flex: none; }
+.en-desc { flex: 1; text-align: right; font-size: 12px; color: var(--ink-faint); font-weight: 700; }
+.en-arrow { color: var(--ink-faint); width: 18px; height: 18px; }
+
+.parent-entry {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px; margin-top: 4px;
+  font-size: 13px; font-weight: 700; color: var(--ink-faint);
+  background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft);
+}
 .parent-entry .k-ico { width: 16px; height: 16px; }
 </style>
