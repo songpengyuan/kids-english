@@ -77,6 +77,9 @@ onMounted(() => {
     if (document.hidden) progress.flushReport();
   });
   window.addEventListener("pagehide", () => progress.flushReport());
+  // 定期心跳同步：每 60s 如有未上报变更即推上云（无变更零请求）。
+  // 多设备切换时云端始终接近最新，孩子/家长在不同设备看到的数据更准确。
+  window.setInterval(() => void progress.flushIfDirty(), 60_000);
 });
 </script>
 

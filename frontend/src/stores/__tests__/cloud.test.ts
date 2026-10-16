@@ -151,4 +151,24 @@ describe("progress store · 云同步", () => {
     await vi.runAllTimersAsync();
     expect(calls.filter((c) => c.url === "/api/v1/children/1/progress").length).toBe(1);
   });
+
+  it("心跳同步 flushIfDirty：有未上报变更才推，推完不再重复请求（无变更零请求）", async () => {
+    const { calls } = mockFetch({
+      "/api/v1/children/1/progress": { ok: true },
+    });
+    const p = useProgressStore();
+
+    // 无变更 → 心跳不请求
+    await p.flushIfDirty();
+    expect(calls.filter((c) => c.url === "/api/v1/children/1/progress").length).toBe(0);
+
+    // 有变更 → 心跳推一次
+    p.setGameStars("l4", "learn", 2);
+    await p.flushIfDirty();
+    expect(calls.filter((c) => c.url === "/api/v1/children/1/progress").length).toBe(1);
+
+    // 已推完（dirty 清除）→ 再次心跳零请求
+    await p.flushIfDirty();
+    expect(calls.filter((c) => c.url === "/api/v1/children/1/progress").length).toBe(1);
+  });
 });
