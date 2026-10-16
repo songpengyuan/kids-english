@@ -442,6 +442,19 @@ html.no-bottom-nav #app {
   padding-left: var(--gap-xs);
 }
 
+/* ---------- 卡片内标题 ----------
+ * 卡片**内部**那一行的标题（家长报告里的"今日概览""掌握度趋势"……）。
+ * 与 .section-title 的分工：
+ *   · .section-title 是页面级分区标签，在卡片组**之外**，字号更小、色更淡；
+ *   · .card-title 是卡片自身的标题，在卡片**之内**，用正文色和字重压住下面的内容。
+ * 以前这类标题是各页写 `h3 { margin: 0 0 …; font-size: …px }`，字号 13/14/15px 都有。 */
+.card-title {
+  margin: 0 0 var(--gap-s);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-strong);
+  color: var(--ink);
+}
+
 /* ---------- 入口行：图标 + 主文案 + 副文案 + 箭头 ----------
  * 全站出现过 6 次以上的重复实现（闯关/复习/家长中心/日历……），
  * 以前每处圆角、padding、箭头颜色都不一样。统一后只写一次。

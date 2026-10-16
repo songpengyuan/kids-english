@@ -1,29 +1,46 @@
 <script setup lang="ts">
 /**
  * 家长中心（/me/parent）——大人用的：
- *   家庭账号（云模式：注册/登录、孩子管理、多设备同步）
- *   家长报告 / 今日统计 / 声音与暗黑设置 / 数据说明
+ *   孩子管理（云模式：多孩子切换、编辑名字/头像/生日）
+ *   家长报告入口 / 声音与暗黑设置 / 应用口令门禁开关
+ *
+ * 设计（2026-10 统一）：骨架 PageShell、卡片用全局 .card、卡片内标题用 .card-title、
+ * 报告入口用 EntryRow（原来自己写了一份 .entry，圆角和阴影都和别处不同）。
+ *
+ * 本次顺带做的清理：
+ *   - 原 HeaderBar 只 `emit('back')`、**没有默认返回行为**，而这里当时没绑 @back
+ *     —— 家长中心顶栏的返回键一直是点了没反应的（现已绑 router.back()）。
+ *   - 删掉一批从未被模板调用的死代码：登录/注册表单逻辑（submit/form/mode）、
+ *     账号资料编辑（startEditProfile/saveProfile/profile）、sayFamily，
+ *     以及随之失去用途的 useContentStore。这些是早期"家庭账号登录页"的残留，
+ *     模板里的对应 UI 早已移除，逻辑却一直留在文件里。
+ *   - 删掉死样式（.stat-row / .f-mode / .f-submit / .f-tip / .f-name / .f-meta /
+ *     .f-out / .f-out-btn）与未使用的图标 import。
  */
 import { computed, reactive, ref } from "vue";
 import { useProgressStore } from "../../stores/progress";
-import { useRewardsStore } from "../../stores/rewards";
-import { FORM_TOTAL } from "../../data/heroes";
-import { useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
-import { useContentStore } from "../../stores/content";
-import HeaderBar from "../../components/layout/HeaderBar.vue";
-import PathIcon from "../../components/PathIcon.vue";
+import { useRouter } from "vue-router";
+import PageShell from "../../components/ui/PageShell.vue";
+import EntryRow from "../../components/ui/EntryRow.vue";
+import IconTile from "../../components/ui/IconTile.vue";
 import SoundToggle from "../../components/layout/SoundToggle.vue";
 import ThemeToggle from "../../components/layout/ThemeToggle.vue";
-import { ChevronRight, BarChart3, Clock, Activity, Volume2, Moon, Shield, Plus, LogOut, Pencil, KeyRound } from "@lucide/vue";
+import {
+  BarChart3,
+  Volume2,
+  Moon,
+  Shield,
+  Plus,
+  Pencil,
+  KeyRound,
+} from "@lucide/vue";
 import { speakZh } from "../../services/speech";
 import type { Child } from "../../types";
 import { useGateStore } from "../../stores/gate";
 
 const progress = useProgressStore();
-const rewards = useRewardsStore();
 const auth = useAuthStore();
-const content = useContentStore();
 const router = useRouter();
 const gate = useGateStore();
 
@@ -37,87 +54,11 @@ function toggleGate() {
   speakZh(next ? "应用口令门禁已开启" : "应用口令门禁已关闭");
 }
 
-const mode = ref<"login" | "register">("login");
-const form = reactive({ familyName: "", passcode: "", email: "" });
 const newChildName = ref("");
 const busy = ref(false);
 const error = ref("");
-/** 资料编辑态：false=展示，true=编辑中 */
-const editingProfile = ref(false);
-const profile = reactive({ nickname: "", email: "" });
 
 const loggedIn = computed(() => auth.family !== null);
-
-function fmtDuration(sec: number) {
-  const m = Math.floor(sec / 60);
-  return m ? `${m} 分 ${Math.round(sec % 60)} 秒` : `${Math.round(sec)} 秒`;
-}
-
-function go(path: string) { router.push(path); }
-
-/** 登录/注册提交；成功后拉课程内容 + 同步进度（进入云模式） */
-async function submit() {
-  error.value = "";
-  const phone = form.familyName.trim();
-  if (!/^1\d{10}$/.test(phone)) {
-    error.value = "请输入 11 位手机号";
-    return;
-  }
-  if (form.passcode.length < 4) {
-    error.value = "口令至少 4 位";
-    return;
-  }
-  busy.value = true;
-  try {
-    // 手机号即账号：先尝试登录，不存在则自动注册
-    let ok = await auth.login(phone, form.passcode);
-    if (!ok && mode.value === "register") {
-      ok = await auth.register(phone, form.passcode);
-    }
-    if (ok) {
-      content.loadFromServer();
-      progress.syncFromServer();
-      rewards.syncFromServer();
-    }
-  } catch (e) {
-    // 登录失败且未注册 → 自动注册
-    if (mode.value === "register") {
-      try {
-        await auth.register(phone, form.passcode);
-        content.loadFromServer();
-        progress.syncFromServer();
-        rewards.syncFromServer();
-      } catch (e2) {
-        error.value = (e2 as Error).message;
-      }
-    } else {
-      error.value = (e as Error).message;
-    }
-  } finally {
-    busy.value = false;
-  }
-}
-
-/** 进入资料编辑：用当前账号资料初始化输入框 */
-function startEditProfile() {
-  profile.nickname = auth.family!.nickname;
-  profile.email = auth.family!.email ?? "";
-  editingProfile.value = true;
-}
-
-/** 保存资料编辑 */
-async function saveProfile() {
-  error.value = "";
-  busy.value = true;
-  try {
-    await auth.patchMe(profile.nickname, profile.email);
-    editingProfile.value = false;
-  } catch (e) {
-    error.value = (e as Error).message;
-  } finally {
-    busy.value = false;
-  }
-}
 
 /** 孩子编辑：编辑中的孩子 id（null = 未编辑） */
 const editingChildId = ref<number | null>(null);
@@ -156,7 +97,10 @@ async function saveChild() {
 async function addChild() {
   error.value = "";
   const name = newChildName.value.trim();
-  if (!name) { error.value = "输入孩子名字"; return; }
+  if (!name) {
+    error.value = "输入孩子名字";
+    return;
+  }
   busy.value = true;
   try {
     await auth.createChild(name);
@@ -174,170 +118,278 @@ function pickChild(id: number) {
   auth.selectChild(id);
   progress.syncFromServer();
 }
-
-function logout() {
-  auth.logout();
-  form.passcode = "";
-}
-
-function sayFamily() {
-  const name = loggedIn.value ? auth.family!.familyName : "还没有家庭账号";
-  speakZh(`家庭账号：${name}`);
-}
 </script>
 
 <template>
-  <div class="parent view">
-    <HeaderBar show-back show-badges>
-      <template #title><PathIcon name="me" class="hdr-ico" /> 家长中心</template>
-    </HeaderBar>
+  <PageShell
+    scroll
+    title="家长中心"
+    icon="me"
+    show-badges
+    back-label="返回"
+    @back="router.back()"
+  >
+    <!-- 孩子管理（云模式） -->
+    <section class="card family">
+      <h3 class="card-title family__head">
+        <Shield class="k-ico family__shield" />
+        <span>孩子管理</span>
+        <span v-if="loggedIn" class="family__badge">云同步中</span>
+      </h3>
 
-    <div class="body view-body">
-      <!-- 家庭账号（云模式） -->
-      <section class="card family-card">
-        <h3 class="f-head">
-          <Shield class="k-ico" />
-          <span>孩子管理</span>
-          <span v-if="loggedIn" class="f-badge">云同步中</span>
-        </h3>
-
-        <!-- 孩子列表 + 切换 -->
-        <div class="f-children">
-          <div v-for="c in auth.children" :key="c.id" class="f-child-wrap">
-            <button class="f-child" :class="{ on: c.id === auth.currentChildId }" @click="pickChild(c.id)">
-              <span class="fc-avatar">{{ c.avatar || "👶" }}</span>
-              <span>{{ c.name }}</span>
-            </button>
-            <button class="f-edit-btn" title="编辑名字" @click="startEditChild(c)">
-              <Pencil class="k-ico" />
-            </button>
-          </div>
-        </div>
-
-        <!-- 孩子编辑表单（名字/头像/生日） -->
-        <div v-if="editingChildId !== null" class="f-child-edit">
-          <input v-model="childForm.name" class="f-input" placeholder="名字" maxlength="20" />
-          <input v-model="childForm.avatar" class="f-input" placeholder="头像 emoji（如 🦁）" maxlength="8" />
-          <input v-model="childForm.birthDate" class="f-input" type="date" placeholder="出生日期" />
-          <div class="f-profile-actions">
-            <button class="f-add-btn" :disabled="busy" @click="saveChild">保存</button>
-            <button class="f-ghost-btn" @click="editingChildId = null">取消</button>
-          </div>
-        </div>
-        <div v-else class="f-add">
-          <input v-model="newChildName" class="f-input" placeholder="添加孩子（输入名字）" maxlength="20"
-            @keyup.enter="addChild" />
-          <button class="f-add-btn" :disabled="busy" @click="addChild"><Plus class="k-ico" /> 添加</button>
-        </div>
-
-        <p v-if="error" class="f-error">{{ error }}</p>
-      </section>
-
-      <!-- 家长报告 -->
-      <button class="entry" @click="go('/me/report')">
-        <BarChart3 class="k-ico" />
-        <div class="e-body">
-          <div class="e-name">家长报告</div>
-          <div class="e-desc">掌握度趋势 · 待巩固词</div>
-        </div>
-        <ChevronRight class="k-ico arrow" />
-      </button>
-
-      <!-- 设置 -->
-      <section class="settings card">
-        <h3>设置</h3>
-        <div class="set-row">
-          <span class="set-label"><Volume2 class="k-ico" /> 声音</span>
-          <SoundToggle />
-        </div>
-        <div class="set-row">
-          <span class="set-label"><Moon class="k-ico" /> 暗黑模式</span>
-          <ThemeToggle />
-        </div>
-        <!-- 应用入口口令门禁（备案合规；口令固定，家长只可开/关） -->
-        <div class="set-row">
-          <span class="set-label"><KeyRound class="k-ico" /> 应用口令门禁</span>
-          <button class="gate-mini" :class="{ on: gate.enabled }" @click="toggleGate">
-            {{ gate.enabled ? "开启中" : "已关闭" }}
+      <!-- 孩子列表 + 切换 -->
+      <div class="kids">
+        <div v-for="c in auth.children" :key="c.id" class="kid-wrap">
+          <button
+            class="kid"
+            :class="{ 'kid--on': c.id === auth.currentChildId }"
+            @click="pickChild(c.id)"
+          >
+            <span class="kid__avatar">{{ c.avatar || "👶" }}</span>
+            <span>{{ c.name }}</span>
+          </button>
+          <button class="kid-edit" title="编辑名字" @click="startEditChild(c)">
+            <Pencil class="k-ico" />
           </button>
         </div>
-        <p v-if="gateMsg" class="gate-msg">{{ gateMsg }}</p>
-        <p class="gate-desc">进入应用前必须输入家长口令。本设备解锁后 7 天内免输。</p>
-      </section>
+      </div>
 
-      <p class="foot">建议每次陪学 10~15 分钟</p>
-    </div>
-  </div>
+      <!-- 孩子编辑表单（名字/头像/生日） -->
+      <div v-if="editingChildId !== null" class="kid-edit-form">
+        <input v-model="childForm.name" class="field" placeholder="名字" maxlength="20" />
+        <input
+          v-model="childForm.avatar"
+          class="field"
+          placeholder="头像 emoji（如 🦁）"
+          maxlength="8"
+        />
+        <input v-model="childForm.birthDate" class="field" type="date" placeholder="出生日期" />
+        <div class="actions">
+          <button class="btn-primary" :disabled="busy" @click="saveChild">保存</button>
+          <button class="btn-ghost" @click="editingChildId = null">取消</button>
+        </div>
+      </div>
+      <div v-else class="kid-add">
+        <input
+          v-model="newChildName"
+          class="field"
+          placeholder="添加孩子（输入名字）"
+          maxlength="20"
+          @keyup.enter="addChild"
+        />
+        <button class="btn-primary" :disabled="busy" @click="addChild">
+          <Plus class="k-ico" /> 添加
+        </button>
+      </div>
+
+      <p v-if="error" class="form-error">{{ error }}</p>
+    </section>
+
+    <!-- 家长报告：全页唯一的实质行动 -->
+    <EntryRow title="家长报告" desc="掌握度趋势 · 待巩固词" to="/me/report">
+      <template #icon>
+        <IconTile tone="blue"><BarChart3 class="k-ico" /></IconTile>
+      </template>
+    </EntryRow>
+
+    <!-- 设置 -->
+    <section class="card">
+      <h3 class="card-title">设置</h3>
+
+      <div class="set-row">
+        <span class="set-label"><Volume2 class="k-ico" /> 声音</span>
+        <SoundToggle />
+      </div>
+      <div class="set-row">
+        <span class="set-label"><Moon class="k-ico" /> 暗黑模式</span>
+        <ThemeToggle />
+      </div>
+      <!-- 应用入口口令门禁（备案合规；口令固定，家长只可开/关） -->
+      <div class="set-row">
+        <span class="set-label"><KeyRound class="k-ico" /> 应用口令门禁</span>
+        <button class="gate" :class="{ 'gate--on': gate.enabled }" @click="toggleGate">
+          {{ gate.enabled ? "开启中" : "已关闭" }}
+        </button>
+      </div>
+      <p v-if="gateMsg" class="gate-msg">{{ gateMsg }}</p>
+      <p class="gate-desc">进入应用前必须输入家长口令。本设备解锁后 7 天内免输。</p>
+    </section>
+
+    <p class="foot">建议每次陪学 10~15 分钟</p>
+  </PageShell>
 </template>
 
 <style scoped>
-.body { display: flex; flex-direction: column; gap: var(--gap-s); width: 100%; overflow-y: auto; padding-bottom: var(--pad-y); }
-.entry { display: flex; align-items: center; gap: 12px; background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); padding: 14px 16px; text-align: left; width: 100%; }
-.entry > .k-ico { width: 24px; height: 24px; color: var(--ink-soft); }
-.e-body { flex: 1; }
-.e-name { font-weight: var(--fw-strong); }
-.e-desc { font-size: 12px; color: var(--ink-faint); font-weight: var(--fw-mid); }
-.arrow { color: var(--ink-faint); }
-.card { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); padding: 16px; }
-.card h3 { margin: 0 0 var(--gap-s); font-size: var(--fs-small); color: var(--ink-soft); }
-.stat-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-weight: var(--fw-mid); font-size: 14px; }
-.stat-row > .k-ico { width: 18px; height: 18px; color: var(--ink-faint); }
-.stat-row span:nth-child(2) { flex: 1; color: var(--ink-soft); }
-.set-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
-.set-label { display: flex; align-items: center; gap: 8px; font-weight: var(--fw-mid); font-size: 14px; }
-.set-label .k-ico { width: 18px; height: 18px; }
-.gate-mini {
-  border: 1px solid var(--line, #e5e2db);
-  border-radius: 999px;
+/* ---------- 家庭卡 ---------- */
+.family {
+  border-left: 4px solid var(--brand);
+}
+.family__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.family__shield {
+  color: var(--brand);
+}
+.family__badge {
+  margin-left: auto;
+  background: var(--brand);
+  color: var(--on-tone);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  font-size: var(--fs-small);
+}
+
+.kids {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-s);
+}
+.kid-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kid {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  font-weight: var(--fw-strong);
+  font-size: var(--fs-small);
+  color: var(--ink);
+}
+.kid--on {
+  background: var(--brand);
+  color: var(--on-tone);
+}
+.kid__avatar {
+  font-size: var(--fs-body);
+}
+/* 编辑入口是家长页的次级控件，可以小于儿童触控目标（--tap-min 是给孩子定的） */
+.kid-edit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+}
+
+.kid-edit-form {
+  margin-top: var(--gap-s);
+  padding: var(--gap-s);
+  border-radius: var(--radius-s);
+  background: var(--bg);
+}
+.kid-add {
+  display: flex;
+  gap: var(--gap-s);
+  margin-top: var(--gap-s);
+}
+
+.field {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: var(--radius-s);
+  border: 2px solid var(--line);
+  font-size: var(--fs-body);
+  font-family: inherit;
+  margin-bottom: 6px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.kid-add .field {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.actions {
+  display: flex;
+  gap: var(--gap-s);
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-radius: var(--radius-s);
+  background: var(--brand);
+  color: var(--on-tone);
+  font-weight: var(--fw-strong);
+  font-size: var(--fs-small);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+}
+.btn-ghost {
+  padding: 8px 16px;
+  border-radius: var(--radius-s);
+  background: none;
+  color: var(--ink-faint);
+  font-weight: var(--fw-strong);
+  font-size: var(--fs-small);
+}
+
+.form-error {
+  margin: var(--gap-s) 0 0;
+  color: var(--red);
+  font-weight: var(--fw-mid);
+  font-size: var(--fs-small);
+}
+
+/* ---------- 设置 ---------- */
+.set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+.set-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: var(--fw-mid);
+  font-size: var(--fs-body);
+}
+.gate {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
   padding: 4px 14px;
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: var(--fw-mid);
   background: var(--card-bg);
   color: var(--ink);
-  cursor: pointer;
-  margin-left: 8px;
 }
-.gate-mini.on {
-  border-color: var(--brand, #00a3ff);
-  color: var(--brand, #00a3ff);
+.gate--on {
+  border-color: var(--brand);
+  color: var(--brand);
 }
-.gate-msg { font-size: 12px; color: var(--brand); margin: 6px 0 0; }
-.gate-desc { font-size: 12px; color: var(--ink-faint); margin: 8px 0 0; line-height: 1.5; }
-.foot { text-align: center; color: var(--ink-faint); font-size: 12px; margin: 0; }
+.gate-msg {
+  font-size: var(--fs-small);
+  color: var(--brand);
+  margin: 6px 0 0;
+}
+.gate-desc {
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
 
-/* 家庭账号卡 */
-.family-card { border-left: 4px solid var(--brand); }
-.f-head { display: flex; align-items: center; gap: 6px; }
-.f-head .k-ico { width: 16px; height: 16px; color: var(--brand); }
-.f-badge { margin-left: auto; background: var(--brand); color: #fff; border-radius: 999px; padding: 2px 8px; font-size: 11px; }
-.f-mode { display: flex; gap: 8px; margin-bottom: var(--gap-s); }
-.f-mode button { flex: 1; padding: 8px 0; border-radius: var(--radius); font-weight: var(--fw-strong); font-size: 14px; background: var(--line); color: var(--ink-soft); }
-.f-mode button.on { background: var(--brand); color: #fff; }
-.f-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: var(--radius); border: 2px solid var(--line); font-size: 15px; margin-bottom: 8px; background: var(--bg); color: var(--ink); }
-.f-submit { width: 100%; padding: 12px 0; border-radius: var(--radius); background: var(--brand); color: #fff; font-weight: var(--fw-strong); font-size: 15px; }
-.f-submit:disabled { opacity: 0.6; }
-.f-tip { margin: 6px 0 0; font-size: 12px; color: var(--ink-faint); }
-.f-name { margin: 0 0 2px; font-weight: var(--fw-strong); font-size: 15px; }
-.f-meta { margin: 0 0 8px; font-size: 12px; color: var(--ink-faint); }
-.f-ghost-btn { display: inline-block; margin-bottom: 8px; font-size: 13px; color: var(--blue); font-weight: var(--fw-strong); background: none; border: none; cursor: pointer; }
-.f-profile-actions { display: flex; gap: 8px; margin-bottom: 8px; }
-.f-profile-actions .f-add-btn { padding: 8px 18px; }
-.f-profile-actions .f-ghost-btn { margin-bottom: 0; color: var(--ink-faint); }
-.f-children { display: flex; flex-wrap: wrap; gap: 8px; }
-.f-child-wrap { display: flex; align-items: center; gap: 6px; }
-.f-child { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: var(--line); font-weight: var(--fw-strong); font-size: 14px; }
-.f-child.on { background: var(--brand); color: #fff; }
-.fc-avatar { font-size: 16px; }
-.f-edit-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 999px; background: var(--line); color: var(--ink-faint); }
-.f-edit-btn .k-ico { width: 14px; height: 14px; }
-.f-child-edit { margin-top: 8px; padding: 10px; border-radius: var(--radius); background: var(--bg); }
-.f-child-edit .f-input { margin-bottom: 6px; }
-.f-add { display: flex; gap: 8px; margin-top: 8px; }
-.f-add .f-input { flex: 1; margin-bottom: 0; }
-.f-add-btn { display: flex; align-items: center; gap: 4px; padding: 0 14px; border-radius: var(--radius); background: var(--blue); color: #fff; font-weight: var(--fw-strong); font-size: 13px; }
-.f-add-btn .k-ico { width: 14px; height: 14px; }
-.f-out { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
-.f-out-btn { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink-faint); font-weight: var(--fw-mid); }
-.f-out-btn .k-ico { width: 14px; height: 14px; }
-.f-error { margin: 8px 0 0; color: #dc2626; font-weight: var(--fw-mid); font-size: 13px; }
+.foot {
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  margin: 0;
+}
 </style>
