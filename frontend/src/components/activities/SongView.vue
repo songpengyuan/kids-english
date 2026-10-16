@@ -367,7 +367,7 @@ function onTimeUpdate() {
 .tab {
   border-radius: var(--radius-pill);
   padding: clamp(5px, 1.1vh, 9px) clamp(14px, 2.4vw, 26px);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: var(--ink-soft);
   background: transparent;
@@ -420,14 +420,14 @@ function onTimeUpdate() {
   margin: 0;
 }
 .audio-title {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-title);
   color: var(--ink);
 }
 .audio-sub {
   font-size: var(--fs-small);
   color: var(--ink-soft);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   margin-top: 2px;
 }
 
@@ -445,7 +445,7 @@ function onTimeUpdate() {
   min-width: 40px;
   text-align: center;
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
@@ -533,7 +533,7 @@ function onTimeUpdate() {
 .line {
   margin: 0;
   font-size: clamp(18px, min(3.5vh, 3vw), 26px);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-faint);
   line-height: 1.8;
   transition: color 0.2s, transform 0.2s;
@@ -568,7 +568,7 @@ function onTimeUpdate() {
 .miss {
   font-size: var(--fs-small);
   color: var(--panel-ink-soft);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   line-height: 1.6;
   margin: 0;
 }
@@ -588,7 +588,7 @@ function onTimeUpdate() {
   background: var(--card-bg);
   border-radius: var(--radius-s);
   padding: clamp(3px, 0.8vh, 6px) clamp(8px, 1.2vw, 12px);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   box-shadow: var(--shadow-hard);
   font-size: var(--fs-small);
   white-space: nowrap;

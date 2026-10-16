@@ -17,10 +17,12 @@
  *     └─ /game/quest/:id/:stage?        闯关玩法（地图点关卡直达）
  *   #/me（我的域）
  *     ├─ /me                            我的
- *     ├─ /me/streak                     连击日历 / 今日目标
+ *     ├─ /me/calendar                   学习日历（**已合并原连击日历**，/me/streak 重定向至此）
  *     ├─ /me/treasure                   宝藏罐（图鉴 + 贴纸商店）
  *     │   └─ /me/treasure/hero/:id      英雄图鉴详情
- *     └─ /me/report                     家长学情报告
+ *     ├─ /me/cards                      我的卡片
+ *     ├─ /me/report                     家长学情报告（requiresParent）
+ *     └─ /me/parent                     家长中心（requiresParent）
  *
  *   父路由**不带组件**（纯路径容器）：所有页面组件都渲染在 App 顶层 router-view，
  *   行为与平铺一致、各页自带 HeaderBar 全屏，仅 URL 语义分层；
@@ -28,7 +30,7 @@
  *
  * - 加载策略（配合 sw 预缓存清单，见 vite.config.js kids-pwa 插件）：
  *   · 学习主链路（学习主页/课程/玩法）**同步加载**——离线首开最稳，装完即有；
- *   · 低频页（我的/宝藏/报告/复习/连击/英雄详情）**路由懒加载**——
+ *   · 低频页（我的/日历/宝藏/卡片/报告/家长/复习/英雄详情）**路由懒加载**——
  *     在线首屏更小；离线也不降级：懒加载 chunk 会进入 sw 预缓存清单，
  *     首次安装即全部就位。
  *
@@ -93,8 +95,9 @@ export const router = createRouter({
     {
       path: "/listen",
       children: [
+        // 磨耳朵只有一个页面：童谣列表点了就地展开歌词（ListenView 内联），
+        // 不再有独立的歌曲详情页（原 /listen/song/:id 全站无入口，是死页，已删）。
         { path: "", name: "listen", component: () => import("../views/listen/ListenView.vue"), meta: { title: "磨耳朵" } },
-        { path: "song/:id", name: "song-detail", component: () => import("../views/listen/SongDetailView.vue"), meta: { title: "歌曲" } },
       ],
     },
 
@@ -103,7 +106,9 @@ export const router = createRouter({
       path: "/me",
       children: [
         { path: "", name: "me", component: () => import("../views/me/MyView.vue"), meta: { title: "我的" } },
-        { path: "streak", name: "streak", component: () => import("../views/me/StreakView.vue"), meta: { title: "连击" } },
+        // 连击日历已并入学习日历（两个页面都是同一个月网格，重复维护）。
+        // 旧书签 /me/streak 与顶栏火焰徽章重定向到合并后的唯一日历。
+        { path: "streak", redirect: "/me/calendar" },
         { path: "calendar", name: "calendar", component: () => import("../views/me/CalendarView.vue"), meta: { title: "学习日历" } },
         {
           path: "treasure",
@@ -115,7 +120,6 @@ export const router = createRouter({
         },
         { path: "report", name: "report", component: () => import("../views/me/ReportView.vue"), meta: { title: "家长报告", requiresParent: true } },
         { path: "cards", name: "cards", component: () => import("../views/me/CardsView.vue"), meta: { title: "我的卡片" } },
-        { path: "model3d", name: "model3d", component: () => import("../views/me/Model3DView.vue"), meta: { title: "3D 英雄", hideNav: true } },
         { path: "parent", name: "parent", component: () => import("../views/me/ParentView.vue"), meta: { title: "家长中心", requiresParent: true } },
       ],
     },

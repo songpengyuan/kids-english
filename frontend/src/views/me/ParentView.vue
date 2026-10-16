@@ -275,23 +275,23 @@ function sayFamily() {
 .entry { display: flex; align-items: center; gap: 12px; background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); padding: 14px 16px; text-align: left; width: 100%; }
 .entry > .k-ico { width: 24px; height: 24px; color: var(--ink-soft); }
 .e-body { flex: 1; }
-.e-name { font-weight: 800; }
-.e-desc { font-size: 12px; color: var(--ink-faint); font-weight: 700; }
+.e-name { font-weight: var(--fw-strong); }
+.e-desc { font-size: 12px; color: var(--ink-faint); font-weight: var(--fw-mid); }
 .arrow { color: var(--ink-faint); }
 .card { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow-soft); padding: 16px; }
 .card h3 { margin: 0 0 var(--gap-s); font-size: var(--fs-small); color: var(--ink-soft); }
-.stat-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-weight: 700; font-size: 14px; }
+.stat-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-weight: var(--fw-mid); font-size: 14px; }
 .stat-row > .k-ico { width: 18px; height: 18px; color: var(--ink-faint); }
 .stat-row span:nth-child(2) { flex: 1; color: var(--ink-soft); }
 .set-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
-.set-label { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+.set-label { display: flex; align-items: center; gap: 8px; font-weight: var(--fw-mid); font-size: 14px; }
 .set-label .k-ico { width: 18px; height: 18px; }
 .gate-mini {
   border: 1px solid var(--line, #e5e2db);
   border-radius: 999px;
   padding: 4px 14px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   background: var(--card-bg);
   color: var(--ink);
   cursor: pointer;
@@ -311,21 +311,21 @@ function sayFamily() {
 .f-head .k-ico { width: 16px; height: 16px; color: var(--brand); }
 .f-badge { margin-left: auto; background: var(--brand); color: #fff; border-radius: 999px; padding: 2px 8px; font-size: 11px; }
 .f-mode { display: flex; gap: 8px; margin-bottom: var(--gap-s); }
-.f-mode button { flex: 1; padding: 8px 0; border-radius: var(--radius); font-weight: 800; font-size: 14px; background: var(--line); color: var(--ink-soft); }
+.f-mode button { flex: 1; padding: 8px 0; border-radius: var(--radius); font-weight: var(--fw-strong); font-size: 14px; background: var(--line); color: var(--ink-soft); }
 .f-mode button.on { background: var(--brand); color: #fff; }
 .f-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: var(--radius); border: 2px solid var(--line); font-size: 15px; margin-bottom: 8px; background: var(--bg); color: var(--ink); }
-.f-submit { width: 100%; padding: 12px 0; border-radius: var(--radius); background: var(--brand); color: #fff; font-weight: 900; font-size: 15px; }
+.f-submit { width: 100%; padding: 12px 0; border-radius: var(--radius); background: var(--brand); color: #fff; font-weight: var(--fw-strong); font-size: 15px; }
 .f-submit:disabled { opacity: 0.6; }
 .f-tip { margin: 6px 0 0; font-size: 12px; color: var(--ink-faint); }
-.f-name { margin: 0 0 2px; font-weight: 900; font-size: 15px; }
+.f-name { margin: 0 0 2px; font-weight: var(--fw-strong); font-size: 15px; }
 .f-meta { margin: 0 0 8px; font-size: 12px; color: var(--ink-faint); }
-.f-ghost-btn { display: inline-block; margin-bottom: 8px; font-size: 13px; color: var(--blue); font-weight: 800; background: none; border: none; cursor: pointer; }
+.f-ghost-btn { display: inline-block; margin-bottom: 8px; font-size: 13px; color: var(--blue); font-weight: var(--fw-strong); background: none; border: none; cursor: pointer; }
 .f-profile-actions { display: flex; gap: 8px; margin-bottom: 8px; }
 .f-profile-actions .f-add-btn { padding: 8px 18px; }
 .f-profile-actions .f-ghost-btn { margin-bottom: 0; color: var(--ink-faint); }
 .f-children { display: flex; flex-wrap: wrap; gap: 8px; }
 .f-child-wrap { display: flex; align-items: center; gap: 6px; }
-.f-child { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: var(--line); font-weight: 800; font-size: 14px; }
+.f-child { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: var(--line); font-weight: var(--fw-strong); font-size: 14px; }
 .f-child.on { background: var(--brand); color: #fff; }
 .fc-avatar { font-size: 16px; }
 .f-edit-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 999px; background: var(--line); color: var(--ink-faint); }
@@ -334,10 +334,10 @@ function sayFamily() {
 .f-child-edit .f-input { margin-bottom: 6px; }
 .f-add { display: flex; gap: 8px; margin-top: 8px; }
 .f-add .f-input { flex: 1; margin-bottom: 0; }
-.f-add-btn { display: flex; align-items: center; gap: 4px; padding: 0 14px; border-radius: var(--radius); background: var(--blue); color: #fff; font-weight: 800; font-size: 13px; }
+.f-add-btn { display: flex; align-items: center; gap: 4px; padding: 0 14px; border-radius: var(--radius); background: var(--blue); color: #fff; font-weight: var(--fw-strong); font-size: 13px; }
 .f-add-btn .k-ico { width: 14px; height: 14px; }
 .f-out { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
-.f-out-btn { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink-faint); font-weight: 700; }
+.f-out-btn { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink-faint); font-weight: var(--fw-mid); }
 .f-out-btn .k-ico { width: 14px; height: 14px; }
-.f-error { margin: 8px 0 0; color: #dc2626; font-weight: 700; font-size: 13px; }
+.f-error { margin: 8px 0 0; color: #dc2626; font-weight: var(--fw-mid); font-size: 13px; }
 </style>

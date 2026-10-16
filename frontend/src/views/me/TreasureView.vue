@@ -243,20 +243,20 @@ function buy(formId: string) {
 .label {
   margin: 0;
   font-size: var(--fs-small);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-soft);
 }
 .num {
   margin: 0;
   font-size: var(--fs-title);
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   color: var(--ink);
 }
 .hint {
   margin: 0;
   font-size: var(--fs-small);
   color: var(--ink-faint);
-  font-weight: 600;
+  font-weight: var(--fw-mid);
 }
 
 /* ---------- 图鉴 ---------- */
@@ -277,12 +277,12 @@ function buy(formId: string) {
   gap: var(--gap-s);
 }
 .album-title {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: var(--ink);
 }
 .album-progress {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   color: var(--ink-soft);
 }
@@ -302,7 +302,7 @@ function buy(formId: string) {
   flex-wrap: wrap;
 }
 .era-name {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: var(--ink);
   background: color-mix(in srgb, var(--purple) 22%, transparent);
@@ -311,7 +311,7 @@ function buy(formId: string) {
 }
 .era-en {
   font-size: var(--fs-small);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-faint);
 }
 .hero-row {
@@ -325,13 +325,13 @@ function buy(formId: string) {
   gap: 8px;
 }
 .hero-name {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: var(--ink);
 }
 .hero-en {
   font-size: var(--fs-small);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-faint);
   flex: 1;
   min-width: 0;
@@ -341,7 +341,7 @@ function buy(formId: string) {
 }
 .hero-count {
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
 }
 
@@ -371,7 +371,7 @@ function buy(formId: string) {
   border-radius: 999px;
   border: none;
   background: transparent;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 14px;
   color: var(--ink-soft);
   cursor: pointer;
@@ -386,6 +386,6 @@ function buy(formId: string) {
   text-align: center;
   padding: 24px 0;
   color: var(--ink-faint);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
 }
 </style>

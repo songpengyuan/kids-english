@@ -93,18 +93,18 @@ onMounted(() => {
   top: 10px;
   right: 14px;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-faint);
 }
 .gate-title {
   margin: 0 0 4px;
   font-size: var(--fs-body);
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
 }
 .gate-question {
   margin: 0 0 8px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 16px;
 }
 .gate-question b {
@@ -119,7 +119,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 22px;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   border-bottom: 2px solid var(--line);
   color: var(--ink);
 }
@@ -136,7 +136,7 @@ onMounted(() => {
   height: 46px;
   border-radius: var(--radius-s);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   background: var(--line);
   color: var(--ink);
 }

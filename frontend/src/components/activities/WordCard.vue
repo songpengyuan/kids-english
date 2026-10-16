@@ -168,7 +168,7 @@ function onWord() {
 }
 .word {
   font-size: clamp(15px, min(2.9vh, 2.3vw), 27px);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   letter-spacing: 0.5px;
   color: var(--ink);
   cursor: pointer;

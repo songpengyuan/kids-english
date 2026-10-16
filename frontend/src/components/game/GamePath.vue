@@ -494,7 +494,7 @@ function unitLesson(id: string) {
   transform: translateX(-50%);
   max-width: 72%;
   color: var(--tone, var(--ink-1));
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 17px;
   line-height: 1;
   overflow: hidden;
@@ -506,7 +506,7 @@ function unitLesson(id: string) {
 }
 .u-count {
   margin-left: auto;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 13px;
   opacity: 0.75;
   flex: none;
@@ -629,7 +629,7 @@ function unitLesson(id: string) {
   border: 1px solid rgba(0, 0, 0, 0.12);
   color: var(--gold);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   line-height: 15px;
   text-align: center;
   pointer-events: none;
@@ -659,7 +659,7 @@ function unitLesson(id: string) {
   white-space: nowrap;
   font-size: 12px;
   line-height: 1.2;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-soft);
   pointer-events: none;
 }
@@ -806,7 +806,7 @@ function unitLesson(id: string) {
   background: var(--yellow, #ffc800);
   color: #6b4e00;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   line-height: 1;
   padding: 5px 9px;
   border-radius: 999px;

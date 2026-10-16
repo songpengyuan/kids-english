@@ -99,7 +99,7 @@ const emit = defineEmits<{ button: [] }>();
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   text-align: center;
 }
 .lf-pill.success {
@@ -135,7 +135,7 @@ const emit = defineEmits<{ button: [] }>();
   width: 100%;
   min-height: calc(var(--tap-min) + 12px);
   font-size: var(--fs-btn);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--on-tone);
   background: var(--brand);
   border: none;

@@ -37,8 +37,10 @@ function goTreasure() {
   router.push("/me/treasure");
 }
 function goStreak() {
-  speakZh("连击日历");
-  router.push("/me/streak");
+  // 连击日历已并入学习日历（两个页面都是同一个月网格，重复维护）；
+  // 这里保持"点火焰看日历"的语义，但落到合并后的唯一页面。
+  speakZh("学习日历");
+  router.push("/me/calendar");
 }
 </script>
 
@@ -148,7 +150,7 @@ function goStreak() {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-title);
   color: var(--ink);
   overflow: hidden;
@@ -173,7 +175,7 @@ function goStreak() {
   align-items: center;
   gap: 4px;
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   padding: 4px 10px;
   border-radius: var(--radius-s);
   white-space: nowrap;

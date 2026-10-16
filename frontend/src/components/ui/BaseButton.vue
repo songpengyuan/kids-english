@@ -35,7 +35,7 @@ const cls = computed(() => ({
   background: var(--brand);
   color: var(--on-tone);
   font-size: var(--fs-btn);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   padding: clamp(10px, 1.8vh, 14px) clamp(20px, 3vw, 32px);
   border-radius: var(--radius-s);
   box-shadow: 0 var(--press) 0 var(--brand-dark);

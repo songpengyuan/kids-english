@@ -130,14 +130,14 @@ function onClick(c: MenuCard) {
 }
 .card:active { transform: scale(0.96); }
 .card-ico { font-size: clamp(28px, 5vh, 40px); }
-.card-name { font-size: clamp(14px, 2.5vh, 18px); font-weight: 900; }
-.card-desc { font-size: clamp(11px, 1.8vh, 13px); font-weight: 700; opacity: 0.8; }
+.card-name { font-size: clamp(14px, 2.5vh, 18px); font-weight: var(--fw-strong); }
+.card-desc { font-size: clamp(11px, 1.8vh, 13px); font-weight: var(--fw-mid); opacity: 0.8; }
 .card-badge {
   position: absolute;
   top: 6px;
   right: 8px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   background: var(--overlay);
   color: var(--gold);
   border-radius: var(--radius-pill);

@@ -106,7 +106,7 @@ async function submit() {
 .brand-name {
   margin: 16px 0 8px;
   font-size: 24px;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: #1a1a1a;
   letter-spacing: 1px;
 }
@@ -144,7 +144,7 @@ async function submit() {
   background: #1cb0f6;
   color: #fff;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: var(--fw-mid);
   cursor: pointer;
 }
 .gate-btn:disabled {

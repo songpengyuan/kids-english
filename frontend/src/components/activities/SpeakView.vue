@@ -212,14 +212,14 @@ function next() {
   gap: var(--gap-s);
 }
 .prog {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
 }
 .mode-tag {
   background: var(--card-bg);
   border-radius: var(--radius-pill);
   padding: 3px clamp(8px, 1.2vw, 12px);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   box-shadow: var(--shadow-soft);
   white-space: nowrap;
@@ -274,7 +274,7 @@ function next() {
 .word {
   font-size: clamp(30px, min(6vh, 5.4vw), 52px);
   background: none;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink);
   padding: 0 var(--gap-s);
   border-radius: var(--radius-s);
@@ -285,7 +285,7 @@ function next() {
 .tip {
   margin: 0;
   color: var(--ink-soft);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   font-size: var(--fs-small);
   text-align: center;
   max-width: 460px;
@@ -386,14 +386,14 @@ function next() {
 }
 .blocked-tip {
   text-align: center;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-soft);
   line-height: 1.5;
   margin: 0;
 }
 .mic-label {
   margin: 0;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
   font-size: var(--fs-small);
 }
@@ -423,7 +423,7 @@ function next() {
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
 }
 .replay-label {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
 }
 .replay.big {
@@ -450,7 +450,7 @@ function next() {
 .verdict {
   margin: 0;
   font-size: clamp(15px, min(2.6vh, 2.1vw), 20px);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   text-align: center;
 }
 /* "再试一次"提示：图标与文字同排，图标跟随字号 */
@@ -477,13 +477,13 @@ function next() {
 .heard {
   margin: 0;
   color: var(--ink-soft);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   font-size: var(--fs-small);
   text-align: center;
 }
 .judge-q {
   margin: 0;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: clamp(15px, min(2.6vh, 2.1vw), 19px);
   text-align: center;
 }
@@ -529,7 +529,7 @@ function next() {
 }
 .blocked-tip {
   text-align: center;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-soft);
   line-height: 1.5;
   margin: 0;

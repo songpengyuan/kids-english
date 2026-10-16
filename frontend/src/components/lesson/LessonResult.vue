@@ -231,7 +231,7 @@ function nav(fn: () => void) {
 }
 /* 关卡完成大徽章：暖金渐变（token 混色，暗色主题自动跟随） */
 .quest-done-badge {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-big);
   color: var(--ink);
   background: linear-gradient(180deg, var(--card-bg), color-mix(in srgb, var(--yellow) 20%, var(--card-bg)));
@@ -242,7 +242,7 @@ function nav(fn: () => void) {
 }
 .quest-total-stars {
   margin: 0;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   font-size: var(--fs-small);
   color: var(--ink-faint);
 }
@@ -279,12 +279,12 @@ function nav(fn: () => void) {
   font-size: 48px;
 }
 .card-name {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: 14px;
 }
 .card-rarity {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--gold, #f0b429);
   background: rgba(240, 180, 41, 0.15);
   padding: 2px 10px;
@@ -292,13 +292,13 @@ function nav(fn: () => void) {
 }
 .card-tip {
   margin: 0;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
 }
 .streak-banner {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: #b45309;
   background: #fef3c7;
   border-radius: var(--radius-pill);
@@ -365,12 +365,12 @@ function nav(fn: () => void) {
   font-size: 48px;
 }
 .card-name {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: 14px;
 }
 .card-rarity {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--gold, #f0b429);
   background: rgba(240, 180, 41, 0.15);
   padding: 2px 10px;
@@ -378,7 +378,7 @@ function nav(fn: () => void) {
 }
 .card-tip {
   margin: 0;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
 }
 .streak-banner {
     padding: 5px 12px;

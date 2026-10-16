@@ -49,7 +49,7 @@ function canPlay(i: number, stars: number) {
 
 <style scoped>
 .qmap { display: flex; flex-direction: column; align-items: center; gap: var(--gap-s); padding: var(--gap-m) 0; }
-.qmap-title { font-weight: 900; font-size: var(--fs-title); color: var(--ink); }
+.qmap-title { font-weight: var(--fw-strong); font-size: var(--fs-title); color: var(--ink); }
 .qmap-path { display: flex; flex-direction: column; align-items: center; gap: 0; }
 .qline { width: 4px; height: 28px; background: var(--line); border-radius: 2px; }
 .qline.done { background: var(--brand); }
@@ -65,7 +65,7 @@ function canPlay(i: number, stars: number) {
 .qnode.current { box-shadow: var(--shadow-hard), 0 0 0 3px var(--yellow); }
 .qn-icon { font-size: 28px; }
 .qn-icon .k-ico { width: 28px; height: 28px; }
-.qn-name { font-weight: 800; font-size: var(--fs-small); }
+.qn-name { font-weight: var(--fw-strong); font-size: var(--fs-small); }
 .qn-stars { display: flex; gap: 2px; }
 .qn-stars .k-ico { width: 14px; height: 14px; color: var(--gold); }
 .qn-play .k-ico { width: 18px; height: 18px; color: var(--brand); }

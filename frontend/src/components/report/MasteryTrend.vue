@@ -82,12 +82,12 @@ const gained = computed(() => {
 .trend-hint {
   margin: 0;
   color: var(--ink-soft);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   font-size: var(--fs-small);
 }
 .trend-sum {
   margin: 0;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink);
   font-size: var(--fs-body);
 }
@@ -114,7 +114,7 @@ const gained = computed(() => {
 }
 .m {
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
   flex: none;
 }
@@ -136,7 +136,7 @@ const gained = computed(() => {
 }
 .d {
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
   flex: none;
 }

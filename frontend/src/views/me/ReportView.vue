@@ -270,7 +270,7 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
   gap: var(--gap-s);
 }
 .hint {
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   font-size: var(--fs-small);
   color: var(--ink-faint);
   background: var(--card-bg);
@@ -307,7 +307,7 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
   margin: -4px 0 var(--gap-s);
   font-size: 12px;
   color: var(--ink-faint);
-  font-weight: 600;
+  font-weight: var(--fw-mid);
 }
 
 /* 键值概览 */
@@ -328,11 +328,11 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
 }
 .item .k {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-faint);
 }
 .item .v {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: var(--ink);
   display: inline-flex;
@@ -361,7 +361,7 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
   align-items: center;
   gap: var(--gap-xs);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink);
   padding: 5px var(--gap-s);
   border-radius: var(--radius-s);
@@ -372,15 +372,15 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
 .row.head {
   font-size: 12px;
   color: var(--ink-faint);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   background: transparent;
 }
 .row .en {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
 }
 .row .bad {
   color: #e05b4e;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
 }
 
 /* 错词分组 */
@@ -388,7 +388,7 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
   margin-bottom: var(--gap-s);
 }
 .g-title {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 13px;
   color: var(--ink-soft);
   margin-bottom: 6px;
@@ -405,14 +405,14 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
   background: var(--bg);
   border-radius: var(--radius-pill);
   padding: 4px 10px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 13px;
   color: var(--ink);
 }
 .chip i {
   font-style: normal;
   color: var(--ink-soft);
-  font-weight: 600;
+  font-weight: var(--fw-mid);
 }
 .chip .wrong {
   color: #e05b4e;
@@ -433,18 +433,18 @@ const heroDone = computed(() => `${rewards.ownedCount} / ${FORM_TOTAL}`);
 .empty-line {
   margin: 0;
   color: var(--ink-faint);
-  font-weight: 600;
+  font-weight: var(--fw-mid);
   font-size: 13px;
 }
 .empty-line.ok {
   color: var(--ok-dark);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
 }
 .foot {
   text-align: center;
   color: var(--ink-faint);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: var(--fw-mid);
   margin: 0;
 }
 </style>

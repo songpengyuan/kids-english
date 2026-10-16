@@ -186,7 +186,7 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
 }
 .tip {
   margin: 0;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-soft);
   font-size: var(--fs-small);
   flex: none;
@@ -235,7 +235,7 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
   flex: none;
   width: 100%;
   text-align: center;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   letter-spacing: 0.5px;
   font-size: clamp(13px, min(2.6vh, 2vw), 22px);
   color: var(--ink);

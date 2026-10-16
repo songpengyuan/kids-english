@@ -89,7 +89,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
   background: var(--brand);
   color: var(--on-tone);
   font-size: var(--fs-btn);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   line-height: 1;
   box-shadow: 0 var(--press) 0 var(--brand-dark);
   transition: transform 0.08s, box-shadow 0.08s, opacity 0.2s;
@@ -137,7 +137,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
 }
 .counter {
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
   white-space: nowrap;
 }

@@ -399,7 +399,7 @@ const cap = computed(() => {
   background: var(--card-bg);
   border: 2px solid var(--c-orange);
   color: var(--ink);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   padding: 4px 10px;
   border-radius: var(--radius-pill);
@@ -412,7 +412,7 @@ const cap = computed(() => {
   left: 50%;
   top: 2px;
   transform: translateX(-50%);
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: clamp(20px, 4.4vh, 30px);
   color: var(--yellow, #ffd87a);
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
@@ -458,7 +458,7 @@ const cap = computed(() => {
   color: var(--ink-soft);
   border-radius: var(--radius-pill);
   padding: 6px 12px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   box-shadow: var(--shadow-hard);
   transition: transform 0.1s;
@@ -696,7 +696,7 @@ const cap = computed(() => {
 /* ---------- 文案与奖励 ---------- */
 .cap {
   margin: 0;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: var(--ink-soft);
   text-align: center;
@@ -728,7 +728,7 @@ const cap = computed(() => {
 }
 .got {
   margin: 0;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink);
   font-size: var(--fs-title);
 }
@@ -752,7 +752,7 @@ const cap = computed(() => {
 }
 /* 收取按钮上的 ×N 计数（随收取递减） */
 .cnt {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: #6b4e00;
   background: linear-gradient(160deg, #ffd87a, #f0a63a);
@@ -805,7 +805,7 @@ const cap = computed(() => {
   background: var(--c-orange);
   color: var(--on-tone);
   font-size: var(--fs-small);
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   padding: 2px 10px;
   border-radius: var(--radius-pill);
 }
@@ -816,14 +816,14 @@ const cap = computed(() => {
 }
 .won-name {
   margin: 0;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: var(--ink);
 }
 .won-en {
   margin: 0;
   font-size: var(--fs-small);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-soft);
 }
 .take {
@@ -833,7 +833,7 @@ const cap = computed(() => {
 }
 .collected {
   color: var(--ok-dark);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   animation: pop-in 0.3s ease-out;
 }
 

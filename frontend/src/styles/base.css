@@ -222,6 +222,20 @@ html.no-bottom-nav #app {
   /* 全局统一底部安全区（iPhone Home Indicator 不挡最后一个按钮） */
   padding-bottom: max(var(--gap-m), env(safe-area-inset-bottom));
 }
+/**
+ * 可滚动内容区（"我的"这类内容超过一屏的页面）。
+ * 以前各页自己写 overflow-y/-webkit-overflow-scrolling/touch-action，写法不一。
+ * 注意子项要 flex-shrink:0，否则长文本会把大数字压扁。
+ */
+.view-body--scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+.view-body--scroll > * {
+  flex-shrink: 0;
+}
 
 /* ---------- 顶栏 ---------- */
 .topbar {
@@ -379,6 +393,206 @@ html.no-bottom-nav #app {
   .progress .fill::after {
     display: none;
   }
+}
+
+/* ==================================================================
+ * ===== 通用组合件（设计系统第 ② 层） =====
+ *
+ * 判定标准：在 3 个以上页面以**完全相同**的形式出现的组合，才放这里。
+ * 只在一处用的样式仍留在组件的 scoped style。
+ *
+ * 这一层存在的意义：页面以前各自写 `background: var(--card-bg)` +
+ * `border-radius: 18px` + `box-shadow: ...`，导致同一产品里出现了
+ * 十几种"看起来都是卡片但细节不同"的卡片。现在统一收敛到这几个类。
+ * ================================================================== */
+
+/* ---------- 中性卡片 ----------
+ * 用法：<section class="card">。需要次级卡片（不想抢视觉重量）加 .card--soft。 */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: var(--gap-m);
+}
+/* 次级卡片：只有薄阴影，用于在有主卡的页面里承载次要信息 */
+.card--soft {
+  box-shadow: var(--shadow-soft);
+}
+/* 无阴影纯容器（内容自己已经有底色的场合） */
+.card--flat {
+  box-shadow: none;
+  border: 1px solid var(--line);
+}
+
+/* ---------- 区块小标题 ----------
+ * 卡片组之上那行小字（"我的收藏"、"今日目标"……），统一色阶与缩进。 */
+.section-title {
+  margin: 0;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-strong);
+  color: var(--ink-soft);
+  padding-left: var(--gap-xs);
+}
+
+/* ---------- 入口行：图标 + 主文案 + 副文案 + 箭头 ----------
+ * 全站出现过 6 次以上的重复实现（闯关/复习/家长中心/日历……），
+ * 以前每处圆角、padding、箭头颜色都不一样。统一后只写一次。
+ * 用法：
+ *   <button class="entry-row">
+ *     <span class="icon-tile tone-purple"><Gamepad /></span>
+ *     <span class="entry-row__body">
+ *       <span class="entry-row__title">闯关挑战</span>
+ *       <span class="entry-row__desc">打完单词，赢英雄卡</span>
+ *     </span>
+ *     <ChevronRight class="k-ico entry-row__arrow" />
+ *   </button>
+ */
+.entry-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-s);
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--gap-s) var(--gap-m);
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  text-align: left;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.entry-row:active {
+  transform: translateY(calc(var(--press) - 1px)) scale(0.98);
+}
+/* 主行动变体：品牌蓝实底，一页只允许出现一个 */
+.entry-row--primary {
+  background: var(--brand);
+  color: var(--on-tone);
+  box-shadow: 0 var(--press) 0 var(--brand-dark);
+}
+.entry-row--primary:active {
+  transform: translateY(calc(var(--press) - 1px)) scale(0.98);
+  box-shadow: 0 1px 0 var(--brand-dark);
+}
+.entry-row__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.entry-row__title {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-strong);
+  color: inherit;
+}
+.entry-row__desc {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  color: var(--ink-faint);
+}
+.entry-row--primary .entry-row__desc {
+  color: var(--on-tone);
+  opacity: 0.85;
+}
+/* 主行动是实底蓝，里面的图标砖改成半透明白块，避免"色块叠色块" */
+.entry-row--primary .icon-tile {
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: none;
+  color: var(--on-tone);
+}
+/* 右侧补充说明（如"3 个词"） */
+.entry-row__extra {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  color: var(--ink-soft);
+  flex: none;
+}
+.entry-row__arrow {
+  color: var(--ink-faint);
+  flex: none;
+  font-size: var(--fs-body);
+}
+.entry-row--primary .entry-row__arrow {
+  color: var(--on-tone);
+  opacity: 0.85;
+}
+
+/* ---------- 图标砖（替代 emoji） ----------
+ * emoji 在 iOS / Android / 桌面渲染差异极大（🎴 在部分机型是红色扑克牌），
+ * 且无法随主题变色。统一改为"圆角色块 + lucide 图标"，配色直接复用 .tone-*。
+ * 用法：<span class="icon-tile tone-gold"><Star class="k-ico" /></span>
+ * 尺寸用 em：跟着父级 font-size 缩放，与流体字号体系一致。
+ */
+.icon-tile {
+  width: 2.2em;
+  height: 2.2em;
+  border-radius: var(--radius-s);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+/* 图标相对色块收一档，四周留白才均匀 */
+.icon-tile > .k-ico {
+  width: 0.5em;
+  height: 0.5em;
+}
+/* 小尺寸变体（指标块内、紧凑行内） */
+.icon-tile--sm {
+  width: 1.8em;
+  height: 1.8em;
+}
+
+/* ---------- 指标块：大数字 + 小分母 + 标签 ----------
+ * 「3/81」这类分数以前是等宽平铺，孩子分不清哪个是成果、哪个是总量。
+ * 改成两级排版：分子大且深、分母小且浅。
+ * 用法：
+ *   <div class="metric">
+ *     <span class="metric__num">3<small>/81</small></span>
+ *     <span class="metric__label">英雄</span>
+ *   </div>
+ */
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
+}
+.metric__num {
+  font-size: var(--fs-title);
+  font-weight: var(--fw-strong);
+  color: var(--ink);
+  line-height: 1.1;
+}
+.metric__num small {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  color: var(--ink-faint);
+}
+.metric__label {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  color: var(--ink-faint);
+}
+
+/* ---------- 空状态 ----------
+ * 以前每个"还没有数据"的页面各自写一个居中块，字号行高都不一样。 */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-s);
+  text-align: center;
+}
+.empty__title {
+  font-size: var(--fs-title);
+  font-weight: var(--fw-strong);
+  color: var(--ink-soft);
+}
+.empty__desc {
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
 }
 
 /* ---------- 动画 ---------- */

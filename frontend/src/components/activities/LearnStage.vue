@@ -300,7 +300,7 @@ const listening = computed(() => status.value === "listening");
   margin: 0;
   font-size: var(--fs-small);
   color: var(--ink-soft);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   flex: none;
   text-align: center;
   display: flex;
@@ -333,7 +333,7 @@ const listening = computed(() => status.value === "listening");
   padding: 0 2px;
 }
 .dlg-round {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: var(--brand-dark);
   white-space: nowrap;
@@ -357,7 +357,7 @@ const listening = computed(() => status.value === "listening");
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   color: #fff;
   transition: all 0.2s;
 }
@@ -401,7 +401,7 @@ const listening = computed(() => status.value === "listening");
   gap: 6px;
   padding: 8px 14px;
   border-radius: 18px;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: var(--ink);
   box-shadow: var(--shadow-soft);
@@ -436,7 +436,7 @@ const listening = computed(() => status.value === "listening");
 }
 .dlg-who {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-faint);
   display: block;
 }
@@ -446,7 +446,7 @@ const listening = computed(() => status.value === "listening");
 }
 .dlg-praise {
   font-size: 13px;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   color: var(--brand-dark);
   animation: anim-pop 0.3s;
 }
@@ -478,13 +478,13 @@ const listening = computed(() => status.value === "listening");
   line-height: 1;
 }
 .dlg-en {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: 22px;
   color: var(--ink);
 }
 .dlg-zh {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-faint);
 }
 .dlg-done {
@@ -496,7 +496,7 @@ const listening = computed(() => status.value === "listening");
   border-radius: 50%;
   background: var(--brand);
   color: #fff;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: 15px;
   display: flex;
   align-items: center;
@@ -552,14 +552,14 @@ const listening = computed(() => status.value === "listening");
 .dlg-mic-hint {
   margin: 0;
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
   text-align: center;
 }
 .dlg-heard {
   margin: 0;
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
   text-align: center;
 }
@@ -570,7 +570,7 @@ const listening = computed(() => status.value === "listening");
   justify-content: center;
 }
 .dlg-auto {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: var(--brand-dark);
   animation: anim-pop 0.3s;

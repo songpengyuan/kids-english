@@ -47,7 +47,7 @@ const cards = useCardsStore();
 }
 .summary {
   text-align: center;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
   margin: 0;
 }
@@ -75,7 +75,7 @@ const cards = useCardsStore();
 .card.rarity-SR { border-color: #a855f7; box-shadow: 0 2px 12px rgba(168,85,247,0.3); }
 .card.rarity-SSR { border-color: #f59e0b; box-shadow: 0 0 16px rgba(245,158,11,0.5); }
 .card-emoji { font-size: 36px; }
-.card-name { font-size: 12px; font-weight: 800; text-align: center; }
-.card-rarity { font-size: 10px; font-weight: 800; padding: 1px 8px; border-radius: 99px; background: rgba(240,180,41,0.15); color: #b45309; }
-.card-dup { position: absolute; top: 4px; right: 6px; font-size: 11px; font-weight: 800; color: var(--ink-faint); }
+.card-name { font-size: 12px; font-weight: var(--fw-strong); text-align: center; }
+.card-rarity { font-size: 10px; font-weight: var(--fw-strong); padding: 1px 8px; border-radius: 99px; background: rgba(240,180,41,0.15); color: #b45309; }
+.card-dup { position: absolute; top: 4px; right: 6px; font-size: 11px; font-weight: var(--fw-strong); color: var(--ink-faint); }
 </style>

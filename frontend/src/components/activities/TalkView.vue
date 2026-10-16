@@ -312,7 +312,7 @@ function finish() {
 .ch-av.mom { background: #fff3d6; }
 .ch-av.kid { background: #d9f6ff; }
 .ch-round {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   color: var(--brand-dark);
   white-space: nowrap;
@@ -370,7 +370,7 @@ function finish() {
 .msg-bubble {
   padding: 8px 12px;
   border-radius: 14px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 15px;
   line-height: 1.35;
   color: var(--ink);
@@ -404,12 +404,12 @@ function finish() {
 }
 .msg-heard {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
 }
 .msg-time {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-faint);
 }
 .msg-pic {
@@ -431,7 +431,7 @@ function finish() {
 }
 .msg-pic.parent-pic .msg-pic-zh {
   font-size: 13px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink);
 }
 .msg-pic-emoji {
@@ -445,13 +445,13 @@ function finish() {
   border-radius: 8px;
 }
 .msg-pic-en {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: 18px;
   color: var(--ink);
 }
 .msg-pic-zh {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-faint);
 }
 
@@ -481,12 +481,12 @@ function finish() {
 }
 .ci-say-label {
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   color: var(--ink-faint);
   white-space: nowrap;
 }
 .ci-say-text {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: 18px;
   color: var(--brand-dark);
   letter-spacing: 0.02em;
@@ -530,7 +530,7 @@ function finish() {
   flex: none;
 }
 .ib-text {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: 15px;
   white-space: nowrap;
   overflow: hidden;
@@ -539,7 +539,7 @@ function finish() {
 .ci-hint {
   margin: 0;
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
   text-align: center;
 }
@@ -550,7 +550,7 @@ function finish() {
   justify-content: center;
 }
 .ci-auto {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: var(--brand-dark);
   animation: anim-pop 0.3s;

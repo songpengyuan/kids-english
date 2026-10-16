@@ -172,14 +172,14 @@ function onTap() {
 .form-name {
   margin: 0;
   font-size: clamp(15px, 1.7vw, 19px);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink);
   text-align: center;
 }
 .rarity {
   margin: 0;
   font-size: clamp(13px, 1.4vw, 16px);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-faint);
 }
 .buy {
@@ -189,7 +189,7 @@ function onTap() {
   border-radius: var(--radius-pill);
   background: var(--brand);
   color: var(--on-tone);
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   box-shadow: 0 var(--press) 0 var(--brand-dark);
   display: inline-flex;
@@ -214,7 +214,7 @@ function onTap() {
 }
 .maxed {
   font-size: clamp(13px, 1.4vw, 16px);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--gold);
 }
 </style>

@@ -100,9 +100,9 @@ const lastLessonObj = computed(() => {
 }
 .gme-ico { font-size: 36px; }
 .gme-body { flex: 1; }
-.gme-title { display: block; font-weight: 900; font-size: var(--fs-body); color: #92400e; }
-.gme-desc { display: block; font-size: 12px; font-weight: 700; color: #b45309; }
-.gme-arrow { font-size: 28px; font-weight: 900; color: #b45309; }
+.gme-title { display: block; font-weight: var(--fw-strong); font-size: var(--fs-body); color: #92400e; }
+.gme-desc { display: block; font-size: 12px; font-weight: var(--fw-mid); color: #b45309; }
+.gme-arrow { font-size: 28px; font-weight: var(--fw-strong); color: #b45309; }
 .practice {
   display: flex;
   flex-direction: column;
@@ -122,7 +122,7 @@ const lastLessonObj = computed(() => {
   gap: 6px;
   padding: clamp(7px, 1.4vh, 10px) clamp(12px, 1.8vw, 18px);
   border-radius: var(--radius-pill);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   color: var(--ink);
   background: var(--card-bg);
@@ -191,14 +191,14 @@ const lastLessonObj = computed(() => {
 }
 .card-title {
   font-size: 17px;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   color: #fff;
   text-shadow: 0 2px 6px rgba(0,0,0,0.35);
   line-height: 1.2;
 }
 .card-sub {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: rgba(255,255,255,0.85);
   text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }

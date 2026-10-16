@@ -33,7 +33,7 @@ const label = computed(() => (props.name ? ICON_TEXT[props.name] : ""));
   flex: none;
 }
 .path-icon-text {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   letter-spacing: 0.02em;
 }
 </style>

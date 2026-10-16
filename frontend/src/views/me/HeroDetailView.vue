@@ -629,7 +629,7 @@ function toggleFlip(open = !flipped.value) {
   border-radius: var(--radius-pill, 999px);
   background: var(--card-bg);
   color: var(--ink);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 14px;
   box-shadow: var(--shadow-hard);
   cursor: pointer;
@@ -639,7 +639,7 @@ function toggleFlip(open = !flipped.value) {
   transform: translateY(2px);
 }
 .back-title {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: 15px;
   opacity: 0.7;
   white-space: nowrap;
@@ -666,7 +666,7 @@ function toggleFlip(open = !flipped.value) {
   border-radius: var(--radius-pill, 999px);
   background: var(--card-bg);
   color: var(--ink);
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: 16px;
   box-shadow: var(--shadow-hard);
   cursor: pointer;
@@ -695,12 +695,12 @@ function toggleFlip(open = !flipped.value) {
 }
 .fn-cn {
   font-size: clamp(26px, 6vw, 34px);
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   letter-spacing: 0.04em;
 }
 .fn-en {
   font-size: 15px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   opacity: 0.6;
 }
 .fn-vol {
@@ -717,7 +717,7 @@ function toggleFlip(open = !flipped.value) {
   background: linear-gradient(180deg, #ffd54f, #f0a724);
   color: #5b4300;
   font-size: 17px;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   box-shadow:
     0 4px 0 rgba(160, 110, 10, 0.55),
     0 8px 18px rgba(0, 0, 0, 0.18);
@@ -775,7 +775,7 @@ function toggleFlip(open = !flipped.value) {
 }
 .hd-en {
   font-size: 0.62em;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   opacity: 0.65;
 }
 
@@ -895,7 +895,7 @@ function toggleFlip(open = !flipped.value) {
   padding: 4px 12px;
   border-radius: var(--radius-pill, 999px);
   background: color-mix(in srgb, var(--tone) 22%, var(--bar-bg, #fff));
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 13px;
   color: var(--ink);
 }
@@ -911,7 +911,7 @@ function toggleFlip(open = !flipped.value) {
   border-radius: var(--radius-pill, 999px);
   background: rgba(255, 255, 255, 0.88);
   color: #3a3a3a;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 13px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
   cursor: pointer;
@@ -1036,13 +1036,13 @@ function toggleFlip(open = !flipped.value) {
 .fact-row dt {
   flex: none;
   min-width: 64px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--gold, #f0b429);
 }
 .fact-row dd {
   margin: 0;
   color: var(--ink);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
 }
 
 .chips {
@@ -1058,7 +1058,7 @@ function toggleFlip(open = !flipped.value) {
   border-radius: var(--radius-pill, 999px);
   background: var(--line, rgba(127, 127, 127, 0.16));
   color: var(--ink);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 15px;
   cursor: pointer;
   transition:
@@ -1089,7 +1089,7 @@ function toggleFlip(open = !flipped.value) {
   border-radius: 14px;
   background: var(--line, rgba(127, 127, 127, 0.14));
   color: var(--ink);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   font-size: 16px;
   cursor: pointer;
   transition:
@@ -1107,7 +1107,7 @@ function toggleFlip(open = !flipped.value) {
 }
 .q-mark {
   color: var(--gold, #f0b429);
-  font-weight: 900;
+  font-weight: var(--fw-strong);
 }
 
 /* ---------- 声波动画（朗读中） ---------- */
@@ -1262,7 +1262,7 @@ function toggleFlip(open = !flipped.value) {
   gap: 6px;
   margin: 0;
   color: #fff;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: 17px;
   cursor: pointer;
   border-radius: 10px;

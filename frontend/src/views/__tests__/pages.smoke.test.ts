@@ -61,7 +61,7 @@ import TreasureView from "../me/TreasureView.vue";
 import ReviewView from "../learn/ReviewView.vue";
 import LessonView from "../learn/LessonView.vue";
 import HeroDetailView from "../me/HeroDetailView.vue";
-import StreakView from "../me/StreakView.vue";
+import CalendarView from "../me/CalendarView.vue";
 
 /** jsdom 没有 ResizeObserver（LearnView/GamePath 会用到） */
 class RO {
@@ -107,7 +107,8 @@ const routes = [
     name: "me",
     component: MyView,
     children: [
-      { path: "streak", name: "streak", component: StreakView },
+      // 原「连击日历」已并入学习日历，这里只保留合并后的页面
+      { path: "calendar", name: "calendar", component: CalendarView },
       {
         path: "treasure",
         children: [
@@ -165,18 +166,32 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   it("我的", async () => {
     const w = await mountPage(MyView, "/me");
-    expect(w.text()).toContain("今日目标");
-    expect(w.text()).toContain("家长中心");
-    expect(w.text()).toContain("今日学习");
+    // 「今日目标」已并入今日卡的进度条（原来是与今日数据重复的第二张卡），
+    // 因此断言的是合并后的口径：今天 / 目标 / 学习 / 磨耳朵。
+    expect(w.text()).toContain("今天");
+    expect(w.text()).toContain("目标");
+    expect(w.text()).toContain("学习");
     expect(w.text()).toContain("磨耳朵");
+    expect(w.text()).toContain("家长中心");
     expect(errors).toEqual([]);
   });
 
-  it("连击日历（火焰详情页）", async () => {
-    const w = await mountPage(StreakView, "/me/streak");
-    expect(w.text()).toContain("连击日历");
+  it("我的：一屏只允许一个主行动（.entry-row--primary）", async () => {
+    const w = await mountPage(MyView, "/me");
+    // 设计系统的硬约束：主行动唯一，否则页面又回到「所有卡片同权重」的老问题。
+    // 断言的是结构而不是文案，改动文案不会误伤、加第二个主行动会立刻红。
+    // mountPage 为了兼容各页组件类型把 component 断言成 never，这里补回 Element 类型
+    const root = w.element as unknown as Element;
+    const primary = root.querySelectorAll(".entry-row--primary");
+    expect(primary.length).toBe(1);
+  });
+
+  it("学习日历（已合并原连击日历）", async () => {
+    const w = await mountPage(CalendarView, "/me/calendar");
+    // 合并后一页同时承载：连击口径 + 本月学习汇总 + 月网格
     expect(w.text()).toContain("天连击");
-    expect(w.text()).toContain("本月已打卡");
+    expect(w.text()).toContain("本月打卡");
+    expect(w.text()).toContain("本月学习");
     expect(errors).toEqual([]);
   });
 

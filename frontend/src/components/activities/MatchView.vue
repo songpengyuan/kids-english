@@ -512,7 +512,7 @@ onBeforeUnmount(() => {
 }
 .tip {
   margin: 0;
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   color: var(--ink-soft);
   font-size: var(--fs-small);
   min-width: 0;
@@ -527,7 +527,7 @@ onBeforeUnmount(() => {
   background: var(--card-bg);
   border-radius: var(--radius-s);
   padding: clamp(4px, 1vh, 6px) clamp(8px, 1.4vw, 14px);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   box-shadow: var(--shadow-hard);
   white-space: nowrap;
@@ -623,7 +623,7 @@ onBeforeUnmount(() => {
 }
 .cell.word {
   font-size: clamp(13px, min(2.6vh, 2.1vw), 23px);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   cursor: grab;
   padding: 0 4px;
   text-align: center;
@@ -648,7 +648,7 @@ onBeforeUnmount(() => {
 }
 .sound-word {
   font-size: clamp(12px, min(2.4vh, 2vw), 19px);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink);
   line-height: 1.15;
   overflow-wrap: anywhere;
@@ -699,7 +699,7 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--ink-soft);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   padding: 6px 12px;
   min-height: clamp(34px, 5.4vh, 44px);
@@ -750,7 +750,7 @@ onBeforeUnmount(() => {
 }
 .banner span {
   font-size: clamp(18px, min(4vh, 3.2vw), 34px);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ok-dark);
   background: var(--card-bg);
   padding: clamp(10px, 1.8vh, 14px) clamp(18px, 3vw, 28px);

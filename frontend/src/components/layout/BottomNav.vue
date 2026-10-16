@@ -127,7 +127,7 @@ function openPlayer() {
   gap: 2px;
   padding: clamp(4px, 1vh, 8px) 0;
   border-radius: var(--radius-s);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 12px;
   color: var(--ink-faint);
   transition: background 0.2s, color 0.2s, transform 0.1s;
@@ -166,7 +166,7 @@ function openPlayer() {
 }
 .bn-cap {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
 }
 /* ===== 迷你播放条（播放中替换磨耳朵 tab） ===== */
 .bn-player {
@@ -203,7 +203,7 @@ function openPlayer() {
   gap: 3px;
 }
 .bp-title {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 12px;
   color: var(--ink);
   white-space: nowrap;

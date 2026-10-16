@@ -323,7 +323,7 @@ const talkIdx = ref(0);
   transition: width 0.3s;
 }
 .talk-round {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: 13px;
   color: var(--ink-soft);
   white-space: nowrap;

@@ -185,7 +185,7 @@ function replay() {
   gap: var(--gap-s);
 }
 .cnt-badge {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   color: var(--ink-soft);
   background: var(--card-bg);
@@ -206,7 +206,7 @@ function replay() {
   align-items: center;
   gap: var(--gap-s);
   width: min(340px, 92%);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   color: var(--ink-soft);
 }
@@ -227,7 +227,7 @@ function replay() {
   display: flex;
   align-items: center;
   gap: var(--gap-s);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: var(--ink);
 }
@@ -299,7 +299,7 @@ function replay() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   color: #fff;
   animation: pop-in 0.25s ease-out;
@@ -333,19 +333,19 @@ function replay() {
   box-shadow: var(--shadow-hard);
 }
 .big {
-  font-weight: 900;
+  font-weight: var(--fw-strong);
   font-size: clamp(22px, 4vh, 32px);
   color: var(--ink);
 }
 .of {
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
   font-size: var(--fs-body);
 }
 .again {
   margin: 0;
   color: var(--ink-soft);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   font-size: var(--fs-body);
   line-height: 1.6;
 }
@@ -354,7 +354,7 @@ function replay() {
 }
 .again.ok {
   color: var(--ok-dark);
-  font-weight: 800;
+  font-weight: var(--fw-strong);
 }
 .btn-row {
   display: flex;
@@ -382,7 +382,7 @@ function replay() {
 .empty p {
   margin: 0;
   color: var(--ink-soft);
-  font-weight: 700;
+  font-weight: var(--fw-mid);
   font-size: var(--fs-body);
 }
 </style>

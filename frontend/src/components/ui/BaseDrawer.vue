@@ -41,7 +41,7 @@ const emit = defineEmits<{ (e: "close"): void }>();
   border-bottom: 1px solid var(--line);
 }
 .drawer.dark .drawer-head { border-bottom-color: rgba(255,255,255,0.1); }
-.drawer-title { margin: 0; font-weight: 900; font-size: 16px; color: var(--ink); }
+.drawer-title { margin: 0; font-weight: var(--fw-strong); font-size: 16px; color: var(--ink); }
 .drawer.dark .drawer-title { color: var(--player-text); }
 .drawer-close {
   width: 44px; height: 44px; border-radius: 50%;

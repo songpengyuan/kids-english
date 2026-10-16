@@ -58,7 +58,7 @@ const activeIdx = computed(() =>
   padding: 10px 0;
   border: none;
   background: transparent;
-  font-weight: 800;
+  font-weight: var(--fw-strong);
   font-size: var(--fs-small);
   color: var(--ink-faint);
   position: relative;
