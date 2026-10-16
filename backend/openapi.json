@@ -23,7 +23,7 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -224,13 +224,56 @@
         }
       }
     },
-    "/api/v1/auth/children": {
+    "/api/v1/children": {
+      "get": {
+        "tags": [
+          "children"
+        ],
+        "summary": "List Children",
+        "description": "当前家庭的孩子列表。",
+        "operationId": "list_children_api_v1_children_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildrenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
-          "auth"
+          "children"
         ],
         "summary": "Create Child",
-        "operationId": "create_child_api_v1_auth_children_post",
+        "description": "创建孩子（201 Created）。",
+        "operationId": "create_child_api_v1_children_post",
         "parameters": [
           {
             "name": "authorization",
@@ -254,7 +297,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -277,14 +320,14 @@
         }
       }
     },
-    "/api/v1/auth/children/{child_id}": {
+    "/api/v1/children/{child_id}": {
       "patch": {
         "tags": [
-          "auth"
+          "children"
         ],
         "summary": "Patch Child",
-        "description": "孩子档案编辑：改名字/头像/出生日期（至少一项；缺席=不改，显式 null=清空）。",
-        "operationId": "patch_child_api_v1_auth_children__child_id__patch",
+        "description": "编辑孩子档案：改名字/头像/出生日期（至少一项；缺席=不改，显式 null=清空）。",
+        "operationId": "patch_child_api_v1_children__child_id__patch",
         "parameters": [
           {
             "name": "child_id",
@@ -436,13 +479,13 @@
         }
       }
     },
-    "/api/v1/progress/child/{child_id}": {
+    "/api/v1/children/{child_id}/progress": {
       "get": {
         "tags": [
           "progress"
         ],
         "summary": "Get Progress",
-        "operationId": "get_progress_api_v1_progress_child__child_id__get",
+        "operationId": "get_progress_api_v1_children__child_id__progress_get",
         "parameters": [
           {
             "name": "child_id",
@@ -492,7 +535,7 @@
           "progress"
         ],
         "summary": "Put Progress",
-        "operationId": "put_progress_api_v1_progress_child__child_id__put",
+        "operationId": "put_progress_api_v1_children__child_id__progress_put",
         "parameters": [
           {
             "name": "child_id",
@@ -548,13 +591,88 @@
         }
       }
     },
-    "/api/v1/rewards/{child_id}": {
+    "/api/v1/children/{child_id}/calendar": {
+      "get": {
+        "tags": [
+          "progress"
+        ],
+        "summary": "Get Calendar",
+        "description": "学习日历：返回指定年月每天的学习时长/磨耳朵时长/玩法数。",
+        "operationId": "get_calendar_api_v1_children__child_id__calendar_get",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 2020,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Month"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/children/{child_id}/rewards": {
       "get": {
         "tags": [
           "rewards"
         ],
         "summary": "Get Rewards",
-        "operationId": "get_rewards_api_v1_rewards__child_id__get",
+        "operationId": "get_rewards_api_v1_children__child_id__rewards_get",
         "parameters": [
           {
             "name": "child_id",
@@ -604,7 +722,7 @@
           "rewards"
         ],
         "summary": "Put Rewards",
-        "operationId": "put_rewards_api_v1_rewards__child_id__put",
+        "operationId": "put_rewards_api_v1_children__child_id__rewards_put",
         "parameters": [
           {
             "name": "child_id",
@@ -700,14 +818,14 @@
         }
       }
     },
-    "/api/v1/recordings/{child_id}": {
+    "/api/v1/children/{child_id}/recordings": {
       "post": {
         "tags": [
           "recordings"
         ],
         "summary": "Create Recording",
         "description": "上传一段孩子发音原音：落盘 + 元数据入库。评测分（scores_json）P2-3 接入时填充。",
-        "operationId": "create_recording_api_v1_recordings__child_id__post",
+        "operationId": "create_recording_api_v1_children__child_id__recordings_post",
         "parameters": [
           {
             "name": "child_id",
@@ -734,13 +852,13 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_create_recording_api_v1_recordings__child_id__post"
+                "$ref": "#/components/schemas/Body_create_recording_api_v1_children__child_id__recordings_post"
               }
             }
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -766,7 +884,7 @@
         ],
         "summary": "List Recordings",
         "description": "孩子录音列表（新→旧，最多 200 条；不暴露服务器文件路径）。",
-        "operationId": "list_recordings_api_v1_recordings__child_id__get",
+        "operationId": "list_recordings_api_v1_children__child_id__recordings_get",
         "parameters": [
           {
             "name": "child_id",
@@ -810,15 +928,24 @@
         }
       }
     },
-    "/api/v1/recordings/{rid}/audio": {
+    "/api/v1/children/{child_id}/recordings/{rid}/audio": {
       "get": {
         "tags": [
           "recordings"
         ],
         "summary": "Replay Audio",
         "description": "回放：流式返回原始录音。仅本家庭可访问。",
-        "operationId": "replay_audio_api_v1_recordings__rid__audio_get",
+        "operationId": "replay_audio_api_v1_children__child_id__recordings__rid__audio_get",
         "parameters": [
+          {
+            "name": "child_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Child Id"
+            }
+          },
           {
             "name": "rid",
             "in": "path",
@@ -937,7 +1064,7 @@
         ],
         "title": "Body_api_evaluate_api_v1_evaluation_post"
       },
-      "Body_create_recording_api_v1_recordings__child_id__post": {
+      "Body_create_recording_api_v1_children__child_id__recordings_post": {
         "properties": {
           "file": {
             "type": "string",
@@ -981,7 +1108,7 @@
         "required": [
           "file"
         ],
-        "title": "Body_create_recording_api_v1_recordings__child_id__post"
+        "title": "Body_create_recording_api_v1_children__child_id__recordings_post"
       },
       "Body_legacy_evaluate_api_evaluate_post": {
         "properties": {
@@ -1001,6 +1128,70 @@
           "text"
         ],
         "title": "Body_legacy_evaluate_api_evaluate_post"
+      },
+      "CalendarDayOut": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "durationSec": {
+            "type": "integer",
+            "title": "Durationsec",
+            "default": 0
+          },
+          "listenSec": {
+            "type": "integer",
+            "title": "Listensec",
+            "default": 0
+          },
+          "activities": {
+            "type": "integer",
+            "title": "Activities",
+            "default": 0
+          },
+          "mastered": {
+            "type": "integer",
+            "title": "Mastered",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "date"
+        ],
+        "title": "CalendarDayOut"
+      },
+      "CalendarOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "month": {
+            "type": "integer",
+            "title": "Month"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/CalendarDayOut"
+            },
+            "type": "array",
+            "title": "Days",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "month"
+        ],
+        "title": "CalendarOut"
       },
       "ChildCreatedOut": {
         "properties": {
@@ -1139,6 +1330,25 @@
         "type": "object",
         "title": "ChildPatchIn",
         "description": "孩子档案编辑：名/头像/生日（至少一项；缺席=不改，avatar/birth_date 显式 null=清空）。"
+      },
+      "ChildrenOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/ChildOut"
+            },
+            "type": "array",
+            "title": "Children",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "ChildrenOut"
       },
       "GateIn": {
         "properties": {
