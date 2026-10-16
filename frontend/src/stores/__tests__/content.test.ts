@@ -72,7 +72,7 @@ describe("content store · 契约", () => {
     localStorage.clear();
   });
 
-  it("loadFromServer：拉取概要 + 预取详情，远端数据源生效", async () => {
+  it("loadFromServer：只拉概要，详情按需加载（不预取）", async () => {
     const { calls } = mockFetch({
       "/api/v1/content/lessons": SUMMARY,
       "/api/v1/content/lessons/l4": DETAIL,
@@ -83,8 +83,11 @@ describe("content store · 契约", () => {
     expect(c.source).toBe("remote");
     expect(c.lessonList).toHaveLength(2);
     expect(c.lessonList[0].id).toBe("l4");
-    // 预取了详情：l4 可从缓存取（不再发请求）
-    expect(Object.keys(c.detailCache)).toContain("l4");
+    // 没有预取详情：detailCache 为空，详情请求数为 0
+    expect(Object.keys(c.detailCache)).toHaveLength(0);
+    expect(calls.filter((x) => x.url.startsWith("/api/v1/content/lessons/l"))).toHaveLength(0);
+    // 点进 l4 才发详情请求
+    await c.getLesson("l4");
     expect(calls.filter((x) => x.url === "/api/v1/content/lessons/l4")).toHaveLength(1);
   });
 
@@ -120,30 +123,24 @@ describe("content store · 契约", () => {
     expect(c.lessonList.length).toBeGreaterThan(0); // 仍返回本地课程
   });
 
-  it("部分预取失败：远端覆盖同课、本地补缺口，不缺课且按数字序", async () => {
-    // 只有 l4 详情成功，其余详情网络失败（模拟抖动）
+  it("部分详情拉取失败：远端成功的用远端，失败的降级本地", async () => {
     mockFetch({
       "/api/v1/content/lessons": SUMMARY,
       "/api/v1/content/lessons/l4": DETAIL,
+      // l5 详情网络失败
     });
     const c = useContentStore();
     await c.loadFromServer();
     expect(c.source).toBe("remote");
-    // 本地缺口补齐：l5 仍有完整歌词，课程数量不因部分失败减少
-    const l5 = c.lessons.find((x) => x.id === "l5")!;
-    expect(l5.song.lyrics.length).toBeGreaterThan(0);
-    // l4 被远端覆盖（带 timings）
-    const l4 = c.lessons.find((x) => x.id === "l4")!;
-    expect(l4.song.timings).toBeTruthy();
-    // 数字序：l4 在 l5 前；含 l10 时排在 l9 后（非字典序）
-    const ids = c.lessons.map((x) => x.id);
-    expect(ids.indexOf("l4")).toBeLessThan(ids.indexOf("l5"));
-    if (ids.includes("l10")) {
-      expect(ids.indexOf("l10")).toBeGreaterThan(ids.indexOf("l9"));
-    }
+    // l4 远端成功 → 带 timings
+    const l4 = await c.getLesson("l4");
+    expect(l4!.song.timings).toBeTruthy();
+    // l5 远端失败 → 降级本地（仍有歌词）
+    const l5 = await c.getLesson("l5");
+    expect(l5!.song.lyrics.length).toBeGreaterThan(0);
   });
 
-  it("远端新增课程（本地没有）自动并入列表", async () => {
+  it("远端新增课程：列表可见，点进去才拉详情", async () => {
     const NEW_SUMMARY: LessonsOut = {
       ok: true,
       lessons: [
@@ -153,16 +150,15 @@ describe("content store · 契约", () => {
     };
     mockFetch({
       "/api/v1/content/lessons": NEW_SUMMARY,
-      "/api/v1/content/lessons/l4": DETAIL,
-      "/api/v1/content/lessons/l5": briefLesson("l5", "I Am the Music Man", "音乐人", "orange"),
       "/api/v1/content/lessons/l11": briefLesson("l11", "New Song", "新课", "teal", "official", ["la la"]),
     });
     const c = useContentStore();
     await c.loadFromServer();
-    // 新增课 l11 并入（本地 lessons 没有它）
-    expect(c.lessons.some((x) => x.id === "l11")).toBe(true);
-    expect(c.lessons.map((x) => x.id).indexOf("l11")).toBeGreaterThan(
-      c.lessons.map((x) => x.id).indexOf("l10"),
-    );
+    // 列表里能看到 l11（来自 summaries）
+    expect(c.lessonList.some((x) => x.id === "l11")).toBe(true);
+    // 点进去才拉详情
+    const l11 = await c.getLesson("l11");
+    expect(l11!.id).toBe("l11");
+    expect(l11!.song.lyrics).toContain("la la");
   });
 });

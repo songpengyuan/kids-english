@@ -106,10 +106,7 @@ export const useContentStore = defineStore("content", () => {
       if (res.ok && Array.isArray(res.lessons) && res.lessons.length) {
         summaries.value = res.lessons as LessonSummary[];
         source.value = "remote";
-        // 预取全部详情缓存（内容库规模小，一次拿全最省请求）
-        await Promise.all(
-          res.lessons.map((s) => getLesson(s.id).catch(() => null)),
-        );
+        // 详情按需加载：点进哪课才请求哪课（getLesson 自带缓存），不预取全量
       }
     } catch {
       /* 离线：保持本地 */
