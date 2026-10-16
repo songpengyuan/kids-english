@@ -225,14 +225,22 @@ html.no-bottom-nav #app {
 /**
  * 可滚动内容区（"我的"这类内容超过一屏的页面）。
  * 以前各页自己写 overflow-y/-webkit-overflow-scrolling/touch-action，写法不一。
- * 注意子项要 flex-shrink:0，否则长文本会把大数字压扁。
+ *
+ * 这里（2026-10 修复）补上 `display:flex` + `gap`：原先只有 overflow 相关的
+ * 三条声明，页面里排成一列的块之间**没有任何间距**，全贴在一起——
+ * 下面那条 flex-shrink 规则也因此在空转（flex-shrink 只对 flex item 生效）。
+ * 页面写一列块时不该再各自补 margin。
  */
 .view-body--scroll {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-s);
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
+/* 子项不收缩，否则长文本会把大数字压扁 */
 .view-body--scroll > * {
   flex-shrink: 0;
 }
