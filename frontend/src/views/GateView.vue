@@ -1,6 +1,15 @@
 <script setup>
 /**
- * 应用入口口令页（#/gate）—— DeepSeek 风格极简
+ * 应用入口口令页（#/gate）—— 备案域名下的家长口令门禁。
+ *
+ * 设计（2026-10 统一）：原先是"DeepSeek 极简风"（写死 #fff 白底 + 冷灰阶
+ * #1a1a1a/#999/#f5f5f5），与全站的暖色系统完全不同，且**不跟随主题**——
+ * 家长在暗色模式下打开会突然闪一片白。现在改为：
+ *   · 骨架用 PageShell（bare + center，本页无顶栏、内容垂直居中）；
+ *   · 颜色全部走 token（--ink / --ink-soft / --ink-faint / --brand / --card-bg），
+ *     亮暗两套自动跟随；
+ *   · 输入框用全局 .field，主按钮用全局 .k-btn（全站同一个"进入"按钮）。
+ * 版式仍是原来的居中单列（品牌区在卡外、表单在卡内），这是入口页应有的克制。
  */
 import { ref } from "vue";
 import { useRouter } from "vue-router";
@@ -8,6 +17,7 @@ import { useGateStore } from "../stores/gate";
 import { useAuthStore } from "../stores/auth";
 import { useContentStore } from "../stores/content";
 import { useProgressStore } from "../stores/progress";
+import PageShell from "../components/ui/PageShell.vue";
 
 const router = useRouter();
 const gate = useGateStore();
@@ -48,117 +58,86 @@ async function submit() {
 </script>
 
 <template>
-  <div class="gate">
-    <div class="gate-inner">
-      <!-- 居中 logo 区 -->
-      <div class="brand">
-        <span class="brand-mark">📚</span>
-        <h1 class="brand-name">丞丞学英语</h1>
-        <p class="brand-slogan">每天 10 分钟 · 快乐学英语</p>
+  <PageShell bare center>
+    <div class="gate">
+      <!-- 品牌区（卡外，入口页的门面） -->
+      <div class="gate__brand">
+        <span class="gate__mark">📚</span>
+        <h1 class="gate__name">丞丞学英语</h1>
+        <p class="gate__slogan">每天 10 分钟 · 快乐学英语</p>
       </div>
 
-      <!-- 输入区 -->
-      <div class="input-box">
+      <!-- 表单（卡内） -->
+      <form class="card gate__form" @submit.prevent="submit">
         <input
           v-model="pass"
-          class="gate-input"
+          class="field"
           type="password"
           placeholder="请输入家长口令"
           maxlength="20"
           inputmode="numeric"
           autocomplete="off"
-          @keyup.enter="submit"
         />
-        <button class="gate-btn" :disabled="busy" @click="submit">
+        <button class="k-btn gate__btn" type="submit" :disabled="busy">
           {{ busy ? "进入中…" : "进入" }}
         </button>
-      </div>
+        <p v-if="error" class="gate__error">{{ error }}</p>
+      </form>
 
-      <p v-if="error" class="gate-error">{{ error }}</p>
-      <p class="gate-foot">本设备 7 天内免重复输入</p>
+      <p class="gate__foot">本设备 7 天内免重复输入</p>
     </div>
-  </div>
+  </PageShell>
 </template>
 
 <style scoped>
 .gate {
-  min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-  padding: 24px;
-}
-.gate-inner {
   width: 100%;
   max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   text-align: center;
 }
 
-/* 品牌区 */
-.brand {
-  margin-bottom: 48px;
+/* ---------- 品牌区 ---------- */
+.gate__brand {
+  margin-bottom: var(--gap-l);
 }
-.brand-mark {
-  font-size: 48px;
+.gate__mark {
+  font-size: var(--fs-emoji-xl);
   line-height: 1;
 }
-.brand-name {
-  margin: 16px 0 8px;
-  font-size: 24px;
-  font-weight: var(--fw-mid);
-  color: #1a1a1a;
+.gate__name {
+  margin: var(--gap-s) 0 var(--gap-xs);
+  font-size: var(--fs-title);
+  font-weight: var(--fw-strong);
+  color: var(--ink);
   letter-spacing: 1px;
 }
-.brand-slogan {
+.gate__slogan {
   margin: 0;
-  font-size: 14px;
-  color: #999;
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
 }
 
-/* 输入区 */
-.input-box {
+/* ---------- 表单 ---------- */
+.gate__form {
   display: flex;
-  gap: 8px;
-  background: #f5f5f5;
-  border-radius: 16px;
-  padding: 6px;
+  flex-direction: column;
+  gap: var(--gap-s);
 }
-.gate-input {
-  flex: 1;
-  border: 0;
-  background: transparent;
-  padding: 12px 14px;
-  font-size: 15px;
-  outline: none;
-  color: #1a1a1a;
+.gate__btn {
+  width: 100%;
 }
-.gate-input::placeholder {
-  color: #aaa;
-}
-.gate-btn {
-  flex: none;
-  border: 0;
-  border-radius: 12px;
-  padding: 12px 22px;
-  background: #1cb0f6;
-  color: #fff;
-  font-size: 15px;
+.gate__error {
+  margin: 0;
+  color: var(--red);
+  font-size: var(--fs-small);
   font-weight: var(--fw-mid);
-  cursor: pointer;
 }
-.gate-btn:disabled {
-  opacity: 0.5;
-}
-
-.gate-error {
-  color: #e53e3e;
-  font-size: 13px;
-  margin-top: 12px;
-}
-.gate-foot {
-  margin-top: 32px;
-  font-size: 12px;
-  color: #bbb;
+.gate__foot {
+  margin: var(--gap-l) 0 0;
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
 }
 </style>

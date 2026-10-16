@@ -596,6 +596,29 @@ html.no-bottom-nav #app {
   color: var(--ink-faint);
 }
 
+/* ---------- 表单输入 ----------
+ * 家长中心的字段、口令页的输入框各自写了一份（一个 15px、一个 padding 10px 12px、
+ * 一个 2px 实线边框），这里统一。跟随主题，暗黑模式下不会闪白。 */
+.field {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: var(--radius-s);
+  border: 2px solid var(--line);
+  font-size: var(--fs-body);
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--ink);
+  transition: border-color var(--dur-base);
+}
+.field::placeholder {
+  color: var(--ink-faint);
+}
+.field:focus {
+  border-color: var(--brand);
+  outline: none;
+}
+
 /* ---------- 空状态 ----------
  * 以前每个"还没有数据"的页面各自写一个居中块，字号行高都不一样。 */
 .empty {

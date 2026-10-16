@@ -36,9 +36,9 @@ withDefaults(
     center?: boolean;
     /**
      * 填充模式：内容区交给页面自己撑满整块剩余空间（`display:flex` 列），
-     * 同时骨架不再插入顶栏与内容之间的间距。
-     * 用于"内容本身就是一整块舞台"的页面（如英雄详情的 3D 翻转卡），
-     * 这类页面需要精确控制高度，多出来的 gap 会把舞台压扁。
+     * 用于"内容本身就是一整块"的页面——英雄详情的 3D 翻转卡、游戏闯关的地图。
+     * 这类页面需要内容区参与 flex 分配，否则内部的 `flex:1` 不生效。
+     * 顶栏与内容之间的间距（--gap-s）保持不变，全站一致。
      */
     fill?: boolean;
   }>(),
@@ -49,7 +49,7 @@ const emit = defineEmits<{ back: [] }>();
 </script>
 
 <template>
-  <div class="view" :class="{ 'view--fill': fill }">
+  <div class="view">
     <HeaderBar
       v-if="!bare"
       :show-back="showBack"
@@ -84,9 +84,6 @@ const emit = defineEmits<{ back: [] }>();
 
 <style>
 /* 骨架的模式变体改的是 base.css 里的全局类，所以放在非 scoped 块里 */
-.view--fill {
-  gap: 0;
-}
 .view-body--fill {
   display: flex;
   flex-direction: column;

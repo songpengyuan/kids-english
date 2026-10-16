@@ -2,11 +2,14 @@
 /**
  * 当前课游戏地图（#/game/lesson/:id）——只显示这一课的关卡（学完的/进行中的都有），
  * 适合孩子在学某课时就地闯这课的地图；多课总地图 #/game 保留代码，入口暂移出（后续考虑启用）。
+ *
+ * 设计（2026-10 统一）：骨架换 PageShell（fill 模式），去掉与 .view 重复的
+ * flex 声明——原来这里又写了一遍 display:flex/flex-direction:column/flex:1/min-height:0，
+ * 而 .view 已经有这些。
  */
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import HeaderBar from "../../components/layout/HeaderBar.vue";
-import PathIcon from "../../components/PathIcon.vue";
+import PageShell from "../../components/ui/PageShell.vue";
 import GamePath from "../../components/game/GamePath.vue";
 import { getLesson } from "../../data/lessons";
 
@@ -23,21 +26,19 @@ function goBack() {
 </script>
 
 <template>
-  <div class="game-lesson view">
-    <HeaderBar show-back show-badges @back="goBack">
-      <template #title><PathIcon name="game" class="hdr-ico" /> {{ lesson?.titleZh || "游戏闯关" }}</template>
-    </HeaderBar>
+  <PageShell
+    fill
+    :title="lesson?.titleZh || '游戏闯关'"
+    icon="game"
+    show-badges
+    back-label="返回"
+    @back="goBack"
+  >
     <GamePath class="gp-slot" :lesson-id="lessonId" />
-  </div>
+  </PageShell>
 </template>
 
 <style scoped>
-.game-lesson {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  flex: 1;
-}
 .gp-slot {
   flex: 1;
   min-height: 0;

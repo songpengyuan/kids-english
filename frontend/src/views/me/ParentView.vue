@@ -284,6 +284,9 @@ function pickChild(id: number) {
 }
 
 .kid-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
   margin-top: var(--gap-s);
   padding: var(--gap-s);
   border-radius: var(--radius-s);
@@ -294,22 +297,8 @@ function pickChild(id: number) {
   gap: var(--gap-s);
   margin-top: var(--gap-s);
 }
-
-.field {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 12px;
-  border-radius: var(--radius-s);
-  border: 2px solid var(--line);
-  font-size: var(--fs-body);
-  font-family: inherit;
-  margin-bottom: 6px;
-  background: var(--bg);
-  color: var(--ink);
-}
 .kid-add .field {
   flex: 1;
-  margin-bottom: 0;
 }
 
 .actions {
