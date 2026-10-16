@@ -135,7 +135,7 @@
 |------|------|------|
 | `BottomNav` | `components/layout/BottomNav.vue` | 底部三tab（学习/磨耳朵/我的），激活态水蓝 |
 | `SafeBottom` | `components/layout/SafeBottom.vue` | 手机/iPad 底部安全距离共用容器（所有带底栏页面包一层） |
-| `HeaderBar` / `AppHeader` | `components/layout/*.vue` | 课程内/答题页顶栏（首页 /learn /listen /me **不使用**） |
+| `HeaderBar` | `components/layout/HeaderBar.vue` | **全站唯一子页面顶栏**（带返回的二级页一律用它；首页 /learn /listen /me 不使用）。返回钮 44px 圆钮 + 标题绝对居中 + 右侧徽章（`showBadges`）或自定义 `#right` |
 
 **通用 UI**
 | 组件 | 路径 | 用途 |
@@ -194,8 +194,8 @@
 ## 9. 布局约定
 
 - 页面根：`<div class="view">`；内容区：`<div class="view-body">`
-- **首页无顶栏**：`/learn`（学习）、`/listen`（磨耳朵）、`/me`（我的）三首页不显示 HeaderBar/AppHeader（2026-10-15 起）；`/me` 顶部补刘海安全区 padding-top
-- 课程内/答题页顶栏：`<AppHeader title="xxx" />`（`hide-badges` 隐藏徽章，`show-back` 显示返回），答题页 = 关闭按钮 + 顶部进度条
+- **首页无顶栏**：`/learn`（学习）、`/listen`（磨耳朵）、`/me`（我的）三首页不显示顶栏（2026-10-15 起）；`/me` 顶部补刘海安全区 padding-top
+- **子页面顶栏 = `HeaderBar`（全站唯一，2026-10-16 起 AppHeader 已移除合并）**：所有带返回的二级页（课程/答题/游戏/家长中心/日历/卡片/宝藏/报告/复习/英雄详情/3D 等 13 页）统一用它——44px 圆返回钮、标题绝对居中、右侧 `showBadges` 三徽章（星/贝壳/连击）或 `#right` 自定义；答题页 = `close` 关闭按钮（房子图标）+ 顶部进度条
 - 底部导航只在 `/learn` `/listen` `/me` 三个首页显示；**闯关挑战入口在「我的」页**（stat-row 下紫色卡片）
 - 手机/iPad 底部安全距离：所有带底栏页面用共用组件 `SafeBottom` 包裹，不各自写 `env(safe-area-inset-bottom)`
 - 子页面（课程、答题、宝藏等）不显示底部导航，沉浸进入

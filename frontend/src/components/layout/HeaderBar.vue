@@ -1,16 +1,45 @@
 <script setup lang="ts">
 /**
- * 统一顶栏（阶段 1-2：全站 topbar 一致化）。
+ * 统一子页面顶栏（全站唯一子页面顶栏组件，组件库契约：子页面一律用 HeaderBar）。
  *
- * - 返回按钮（可选）：统一圆钮 + ChevronLeft，点击 emit('back')，由父组件决定去向；
- * - 标题：走 #title 插槽（可带图标），超长省略号；
- * - 右侧：走 #right 插槽（徽章 / 日期 / 主题切换等），保证布局对齐。
- * 替换各页手写 topbar，视觉与交互保持一致（面向儿童：大点击区、圆角、柔和阴影）。
+ * - 返回按钮（可选）：统一圆钮 + PathIcon back，点击 emit('back')，由父组件决定去向；
+ * - 标题：走 #title 插槽（可带图标），绝对居中、超长省略号；
+ * - 右侧：showBadges 时内置星/贝壳/连击三徽章（全局状态、点击跳转）；
+ *         也可走 #right 插槽放自定义内容（日期、数量等）；
+ * 面向儿童：大点击区、圆角、柔和阴影。
  */
+import { useRouter } from "vue-router";
+import { useProgressStore } from "../../stores/progress";
+import { useRewardsStore } from "../../stores/rewards";
+import { useStreakStore } from "../../stores/streak";
 import PathIcon from "../PathIcon.vue";
+import ShellIcon from "../ShellIcon.vue";
+import { Star } from "@lucide/vue";
+import { speakZh } from "../../services/speech";
 
-defineProps<{ showBack?: boolean; backLabel?: string; close?: boolean }>();
+defineProps<{
+  showBack?: boolean;
+  backLabel?: string;
+  close?: boolean;
+  /** 显示全局徽章（星/贝壳/连击）。自定义 #right 插槽与 showBadges 二选一 */
+  showBadges?: boolean;
+}>();
+
 const emit = defineEmits<{ back: [] }>();
+
+const router = useRouter();
+const progress = useProgressStore();
+const rewards = useRewardsStore();
+const streak = useStreakStore();
+
+function goTreasure() {
+  speakZh("宝藏罐");
+  router.push("/me/treasure");
+}
+function goStreak() {
+  speakZh("连击日历");
+  router.push("/me/streak");
+}
 </script>
 
 <template>
@@ -27,7 +56,32 @@ const emit = defineEmits<{ back: [] }>();
       <PathIcon v-else name="back" />
     </button>
     <div class="hdr-title"><slot name="title" /></div>
-    <div class="hdr-right"><slot name="right" /></div>
+    <div class="hdr-right">
+      <!-- 全局数字徽章：星 / 贝壳（进宝藏罐）/ 连击（进连击日历） -->
+      <template v-if="showBadges">
+        <div class="badge star-badge" title="我的星星总数">
+          <Star class="k-ico star-fill" />{{ progress.totalStars }}
+        </div>
+        <button
+          class="badge treasure-badge"
+          aria-label="打开宝藏罐"
+          title="宝藏罐：贝壳余额"
+          @click="goTreasure"
+        >
+          <ShellIcon />{{ rewards.shells }}
+        </button>
+        <button
+          class="badge streak-badge"
+          :class="{ done: streak.todayDone }"
+          aria-label="打开连击日历"
+          :title="streak.todayDone ? '今日目标已达成，已连击 ' + streak.streak + ' 天，点击看连击日历' : '今日目标：复习 ' + streak.reviewed + '/' + streak.reviewGoal + ' 词 + 新学 ' + streak.newLevels + '/1 关，点击看连击日历'"
+          @click="goStreak"
+        >
+          <PathIcon name="flame" class="k-ico flame-ico" />{{ streak.streak }}
+        </button>
+      </template>
+      <slot name="right" />
+    </div>
   </div>
 </template>
 
@@ -111,5 +165,54 @@ const emit = defineEmits<{ back: [] }>();
   align-items: center;
   gap: 8px;
   margin-left: auto;
+}
+
+/* ---------- 全局数字徽章（星/贝壳/连击） ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: var(--radius-s);
+  white-space: nowrap;
+}
+.star-badge {
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft);
+}
+.star-badge .star-fill {
+  color: var(--gold);
+}
+.treasure-badge {
+  background: linear-gradient(160deg, #ffd87a, #f0b429);
+  color: #6b4e00;
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18);
+  transition: transform 0.1s;
+}
+.treasure-badge:active {
+  transform: translateY(calc(var(--press) - 1px));
+}
+.streak-badge {
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft);
+  transition: background 0.3s, color 0.3s, transform 0.1s;
+}
+.streak-badge:active {
+  transform: translateY(calc(var(--press) - 1px));
+}
+.streak-badge.done {
+  background: linear-gradient(160deg, #ff9f43, #ff6b3d);
+  color: #fff;
+  box-shadow: 0 var(--press) 0 rgba(0, 0, 0, 0.18), 0 0 14px rgba(255, 122, 61, 0.4);
+}
+.flame-ico {
+  color: #ff6b3d;
+}
+.streak-badge.done .flame-ico {
+  color: #fff;
 }
 </style>

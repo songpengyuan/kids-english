@@ -6,7 +6,8 @@
  * 返回本页时 GamePath 的 onActivated 对比关卡状态触发解锁动效。
  * 顶栏带返回（游戏非底部主 tab，从学习页进入，返回即回学习）。
  */
-import AppHeader from "../../components/layout/AppHeader.vue";
+import HeaderBar from "../../components/layout/HeaderBar.vue";
+import PathIcon from "../../components/PathIcon.vue";
 import GamePath from "../../components/game/GamePath.vue";
 
 defineOptions({ name: "GameView" }); // KeepAlive include 需要稳定组件名
@@ -14,7 +15,9 @@ defineOptions({ name: "GameView" }); // KeepAlive include 需要稳定组件名
 
 <template>
   <div class="game view">
-    <AppHeader title="游戏闯关" icon="game" show-back />
+    <HeaderBar show-back show-badges>
+      <template #title><PathIcon name="game" class="hdr-ico" /> 游戏闯关</template>
+    </HeaderBar>
 
     <GamePath class="gp-slot" />
   </div>

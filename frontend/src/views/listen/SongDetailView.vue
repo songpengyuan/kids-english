@@ -5,7 +5,8 @@
 import { ref, computed, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { lessons, asset } from "../../data/lessons";
-import AppHeader from "../../components/layout/AppHeader.vue";
+import HeaderBar from "../../components/layout/HeaderBar.vue";
+import PathIcon from "../../components/PathIcon.vue";
 import { Play, Pause, SkipBack, SkipForward, Repeat, Repeat1, Shuffle } from "@lucide/vue";
 
 const route = useRoute();
@@ -78,7 +79,9 @@ onBeforeUnmount(() => audio.value?.pause());
 
 <template>
   <div v-if="lesson" class="song-detail">
-    <AppHeader :title="lesson.title" icon="game" show-back hide-badges />
+    <HeaderBar show-back>
+      <template #title><PathIcon name="game" class="hdr-ico" /> {{ lesson.title }}</template>
+    </HeaderBar>
     <div class="sd-body">
       <div class="sd-album" :class="'tone-' + (lesson.tone ?? 'blue')">{{ lesson.emoji }}</div>
       <h1 class="sd-title">{{ lesson.title }}</h1>

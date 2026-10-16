@@ -6,6 +6,7 @@
 import { useRouter } from "vue-router";
 import { ref } from "vue";
 import HeaderBar from "../../components/layout/HeaderBar.vue";
+import PathIcon from "../../components/PathIcon.vue";
 import ModelViewer from "../../components/ui/ModelViewer.vue";
 
 const router = useRouter();
@@ -33,7 +34,9 @@ const active = ref(0);
 
 <template>
   <div class="model3d view">
-    <HeaderBar show-back back-label="返回" @back="goBack" />
+    <HeaderBar show-back back-label="返回" @back="goBack">
+      <template #title><PathIcon name="me" class="hdr-ico" /> 3D 英雄</template>
+    </HeaderBar>
     <div class="stage">
       <ModelViewer :key="active" :src="MODELS[active].src" :alt="MODELS[active].name" :camera-orbit="MODELS[active].orbit" />
     </div>

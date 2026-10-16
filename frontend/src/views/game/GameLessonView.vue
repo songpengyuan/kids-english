@@ -5,7 +5,8 @@
  */
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import AppHeader from "../../components/layout/AppHeader.vue";
+import HeaderBar from "../../components/layout/HeaderBar.vue";
+import PathIcon from "../../components/PathIcon.vue";
 import GamePath from "../../components/game/GamePath.vue";
 import { getLesson } from "../../data/lessons";
 
@@ -23,7 +24,9 @@ function goBack() {
 
 <template>
   <div class="game-lesson view">
-    <AppHeader show-back :title="lesson?.titleZh || '游戏闯关'" icon="game" @back="goBack" />
+    <HeaderBar show-back show-badges @back="goBack">
+      <template #title><PathIcon name="game" class="hdr-ico" /> {{ lesson?.titleZh || "游戏闯关" }}</template>
+    </HeaderBar>
     <GamePath class="gp-slot" :lesson-id="lessonId" />
   </div>
 </template>

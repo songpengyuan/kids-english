@@ -11,7 +11,8 @@ import { FORM_TOTAL } from "../../data/heroes";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
 import { useContentStore } from "../../stores/content";
-import AppHeader from "../../components/layout/AppHeader.vue";
+import HeaderBar from "../../components/layout/HeaderBar.vue";
+import PathIcon from "../../components/PathIcon.vue";
 import SoundToggle from "../../components/layout/SoundToggle.vue";
 import ThemeToggle from "../../components/layout/ThemeToggle.vue";
 import { ChevronRight, BarChart3, Clock, Activity, Volume2, Moon, Shield, Plus, LogOut, Pencil, KeyRound } from "@lucide/vue";
@@ -187,7 +188,9 @@ function sayFamily() {
 
 <template>
   <div class="parent view">
-    <AppHeader title="家长中心" icon="me" show-back />
+    <HeaderBar show-back show-badges>
+      <template #title><PathIcon name="me" class="hdr-ico" /> 家长中心</template>
+    </HeaderBar>
 
     <div class="body view-body">
       <!-- 家庭账号（云模式） -->

@@ -2,7 +2,8 @@
 /**
  * 我的卡片（/me/cards）——奥特曼卡片收集册
  */
-import AppHeader from "../../components/layout/AppHeader.vue";
+import HeaderBar from "../../components/layout/HeaderBar.vue";
+import PathIcon from "../../components/PathIcon.vue";
 import { useCardsStore } from "../../stores/cards";
 
 const cards = useCardsStore();
@@ -10,7 +11,9 @@ const cards = useCardsStore();
 
 <template>
   <div class="cards view">
-    <AppHeader title="我的卡片" icon="me" show-back />
+    <HeaderBar show-back show-badges>
+      <template #title><PathIcon name="me" class="hdr-ico" /> 我的卡片</template>
+    </HeaderBar>
     <div class="cards-body view-body">
       <p class="summary">已收集 {{ cards.uniqueCount }} / {{ cards.allCards.length }} 张</p>
       <div class="grid">

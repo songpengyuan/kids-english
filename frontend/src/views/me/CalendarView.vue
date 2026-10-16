@@ -9,7 +9,8 @@
  */
 import { computed, ref } from "vue";
 import { useProgressStore } from "../../stores/progress";
-import AppHeader from "../../components/layout/AppHeader.vue";
+import HeaderBar from "../../components/layout/HeaderBar.vue";
+import PathIcon from "../../components/PathIcon.vue";
 import { CalendarDays, ChevronLeft, ChevronRight } from "@lucide/vue";
 import { speakZh } from "../../services/speech";
 
@@ -141,7 +142,9 @@ function dayNum(date: string | null): string {
 
 <template>
   <div class="cal view">
-    <AppHeader title="学习日历" icon="me" show-back hide-badges />
+    <HeaderBar show-back>
+      <template #title><PathIcon name="me" class="hdr-ico" /> 学习日历</template>
+    </HeaderBar>
 
     <div class="cal-body view-body">
       <!-- 本月汇总 -->

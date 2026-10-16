@@ -67,7 +67,7 @@ kids-english/
 │   │       ├── HeroDetailView.vue # 英雄图鉴（#/me/treasure/hero/:id）
 │   │       └── ReportView.vue  # 家长报告（#/me/report）
 │   ├── components/
-│   │   ├── layout/             # 全局框架件：AppHeader / HeaderBar / BottomNav / SoundToggle / ThemeToggle
+│   │   ├── layout/             # 全局框架件：HeaderBar（子页面顶栏）/ BottomNav / SafeBottom / SoundToggle / ThemeToggle
 │   │   ├── activities/         # 一课内的玩法：LearnView / QuizView / MatchView / SpeakView / SongView / TalkView / WordCard / Pager
 │   │   ├── game/               # 游戏模式专属：GamePath
 │   │   ├── lesson/             # 课内流程件：LessonMenu（菜单视图）/ LessonResult（结算）
