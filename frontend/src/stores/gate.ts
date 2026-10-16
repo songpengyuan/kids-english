@@ -1,31 +1,21 @@
 /**
- * 应用入口门禁 store（备案域名访问门禁）。
+ * 应用入口门禁 store（后端校验 + 自动登录）。
  *
  * 背景：zelab.cn 备案为「闲思杂记」个人站，学习应用藏于 /app/ 子路径。
- * 为不让普通访客/审核直接看到学习内容，进入应用前必须输入**固定约定口令**：
- *  - 口令由家长约定（本实现为家长手机号），访问者无法自行设置/修改；
- *  - 口令明文不落仓库（公开仓库防泄露），代码只存 SHA-256 哈希（反推不出明文）；
- *  - 输入正确即解锁（本设备记住，7 天内免输；过期后需重新输入——
- *    孩子每次重新输入顺便记下家长电话）；
+ * 为不让普通访客/审核直接看到学习内容，进入应用前必须输入**约定口令**：
+ *  - 口令由家长约定（家长手机号），后端环境变量 KIDS_GATE_PASSCODE 配置；
+ *  - 口令即登录凭证：验证成功 = 自动登录默认家庭，一次输入完成进门 + 登录；
+ *  - 输入正确即解锁（本设备记住，7 天内免输；过期后需重新输入）；
  *  - 家长可在「家长中心 → 设置 → 应用口令」开/关门禁（默认开启）。
- *
- * 这是「体验层门禁」：防止随便访问，不是高安全机制（哈希可被技术手段比对，懂技术可绕过）。
  */
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
+import { request, setToken, setFamilyName } from "../services/api";
 
 const GATE_KEY = "kc-app-gate";
 const GATE_ENABLED_KEY = "kc-app-gate-enabled";
-/** 解锁有效期：7 天（孩子隔段时间重新输入口令，顺便记住家长电话） */
+/** 解锁有效期：7 天 */
 export const GATE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-
-/**
- * 固定约定口令的 SHA-256 哈希（"kc-gate:" + 口令）。
- * 明文不写入代码/仓库；要改口令：在本地算好新哈希替换此常量即可。
- * 当前对应：家长手机号（11 位）。
- */
-export const FIXED_PASS_HASH =
-  "sha256:e6a8c14d1773c7c64182c42bbff7b17c3688d20eb28fc062d5fb004d1ed28173";
 
 interface GateState {
   /** 解锁时间戳（ms）；0 = 永久解锁（旧版布尔语义的兼容值） */
@@ -38,27 +28,21 @@ function loadUnlockedAt(): number | null {
     if (!raw) return null;
     const data = JSON.parse(raw) as Partial<GateState> & { unlocked?: boolean };
     if (typeof data.unlockedAt === "number") return data.unlockedAt;
-    if (data.unlocked === true) return 0; // 兼容旧版 { pass, unlocked: boolean }
+    if (data.unlocked === true) return 0;
     return null;
   } catch {
     return null;
   }
 }
 
-/** SHA-256 哈希；crypto.subtle 仅安全上下文可用，否则降级明文（前缀区分） */
-async function hashPass(pass: string): Promise<string> {
-  if (typeof crypto !== "undefined" && crypto.subtle) {
-    try {
-      const buf = await crypto.subtle.digest(
-        "SHA-256",
-        new TextEncoder().encode("kc-gate:" + pass),
-      );
-      return "sha256:" + [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
-    } catch {
-      /* 降级 */
-    }
-  }
-  return "plain:" + pass;
+interface GateVerifyOut {
+  ok: boolean;
+  token: string;
+  family_id: number;
+  family_name: string;
+  email: string | null;
+  nickname: string;
+  children: unknown[];
 }
 
 export const useGateStore = defineStore("gate", () => {
@@ -67,7 +51,7 @@ export const useGateStore = defineStore("gate", () => {
   /** 解锁时间戳（null=未解锁；0=永久） */
   const unlockedAt = ref<number | null>(loadUnlockedAt());
 
-  /** 局域网/本地开发自动放行：HTTP 下 crypto.subtle 不可用，sha256 校验跑不了 */
+  /** 局域网/本地开发自动放行（后端没起或前端独立调试时不卡门） */
   function isLocalOrigin(): boolean {
     if (typeof location === "undefined") return false;
     const h = location.hostname;
@@ -93,7 +77,11 @@ export const useGateStore = defineStore("gate", () => {
     localStorage.setItem(GATE_KEY, JSON.stringify({ unlockedAt: unlockedAt.value } satisfies GateState));
   }
 
-  /** 验证固定口令：正确 → 解锁并持久化 */
+  /**
+   * 验证口令（后端校验）：
+   *  - 调 POST /auth/gate，成功后存 JWT（= 登录）并解锁门禁；
+   *  - 口令错误 / 后端不可用 → 返回 false（不降级放行，fail closed）。
+   */
   async function verify(pass: string): Promise<boolean> {
     if (!enabled.value) return true;
     if (isLocalOrigin()) {
@@ -101,10 +89,19 @@ export const useGateStore = defineStore("gate", () => {
       persist();
       return true;
     }
-    if ((await hashPass(pass)) !== FIXED_PASS_HASH) return false;
-    unlockedAt.value = Date.now();
-    persist();
-    return true;
+    try {
+      const res = await request<GateVerifyOut>(
+        "/auth/gate",
+        { method: "POST", body: { passcode: pass }, auth: false },
+      );
+      setToken(res.token);
+      setFamilyName(res.family_name);
+      unlockedAt.value = Date.now();
+      persist();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /** 家长开/关门禁（关闭即解除解锁态；重新开启后需再次输入口令） */

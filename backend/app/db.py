@@ -56,6 +56,15 @@ CREATE TABLE IF NOT EXISTS recordings (
   scores_json TEXT,
   created_at TEXT DEFAULT (datetime('now'))
 );
+-- 应用入口门禁口令：一个口令对应一个家庭（可多条）
+CREATE TABLE IF NOT EXISTS gate_codes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code_hash TEXT NOT NULL,
+  code_salt TEXT NOT NULL,
+  family_id INTEGER NOT NULL REFERENCES families(id),
+  label TEXT DEFAULT '',
+  created_at TEXT DEFAULT (datetime('now'))
+);
 CREATE INDEX IF NOT EXISTS idx_children_family ON children(family_id);
 CREATE INDEX IF NOT EXISTS idx_recordings_child ON recordings(child_id, id);
 """

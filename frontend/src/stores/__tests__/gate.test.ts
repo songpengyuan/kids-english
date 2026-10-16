@@ -1,28 +1,36 @@
 // @vitest-environment jsdom
 /**
  * 应用入口门禁 store（stores/gate.ts）单元测试。
- * 固定约定口令模式：访问者只能输入约定口令，无法自行设置/修改。
- * 注：正确口令的解锁路径为端到端验证（浏览器实测），此处不落明文口令。
+ * 后端校验模式：verify() 调 POST /auth/gate，成功后存 JWT 并解锁。
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { setActivePinia, createPinia } from "pinia";
-import { useGateStore, GATE_TTL_MS, FIXED_PASS_HASH } from "../gate";
 
-describe("useGateStore（应用入口固定口令门禁）", () => {
+// Mock API 层：verify() 走 request("/auth/gate", ...)
+vi.mock("../../services/api", () => ({
+  request: vi.fn(),
+  setToken: vi.fn(),
+  setFamilyName: vi.fn(),
+  setBackendOk: vi.fn(),
+  isBackendOk: () => true,
+}));
+
+import { useGateStore, GATE_TTL_MS } from "../gate";
+import { request } from "../../services/api";
+
+const mockRequest = vi.mocked(request);
+
+describe("useGateStore（应用入口门禁，后端校验）", () => {
   beforeEach(() => {
-    // 模拟生产环境（非局域网 HTTPS）：局域网/本地 HTTP 下 store 会自动放行，
-    // 口令校验路径只在非本地 origin 上生效（53e697b 起的 isLocalOrigin 放行）。
+    // 模拟生产环境（非局域网）：isLocalOrigin() 返回 false，走后端校验路径
     Object.defineProperty(window, "location", {
       value: { hostname: "zelab.cn", protocol: "https:", href: "https://zelab.cn/app/" },
       configurable: true,
       writable: true,
     });
     localStorage.clear();
+    mockRequest.mockReset();
     setActivePinia(createPinia());
-  });
-
-  it("固定口令哈希已配置且为 SHA-256（明文不入库）", () => {
-    expect(FIXED_PASS_HASH).toMatch(/^sha256:[0-9a-f]{64}$/);
   });
 
   it("初始态：门禁开启、未解锁", () => {
@@ -31,19 +39,45 @@ describe("useGateStore（应用入口固定口令门禁）", () => {
     expect(gate.isUnlocked).toBe(false);
   });
 
-  it("错误口令被拒绝，不解锁", async () => {
+  it("后端返回成功 → 解锁", async () => {
+    mockRequest.mockResolvedValueOnce({
+      ok: true,
+      token: "fake-jwt",
+      family_id: 1,
+      family_name: "gate-default",
+      email: null,
+      nickname: "家长",
+      children: [],
+    });
     const gate = useGateStore();
-    expect(await gate.verify("0000")).toBe(false);
+    expect(await gate.verify("13800138000")).toBe(true);
+    expect(gate.isUnlocked).toBe(true);
+    expect(mockRequest).toHaveBeenCalledWith(
+      "/auth/gate",
+      expect.objectContaining({ method: "POST", auth: false }),
+    );
+  });
+
+  it("后端返回 401（口令错）→ 拒绝，不解锁", async () => {
+    mockRequest.mockRejectedValueOnce(new Error("口令不对"));
+    const gate = useGateStore();
     expect(await gate.verify("wrong")).toBe(false);
     expect(gate.isUnlocked).toBe(false);
   });
 
-  it("setEnabled(false) 关闭门禁后直进，重新开启后需再输入", async () => {
+  it("后端不可用 → 拒绝（fail closed，不降级放行）", async () => {
+    mockRequest.mockRejectedValueOnce(new Error("网络不可用"));
+    const gate = useGateStore();
+    expect(await gate.verify("13800138000")).toBe(false);
+    expect(gate.isUnlocked).toBe(false);
+  });
+
+  it("setEnabled(false) 关闭门禁后直进，重新开启后需再输入", () => {
     const gate = useGateStore();
     gate.setEnabled(false);
-    expect(gate.isUnlocked).toBe(true); // 门禁关闭 = 放行
+    expect(gate.isUnlocked).toBe(true);
     gate.setEnabled(true);
-    expect(gate.isUnlocked).toBe(false); // 重新开启 = 需输入口令
+    expect(gate.isUnlocked).toBe(false);
   });
 
   it("门禁开关持久化（刷新后仍为关闭）", () => {
@@ -54,7 +88,6 @@ describe("useGateStore（应用入口固定口令门禁）", () => {
   });
 
   it("解锁 7 天后过期，需重新输入口令", () => {
-    // 模拟 8 天前的解锁时间戳 → 新实例判定为未解锁
     localStorage.setItem(
       "kc-app-gate",
       JSON.stringify({ unlockedAt: Date.now() - (GATE_TTL_MS + 24 * 3600 * 1000) }),

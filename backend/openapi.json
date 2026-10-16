@@ -87,6 +87,48 @@
         }
       }
     },
+    "/api/v1/auth/gate": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Gate Verify",
+        "description": "应用入口门禁：口令即登录凭证（多口令，每个口令对应一个家庭）。\n\n- 查 gate_codes 表，逐条比对 passcode；\n- 匹配 → 签发该口令对应家庭的 JWT；\n- 不匹配 → 401。",
+        "operationId": "gate_verify_api_v1_auth_gate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GateOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/me": {
       "get": {
         "tags": [
@@ -658,6 +700,167 @@
         }
       }
     },
+    "/api/v1/recordings/{child_id}": {
+      "post": {
+        "tags": [
+          "recordings"
+        ],
+        "summary": "Create Recording",
+        "description": "上传一段孩子发音原音：落盘 + 元数据入库。评测分（scores_json）P2-3 接入时填充。",
+        "operationId": "create_recording_api_v1_recordings__child_id__post",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_recording_api_v1_recordings__child_id__post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "recordings"
+        ],
+        "summary": "List Recordings",
+        "description": "孩子录音列表（新→旧，最多 200 条；不暴露服务器文件路径）。",
+        "operationId": "list_recordings_api_v1_recordings__child_id__get",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recordings/{rid}/audio": {
+      "get": {
+        "tags": [
+          "recordings"
+        ],
+        "summary": "Replay Audio",
+        "description": "回放：流式返回原始录音。仅本家庭可访问。",
+        "operationId": "replay_audio_api_v1_recordings__rid__audio_get",
+        "parameters": [
+          {
+            "name": "rid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Rid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ping": {
       "get": {
         "summary": "Ping",
@@ -733,6 +936,52 @@
           "text"
         ],
         "title": "Body_api_evaluate_api_v1_evaluation_post"
+      },
+      "Body_create_recording_api_v1_recordings__child_id__post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "default": ""
+          },
+          "activity_type": {
+            "type": "string",
+            "title": "Activity Type",
+            "default": "follow"
+          },
+          "lesson_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lesson Id"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_create_recording_api_v1_recordings__child_id__post"
       },
       "Body_legacy_evaluate_api_evaluate_post": {
         "properties": {
@@ -890,6 +1139,75 @@
         "type": "object",
         "title": "ChildPatchIn",
         "description": "孩子档案编辑：名/头像/生日（至少一项；缺席=不改，avatar/birth_date 显式 null=清空）。"
+      },
+      "GateIn": {
+        "properties": {
+          "passcode": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 4,
+            "title": "Passcode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "passcode"
+        ],
+        "title": "GateIn",
+        "description": "应用入口门禁口令：同时作为登录凭证，一次输入完成进门 + 登录。"
+      },
+      "GateOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "family_id": {
+            "type": "integer",
+            "title": "Family Id"
+          },
+          "family_name": {
+            "type": "string",
+            "title": "Family Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/ChildOut"
+            },
+            "type": "array",
+            "title": "Children",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "family_id",
+          "family_name",
+          "nickname"
+        ],
+        "title": "GateOut",
+        "description": "门禁口令验证成功 = 自动登录默认家庭（复用登录响应结构）。"
       },
       "HTTPValidationError": {
         "properties": {

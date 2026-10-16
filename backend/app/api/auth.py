@@ -1,4 +1,5 @@
 """认证：家庭注册/登录 + 孩子档案 CRUD + 家长资料编辑（/api/v1/auth）。"""
+import os
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Header
@@ -8,6 +9,8 @@ from ..schemas import (
     ChildCreatedOut,
     ChildIn,
     ChildPatchIn,
+    GateIn,
+    GateOut,
     LoginIn,
     LoginOut,
     MeOut,
@@ -114,6 +117,91 @@ def login(body: LoginIn):
             "email": row["email"],
             "nickname": row["nickname"] or row["name"],
             "children": _family_children(conn, family_id),
+        }
+    finally:
+        conn.close()
+
+
+# 门禁默认家庭名（首次种子口令对应的家庭）
+_GATE_FAMILY_NAME = "gate-default"
+
+
+def seed_gate_code() -> None:
+    """启动时种子：若 gate_codes 表为空且环境变量 KIDS_GATE_PASSCODE 已配置，
+    自动创建默认家庭 + 写入第一条门禁口令。以后新增口令直接插表即可。"""
+    passcode = os.environ.get("KIDS_GATE_PASSCODE", "")
+    if not passcode:
+        return
+    conn = connect()
+    try:
+        count = conn.execute("SELECT COUNT(*) AS n FROM gate_codes").fetchone()["n"]
+        if count > 0:
+            return  # 已有口令，不重复种子
+        # 确保默认家庭存在
+        row = conn.execute(
+            "SELECT id FROM families WHERE name=?", (_GATE_FAMILY_NAME,)
+        ).fetchone()
+        if row:
+            family_id = row["id"]
+        else:
+            digest, salt = hash_passcode(passcode)
+            cur = conn.execute(
+                "INSERT INTO families (name, passcode_hash, passcode_salt, nickname, updated_at)"
+                " VALUES (?,?,?,?, datetime('now'))",
+                (_GATE_FAMILY_NAME, digest, salt, "家长"),
+            )
+            family_id = cur.lastrowid
+        # 写入门禁口令
+        g_digest, g_salt = hash_passcode(passcode)
+        conn.execute(
+            "INSERT INTO gate_codes (code_hash, code_salt, family_id, label) VALUES (?,?,?,?)",
+            (g_digest, g_salt, family_id, "默认口令"),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+@router.post("/gate", response_model=GateOut)
+def gate_verify(body: GateIn):
+    """应用入口门禁：口令即登录凭证（多口令，每个口令对应一个家庭）。
+
+    - 查 gate_codes 表，逐条比对 passcode；
+    - 匹配 → 签发该口令对应家庭的 JWT；
+    - 不匹配 → 401。
+    """
+    conn = connect()
+    try:
+        rows = conn.execute(
+            "SELECT code_hash, code_salt, family_id FROM gate_codes"
+        ).fetchall()
+        if not rows:
+            raise HTTPException(503, "门禁未配置")
+
+        matched_family_id = None
+        for r in rows:
+            if verify_passcode(body.passcode, r["code_hash"], r["code_salt"]):
+                matched_family_id = r["family_id"]
+                break
+
+        if matched_family_id is None:
+            raise HTTPException(401, "口令不对")
+
+        row = conn.execute(
+            "SELECT id, name, email, nickname FROM families WHERE id=?",
+            (matched_family_id,),
+        ).fetchone()
+        if not row:
+            raise HTTPException(500, "口令对应家庭不存在")
+
+        return {
+            "ok": True,
+            "token": create_token(matched_family_id),
+            "family_id": matched_family_id,
+            "family_name": row["name"],
+            "email": row["email"],
+            "nickname": row["nickname"] or row["name"],
+            "children": _family_children(conn, matched_family_id),
         }
     finally:
         conn.close()

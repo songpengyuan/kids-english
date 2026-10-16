@@ -31,6 +31,7 @@ async def lifespan(_: FastAPI):
     # 安全闸门：密钥缺失/默认值/过弱 → 拒绝启动（防弱签名 JWT 上线）
     assert_secret_configured()
     init_db()
+    auth.seed_gate_code()  # 门禁口令种子（表空 + env 配置时自动写第一条）
     n = seed_lessons()
     if n:
         print(f"[seed] 课程内容已导入/更新 {n} 课")
@@ -54,7 +55,11 @@ async def access_log(request, call_next):
 async def rate_limit(request, call_next):
     """轻量内存限流：登录/注册 10 次/分/IP（防暴力试口令）；其余 300 次/分/IP。"""
     ip = request.client.host if request.client else "unknown"
-    if request.url.path in ("/api/v1/auth/login", "/api/v1/auth/register"):
+    if request.url.path in (
+        "/api/v1/auth/login",
+        "/api/v1/auth/register",
+        "/api/v1/auth/gate",
+    ):
         key, window, limit = f"login:{ip}", 60.0, 10
     else:
         key, window, limit = f"api:{ip}", 60.0, 300

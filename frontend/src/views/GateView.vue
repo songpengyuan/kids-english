@@ -3,16 +3,20 @@
  * 应用入口口令页（#/gate）。
  *
  * 备案域名下进入学习应用的门禁：必须输入家长约定的固定口令才能进入。
- *  - 无设置流程（口令由家长约定，访问者不能自行设置/修改）；
- *  - 输入正确 → 解锁（本设备 7 天内免输；过期重新输入，孩子顺便记下家长电话）；
- *  - 开/关门禁在「家长中心 → 设置 → 应用口令」。
+ * 口令即登录凭证：验证成功 = 自动登录，一次输入完成进门 + 云端同步。
  */
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useGateStore } from "../stores/gate";
+import { useAuthStore } from "../stores/auth";
+import { useContentStore } from "../stores/content";
+import { useProgressStore } from "../stores/progress";
 
 const router = useRouter();
 const gate = useGateStore();
+const auth = useAuthStore();
+const content = useContentStore();
+const progress = useProgressStore();
 
 const pass = ref("");
 const error = ref("");
@@ -30,8 +34,14 @@ async function submit() {
   try {
     const ok = await gate.verify(p);
     if (!ok) {
-      error.value = "口令不对，再试一次";
+      error.value = "口令不对或服务暂不可用，再试一次";
       return;
+    }
+    // gate 验证成功 = 已存 JWT：恢复登录态并拉取云端数据
+    await auth.restore();
+    if (auth.family) {
+      content.loadFromServer();
+      progress.syncFromServer();
     }
     router.replace("/learn");
   } finally {

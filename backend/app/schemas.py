@@ -28,6 +28,11 @@ class MePatchIn(BaseModel):
     email: str | None = None
 
 
+class GateIn(BaseModel):
+    """应用入口门禁口令：同时作为登录凭证，一次输入完成进门 + 登录。"""
+    passcode: str = Field(min_length=4, max_length=20)
+
+
 class ChildIn(BaseModel):
     name: str = Field(min_length=1, max_length=20)
     avatar: str | None = None
@@ -81,6 +86,11 @@ class LoginOut(BaseModel):
     email: str | None = None
     nickname: str
     children: list[ChildOut] = []
+
+
+class GateOut(LoginOut):
+    """门禁口令验证成功 = 自动登录默认家庭（复用登录响应结构）。"""
+    pass
 
 
 class MeOut(BaseModel):

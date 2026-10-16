@@ -38,6 +38,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/gate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Gate Verify
+         * @description 应用入口门禁：口令即登录凭证（多口令，每个口令对应一个家庭）。
+         *
+         *     - 查 gate_codes 表，逐条比对 passcode；
+         *     - 匹配 → 签发该口令对应家庭的 JWT；
+         *     - 不匹配 → 401。
+         */
+        post: operations["gate_verify_api_v1_auth_gate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/me": {
         parameters: {
             query?: never;
@@ -189,6 +213,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/recordings/{child_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Recordings
+         * @description 孩子录音列表（新→旧，最多 200 条；不暴露服务器文件路径）。
+         */
+        get: operations["list_recordings_api_v1_recordings__child_id__get"];
+        put?: never;
+        /**
+         * Create Recording
+         * @description 上传一段孩子发音原音：落盘 + 元数据入库。评测分（scores_json）P2-3 接入时填充。
+         */
+        post: operations["create_recording_api_v1_recordings__child_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recordings/{rid}/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Replay Audio
+         * @description 回放：流式返回原始录音。仅本家庭可访问。
+         */
+        get: operations["replay_audio_api_v1_recordings__rid__audio_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ping": {
         parameters: {
             query?: never;
@@ -233,6 +301,25 @@ export interface components {
             file: string;
             /** Text */
             text: string;
+        };
+        /** Body_create_recording_api_v1_recordings__child_id__post */
+        Body_create_recording_api_v1_recordings__child_id__post: {
+            /** File */
+            file: string;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /**
+             * Activity Type
+             * @default follow
+             */
+            activity_type: string;
+            /** Lesson Id */
+            lesson_id?: string | null;
+            /** Duration Ms */
+            duration_ms?: number | null;
         };
         /** Body_legacy_evaluate_api_evaluate_post */
         Body_legacy_evaluate_api_evaluate_post: {
@@ -281,6 +368,40 @@ export interface components {
             avatar?: string | null;
             /** Birth Date */
             birth_date?: string | null;
+        };
+        /**
+         * GateIn
+         * @description 应用入口门禁口令：同时作为登录凭证，一次输入完成进门 + 登录。
+         */
+        GateIn: {
+            /** Passcode */
+            passcode: string;
+        };
+        /**
+         * GateOut
+         * @description 门禁口令验证成功 = 自动登录默认家庭（复用登录响应结构）。
+         */
+        GateOut: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+            /** Token */
+            token: string;
+            /** Family Id */
+            family_id: number;
+            /** Family Name */
+            family_name: string;
+            /** Email */
+            email?: string | null;
+            /** Nickname */
+            nickname: string;
+            /**
+             * Children
+             * @default []
+             */
+            children: components["schemas"]["ChildOut"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -729,6 +850,39 @@ export interface operations {
             };
         };
     };
+    gate_verify_api_v1_auth_gate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     me_api_v1_auth_me_get: {
         parameters: {
             query?: never;
@@ -1083,6 +1237,109 @@ export interface operations {
                 "multipart/form-data": components["schemas"]["Body_api_evaluate_api_v1_evaluation_post"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_recordings_api_v1_recordings__child_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path: {
+                child_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_recording_api_v1_recordings__child_id__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path: {
+                child_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_recording_api_v1_recordings__child_id__post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replay_audio_api_v1_recordings__rid__audio_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path: {
+                rid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
