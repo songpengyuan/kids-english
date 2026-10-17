@@ -13,25 +13,39 @@
 
 | 项 | 说明 |
 |---|---|
-| 框架 | Vue 3（`<script setup>` 组合式 API） |
-| 路由 | vue-router，**hash 模式**（`/#/learn/l4/learn`；GitHub Pages 静态托管下 history 深链刷新会 404） |
-| 状态 | Pinia 3 个 store：progress（进度/单词掌握度/今日学情）、streak（连击）、rewards（贝壳/贴纸） |
-| 构建 | Vite 8 |
-| 包管理 | pnpm |
-| 后端 | 无，纯前端静态站点 |
-| 语音 | 预生成神经网络发音（edge-tts，童声 AnaNeural）+ Web Speech API 回退；发音评分见 §6 |
+| 框架 | Vue 3（`<script setup>` 组合式 API）+ TypeScript |
+| 路由 | vue-router，**hash 模式**（`/#/course/l4/learn`；静态托管下 history 深链刷新会 404） |
+| 状态 | Pinia **8 个 store**：进度 `progress` / 连击 `streak` / 资产 `rewards`+`cards` / 课程 `content` / 登录 `auth` / 家长口令 `gate` / 播放器 `player` |
+| 构建 | Vite 8（Rolldown） |
+| 包管理 | pnpm（前端命令一律在 `frontend/` 下执行） |
+| 后端 | **FastAPI + SQLite + JWT**（`backend/`）：auth / children / content / progress / rewards / evaluation / recordings，含讯飞语音评测 |
+| 前端独立性 | 后端不可用时前端仍可用（localStorage 优先 + 云同步后补），不是强依赖 |
+| 语音 | 预生成神经网络发音（edge-tts，童声 AnaNeural）+ Web Speech API 回退；评分链路见 §6、§13.33 |
 | 动效 | canvas-confetti + CSS 关键帧 + Web Audio 合成音效 |
-| 存储 | localStorage（进度 / 奖励 / 连击三键独立） |
-| 部署 | GitHub Pages，子路径 `/<repo>/` |
+| 存储 | localStorage 分键：`…-progress-v1` / `…-rewards-v1` / `…-streak-v1`（**历史键名禁止改动**，另加 `…-sound-v1` / `…-errors-v1`） |
+| 部署 | **双通道**：GitHub Pages（项目子路径）+ 生产服务器 rsync；自定义域名 `zelab.cn`，应用挂在 `/app/` 下 |
 
 ```bash
+# 前端（/api 已代理到 127.0.0.1:8000）
 pnpm install
-pnpm dev      # 本地开发
-pnpm test     # 单元测试（vitest）
-pnpm build      # 产出 dist/（本地预览默认根路径；部署见 §9）
-pnpm build:root  # 部署构建：自定义域名/根路径（BASE_PATH=/，guard 放行）
-pnpm build:ci    # 部署构建：GitHub Pages 项目子路径（强制 GH_REPO）
+pnpm dev          # 本地开发（加 --host 供局域网真机访问）
+pnpm test         # 单元测试（vitest）
+pnpm type-check   # vue-tsc --noEmit
+pnpm build        # 产出 dist/（本地预览默认根路径）
+pnpm build:root   # 部署构建：自定义域名/根路径（BASE_PATH=/）
+pnpm build:ci     # 部署构建：项目子路径（强制 GH_REPO）
+pnpm guard:tokens # 设计系统守卫（§14.9）
 ```
+
+```bash
+# 后端（在 backend/ 下）
+.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000   # 健康检查 GET /api/ping
+.venv/bin/python -m pytest tests/ -q                    # 后端单测
+```
+
+> ⚠️ 后端启动**必须**带 `KIDS_JWT_SECRET`（≥32 位）。它**不在** `backend/.env` 里，需要时用环境变量传入；
+> 一旦换了值，已有 JWT 登录态全部失效 —— 本机验证时尽量沿用同一个值。
+> `backend/.env` 里只有讯飞评测的 `XF_*` 凭据。
 
 ---
 
@@ -409,27 +423,42 @@ python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
 
 ### 7.1 调试深链
 
-不用一路点进来，直接在真机上打开指定页面验收布局：
+不用一路点进来，直接在真机上打开指定页面验收布局（路由为 **hash 模式**，SPA 在 `/app/` 下）：
 
 ```
-#/learn                          → 学习主页（自由练习；#/ 自动重定向至此）
-#/learn/l4                → 直接进第 4 课的菜单
-#/learn/l4/learn          → 直达"看图学词"（课 id + 题型）
-#/learn/l4/quiz           → 直达"听音选图"
-#/learn/l4/match          → 直达"图词连线"
-#/learn/l4/speak          → 直达"跟我读"
-#/learn/l4/song           → 直达"唱童谣"
-#/learn/review                   → 错词复习页（学习域）
-#/game                           → 游戏闯关地图
-#/game/quest/l4?step=learn       → 闯关玩法（游戏地图进入）
-#/me                           → 我的（个人中心）
-#/me/streak                    → 连击日历 / 今日目标
-#/me/treasure                  → 宝藏罐（图鉴 + 贴纸商店）
-#/me/treasure/hero/:id         → 英雄图鉴详情
-#/me/report                    → 家长学情页
+#/                           → 重定向到 #/course
+#/gate                       → 家长口令入口
+
+#/course                     → 学习主页（首页无顶栏；route name 是 "learn"，path 与 name 不一致）
+#/course/l4                  → 直接进第 4 课的课时菜单
+#/course/l4/learn            → 看图学词
+#/course/l4/hear             → 听音选图（**路径段是 hear，不是 quiz**；内部玩法 key 仍是 quiz）
+#/course/l4/match            → 图词连线
+#/course/l4/speak            → 跟我读
+#/course/l4/song             → 唱童谣
+#/course/l4/talk             → 亲子对话（仅配置了 phrases 的课时）
+#/course/review              → 错词复习
+
+#/game                       → 闯关地图
+#/game/lesson/:id            → 课内闯关（**已从课时菜单里独立出来**）
+#/game/quest/l4?step=learn   → 闯关玩法单步
+
+#/listen                     → 磨耳朵（有歌时自动切到歌词全屏页）
+#/me                         → 我的
+#/me/calendar                → 学习日历（**#/me/streak 已重定向到这里**）
+#/me/treasure                → 宝藏罐
+#/me/treasure/hero/:id       → 英雄图鉴详情
+#/me/cards                   → 我的卡片
+#/me/report                  → 家长学情（需家长门禁）
+#/me/parent                  → 家长中心（需家长门禁）
 ```
 
-`stage` 取值：`learn | quiz | match | speak | song | talk`。仅在开发/验收时用，不影响正常流程。
+**路由段用 `hear`，内部 `stage` 键用 `quiz`** —— 两者由 `useLessonFlow` 映射，改的时候别只改一边。
+`stage` 取值：`learn | quiz | match | speak | song | talk`。以上仅用于开发/验收，不影响正常流程。
+
+> 旧路径（`/learn`、`quiz`、`/me/streak`）**已不再兼容**，未匹配的路径由 `not-found` 兜底回 `/course`。
+> 改路由时务必全局搜索确认没有 `{ path: "/x", redirect: "/x" }` 这类自跳写法和遗留的旧 path ——
+> 自跳会造成 `pushWithRedirect` 无限递归，整个应用白屏（§14.6 有这条事故记录）。
 
 ### 7.2 多视口布局走查
 
@@ -473,6 +502,41 @@ node scripts/verify-pwa.mjs
 首页可渲染 / 音频可读 / Range 请求返回 206、改 `dist/app/index.html` 立即生效（network-first）、
 改 `dist/sw.js` 构建号后 SW 自动升级、玩法中不被强制刷新且回首页静默刷新。
 
+### 7.4 一次性 CDP 驱动：点进某个状态再截图 / 量尺寸
+
+`layout-audit.mjs` 覆盖的是"多视口 × 全页面"的批量走查。验收单个改动时往往需要**更细的动作**：
+先点进播放态、展开抽屉、读某个元素的实际高度。不必装 playwright —— 本机 Chrome + Node 22
+内置的 `WebSocket` 就够，写个几十行的临时脚本即可：
+
+```bash
+# 常驻一个带调试端口的无头 Chrome（一次即可）
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --headless=new --remote-debugging-port=9222 --hide-scrollbars \
+  --user-data-dir=/tmp/cdp-profile about:blank
+```
+
+```js
+// 连 http://127.0.0.1:9222/json/list 取 page 的 webSocketDebuggerUrl，然后按序：
+//   Page.enable → Runtime.enable
+//   Emulation.setDeviceMetricsOverride { width, height, deviceScaleFactor, mobile }
+//   Page.navigate → 等 1~1.5s 让首屏渲染
+//   对每个动作 Runtime.evaluate { expression, returnByValue: true }，动作之间等 1.6s
+//   Page.captureScreenshot → 写盘
+```
+
+要点与坑：
+
+- **动作返回值一定要打印出来**。`document.querySelector('.song-row').click()` 在元素还没渲染时
+  会抛 `Cannot read properties of null`，而脚本若是"静默执行"，你会对着**同一张旧截图**反复
+  得出"改了没生效"的结论。本项目就为此白查过一轮。
+- **hash-only 导航不会重新加载页面**。`…/app/#/listen?t=123` 里的 `?t` 属于 hash 片段，
+  path 没变 → Chrome 视作同文档导航 → Pinia 的内存态被保留（于是"新开页面"却已经停在播放态）。
+  要强制重载，cache-buster 必须放在 hash **之前**：`…/app/?t=123#/listen`。
+- **`Emulation.setDeviceMetricsOverride` 的 width 别低于 ~500**：更窄时布局宽度与截图宽度会对不上，
+  右侧被裁，容易误判成"某元素没渲染"。
+- 量尺寸比看截图可靠：`getComputedStyle` + `getBoundingClientRect()` 直接读回数值
+  （本轮靠它确认了封面 140px、歌词行高 34px、卡片高 188px、全站 `buttonface` 灰底计数为 0）。
+
 ---
 
 ## 8. PWA 架构（离线 + 及时更新）
@@ -510,6 +574,12 @@ dev 的 `/sw.js` 由插件中间件提供，不缓存任何 dev 模块。
 
 注册图标：`public/manifest.webmanifest`（相对路径，天然适配子路径）+
 `scripts/gen-icons.py`（从 192 原图提取闪电形状重绘 512 / maskable-512）。
+
+**静默失效：`to.name` 与 `to.path` 必须一起改。** 上面"回首页就静默刷新"的判断条件曾写成
+`to.name === "home"` —— 而课程主页的 route **name 是 `"learn"`**（path 是 `/course`，历史遗留）。
+path 改名时 name 没跟着改，于是这个条件**永远为假**：PWA 新版本在首页**从未自动刷新过**，
+而且不会报错、没有任何日志。→ 路由重命名后，除了 path，还要检查所有用 `to.name` / `route.name`
+做判定的地方（`grep` 一遍 `name ===`）；同理，新增 `redirect`/别名时别只改一边。
 
 ---
 
@@ -1310,8 +1380,9 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
 1. **git mv 搬文件**：移动组件/测试后必须同步：①所有 import（含测试与 mock 的 specifier）②
    KeepAlive include 的组件名 ③相对路径层数（`../` → `../../`）④文档目录表。
    搬完跑 `grep` 残留检查（import 路径、组件名、注释里的旧路径）。
-2. **质量三件套**：`pnpm test`（当前 25 文件 / 206 用例）+ `pnpm type-check` + `GH_REPO=kids-english pnpm build`
+2. **质量三件套**：`pnpm test`（基线：**42 文件 / 325 用例**，2026-10-17）+ `pnpm type-check` + `pnpm build:ci`
    全绿才算完成；CI 里 test + type-check + build:ci（含数据校验）是部署门禁。
+   （⚠️ 基线数字会随迭代漂移，以当次输出为准；别拿本文档里的数字当断言。）
    - **本机已把这套门禁前移到 git 钩子**（2026-10-16 加）：`bash scripts/ci-local.sh` 是唯一实现，
      逐条对齐 CI 的 Quality gate / Build —— 前端单测 → 类型检查 → 后端 pytest → OpenAPI 契约
      `git diff` → 生产构建（build:ci）→ **白屏冒烟**（无头 Chrome 打开 `/app/#/` 断言应用真渲染出来，
@@ -1457,3 +1528,137 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
 - 门禁（gate.ts）契约：固定口令哈希 `FIXED_PASS_HASH`，**局域网/本地 HTTP（crypto.subtle
   不可用）自动放行**（isLocalOrigin），生产 HTTPS 才校验口令；gate 单测须把 location mock 成
   非本地 origin（zelab.cn）才能走口令校验路径。
+
+### 14.9 设计系统与"样式静默失效"（2026-10 全站统一改造沉淀）
+
+> 背景：改造前全站有 **312 处硬编码 hex**、`border-radius: 50%` 与 `--radius-pill` 混用、
+> **13 个页面各写一遍** `HeaderBar + view-body` 骨架、56 处 `font-weight: 900`。
+> 但真正难的从来不是"不统一"，而是**下面这些改了等于没改、而构建 / 类型检查 / 单测 / CI 全绿**的问题。
+> 规范正文见 `frontend/DESIGN_SYSTEM.md`，变量真源见 `frontend/src/styles/tokens.css`。
+
+#### 14.9.1 五层分层与守卫
+
+```
+① tokens.css        颜色/间距/圆角/字号/字重/阴影/动效 —— 唯一真源
+② base.css          .card .entry-row .metric .icon-tile .tone-* .view 等工具类
+③ components/ui/    PageShell EntryRow MetricTile IconTile SectionTitle EmptyState …
+④ 领域组件           WordCard SongStage ChestReward GamePath …（只消费 ①②③）
+⑤ 页面 views/       只做编排，不写颜色、不写固定尺寸
+```
+
+`frontend/scripts/guard-tokens.mjs` 把这套规范变成**会失败的检查**，已接入
+`pnpm build:ci`、`scripts/ci-local.sh`、`.husky/pre-commit`。它查四件事：
+
+| # | 检查 | 查的是哪类静默失效 |
+|---|---|---|
+| ① | `var(--x)` 引用了**未定义**的变量且**无 fallback** | 整条声明被 CSS 丢弃，元素回到"没有底色" |
+| ② | **颜色字面值**出现在 `src/styles/` 之外 | 主题反转时漏改、同语义两页两个色 |
+| ③ | `.vue` 里"飘"在 `<template>/<script>/<style>` **之外**的代码 | SFC 解析器不报错、直接丢弃 |
+| ④ | 同一元素上 `.tone-*` 与"会自己上底色的全局类"混用 | 白底白字（见 14.9.2） |
+
+实现上有三个坑，改脚本时别踩回去：
+
+- **必须先把注释剥掉再扫**，否则注释里举的反例会全部误报；剥注释要**保留换行**，行号才准。
+- **`block.loc` 不含 `<script …>` / `</script>` 标签本身**，直接按 loc 挖空会让每个文件第 1 行
+  都误报"块外内容"。正解是往外扩到标签：`source.lastIndexOf('<', loc.start.offset)` 与
+  `source.indexOf('>', loc.end.offset) + 1`。
+- **用 `vue/compiler-sfc` 的 `parse()`，不要用正则剔块**：`<template>` 在文件内会嵌套出现，
+  非贪婪匹配会截错位置。
+- ④ 的互斥清单**从 base.css 现推**（单类选择器且声明了 `background` 的即算"面类"），
+  不写死名单，新增面类自动纳入。
+
+#### 14.9.2 白底白字：Cascade 里"输的一方不会整块失效"
+
+`<button class="card tone-green">` 同时挂了两个全局类：
+
+- `.card` → `background: var(--card-bg)` + `--shadow-hard`
+- `.tone-*` → `background-color: var(--tone)` + `color: var(--on-tone)`
+
+两者特异性同为 (0,1,0)，`.card` 在 base.css 里排在色调板**之后**，它的 `background`
+**简写**把 tone 的底色重置掉；而 `color: var(--on-tone)`（白）**不是 `.card` 声明的**，活了下来
+→ **白底白字**。金卡之所以正常，是因为 `.tone-gold` 把 `--on-tone` 改写成了深棕 `--on-gold`。
+
+> **关键认知：Cascade 里输的一方只丢它自己声明过的那几个属性，不会整块失效。**
+> 「一半生效一半不生效」正是这类 bug 最迷惑人的地方，也是守卫 ④ 的由来。
+> 组件自己的卡面要用**独立类名**（如 `.tile`），不要借全局中性卡片类。
+
+#### 14.9.3 全局 `button` reset 必须清 `background`
+
+浏览器会给 `<button>` 兜底 `buttonface` 灰（`rgb(239,239,239)`）。若 `button` reset 只写了
+`border: 0` 而漏了 `background`，凡是"自绘外观"的按钮都会**偷露一层灰底**，而同款但写成
+`<div role="tab">` 的没有 —— 于是同一行里深浅不一（底栏三 tab 曾「左右灰、中间白」，
+"家长中心"入口与抽屉行同样漏灰）。
+
+- 修法：base.css 的 `button` reset 带 `background: transparent`，自绘按钮类再显式声明一次。
+- **排查法（比读代码快）**：无头 Chrome 里数一遍
+  `[...document.querySelectorAll('*')].filter(e => getComputedStyle(e).backgroundColor === 'rgb(239, 239, 239)').length`，
+  期望 **0**。改完逐页跑，有值即定位到具体元素。
+
+#### 14.9.4 引用不存在的变量 / 用 fallback 假装它存在
+
+真实案例（全部是"整条声明被丢弃"型，无报错）：
+
+| 写错 | 应为 | 后果 |
+|---|---|---|
+| `var(--card)` | `--card-bg` | 姿势舞台/缩略图底色消失 |
+| `var(--pink)` / `var(--pink-deep)` | `--c-pink` / `--c-pink-deep` | 童谣幕布条纹整条不画 |
+| `var(--ink-1)` | `--ink` | 闯关横幅文字色丢失 |
+| `var(--fs-big)` | `--fs-hero` | 结算徽章字号丢失 |
+| `var(--tint)` | `--btn-plain-bg`（按下 `--btn-plain-deep`） | 抽屉关闭钮一直没有底色 |
+
+更隐蔽的是**带 fallback** 的写法：`AppDialog` 曾用 `var(--surface, #fff)` / `--text` /
+`--radius-lg` / `--z-modal` 一整组"通用命名"的不存在变量硬撑，于是弹窗**从来没跟随过主题**，
+而 fallback 让它在浅色下看起来完全正常。→ **禁止用 fallback 掩盖变量名写错。**
+
+#### 14.9.5 scoped 会让"同名覆盖"悄无声息（项目特有陷阱）
+
+组件 scoped 样式只做局部微调，本身无害；但**如果一个页面在 scoped 里重新定义了一遍全局类
+（例如自己写一套 `.tone-*`），它会因多出 `[data-v-*]` 属性选择器而优先级更高**，
+于是这一页成了全站唯一配色（PracticeView 的 blue 曾是 `#4a90d9` 而不是色板里的 `#1cb0f6`）。
+→ scoped 里**不要碰全局类的同名定义**；要改全局类就改 base.css。
+
+#### 14.9.6 两个"看起来能用、其实不行"的交互写法
+
+- **进度条别用 `accent-color`**：它跟随 UA / `color-scheme`，暗色主题下整条变成黑的，
+  在浅色设计里极其突兀。手写 `::-webkit-slider-runnable-track`，用
+  `linear-gradient(90deg, var(--brand) 0 var(--p), var(--line) var(--p) 100%)`，
+  `--p` 由模板注入（`Math.round(progress*100)+'%'`），再补一份 `::-moz-range-*`。
+- **需要"居中高亮某一项"时用固定行数窗口，不要用滚动居中**：歌词页最初用 `scrollTop` 计算 +
+  `nextTick` 把当前行滚到正中，内容不溢出时居中根本不可靠、还依赖时序。改成**只渲染固定 5 行**
+  （当前行 ±2，越界填空串）+ 卡片 `margin-block: auto` 自然居中 —— 无测量、无时序、无副作用。
+
+#### 14.9.7 都不在守卫覆盖内、但同属"静默失效"的两处
+
+- **CSS 写在 `</style>` 之后** → SFC 解析器**不报错、直接丢弃**（GamePath 曾因此丢掉 31 行引导样式，
+  从未上线生效）。守卫 ③ 现在能查这一项。
+- **媒体查询的大括号多撑了一段，把紧跟其后的整块规则吞进去**（LessonResult 有一份 48 行逐字重复）。
+  因为外层已有同名同值规则，**没有功能影响**，但会让"改了一处没生效"极难查。
+  → 花括号深度扫描（逐行累加 `{` 减 `}`，打印每行深度，没回到 0 就说明有块多撑了）可快速定位。
+- **模板引用了从未 import 的组件**（SongStage 的 `<PathIcon>`）→ 渲染成无样式空元素 + Vue 警告，
+  与"这个图标就是不显示"难以区分。删掉，别留。
+
+#### 14.9.8 派生文件导出前必须确认工作区干净
+
+`backend/openapi.json` 契约、`backend/seed/lessons.json` 课程种子都是**从源码派生**的文件。
+本地门禁按**工作区**导出，所以工作区里有别人（或上一轮）未提交的改动时，它会把"未提交源码"
+导出的产物当成"该提交"的差异 —— 照做就推到与已提交源码不一致的状态，远端 CI 立刻红。
+→ 导出前先 `git status`；**契约/种子只与已提交的源码对齐**。
+
+#### 14.9.9 门禁失败先怀疑环境
+
+- **磁盘满**：vitest 会报 `ENOSPC: no space left on device, mkdir .../ssr`，表现为
+  **二十多个测试文件"失败"**。根因是磁盘不是代码 —— 先 `df -h`，清 `frontend/dist`（已 gitignore）。
+- **`cmd | tail` 会吃掉退出码**：管道退出码取最后一段，单测挂了照样放行。要么不接管道，
+  要么脚本开头 `set -o pipefail`（注意设在子 shell 里对管道的归属 shell 无效）。
+- **测试不要复制生产代码来测**：`guard.test.ts` 曾把路由表和迁移表**复制一份**再测副本，
+  于是真实 router 写出死循环时测试依然全绿 —— 这是白屏 bug 漏网的直接原因。
+  断言真实行为必须 `import` 生产模块。
+
+#### 14.9.10 已知遗留（已定位、未修，别重复诊断）
+
+- `LearnStage.vue` 的 `.dlg-dot` 用 `color: var(--white)` 压在白底上 —— 弹窗里的**待做序号其实看不见**。
+  当时为保持"零视觉变化"原样保留；若要显示序号，应改为 `var(--on-tone)`。
+- `GamePath.vue` 的 `.gp-unit.tone-blue …` / `.lv-wrap.tone-blue …`（各 6 行）是**与全局同值的重复**，
+  把色板的 `--tone` / `--tone-deep` 又抄了一遍。渲染正确，但属于"看起来像本地色板"的陷阱，
+  以后给这一页换色会踩（优先删掉，让它落回全局 `.tone-*`）。
+

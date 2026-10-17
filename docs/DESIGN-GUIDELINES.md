@@ -86,9 +86,12 @@
 - **品牌主色 = `--brand`（水蓝，2026-10-15 起脱离多邻国绿；`--green` 为废弃别名勿再用）**：亮 `#00a3ff` / 暗 `#2f9fe0`；配套辅助色 `--brand*` 系（`--brand-deep` 渐变端点 / `--brand-bright` 亮端 / `--brand-soft`/`--brand-tint` 柔和底 / `--brand-grad` 标准渐变，Hero/主卡/选中 tab 统一用它）。
 - **语义色 `--ok`（正确=绿，独立于品牌蓝）**：答对/完成/成功场景必须用 `--ok`（亮 `#58cc02` / 暗 `#7cc94a`），进度/导航用品牌蓝，二者不可互换。
 - 其余：`--blue`（次要操作）、`--yellow`（进度高亮）、`--red`（错误/删除）、`--purple/orange/pink/teal`（彩色卡片）。
-- 卡片色调板：`--c-blue/green/orange/purple/pink/teal` + 对应 `-deep` 投影色，通过 base.css `.tone-*` 工具类使用。
+- 卡片色调板（**7 色**）：`--c-blue/green/orange/purple/pink/teal/gold` + 对应 `-deep` 投影色，通过 base.css `.tone-*` 工具类使用。
+  `gold` 是 2026-10 补进来的（结算页星级/宝箱"收取"/稀有度卡共用），金底上的深棕字用 `--on-gold`。
 - 状态：`--state-ok-bg`（答对底）、`--state-bad-bg`（答错底）、`--btn-off-*`（禁用灰）。
 - **规则**：有颜色的大卡片/按钮必须用色调板，禁止自造色值；判定语义禁止用品牌蓝。
+  **颜色字面值（`#xxx`）只允许出现在 `src/styles/`（tokens.css / base.css）**，组件里一律 `var(…)`；
+  这条由 `frontend/scripts/guard-tokens.mjs` 在 CI 里强制（详见 DEVELOPMENT.md §14.9）。
 
 ### 3.2 字体与字号
 - 全站字体栈已定（Baloo 2 + 快乐体），新增中文文案若超出字体子集，重跑 `scripts/subset-font.py`。
@@ -106,8 +109,11 @@
 
 ## 4. 布局与适配（手机 / iPad / Mac 三端）
 
-- **App 形态**：**首页无顶栏**（/learn /listen /me 不显示 HeaderBar，2026-10-15 起；/me 顶部补刘海安全区 padding-top）+ 内容区 + 常驻底部导航（BottomNav：学习/磨耳朵/我的）；课程内沉浸学习时隐藏底栏，顶栏=返回/关闭 + 标题 + 进度。
+- **App 形态**：**首页无顶栏**（`/course` `/listen` `/me` 不显示 HeaderBar，2026-10-15 起；`/me` 顶部补刘海安全区 padding-top）+ 内容区 + 常驻底部导航（BottomNav：学习/磨耳朵/我的）；课程内沉浸学习时隐藏底栏，顶栏=返回/关闭 + 标题 + 进度。
 - **底栏**：半透明毛玻璃（`--bar-bg` + `--bar-blur`），固定底部，点击区域 ≥ 64px，切换即时；手机/iPad 底部安全距离统一用共用组件 `SafeBottom` 包裹，不各自写 `env(safe-area-inset-bottom)`。
+  - **中间位恒为磨耳朵入口**（它是全站唯一入口，不能简化成纯播放键）；有歌时在 tab 图标位里
+    只放一个播放/暂停键，不再另设"迷你播放条"。
+  - **磨耳朵播放中隐藏底栏**（播放页自带 transport / 进度 / 歌词，退出用左上角收起键）。
 - **闯关挑战入口在「我的」页**（stat-row 下方紫色卡片，点击进 #/game）。
 - **顶栏**：返回/关闭 + 标题 + 进度；课程内答题页顶栏 = **关闭按钮 + 顶部进度条**（进度条就一条，不放别处）。
 - **信息页滚动**：关卡地图/报告页允许纵向滚动，滚动条贴最右，内容居中；关卡地图关卡标题滚动吸顶。
