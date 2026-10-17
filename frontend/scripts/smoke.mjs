@@ -132,6 +132,20 @@ function cleanup() {
 }
 process.on("exit", cleanup);
 
+/**
+ * 兜底看门狗 —— 这个脚本被 pre-push 钩子直接调用，一旦它挂住，整个推送就永远停在这里。
+ * Chrome 在受限环境里可能**端口起得来、却永远完成不了 WS 握手**（例如无 GPU、
+ * 或容器禁止浏览器沙箱：`sandbox initialization failed` / `GPU process isn't usable`），
+ * 此时既不会触发 'open' 也不会触发 'error'。
+ * 超时按「环境不具备」处理（exit 2 = 跳过），与「找不到 Chrome」同一语义 —— 不阻断推送。
+ */
+const WATCHDOG_MS = Number(process.env.SMOKE_WATCHDOG_MS || 45000);
+setTimeout(() => {
+  console.log(`⏭️  冒烟在 ${WATCHDOG_MS}ms 内没跑完（Chrome 可能起不来）——按环境不具备跳过`);
+  cleanup();
+  process.exit(2);
+}, WATCHDOG_MS);
+
 /** 等 CDP 起来并拿到 page target 的 ws 地址 */
 async function cdpTarget() {
   for (let i = 0; i < 60; i++) {
@@ -149,10 +163,16 @@ const target = await cdpTarget();
 if (!target) bail(2, "Chrome 调试端口没起来（环境问题，按跳过处理）");
 
 const ws = new WebSocket(target.webSocketDebuggerUrl);
-await new Promise((resolve, reject) => {
-  ws.addEventListener("open", resolve, { once: true });
-  ws.addEventListener("error", () => reject(new Error("CDP 连接失败")), { once: true });
-});
+try {
+  await new Promise((resolve, reject) => {
+    // 握手也要有上限：Chrome 半死时 'open' / 'error' 都不来，裸等会永久挂住
+    const t = setTimeout(() => reject(new Error("CDP WebSocket 握手超时")), 10000);
+    ws.addEventListener("open", () => { clearTimeout(t); resolve(); }, { once: true });
+    ws.addEventListener("error", () => { clearTimeout(t); reject(new Error("CDP 连接失败")); }, { once: true });
+  });
+} catch (e) {
+  bail(2, `${e.message} —— 无头 Chrome 在本机跑不起来（环境问题，按跳过处理）`);
+}
 
 let nextId = 1;
 const pending = new Map();
@@ -184,10 +204,23 @@ ws.addEventListener("message", (ev) => {
   }
 });
 
+const SEND_TIMEOUT_MS = Number(process.env.SMOKE_SEND_TIMEOUT_MS || 10000);
+
 const send = (method, params = {}) =>
   new Promise((resolve, reject) => {
     const id = nextId++;
-    pending.set(id, { resolve, reject });
+    // 每条 CDP 请求都要有上限：Chrome 进程半死（GPU 崩溃、沙箱初始化失败）时
+    // 请求发得出去、响应永远不来，裸等会把 pre-push 门禁一起拖死。
+    const t = setTimeout(() => {
+      pending.delete(id);
+      console.log(`⏭️  ${method} 在 ${SEND_TIMEOUT_MS}ms 内无响应 —— 浏览器已失去响应，按环境不具备跳过`);
+      cleanup();
+      process.exit(2);
+    }, SEND_TIMEOUT_MS);
+    pending.set(id, {
+      resolve: (v) => { clearTimeout(t); resolve(v); },
+      reject: (e) => { clearTimeout(t); reject(e); },
+    });
     ws.send(JSON.stringify({ id, method, params }));
   });
 
