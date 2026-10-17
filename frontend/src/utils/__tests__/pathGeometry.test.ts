@@ -6,7 +6,7 @@
  *   TOP=16 → 每课横幅中心（unit.y）→ +BAR_H/2+BAR_GAP(94) → 首节点圆心
  *   → 节点沿 S 曲线等弧长排列（首末关水平居中、相邻直线距离相等）
  *   → 末节点后 +UNIT_BREAK(46) → 下节横幅中心
- * 关卡序列每课固定 7 关（6 玩法 learn/quiz/match/speak/talk/song + 末尾开宝箱 chest）。
+ * 关卡序列每课固定 7 关（6 玩法 song/learn/quiz/match/speak/talk + 末尾开宝箱 chest）。
  */
 import { describe, expect, it } from "vitest";
 import {

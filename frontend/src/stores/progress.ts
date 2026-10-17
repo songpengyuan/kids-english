@@ -361,7 +361,7 @@ export const useProgressStore = defineStore("progress", () => {
 
   /**
    * "学完"判定（新口径）：该课全部玩法都玩过 **且星级达标**——
-   * learn/quiz/match/speak 需 ≥2 星，song/talk 需 ≥1 分。
+   * song/talk 需 ≥1 分，learn/quiz/match/speak 需 ≥2 星（玩法 key 顺序见 activityKeys）。
    * 旧的"玩过 ≥3 种玩法"口径会让 1 星的课也显示"全部通关"，语义失真。
    * @param keys 该课的玩法 key 列表（data/lessons.js 的 activityKeys 提供）
    */

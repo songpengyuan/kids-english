@@ -38,7 +38,7 @@
 **其它通用件**：`PathIcon`(路径图标集)、`ShellIcon`(贝壳图标)、`CuteBackdrop`(背景)。
 - `SpeakText` —— **统一点读组件**（`ui/`）：任何可点文字包一层即点读（读单词/文案）。单词（lessonId+wordId）走预生成 mp3 → 3s 未播放 → 原生 TTS；文案/中文（zh）走 TTS。props：`text`（必填）、`zh`（中文优先）、`lessonId`/`wordId`（mp3 精确定位）、`ttsOnly`（跳过 mp3）、`rate`/`lang`/`timeoutMs`（默认 3000）/`bypassMute`、`as`（`span`内联默认 | `button`独立按钮）。span 形态自带 `stopPropagation`（点标题听发音不触发宿主点击，如课程卡）。朗读时显示波浪动画，`aria-label`/`aria-pressed` 无障碍齐备。
   - 使用：需要“点文字发音”的场景**优先用它**；进页自动朗读（角色介绍等）仍直接调 `speak`/`speakZh` 服务，不做成组件。
-**业务域组件**（按目录归位）：`HomeView`(首页壳，views/)、`GamePath`(闯关地图，game/)、`HeroFormCard`(英雄形态卡，treasure/)、`ChestReward`(开箱奖励，rewards/)、`LessonResult`(闯关结算，lesson/)、`MasteryTrend`(掌握度趋势，report/)。
+**业务域组件**（按目录归位）：`HomeView`(首页壳，views/)、`GamePath`(关卡地图，game/；不传 `lesson` = 多课总地图，传 = 本课地图)、`HeroFormCard`(英雄形态卡，treasure/)、`ChestReward`(开箱奖励，rewards/)、`LessonResult`(闯关结算，lesson/)、`MasteryTrend`(掌握度趋势，report/)。
 
 ## 3. 沉淀规则（新组件进库的门槛）
 

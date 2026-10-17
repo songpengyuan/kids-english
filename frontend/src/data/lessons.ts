@@ -673,12 +673,16 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
 /**
  * 一课的全部玩法 key（按课时菜单/闯关序列顺序）。
  * 「通关」判定与家长报告都需要它——progress store 不感知玩法编排，
- * 由数据层给出统一口径，避免 HomePage / GamePath / LessonView 各写一份。
+ * 由数据层给出统一口径，避免 PracticeView / GamePath / LessonView 各写一份。
+ *
+ * ⚠️ **顺序即课程内闯关关卡顺序**：必须与 LessonView 的 `activities` 编排一致
+ * （童谣打头建立兴趣 → 学单词 → 听音选图 → 连一连 → 跟我读 → 亲子对话）。
+ * 曾经这里把 song 排在最后，而菜单/闯关玩法却按 song 打头；
+ * 结果同一课出现两条“关卡顺序”，地图的「从这里开始」与下一关推进对不上。
  */
 export function activityKeys(lesson: Pick<Lesson, "phrases">): string[] {
-  const base = ["learn", "quiz", "match", "speak"];
+  const base = ["song", "learn", "quiz", "match", "speak"];
   if (lesson.phrases?.length) base.push("talk");
-  base.push("song");
   return base;
 }
 

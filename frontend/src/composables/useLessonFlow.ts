@@ -2,7 +2,7 @@
  * 课程流程（阶段 2-3：从 LessonView 抽取）。
  *
  * 一门课的完整状态机：
- *   menu（玩法菜单）→ questStart（关卡卡）→ learn/quiz/match/speak/song/talk（玩法）
+ *   menu（玩法菜单）→ song/learn/quiz/match/speak/talk（玩法）
  *   → result（结算：闯关大画面 / 自由结算）
  *
  * 职责：
@@ -60,7 +60,6 @@ export interface UseLessonFlow {
   streakJustHit: Ref<boolean>;
   lessonProgress: ComputedRef<number>;
   nextLesson: ComputedRef<Lesson | null>;
-  lessonQuest: Ref<boolean>;
   boot: () => void;
   open: (a: QuestAct) => void;
   showStars: (key: string) => number;
@@ -71,14 +70,10 @@ export interface UseLessonFlow {
   backToMap: () => void;
   goNextLevel: () => void;
   settleActivity: () => void;
-  startLessonQuest: () => void;
 }
 
 export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   const { lesson, activities, route, router, progress, streak, isNarrow, quest } = options;
-
-  /** 课内闯关模式：从菜单点"闯关挑战"进入，自动串联 quiz→match→speak→talk */
-  const lessonQuest = ref(false);
 
   const stage = ref<LessonStage>("menu");
   const lastStars = ref(0);
@@ -204,25 +199,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     // 今日目标：新学 1 关（首次通关）+ 复习到期词（复习页记）
     const first = streak.markNewLevel(firstTime);
     streakJustHit.value = first && streak.todayDone;
-    if (lessonQuest.value) {
-      // 课内闯关：找下一个闯关玩法
-      const questActs = activities.value.filter((a) => !["song", "learn"].includes(a.key));
-      const curIdx = questActs.findIndex((a) => a.key === actKey || a.game === actKey);
-      const next = questActs[curIdx + 1];
-      if (next) {
-        celebrate();
-        speakZh("下一关，加油");
-        setTimeout(() => open(next), 800);
-      } else {
-        // 最后一关完成 → 通关结算（奖励统一由结算页的开宝箱发放）
-        lessonQuest.value = false;
-        quest.finish();
-        markLevelPass();
-        bigCelebrate();
-        speakZh("闯关完成，打开宝箱看看");
-        stage.value = "result";
-      }
-    } else if (quest.questMode.value) {
+    if (quest.questMode.value) {
       finishQuestStep();
     } else {
       // 庆祝收敛：满分才双彩带大庆祝，其余用小彩带
@@ -274,24 +251,12 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     return i >= 0 ? all[i + 1] || null : null;
   });
 
-  /** 课内闯关：从菜单进入，自动串联后面的玩法 */
-  function startLessonQuest() {
-    lessonQuest.value = true;
-    quest.reset();
-    // 找到第一个闯关玩法（quiz）
-    const questActs = activities.value.filter((a) => !["song", "learn"].includes(a.key));
-    if (questActs.length) {
-      open(questActs[0]);
-    }
-  }
-
   return {
     stage,
     lastStars,
     streakJustHit,
     lessonProgress,
     nextLesson,
-    lessonQuest,
     boot,
     open,
     showStars,
@@ -301,7 +266,6 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     afterSong,
     backToMap,
     goNextLevel,
-    settleActivity,
-    startLessonQuest
+    settleActivity
   };
 }

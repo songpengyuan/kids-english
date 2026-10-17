@@ -158,9 +158,17 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   it("当前课游戏地图（只服务本课关卡）", async () => {
     const w = await mountPage(GameLessonView, "/game/lesson/l10");
-    // 标题显示本课课程名 + 关卡列表（学单词/听音选图…）
+    // 标题显示本课课程名 + 关卡列表（唱童谣/学单词…）
     expect(w.text()).toContain("Walking In The Jungle");
     expect(w.text()).toContain("学单词");
+    // 只画本课 7 关（6 玩法 + 宝箱），序号本课内 1..7，不出现全站累计序号（l10 曾是第 22 关起）
+    const nodes = w.findAll(".gp-level");
+    expect(nodes).toHaveLength(7);
+    expect(nodes[0].attributes("aria-label")).toContain("第1关");
+    expect(nodes[6].attributes("aria-label")).toContain("第7关");
+    expect(w.html()).not.toContain("第22关");
+    // 地图自持滚动容器（本课地图曾漏写 overflow，底部关卡被裁掉且滚不动）
+    expect(w.find(".game-path-scroll").exists()).toBe(true);
     expect(errors).toEqual([]);
   });
 
@@ -218,6 +226,14 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   it("课程页（菜单）", async () => {
     const w = await mountPage(LessonView, "/learn/l4");
     expect(w.find(".lesson").exists()).toBe(true);
+    // 菜单顺序 = activityKeys（song 打头）：童谣→学单词→听音→连线→跟读→亲子对话→闯关挑战
+    const tiles = w.findAll(".tile").map((t) => t.text());
+    expect(tiles[0]).toContain("学童谣");
+    expect(tiles[1]).toContain("学单词");
+    expect(tiles[2]).toContain("听音选图");
+    // 闯关入口的关数与地图同源（l4 共 6 个玩法关 + 宝箱）
+    expect(w.text()).toContain("闯关挑战");
+    expect(w.text()).toContain("6关");
   });
 
   it("玩法直达子路径 /learn/:id/:stage 能渲染（#/learn/l4/learn）", async () => {

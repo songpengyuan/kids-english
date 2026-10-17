@@ -158,7 +158,7 @@
 | `session_start` | App 每次冷启动 | `entry`（入口 hash）、`active`（是否主动） | `App.vue` |
 | `lesson_enter` | 进入某课 | `lesson_id` | `views/learn/LessonView.vue` |
 | `activity_done` | 完成一个玩法 / 一段播放 | `seconds`、`active`、`lesson_id`、`activity` | `composables/useLessonFlow.ts`（`settleActivity`） |
-| `level_pass` | 通过关卡 | `lesson_id`、`level` | `composables/useLessonFlow.ts` |
+| `level_pass` | 通过关卡 | `lesson_id`、`level`（**本课内**序号 1..N，见 `lessonLevels`；不是全站累计序号） | `composables/useLessonFlow.ts` |
 | `listen_play` | 磨耳朵播放 | `seconds` | `stores/progress.ts`（`addListenActivity`） |
 | `client_error` | 未捕获异常 / 未处理 Promise | `kind`、`msg`、`stack`、`url` | `utils/errors.js` |
 

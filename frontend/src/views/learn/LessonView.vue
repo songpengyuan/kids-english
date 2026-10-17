@@ -18,7 +18,7 @@ import HeaderBar from "../../components/layout/HeaderBar.vue";
 import LessonResult from "../../components/lesson/LessonResult.vue";
 import LessonMenu from "../../components/lesson/LessonMenu.vue";
 import LessonProgressHeader from "../../components/lesson/LessonProgressHeader.vue";
-import { getLesson as getLocalLesson, type Lesson } from "../../data/lessons";
+import { activityKeys, getLesson as getLocalLesson, type Lesson } from "../../data/lessons";
 import { useContentStore } from "../../stores/content";
 import { speak, speakZh } from "../../services/speech";
 import { useProgressStore } from "../../stores/progress";
@@ -28,6 +28,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useViewport } from "../../composables/useViewport";
 import { useQuest, type QuestAct } from "../../composables/useQuest";
 import { useLessonFlow } from "../../composables/useLessonFlow";
+import { lessonDoneCount, lessonLevels } from "../../data/pathLevels";
 import { BookOpen, Headphones, Link2, MessageCircle, Mic, Music, Star } from "@lucide/vue";
 
 const progress = useProgressStore();
@@ -52,39 +53,42 @@ watch(
     // "哪一课没人去"这个问题（北极星之外的次关键指标：课程吸引力）。
     if (id) track("lesson_enter", { lesson_id: id });
     const l = await content.getLesson(id);
-    if (l) lesson.value = l;
+    // 快速换课时，别让先回来的旧请求覆盖新课（否则 URL 已切到 l5，
+    // 页面还按 l4 的远端详情渲染 → 孩子在 l5 路由下操作 l4 内容）。
+    if (l && lessonId.value === id) lesson.value = l;
   },
   { immediate: true },
 );
 
 /**
- * 玩法清单。
+ * 玩法元数据（图标/色调/文案）。**顺序不在这里定义**：
+ * 关卡/菜单顺序的唯一来源是 data/lessons 的 `activityKeys`（song 打头，
+ * 配了 phrases 才有 talk），这里只负责把 key 映射成菜单项。
+ * 曾经本文件手写一份顺序、pathLevels 又用 activityKeys 排另一份，
+ * 于是地图「从这里开始」指到的玩法与菜单第一项对不上。
  *
  * `tone` 只能取 tokens.css 卡片色调板里的 6 个 hue 之一 —— 加新玩法时从
  * 「还没被占用的 hue」里挑，别再往同一个 hue 上叠（之前"学单词"和"跟我读"
  * 都用橙色，孩子一眼分不清是同一类还是两个东西）。
  */
+const ACT_META: Record<string, Omit<QuestAct, "key">> = {
+  song: { name: "唱童谣", icon: Music, tone: "green", game: "song", desc: "听歌看视频" },
+  learn: { name: "学单词", icon: BookOpen, tone: "orange", game: "learn", desc: "看图听发音" },
+  quiz: { name: "听音选图", icon: Headphones, tone: "blue", game: "quiz", desc: "听声音找图片" },
+  match: { name: "连一连", icon: Link2, tone: "purple", game: "match", desc: "图片连线单词" },
+  speak: { name: "跟我读", icon: Mic, tone: "pink", game: "speak", desc: "按住麦克风读单词" },
+  talk: { name: "亲子对话", icon: MessageCircle, tone: "teal", game: "talk", desc: "和爸爸妈妈练口语" },
+};
 const activities = computed<QuestAct[]>(() => {
-  const acts = [
-    // 童谣打头（先听歌建立兴趣），再学单词，顺序即菜单与闯关关卡序列
-    { key: "song", name: "唱童谣", icon: Music, tone: "green", game: "song", desc: "听歌看视频" },
-    { key: "learn", name: "学单词", icon: BookOpen, tone: "orange", game: "learn", desc: "看图听发音" },
-    { key: "quiz", name: "听音选图", icon: Headphones, tone: "blue", game: "quiz", desc: "听声音找图片" },
-    { key: "match", name: "连一连", icon: Link2, tone: "purple", game: "match", desc: "图片连线单词" },
-    { key: "speak", name: "跟我读", icon: Mic, tone: "pink", game: "speak", desc: "按住麦克风读单词" }
-  ];
-  // 亲子对话是独立玩法，只有配置了 phrases 的课时才显示（排在最后）
-  if (lesson.value?.phrases?.length) {
-    acts.push({
-      key: "talk",
-      name: "亲子对话",
-      icon: MessageCircle,
-      tone: "teal",
-      game: "talk",
-      desc: "和爸爸妈妈练口语"
-    });
-  }
-  return acts;
+  const l = lesson.value;
+  if (!l) return [];
+  return activityKeys(l).map((key) => {
+    const meta = ACT_META[key];
+    // 故意 fail loud：activityKeys 加了新玩法却没补元数据时，宁可开发期报错，
+    // 也不要让菜单/关卡静默少一项（本仓库踩过太多次"静默失效"）。
+    if (!meta) throw new Error(`玩法「${key}」缺少菜单元数据（LessonView.ACT_META）`);
+    return { key, ...meta };
+  });
 });
 
 /** 闯关身份（模式/关卡序列/当前关/下一关） */
@@ -124,8 +128,7 @@ const {
   afterGame,
   afterSong,
   backToMap,
-  goNextLevel,
-  startLessonQuest
+  goNextLevel
 } = flow;
 
 /** 菜单数据：玩法 + 已获星徽章（星数来自进度，注入后交给 LessonMenu 纯渲染） */
@@ -156,13 +159,14 @@ function startQuest() {
   router.push(`/game/lesson/${id}`);
 }
 
-/** 闯关包含的玩法（去掉 song/learn） */
-const questActs = computed(() =>
-  activities.value.filter((a) => !["song", "learn"].includes(a.key))
+/** 闯关入口进度：与地图**同源**（本课玩法关 x/y，宝箱不计入）。
+ * 旧口径是"activities 去掉 song/learn"= 4 关，但地图画的是整课 6 关（含童谣/学单词），
+ * 入口徽章与进地图后看到的关卡数对不上。 */
+const mapTotal = computed(() =>
+  lesson.value ? lessonLevels(lesson.value).filter((l) => l.actKey !== "chest").length : 0
 );
-/** 闯关已完成数 */
-const questDoneCount = computed(() =>
-  questActs.value.filter((a) => showStars(a.key) > 0).length
+const mapDoneCount = computed(() =>
+  lesson.value ? lessonDoneCount(lesson.value.id, progress.progress, lesson.value) : 0
 );
 /** 点击顶栏课程名：朗读英文标题 */
 function sayTitle() {
@@ -214,8 +218,8 @@ const playTotal = ref(0);
       v-if="stage === 'menu' && !questMode"
       :activities="menuActs"
       :progress="lessonProgress"
-      :quest-done="questDoneCount"
-      :quest-total="questActs.length"
+      :quest-done="mapDoneCount"
+      :quest-total="mapTotal"
       @open-song="openSong"
       @open-learn="openLearn"
       @open-quest="startQuest"

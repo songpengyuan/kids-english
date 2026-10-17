@@ -21,8 +21,8 @@ const progress = useProgressStore();
 const player = usePlayerStore();
 
 /** 底部导航只在三个主 tab 显示：课程（/course）/ 磨耳朵（/listen）/ 我的（/me）；
- *  游戏入口在课程页右上角按钮（#/game 无底部导航，沉浸闯关，顶栏返回可回课程）；
- *  宝藏罐/报告/复习/课程详情等子页面都隐藏，沉浸进入。
+ *  闯关入口在课时菜单的「闯关挑战」/「我的」页（本课地图 #/game/lesson/:id；
+ *  无底部导航、沉浸闯关，顶栏返回可回课程）；宝藏罐/报告/复习/课程详情等子页面都隐藏，沉浸进入。
  *  播放页（磨耳朵的歌词全屏页）同样隐藏：它自带完整 transport，
  *  底栏再留一颗播放键就是同一屏两个播放键、两个"底部"互相打架（退出用顶栏收起键）。
  *
@@ -108,8 +108,8 @@ onMounted(() => {
 
 <template>
   <CuteBackdrop />
-  <!-- 缓存两个首页级页面（自由 #/ + 游戏 #/game）：
-       返回游戏页时 GamePath 的 onActivated 对比关卡状态触发解锁动效 -->
+  <!-- 缓存三个页面壳（学习主页 #/course、多课总地图 #/game、本课地图 #/game/lesson/:id）：
+       回地图时 GamePath 的 onActivated 对比关卡状态触发解锁动效、恢复滚动位置 -->
   <router-view v-slot="{ Component }">
     <KeepAlive include="LearnView,GameView,GameLessonView">
       <component :is="Component" />

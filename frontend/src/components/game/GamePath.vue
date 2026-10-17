@@ -1,32 +1,46 @@
 <script lang="ts">
-/** 模块级滚动记忆：KeepAlive 缓存下 GamePath 子树可能被重建，
- *  script setup 内局部变量每次挂载重置，故存模块作用域，跨实例/跨 KeepAlive 保留。 */
-export let savedGameTop = 0;
-/** 上次定位/看到过的"当前关"：当前关变了（通关推进）→ 进地图时自动跟过去 */
-export let lastSeenLevelId = "";
+/**
+ * 模块级滚动/定位记忆：KeepAlive 缓存下子树可能被重建，
+ * script setup 内局部变量每次挂载重置，故存模块作用域，跨实例/跨 KeepAlive 保留。
+ *
+ * ⚠️ **必须按地图作用域分开记**（2026-10-17）：本课地图（#/game/lesson/:id）与
+ * 多课总地图（#/game）共用同一个 GamePath 实现，而 GameLessonView 是 KeepAlive
+ * 缓存、换课时不重建实例。原来只有一份 `savedGameTop`，l4 地图的滚动位置会串到
+ * l5 地图（打开就停在别人的半山腰）。key = ""（总地图）或课时 id。
+ */
+const savedTopByScope = new Map<string, number>();
+/** 上次定位/看到过的"当前关"（按作用域）：当前关变了（通关推进）→ 进地图时自动跟过去 */
+const lastSeenByScope = new Map<string, string>();
 </script>
 
 <script setup lang="ts">
 /**
  * 游戏模式：多邻国式关卡路径图（DOM 版）。
  *
+ * - **两种作用域**：不传 `lesson` = 多课总地图（#/game，全部课程）；
+ *   传 `lesson` = 本课地图（#/game/lesson/:id，只画这一课）。
+ *   两种模式共用同一套几何/绘制/交互，关卡数据分别来自
+ *   `buildLevels()`（跨课序号）与 `lessonLevels(lesson)`（本课序号 1..N）。
+ * - 地图本身是**滚动容器**（`.game-path-scroll`）：滚动条贴视口右缘，
+ *   页面壳只需给一块剩余高度，不必各自再写 overflow（本课地图曾漏写 → 底部关卡被裁掉且滚不动）。
  * - 每个课程展开为"多个关卡"（玩法序列 = 关卡序列），地图直接展示所有关卡：
  *   课名横幅（全宽渐变：课 icon + 课名 + 完成进度 + 细进度条）+ 关卡节点（圆形按钮：矢量 icon + 玩法名 + 状态角标 + 星徽章）。
  * - 无连线：关卡节点按 snakeNodes 等弧长 S 形蜿蜒排列，每课一段。
- * - 全局线性解锁：第一关总是可玩，前一关完成解锁下一关（跨课连续）。
+ * - 课内线性解锁：第一关总是可玩，前一关完成解锁下一关（本课地图内即整课线性链）。
  *   状态：done（金渐变+✓）/ active（当前，光圈脉动）/ locked（灰+锁）。
- * - 点关卡节点 → 直接开玩该玩法（/quest/:id?step=<玩法>，独立路由）。
+ * - 点关卡节点 → 直接开玩该玩法（/game/quest/:id?step=<玩法>，独立路由）。
  * - 全部节点为 DOM <button>：原生点击/聚焦/键盘/无障碍；滚动即普通 DOM 滚动（惯性、贴边）。
  * - 几何坐标全部来自纯函数 pathGeometry（TDD 基线），布局只随容器宽度重算（ResizeObserver）。
  */
-import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from "vue";
+import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { lessons } from "../../data/lessons";
+import { lessons, type Lesson } from "../../data/lessons";
 import {
   buildLevels,
   computeStates,
   currentLevel,
   lessonDoneCount,
+  lessonLevels,
   type PathLevel,
   type LevelState,
 } from "../../data/pathLevels";
@@ -42,12 +56,18 @@ import { marginBefore, overhangOf } from "../../utils/pathGeometry";
 const router = useRouter();
 const progress = useProgressStore();
 
-/** 单课模式：只显示指定课的关卡（多课地图传空则全课） */
-const props = defineProps<{ lessonId?: string }>();
-const allLevels = buildLevels();
-const levels = computed(() =>
-  props.lessonId ? allLevels.filter((lv) => lv.lessonId === props.lessonId) : allLevels
-);
+/**
+ * 本课模式：传当前课时（远端详情/本地兜底均可）→ 只画这一课、用本课序号。
+ * 不传 = 多课总地图（全部课程）。
+ */
+const props = defineProps<{ lesson?: Lesson | null }>();
+
+/** 地图作用域 key："" = 多课总地图；课时 id = 本课地图 */
+const scope = computed(() => props.lesson?.id ?? "");
+/** 本课模式下的关卡序列（本课序号 1..N）；总地图用跨课连续序号的 buildLevels() */
+const levels = computed(() => (props.lesson ? lessonLevels(props.lesson) : buildLevels()));
+/** 几何计算用的课程列表：本课模式只含这一课 */
+const mapLessons = computed(() => (props.lesson ? [props.lesson] : lessons));
 const states = computed(() => computeStates(levels.value, progress.progress));
 
 /** 当前关卡（第一个 active）——键盘 Enter 直达 */
@@ -71,12 +91,12 @@ interface GeoItem extends PathGeoItem {
 
 /** 整图几何（课名横幅 + 关卡节点纵向坐标），横向 x 由 snakeNodes 按宽度铺列 */
 const geo = computed<GeoItem[]>(() => {
-  const geom = buildPathGeometry(props.lessonId ? lessons.filter((l) => l.id === props.lessonId) : lessons, levels.value);
+  const geom = buildPathGeometry(mapLessons.value, levels.value);
   return geom.map((g) => {
     if (g.type === "unit") {
       return {
         ...g,
-        done: lessonDoneCount(g.lessonId, progress.progress),
+        done: lessonDoneCount(g.lessonId, progress.progress, unitLesson(g.lessonId) ?? undefined),
         total: levels.value.filter((lv) => lv.lessonId === g.lessonId && lv.actKey !== "chest").length,
       } as GeoItem;
     }
@@ -142,9 +162,9 @@ function scheduleMeasure() {
   requestAnimationFrame(measure);
 }
 
-/* ---------- 滚动位置记忆（底部 tab 切换不丢位置） ---------- */
+/* ---------- 滚动位置记忆（底部 tab 切换 / 回地图不丢位置，按作用域分开） ---------- */
 function onScroll() {
-  if (stageEl.value) savedGameTop = stageEl.value.scrollTop;
+  if (stageEl.value) savedTopByScope.set(scope.value, stageEl.value.scrollTop);
   updateStuck();
 }
 
@@ -153,7 +173,7 @@ const stuckId = ref("");
 function updateStuck() {
   const el = stageEl.value;
   if (!el) return;
-  // sticky top:8px 是相对滚动容器（.game-path）的，视口锚点 = 容器视口顶部 + 8
+  // sticky top:8px 是相对滚动容器（.game-path-scroll）的，视口锚点 = 容器视口顶部 + 8
   const anchor = el.getBoundingClientRect().top + 8;
   let id = "";
   el.querySelectorAll<HTMLElement>(".gp-unit").forEach((u) => {
@@ -164,14 +184,16 @@ function updateStuck() {
   if (id !== stuckId.value) stuckId.value = id;
 }
 function restoreTop() {
+  const top = savedTopByScope.get(scope.value) ?? 0;
   requestAnimationFrame(() => {
-    if (stageEl.value) stageEl.value.scrollTop = savedGameTop;
+    if (stageEl.value) stageEl.value.scrollTop = top;
   });
 }
 
 /**
  * 把某一关滚到可视区中部。
- * 地图有 35 关（≈4 屏），孩子不该自己去翻——进地图默认定位到"当前该玩的那一关"，
+ * 地图可能有很多关（多课总地图 ≈4 屏；本课 7 关也可能超一屏），
+ * 孩子不该自己去翻——进地图默认定位到"当前该玩的那一关"，
  * 解锁新关后也自动跟着走（多邻国式）。
  */
 function centerLevel(id: string, smooth = false) {
@@ -195,20 +217,26 @@ function centerLevel(id: string, smooth = false) {
 /* ---------- 解锁闪光（金色圆环扩散，CSS 动画一次播放） ---------- */
 const flashIds = ref(new Set<string>());
 let snapshotBefore: Record<string, LevelState> = {};
+/** 是否处于激活态：KeepAlive 里被缓存时也会收到 props 更新，只有激活时才该改滚动位置 */
+let activated = false;
 
 onDeactivated(() => {
+  activated = false;
   snapshotBefore = { ...states.value };
   ro?.disconnect();
   ro = null;
 });
 onBeforeUnmount(() => {
+  activated = false;
   stageEl.value?.removeEventListener("scroll", onScroll);
   ro?.disconnect();
   ro = null;
 });
 onActivated(() => {
+  activated = true;
   requestAnimationFrame(updateStuck);
   const flash = new Set<string>();
+  const scopeKey = scope.value;
   levels.value.forEach((lv) => {
     if (snapshotBefore[lv.id] === "locked" && states.value[lv.id] !== "locked") flash.add(lv.id);
   });
@@ -218,32 +246,72 @@ onActivated(() => {
     if (flashIds.value.size) flashIds.value = new Set();
   }, 1200);
   // 解锁了新关 → 自动滚到新解锁的那一关（孩子一眼看到"可以玩这个了"）；
-  // 没解锁变化 → 恢复离开时的位置。
+  // 没解锁变化 → 恢复离开时的位置（本作用域自己的位置）。
   const firstNew = [...flash][0];
+  const seen = lastSeenByScope.get(scopeKey) ?? "";
+  const savedTop = savedTopByScope.get(scopeKey) ?? 0;
   if (firstNew) {
-    lastSeenLevelId = firstNew;
+    lastSeenByScope.set(scopeKey, firstNew);
     requestAnimationFrame(() => centerLevel(firstNew, true));
-  } else if (activeId.value && activeId.value !== lastSeenLevelId) {
+  } else if (activeId.value && activeId.value !== seen) {
     // 在别处通关了（当前关推进）→ 回来时跟到新关卡
-    lastSeenLevelId = activeId.value;
+    lastSeenByScope.set(scopeKey, activeId.value);
     requestAnimationFrame(() => centerLevel(activeId.value, true));
-  } else restoreTop();
+  } else if (savedTop > 0) {
+    // 之前在这个作用域滚过 → 恢复到离开时的位置
+    restoreTop();
+  } else {
+    // 首次进入 / 从未滚动过：定位到当前该玩的那一关。
+    // 不能走 restoreTop()——首次 savedTop=0 会把 onMounted 刚做好的居中也一并抹成顶部，
+    // 有进度的孩子打开地图就只看到第 1 关，还得自己往下翻。
+    requestAnimationFrame(() => centerLevel(activeId.value));
+  }
   measure();
   startRO();
 });
 onMounted(() => {
+  activated = true;
   stageEl.value?.addEventListener("scroll", onScroll, { passive: true });
   requestAnimationFrame(updateStuck);
   measure();
   startRO();
   // 当前关变了（通关推进）或首次进入 → 定位到当前该玩的那一关；否则恢复上次的滚动位置
   const id = activeId.value;
-  if (id && id !== lastSeenLevelId) {
-    lastSeenLevelId = id;
+  const seen = lastSeenByScope.get(scope.value) ?? "";
+  if (id && id !== seen) {
+    lastSeenByScope.set(scope.value, id);
     requestAnimationFrame(() => centerLevel(id));
-  } else if (savedGameTop > 0) restoreTop();
+  } else if ((savedTopByScope.get(scope.value) ?? 0) > 0) restoreTop();
   else requestAnimationFrame(() => centerLevel(id));
 });
+
+/**
+ * 同一 KeepAlive 实例换作用域（本课地图 A → B，直接路由跳转/参数变化）时
+ * 不会触发 activated：主动重新测宽并把 B 课的当前关定位出来（滚动记忆已按课分开）。
+ */
+watch(
+  () => props.lesson?.id ?? "",
+  () => {
+    // 被 KeepAlive 缓存（未激活）时换课由 onActivated 负责；这里只处理"正在看地图时直接换课"
+    if (!activated) return;
+    requestAnimationFrame(() => {
+      measure();
+      updateStuck();
+      const id = activeId.value;
+      const seen = lastSeenByScope.get(scope.value) ?? "";
+      if (id && id !== seen) {
+        // 当前关变了（在别处通关/换课）→ 跟到当前关
+        lastSeenByScope.set(scope.value, id);
+        centerLevel(id);
+      } else if ((savedTopByScope.get(scope.value) ?? 0) > 0) {
+        // 当前关没变 → 恢复这个作用域上次的滚动位置（含 URL 直达换课）
+        restoreTop();
+      } else if (id) {
+        centerLevel(id);
+      }
+    });
+  }
+);
 
 function startRO() {
   if (ro || !stageEl.value) return;
@@ -313,7 +381,7 @@ function enterUnit(it: GeoItem) {
   if (st === "locked") {
     shakeLocked(first.id);
   } else {
-    const title = lessons.find((x) => x.id === it.lessonId)?.title;
+    const title = unitLesson(it.lessonId)?.title;
     if (title) speak(title, { ttsOnly: true });
     hapticTap();
     router.push(`/game/quest/${first.lessonId}?step=${first.actKey}`);
@@ -331,16 +399,20 @@ function levelLabel(lv: PathLevel): string {
   return `第${lv.no}关${lv.name}（${zh}）`;
 }
 
-/** 横幅里的课程 */
+/** 横幅里的课程：本课模式直接取传入的课时（远端详情也能显示），总地图查静态数据 */
 function unitLesson(id: string) {
+  if (props.lesson?.id === id) return props.lesson;
   return lessons.find((l) => l.id === id);
 }
 </script>
 
 <template>
-  <div ref="stageEl" class="game-path anim-fade-up">
-    <!-- 蛇形路径（文档流：课名横幅全宽；关卡节点默认居中，translateX 左右摆动成 S 形） -->
-    <div class="gp-canvas">
+  <!-- 地图自带滚动容器：页面壳只给剩余高度；滚动条贴视口右缘（见 .game-path-scroll）。
+       本课地图曾只写 flex:1 漏了 overflow → 7 关超出一屏时底部被裁掉且滚不动。 -->
+  <div ref="stageEl" class="game-path-scroll">
+    <div class="game-path anim-fade-up">
+      <!-- 蛇形路径（文档流：课名横幅全宽；关卡节点默认居中，translateX 左右摆动成 S 形） -->
+      <div class="gp-canvas">
       <!-- 按几何顺序交替渲染：课横幅 → 关卡 → 课横幅 → 关卡（文档流保持真实阅读顺序） -->
       <template v-for="(it, i) in layout" :key="it.type === 'unit' ? 'u-' + it.lessonId : 'l-' + (it as GeoItem).level!.id">
         <!-- 课程横幅（文档流全宽块） -->
@@ -413,15 +485,28 @@ function unitLesson(id: string) {
           <span class="lv-name">{{ (it as GeoItem).level!.name }}</span>
         </div>
       </template>
+      </div>
     </div>
 
-    <!-- 开宝箱独立关卡：地图上直接弹奖励层 -->
+    <!-- 开宝箱独立关卡：地图上直接弹奖励层（fixed 覆盖层，与滚动位置无关） -->
     <ChestReward v-if="chestOpen" @done="onChestDone" />
 
   </div>
 </template>
 
 <style scoped>
+/* 滚动容器：占满页面壳给剩余高度；内容宽度向右多伸一个 --pad-x，
+   让滚动条贴到视口最右缘（与旧 GameView 的 .gp-slot 同一口径，现在由地图组件自持，
+   两个地图页面（总地图/本课地图）不会再一个写了一个漏写）。 */
+.game-path-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: calc(100% + var(--pad-x));
+  max-width: none;
+  -webkit-overflow-scrolling: touch;
+}
 .game-path {
   display: flex;
   flex-direction: column;

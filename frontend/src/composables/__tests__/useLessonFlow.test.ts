@@ -303,7 +303,7 @@ describe("useLessonFlow 埋点（ADR-004）", () => {
     expect(payloadsOf("activity_done")).toHaveLength(0);
   });
 
-  it("闯关模式过关 → 上报 level_pass（带关卡序号）", async () => {
+  it("闯关模式过关 → 上报 level_pass（本课内关卡序号，不是全站累计）", async () => {
     const { flow } = await bootHost("/game/quest/l4?step=quiz");
     flow.boot();
     flow.open(acts[1]);
@@ -311,7 +311,8 @@ describe("useLessonFlow 埋点（ADR-004）", () => {
     const [p] = payloadsOf("level_pass");
     expect(p).toBeDefined();
     expect(p.lesson_id).toBe("l4");
-    expect(typeof p.level).toBe("number");
+    // l4 本课顺序 song→learn→quiz…，quiz = 第 3 关；旧实现报的是全站累计值（l4-quiz 曾是第 9 关）
+    expect(p.level).toBe(3);
   });
 
   it("自由模式结算（非闯关）不应误报 level_pass", async () => {

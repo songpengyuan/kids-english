@@ -72,7 +72,8 @@ kids-english/
 │   │   │   ├── ReviewView.vue  # 错词复习（#/learn/review）
 │   │   │   └── practice/       # 学习主页内嵌练习组件（非路由级）
 │   │   ├── game/               # 游戏域：#/game 及子路由
-│   │   │   ├── GameView.vue    # 游戏闯关地图（#/game）
+│   │   │   ├── GameView.vue    # 多课总地图（#/game，入口已收起，代码保留）
+│   │   │   ├── GameLessonView.vue # 本课闯关地图（#/game/lesson/:id，只画这一课）
 │   │   │   └── QuestView.vue   # 闯关玩法（#/game/quest/:id/:stage?，薄壳转发 LessonView）
 │   │   └── me/                 # 我的域：#/me 及子路由
 │   │       ├── MyView.vue      # 我的（#/me）
@@ -107,7 +108,7 @@ kids-english/
 │   │   ├── speechScore.ts      # 发音评分（ASR + 录音双模式）
 │   │   └── quizSession / matchBoard / reviewQueue / reviewSchedule / learnSession / stars / flyCurve / pathGeometry / errors
 │   ├── data/                   # 数据唯一入口（lessons.ts / heroes.ts / pathLevels.ts / song-timings.json）
-│   └── **/__tests__/           # vitest 单测（44 文件 / 338 用例）
+│   └── **/__tests__/           # vitest 单测（45 文件 / 349 用例）
 ├── scripts/
 │   ├── guard-build.mjs         # 部署构建防护（build:ci 用，强制 GH_REPO）
 │   ├── validate-data.mjs       # ★ 数据层静态校验（结构/引用/去重/song.mp3 硬校验，build:ci 用）
@@ -199,7 +200,8 @@ lessons.js ──(补 BASE_URL + activityKeys)──► 页面/玩法组件
 - **streak**：每日目标 + 连续天数（独立键，跨天自动断档）。
 - **rewards**：贝壳 / 贴纸图鉴 / 开箱次数（独立键）+ buySticker 消耗出口。
 
-「通关」判定统一走 `activityKeys(lesson)`（learn/quiz/match/speak + [talk] + song）：
+「通关」判定统一走 `activityKeys(lesson)`（song/learn/quiz/match/speak + [talk]；
+**顺序即课程内闯关关卡顺序**，见 §14.10）：
 全部玩法玩过 **且** 星级达标（学/辨/连/读 ≥2，唱/对话 ≥1）。
 
 ---
@@ -439,9 +441,9 @@ python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
 #/course/l4/talk             → 亲子对话（仅配置了 phrases 的课时）
 #/course/review              → 错词复习
 
-#/game                       → 闯关地图
-#/game/lesson/:id            → 课内闯关（**已从课时菜单里独立出来**）
-#/game/quest/l4?step=learn   → 闯关玩法单步
+#/game                       → 多课总地图（入口已收起，代码保留）
+#/game/lesson/:id            → 本课闯关地图（**入口：课时菜单的"闯关挑战"**；本课序号 1..N）
+#/game/quest/l4?step=learn   → 闯关玩法单步（「下一关」只在本课内推进，见 §14.10）
 
 #/listen                     → 磨耳朵（有歌时自动切到歌词全屏页）
 #/me                         → 我的
@@ -1379,7 +1381,7 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
 1. **git mv 搬文件**：移动组件/测试后必须同步：①所有 import（含测试与 mock 的 specifier）②
    KeepAlive include 的组件名 ③相对路径层数（`../` → `../../`）④文档目录表。
    搬完跑 `grep` 残留检查（import 路径、组件名、注释里的旧路径）。
-2. **质量三件套**：`pnpm test`（基线：**44 文件 / 338 用例**，2026-10-17）+ `pnpm type-check` + `pnpm build:ci`
+2. **质量三件套**：`pnpm test`（基线：**45 文件 / 349 用例**，2026-10-17）+ `pnpm type-check` + `pnpm build:ci`
    全绿才算完成；CI 里 test + type-check + build:ci（含数据校验）是部署门禁。
    （⚠️ 基线数字会随迭代漂移，以当次输出为准；别拿本文档里的数字当断言。）
    - **本机已把这套门禁前移到 git 钩子**（2026-10-16 加）：`bash scripts/ci-local.sh` 是唯一实现，
@@ -1716,4 +1718,47 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
   现在给了专用的 `sfxChestTap(step)`：低频木箱体 + 高频敲击点，三下按 196/233/262 升调。
   教训：写音效时把 `gain` 和 `dur` 当成 UI 参数看待（0.06 增益 ≈ 20cm 外听不见），
   并且在真机外放上验一次；只在电脑上戴耳机听，会漏掉"太小/太短"这一整类问题。
+
+### 14.10 本课闯关地图：不能把"总地图裁一刀"（2026-10-17）
+
+**背景**：闯关入口从"全站总地图 #/game"挪进课时菜单后，实现方式只是给 `GamePath`
+加了个 `lessonId` 过滤（commit 23b0d68）。总地图的数据模型是"全站一条链"，
+只过滤渲染层会漏出 5 个问题，孩子侧表现都是"这地图坏了"：
+
+| 症状 | 根因 |
+|---|---|
+| l4 地图写着「第 8 关…第 14 关」 | `PathLevel.no` 是全站累计序号，过滤后没重算 |
+| l4 最后一关通关后跳到 l9 的学单词 | `useQuest.nextLevel` 用 `buildLevels()` 全站序列推进，跨课了 |
+| 课时菜单「闯关挑战 0/4」，进去却是 6 关 + 宝箱 | 入口徽章口径是"activities 去掉 song/learn"，地图画的是整课 |
+| 地图「从这里开始」指到学单词，课时菜单第一项却是学童谣 | `pathLevels` 用 `activityKeys`（song 排最后），菜单/玩法序列是 song 打头，两份顺序 |
+| 7 关超出一屏，底部宝箱被裁、滚不动 | `GameLessonView` 的 `.gp-slot` 只写了 `flex:1`，漏了总地图 `GameView` 那份 `overflow-y:auto` |
+
+**收口方案（作用域成为数据模型的一等概念）**：
+
+- `data/pathLevels.ts` 增加 `lessonLevels(lesson)`：只含本课（玩法关 + 宝箱），
+  `no` 从 1 起。它直接吃课时对象（远端详情/本地兜底都行），不查静态 `lessons`
+  —— 否则后端新加的课点进地图是空白。
+- `buildLevels()` 保留给多课总地图，仍是跨课连续序号；`nextLevelAfter` 保持纯函数，
+  传什么序列就在什么范围推进。
+- `useQuest` 的 `pathLevels` 改为 `lessonLevels(lesson)`：`questLevel` 是本课序号，
+  `nextLevel` 本课最后一个玩法（talk）后为 `null`（不再跨课）。**这是有意取舍**：
+  总地图 #/game 当前入口已收起；将来若重新启用并需要"跨课下一关"，
+  应由入口带上来源（如 `?scope=all`）再决定传哪份序列，而不是让单关推进默认全站。
+- `activityKeys` 顺序与 LessonView `activities` 对齐（song 打头）——**一个课程只允许一份
+  关卡顺序**；`buildLevels/lessonLevels/菜单/玩法推进`全部由它派生。
+- 课时菜单「闯关挑战」的 x/y 改读 `lessonLevels + lessonDoneCount`，与地图同源。
+- `GamePath` 接受 `lesson?: Lesson`：不传 = 总地图，传 = 本课地图；滚动容器
+  `.game-path-scroll` 收进地图组件自持，两个页面不会再一个写一个漏。
+  滚动/定位记忆改为 `scope → 值` 的 Map（总地图与各课互不串位置）。
+  首进某课地图且没有滚动记录时定位到本课当前关（`onActivated` 里不能无条件
+  `restoreTop()`：首次 saved=0 会把 `onMounted` 的居中抹回顶部，有进度的孩子只看到第 1 关）。
+- 验证：`pathLevels.test.ts`（两种作用域各自编号/推进边界）、`useQuest.test.ts`
+  （本课序号、下一关不跨课）、`pages.smoke.test.ts`（本课 7 节点 = 第 1..7 关、滚动容器存在），
+  外加无头 Chrome 实测（真 390×844：地图内容约 817px（无进度）/901px（有进度环），可滚；
+  预置前 4 关进度后自动定位到当前关「跟我读」（可滚区 143px，clamp 到最大），
+  菜单徽章与地图同为 4/6；「从这里开始」胶囊在深度当前关时会压住上一关标签，属既有视觉问题）。
+
+**通用教训**：**组件复用 ≠ 数据口径复用。** 多一个入口前先问"这个数据是不是全站视角"；
+如果是，就要么把作用域做成参数（本方案），要么别复用。给列表加个 filter 通常只改了渲染，
+序号、推进链、计数、滚动容器这些"隐含的全站假设"不会跟着变。
 
