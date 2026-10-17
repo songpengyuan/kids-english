@@ -115,6 +115,33 @@ describe("player store · 播放控制", () => {
     expect(p.shuffleOn).toBe(false);
   });
 
+  it("repeatLabel：模式 → 按钮上的中文（all/one/off 三档各一个名字）", () => {
+    const p = usePlayerStore();
+    p.repeatMode = "all";
+    expect(p.repeatLabel).toBe("列表循环");
+    p.repeatMode = "one";
+    expect(p.repeatLabel).toBe("单曲循环");
+    p.repeatMode = "off";
+    expect(p.repeatLabel).toBe("顺序播放");
+  });
+
+  it("互斥：切到「单曲循环」自动关掉随机（否则两个键同亮、点了没反应）", () => {
+    const p = usePlayerStore();
+    p.toggleShuffle(); // 随机开
+    p.repeatMode = "all";
+    p.toggleRepeat(); // all → one
+    expect(p.repeatMode).toBe("one");
+    expect(p.shuffleOn).toBe(false);
+  });
+
+  it("互斥：随机开着时循环不能停在「单曲循环」——自动退回列表循环", () => {
+    const p = usePlayerStore();
+    p.repeatMode = "one";
+    p.toggleShuffle(); // 开随机
+    expect(p.shuffleOn).toBe(true);
+    expect(p.repeatMode).toBe("all");
+  });
+
   it("formatTime：秒 → m:ss，非法值兜底 0:00", () => {
     const p = usePlayerStore();
     expect(p.formatTime(0)).toBe("0:00");

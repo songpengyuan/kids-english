@@ -24,8 +24,15 @@
  *    其余行降到 55% 透明度，并把当前行自动滚到卡片正中（位置本身在说"唱到这里了"）。
  *  · 进度条只留这一条（底栏那条已随迷你播放条一起删掉），颜色回到进度语义色 --brand
  *    （原来是 accent-color: --yellow，与"进度=品牌"的规范相冲）；收起键给上可见的圆底。
- *  · 本页隐藏底部导航（见 App.vue 的 showNav），退出用左上角收起键 ——
- *    这样只有一个"底部"，不必再为底栏预留一条 --nav-h。
+ *
+ * 2026-10-17 二改：**本页不再隐藏底部导航**。
+ *  · 上一版的解法是"藏掉底栏"——播放页因此成了全站唯一没有导航的页面，只能靠
+ *    左上角收起键退出，播着歌想切去学习就必须先收起。
+ *  · 现在的解法是**浮层让位**：播放页从 inset:0 改成"底栏以上"（bottom = --nav-h + 安全区），
+ *    底栏常显；万一哪天边界算错，底栏在 --z-floating(40)、浮层在 --z-bar(30)，
+ *    仍是底栏压在上面 —— 不会重演"导航整条消失、孩子无路可退"的事故。
+ *  · 补上播放模式（此前 store 里 repeatMode/shuffleOn 一直存在，界面上却没有入口）：
+ *    随机 + 循环三档（顺序播放 → 列表循环 → 单曲循环），按钮带中文标注。
  */
 import { ref, computed, onBeforeUnmount, onMounted } from "vue";
 import { lessons, asset } from "../../data/lessons";
@@ -33,6 +40,7 @@ import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
 import {
   Play, Pause, X, ChevronDown, ListMusic, Music, Film, SkipBack, SkipForward,
+  Repeat, Repeat1, Shuffle,
 } from "@lucide/vue";
 import BaseDrawer from "../../components/ui/BaseDrawer.vue";
 import SegmentedTabs from "../../components/ui/SegmentedTabs.vue";
@@ -165,6 +173,23 @@ onMounted(() => {
             }}</p>
           </template>
           <p v-else class="pl-line on">🎵</p>
+        </div>
+
+        <!-- 播放模式：随机 + 循环三档（顺序播放 → 列表循环 → 单曲循环）。
+             带中文标注而不是纯图标：孩子/家长都不用猜"这个圈圈箭头现在是哪种"。
+             两者互斥（单曲循环 + 随机同亮 = 点了没反应），互斥规则在 store 里。 -->
+        <div class="pl-modes">
+          <button class="pl-mode" :class="{ on: player.shuffleOn }"
+            :aria-pressed="player.shuffleOn" aria-label="随机播放" @click="player.toggleShuffle()">
+            <Shuffle class="k-ico" />
+            <span class="pl-mode-label">随机</span>
+          </button>
+          <button class="pl-mode" :class="{ on: player.repeatMode !== 'off' }"
+            :aria-label="player.repeatLabel" @click="player.toggleRepeat()">
+            <Repeat1 v-if="player.repeatMode === 'one'" class="k-ico" />
+            <Repeat v-else class="k-ico" />
+            <span class="pl-mode-label">{{ player.repeatLabel }}</span>
+          </button>
         </div>
 
         <!-- transport：整页唯一的主行动就是中间那颗实底播放键 -->
@@ -318,14 +343,20 @@ onMounted(() => {
 }
 
 /* ===== 播放页（唱片页） =====
- * 全屏一页，「一屏三问」：① 听的是哪首（封面 + 歌名）→ ② 唱到哪（歌词）
- * → ③ 我要干嘛（唯一一颗主播放键）。
- * 本页隐藏底部导航（见 App.vue 的 showNav），所以底部只要一条安全距离，
- * 不必再为 --nav-h 让位 —— 这就是"两个底部打架"的解法。
+ * 「一屏三问」：① 听的是哪首（封面 + 歌名）→ ② 唱到哪（歌词）→ ③ 我要干嘛（主播放键）。
+ *
+ * 下边界 = 底栏之上（--nav-h + 安全区），**不是 inset:0**：
+ * 底栏常显，播着歌也能直接切 tab。这样"两个底部"不用互相躲 —— 浮层只占底栏之上的空间，
+ * 而不是靠把底栏藏掉来腾地方（藏底栏的代价见 nav-visibility.ts 的事故记录）。
+ * 层级上底栏 --z-floating(40) > 浮层 --z-bar(30)：即使以后边界算法被改坏，
+ * 也是底栏压在浮层上，不会出现"整条导航消失"。
  */
 .player {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
   z-index: var(--z-bar);
   display: flex;
   flex-direction: column;
@@ -333,7 +364,7 @@ onMounted(() => {
   padding:
     max(var(--gap-s), env(safe-area-inset-top))
     var(--pad-x)
-    max(var(--gap-m), env(safe-area-inset-bottom));
+    var(--gap-m);
 }
 /* 顶栏只放"页面级动作"：收起在左、播放列表在右。
  * 两颗都是白底圆键——原来是透明底的图标，孩子看不出那里能点。 */
@@ -404,6 +435,37 @@ onMounted(() => {
   font-weight: var(--fw-strong);
   opacity: 1;
 }
+/* 播放模式行：随机 + 循环三档。
+ * 做成"图标 + 中文"的胶囊而不是纯图标：模式是抽象概念，只有图标时
+ * 三种循环状态（顺序/列表循环/单曲循环）长得几乎一样，必须靠文字区分。
+ * 未激活时降到次级文字色、激活时品牌色 + 品牌浅底，与「当前行」那套高亮语言一致。 */
+.pl-modes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-m);
+}
+.pl-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-xs);
+  padding: var(--gap-xs) var(--gap-m);
+  border-radius: var(--radius-pill);
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+}
+.pl-mode.on {
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: var(--fw-strong);
+}
+.pl-mode-label {
+  line-height: 1;
+}
+
 /* transport：中间实底主键 + 立体厚度（整页唯一的主行动），两侧降为白底圆键 */
 .pl-transport {
   display: flex;

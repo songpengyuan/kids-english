@@ -61,6 +61,22 @@ export const usePlayerStore = defineStore("player", () => {
     return lesson?.song?.lyrics ?? [];
   });
 
+  /* ---------- 播放模式（2026-10-17 补上 UI 入口：状态一直有，界面上没有按键） ----------
+   * 两种模式各管一件事，但**不允许互相矛盾的组合**：
+   *   · 循环模式（repeatMode）：顺序播放 off / 列表循环 all / 单曲循环 one；
+   *   · 随机（shuffleOn）：在"下一首该播哪首"上打乱顺序。
+   * 为什么互斥：单曲循环 + 随机同时亮着，按钮上写着"随机"、实际永远播同一首，
+   * 家长看不懂、孩子点了也没反应（next() 里 one 的分支会先返回）。
+   * 规则：点开随机时若正处于单曲循环，自动退回列表循环；
+   *       切到单曲循环时自动关掉随机。两个按键的状态因此永远自洽。 */
+  const REPEAT_LABEL: Record<RepeatMode, string> = {
+    off: "顺序播放",
+    all: "列表循环",
+    one: "单曲循环",
+  };
+  /** 当前循环模式的中文名（详情页按钮上的文字） */
+  const repeatLabel = computed(() => REPEAT_LABEL[repeatMode.value]);
+
   /* ---------- 磨耳朵时长累计（结算式：播放段按墙钟时间结算，独立于学习时长） ----------
    * 为什么不用「每 5s 累加 5s」：标签页在后台时浏览器会节流 setInterval（Chrome 约降到 1 次/分钟），
    * 孩子磨耳朵时切到别的页面/家长输口令开新 tab，时长就会严重少算。
@@ -209,12 +225,19 @@ export const usePlayerStore = defineStore("player", () => {
     if (currentIdx.value > 0) playSong(currentIdx.value - 1);
   }
 
+  /** 循环模式三档轮转：顺序播放 → 列表循环 → 单曲循环 → 顺序播放。
+   *  切进"单曲循环"时关掉随机（见上方 REPEAT_LABEL 处的互斥说明）。 */
   function toggleRepeat() {
-    repeatMode.value =
+    const next: RepeatMode =
       repeatMode.value === "off" ? "all" : repeatMode.value === "all" ? "one" : "off";
+    if (next === "one") shuffleOn.value = false;
+    repeatMode.value = next;
   }
+  /** 随机开关：开随机时若正处于单曲循环，退回列表循环（否则"随机"点了没用） */
   function toggleShuffle() {
-    shuffleOn.value = !shuffleOn.value;
+    const on = !shuffleOn.value;
+    if (on && repeatMode.value === "one") repeatMode.value = "all";
+    shuffleOn.value = on;
   }
 
   function seek(e: Event) {
@@ -238,6 +261,7 @@ export const usePlayerStore = defineStore("player", () => {
     progress,
     duration,
     repeatMode,
+    repeatLabel,
     shuffleOn,
     nowPlaying,
     playSong,
