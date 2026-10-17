@@ -15,7 +15,7 @@
 |---|---|
 | 框架 | Vue 3（`<script setup>` 组合式 API）+ TypeScript |
 | 路由 | vue-router，**hash 模式**（`/#/course/l4/learn`；静态托管下 history 深链刷新会 404） |
-| 状态 | Pinia **8 个 store**：进度 `progress` / 连击 `streak` / 资产 `rewards`+`cards` / 课程 `content` / 登录 `auth` / 家长口令 `gate` / 播放器 `player` |
+| 状态 | Pinia **7 个 store**：进度 `progress` / 连击 `streak` / 资产 `rewards`（贝壳·英雄形态·贴纸，2026-10-17 起是唯一的奖励体系）/ 课程 `content` / 登录 `auth` / 家长口令 `gate` / 播放器 `player` |
 | 构建 | Vite 8（Rolldown） |
 | 包管理 | pnpm（前端命令一律在 `frontend/` 下执行） |
 | 后端 | **FastAPI + SQLite + JWT**（`backend/`）：auth / children / content / progress / rewards / evaluation / recordings，含讯飞语音评测 |
@@ -107,7 +107,7 @@ kids-english/
 │   │   ├── speechScore.ts      # 发音评分（ASR + 录音双模式）
 │   │   └── quizSession / matchBoard / reviewQueue / reviewSchedule / learnSession / stars / flyCurve / pathGeometry / errors
 │   ├── data/                   # 数据唯一入口（lessons.ts / heroes.ts / pathLevels.ts / song-timings.json）
-│   └── **/__tests__/           # vitest 单测（44 文件 / 335 用例）
+│   └── **/__tests__/           # vitest 单测（44 文件 / 338 用例）
 ├── scripts/
 │   ├── guard-build.mjs         # 部署构建防护（build:ci 用，强制 GH_REPO）
 │   ├── validate-data.mjs       # ★ 数据层静态校验（结构/引用/去重/song.mp3 硬校验，build:ci 用）
@@ -448,7 +448,6 @@ python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
 #/me/calendar                → 学习日历（**#/me/streak 已重定向到这里**）
 #/me/treasure                → 宝藏罐
 #/me/treasure/hero/:id       → 英雄图鉴详情
-#/me/cards                   → 我的卡片
 #/me/report                  → 家长学情（需家长门禁）
 #/me/parent                  → 家长中心（需家长门禁）
 ```
@@ -1380,7 +1379,7 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
 1. **git mv 搬文件**：移动组件/测试后必须同步：①所有 import（含测试与 mock 的 specifier）②
    KeepAlive include 的组件名 ③相对路径层数（`../` → `../../`）④文档目录表。
    搬完跑 `grep` 残留检查（import 路径、组件名、注释里的旧路径）。
-2. **质量三件套**：`pnpm test`（基线：**44 文件 / 335 用例**，2026-10-17）+ `pnpm type-check` + `pnpm build:ci`
+2. **质量三件套**：`pnpm test`（基线：**44 文件 / 338 用例**，2026-10-17）+ `pnpm type-check` + `pnpm build:ci`
    全绿才算完成；CI 里 test + type-check + build:ci（含数据校验）是部署门禁。
    （⚠️ 基线数字会随迭代漂移，以当次输出为准；别拿本文档里的数字当断言。）
    - **本机已把这套门禁前移到 git 钩子**（2026-10-16 加）：`bash scripts/ci-local.sh` 是唯一实现，
@@ -1671,8 +1670,10 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
   从学习/我的点中间位，手指落在**看得见的那块图标**上 → 只暂停、不导航；
   而磨耳朵全站只有这一个入口（`router.push("/listen")` 只出现在 `BottomNav.vue`），
   于是开始播放后孩子被锁在别的 tab 外，反馈是"切不回磨耳朵 tab"。
-  现行做法：**位置决定语义**（`onMiddle()`）——站在磨耳朵页才是播放/暂停键
-  （列表页唯一的 transport），站在别的 tab 整格就是入口（🎧 + 在播小圆点）。
+  中间还试过"位置决定语义"（站在磨耳朵页才变播放键），仍然是在 tab 里塞第二颗键；
+  最终收口成**一个问题一个答案**：中间位永远是入口，**只有图标随状态变**
+  （没在播 🎧 / 正在播三根跳动的声波条）。暂停不靠它——列表里当前那首自带 `.sr-play`，
+  播放页有完整 transport。少一颗键，少一条"键面 ≠ 行为"的坑。
 - **键面必须等于行为。** 长得像暂停键、点下去却是导航（或反过来）都是 bug。
   状态不是动作，就用状态表达（小圆点、声波），不要借一个可点控件的脸。
 - **命中区别用 `@click.stop` 分层拦截**：一个格子一个 handler，按位置 / 状态分派。
@@ -1688,4 +1689,31 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
 - **这类 bug 的通用自检**：① 每个 tab 在**任何状态下**都点一遍，看 `location.hash` 变没变；
   ② 用 `history.back()` 模拟返回手势 —— hash 路由下歌词页不是一条历史记录，
   返回会直接跳到上一个 tab，这条路径手工测最容易漏。
+
+#### 14.9.12 同一件事两种位置 / 固定浅底上的文字色（2026-10-17）
+
+- **"同一件事"必须只有一个位置。** 亲子对话的进度曾画在**顶栏**（自造一条细进度条 +
+  右侧"第 N/M 轮"），而「跟我读」画在**页内顶部**（`1 / 7` + 右侧模式胶囊）。
+  同一个孩子玩完一个玩法换下一个，眼睛得重新找一遍"我做到哪儿了"。
+  现在两者共用 `components/activities/StageHead.vue`——**位置一致是结构保证的**，
+  不是靠两处 CSS 对齐；顶栏也统一交给 `LessonProgressHeader`（`talk` 也进 `stepKeys`，
+  每轮一个圆点）。判断标准：同一个信息出现两次、或同类信息在不同页面位置不同，就该抽组件。
+- **逐轮玩法不要"停在展示态"。** 亲子对话读对后曾停在"太棒了，妈妈要问下一个啦！"，
+  底部还是上一轮的句子（900ms + 260ms ≈ 1.2s），孩子不知道该说什么。
+  现在读对即推进（`ADVANCE_MS = 420`），底部"宝宝要说的话"由 `cur` 驱动、索引一变就换句；
+  反馈靠音效 + 孩子自己那条消息气泡落地，不必占一屏。
+  推进期间用 `advancing` 锁住判定按钮——否则家长连点两下会推出两条孩子消息。
+- **插画底板上不能用主题态文字色。** 对话气泡是 `--white`、聊天底板是固定的浅绿渐变
+  （插画色板刻意不随主题），而文字用了 `--ink`；暗色主题下 `--ink` 是 `#f0e9dc`，
+  于是 `rgb(240,233,220)` 压在 `rgb(255,255,255)` 上——**对比度 1.05:1，等于白底白字**。
+  亮色主题下完全正常，所以只有开暗色才暴露（同一批"白底白字"，成因和 `.tone-*` + `.card`
+  互斥完全不同：这里是**取错了色族**，不是层叠互相覆盖）。
+  修法：给插画色板配固定深墨色（`--talk-ink` / `--talk-ink-soft`，与既有的 `--chest-ink` 同思路），
+  凡是坐在固定浅底上的文字都用它。**验证方式**：CDP 读 `getComputedStyle` 的
+  `backgroundColor` 与 `color` 算对比度，别只靠肉眼在浅色主题下看。
+- **音效"存在"不等于"听得见"。** 开宝箱每敲一下本该有声音，代码里也确实调了 `sfxTap()`，
+  但它是 523Hz / 0.07s / gain 0.06 的方波——手机上等于静音，孩子以为"点了没反应"。
+  现在给了专用的 `sfxChestTap(step)`：低频木箱体 + 高频敲击点，三下按 196/233/262 升调。
+  教训：写音效时把 `gain` 和 `dur` 当成 UI 参数看待（0.06 增益 ≈ 20cm 外听不见），
+  并且在真机外放上验一次；只在电脑上戴耳机听，会漏掉"太小/太短"这一整类问题。
 
