@@ -11,16 +11,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..db import connect
 from ..schemas import ChildCreatedOut, ChildIn, ChildPatchIn, ChildrenOut
-from .auth import _require_family
+from .auth import _family_children, _require_family  # 孩子列表实现只用一份（含口令家族补默认孩子）
 
 router = APIRouter(prefix="/api/v1/children", tags=["children"])
-
-
-def _family_children(conn, family_id: int) -> list[dict]:
-    rows = conn.execute(
-        "SELECT id, name, avatar, birth_date FROM children WHERE family_id=? ORDER BY id", (family_id,)
-    ).fetchall()
-    return [dict(r) for r in rows]
 
 
 @router.get("", response_model=ChildrenOut)

@@ -158,6 +158,16 @@ function load(): ProgressMap {
   }
 }
 
+/** 每日快照逐字段取 max（跨设备合并的唯一口径：时长只增不减，本地旧值不得盖住云端较大值） */
+function maxSnapshot(a: DailySnapshot, b: DailySnapshot): DailySnapshot {
+  return {
+    durationSec: Math.max(a.durationSec ?? 0, b.durationSec ?? 0),
+    activities: Math.max(a.activities ?? 0, b.activities ?? 0),
+    mastered: Math.max(a.mastered ?? 0, b.mastered ?? 0),
+    listenSec: Math.max(a.listenSec ?? 0, b.listenSec ?? 0),
+  };
+}
+
 export const useProgressStore = defineStore("progress", () => {
   /** 必须用 reactive 包装：LessonView/HomePage 里的 computed 依赖它，
    *  普通对象不会建立响应式依赖，进度更新后 computed 缓存永不失效 */
@@ -184,6 +194,9 @@ export const useProgressStore = defineStore("progress", () => {
    * 从后端拉取当前孩子全量进度并合并：
    * - 服务端有、本地没有的课程/元数据 → 补入（多设备首次同步）；
    * - 本地已有 → 保留本地（活跃设备的最新状态优先）。
+   * - 时长类元数据（_daily / _dailyLog）例外：**同键取 max**。
+   *   设备 B 刚打开时本地是「今天 0 分钟」，若按"本地优先"，就会一直显示 0，
+   *   云端设备 A 已累计的时长永远进不来（这正是"同一口令两台设备看到两套数据"的成因）。
    */
   async function syncFromServer(): Promise<void> {
     const childId = activeChildId();
@@ -204,15 +217,15 @@ export const useProgressStore = defineStore("progress", () => {
           if (!(id in progress)) progress[id] = data[id];
         }
         if (meta) {
-          // _daily 同日期取 max 合并：跨设备时云端更大时长必须覆盖本地小值，防"今日 0 分钟"假象
+          // _daily：日期较新的一方胜出；同日期逐字段取 max（跨设备时云端更大时长必须覆盖本地小值）
           const cloudDaily = meta._daily;
           const local = progress._daily;
-          if (cloudDaily) {
-            if (!local || local.date !== cloudDaily.date) {
+          if (cloudDaily?.date) {
+            if (!local?.date || cloudDaily.date > local.date) {
               progress._daily = cloudDaily;
-            } else if (local.date === cloudDaily.date) {
+            } else if (cloudDaily.date === local.date) {
               progress._daily = {
-                date: cloudDaily.date,
+                date: local.date,
                 durationSec: Math.max(local.durationSec ?? 0, cloudDaily.durationSec ?? 0),
                 activities: Math.max(local.activities ?? 0, cloudDaily.activities ?? 0),
                 listenSec: Math.max(local.listenSec ?? 0, cloudDaily.listenSec ?? 0),
@@ -220,8 +233,14 @@ export const useProgressStore = defineStore("progress", () => {
             }
           }
           if (!progress._last) progress._last = meta._last ?? null;
+          // _dailyLog：逐日取 max（原来 `{...cloud, ...local}` 是本地覆盖云端，
+          // 于是设备 B 只为当天打了 1 分钟，设备 A 的 30 分钟就被永远盖住）
           const log = meta._dailyLog ?? {};
-          progress._dailyLog = { ...log, ...progress._dailyLog };
+          const merged: Record<string, DailySnapshot> = { ...(progress._dailyLog ?? {}) };
+          for (const date of Object.keys(log)) {
+            merged[date] = merged[date] ? maxSnapshot(merged[date], log[date]) : log[date];
+          }
+          progress._dailyLog = merged;
         }
         cloudState.value = "done";
       }

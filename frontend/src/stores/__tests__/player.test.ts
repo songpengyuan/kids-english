@@ -7,6 +7,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { usePlayerStore, SONG_LIST } from "../player";
+import { useProgressStore } from "../progress";
 
 describe("player store · 播放控制", () => {
   beforeEach(() => {
@@ -125,5 +126,25 @@ describe("player store · 播放控制", () => {
     const p = usePlayerStore();
     p.playSong(0);
     expect(Array.isArray(p.currentLyrics)).toBe(true);
+  });
+
+  it("settle：把最后一个还没落盘的播放段补进「今日磨耳朵」", () => {
+    // 5s 才落一次盘；直接关页/切后台时最后一段必须由 settle 结算，
+    // 否则这段真实听过的时间既不在本地也不上云（跨设备更看不到）。
+    vi.useFakeTimers();
+    try {
+      const p = usePlayerStore();
+      const prog = useProgressStore();
+      p.playSong(0);
+      vi.advanceTimersByTime(4000); // 不足一个 tick
+      expect(prog.todayStats.listenSec).toBe(0);
+
+      p.settle();
+
+      expect(prog.todayStats.listenSec).toBe(4);
+      p.togglePlay(); // 停掉 interval，避免污染后续用例
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

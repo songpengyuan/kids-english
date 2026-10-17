@@ -102,12 +102,15 @@ const kidAvatar = computed(() => auth.currentChild?.avatar ?? "🦊");
 const allWords = lessons.flatMap((l) => l.words);
 const weakCount = computed(() => dueWords(progress.getReviewQueue(), allWords).length);
 
-/** 今日累计（学习 + 磨耳朵），单位分钟 */
-const todayMin = computed(() =>
-  Math.round(((progress.todayStats.durationSec || 0) + (progress.todayStats.listenSec || 0)) / 60)
-);
-const learnMin = computed(() => Math.round((progress.todayStats.durationSec || 0) / 60));
+/**
+ * 今日总时长（分钟）：durationSec 本身**已包含磨耳朵**（见 addListenActivity：
+ * 同一段秒数同时计入 durationSec 与 listenSec），所以不能再加一次 listenSec ——
+ * 否则听 5 分钟会显示 10 分钟，"学习 + 磨耳朵"也对不上总数。
+ */
+const todayMin = computed(() => Math.round((progress.todayStats.durationSec || 0) / 60));
 const listenMin = computed(() => Math.round((progress.todayStats.listenSec || 0) / 60));
+/** 纯学习时长 = 总 - 磨耳朵（相减而不是各自取整，避免「学习 + 磨耳朵 ≠ 今天」） */
+const learnMin = computed(() => Math.max(0, todayMin.value - listenMin.value));
 
 /** 今日目标完成度：复习完成率与新学一关，各占一半 */
 const goalPct = computed(() => {

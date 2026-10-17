@@ -27,7 +27,7 @@
  *  · 本页隐藏底部导航（见 App.vue 的 showNav），退出用左上角收起键 ——
  *    这样只有一个"底部"，不必再为底栏预留一条 --nav-h。
  */
-import { ref, computed, onBeforeUnmount } from "vue";
+import { ref, computed, onBeforeUnmount, onMounted } from "vue";
 import { lessons, asset } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
@@ -122,6 +122,16 @@ function stopVideoTimer() {
 onBeforeUnmount(() => {
   stopVideoTimer();
   // 歌曲播放由全局 store 持有，本页卸载不暂停（跨 tab 续播）
+});
+
+/**
+ * 进页面拉一次云端：页面顶部「今天磨了 N 分钟」读的是 progress.todayStats，
+ * 而它只会被 syncFromServer 合并刷新。之前只有启动 / 「我的」页 / 家长中心会拉，
+ * 直接落在磨耳朵页（底栏中间位进来、或播放页返回）时读到的是本机 _daily，
+ * 于是同一口令在另一台设备上显示 0 分钟 —— 数字会"看着像没同步"。
+ */
+onMounted(() => {
+  void progStore.syncFromServer();
 });
 </script>
 

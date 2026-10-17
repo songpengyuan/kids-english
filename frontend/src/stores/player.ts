@@ -96,6 +96,19 @@ export const usePlayerStore = defineStore("player", () => {
     }
   }
 
+  /**
+   * 主动结算当前播放段（在关页 / 切后台前调用）。
+   * 5s 的 interval 只在**下个 tick** 落盘，直接关标签页会丢掉最后不足一个 tick 的时长；
+   * pagehide 时先结算再 flushReport，才能把这段真实听过的时间送到云端。
+   *
+   * 注意：这里**不能**顺手把段起点重置成 now。切后台时 store 的 visibilitychange
+   * 监听只是停掉 interval、故意不结算，等回前台再按真实时间一次补上；若在这里重置，
+   * 「切到别的页面继续听」的那一整段就会被吞掉（这正是本模块当初改成结算式的原因）。
+   */
+  function settle() {
+    settleListen();
+  }
+
   /** 页面可见性：后台停 interval（避免节流干扰），回前台且仍在播放时按真实时间补计 */
   function onVisibilityChange() {
     if (document.hidden) {
@@ -238,5 +251,6 @@ export const usePlayerStore = defineStore("player", () => {
     toggleShuffle,
     seek,
     formatTime,
+    settle,
   };
 });

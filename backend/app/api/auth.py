@@ -43,7 +43,37 @@ def _require_family(authorization: str = Header(default="")) -> int:
     return payload["fid"]
 
 
+# 口令家族的数据归属者：默认孩子档案
+_DEFAULT_CHILD_NAME = "宝贝"
+_DEFAULT_CHILD_AVATAR = "🦊"
+
+
+def _ensure_gate_child(conn, family_id: int) -> None:
+    """口令家族必须至少有一个孩子档案（幂等）。
+
+    为什么：口令是用户在云端的**唯一标识**，但进度 / 奖励 / 报告全按 child 归属
+    （`/children/{child_id}/progress`）。如果一个口令家族没有孩子档案，
+    前端 `auth.currentChildId` 就恒为 null，`progress.syncFromServer()` /
+    `scheduleReport()` 全部在入口静默 return —— 表现就是「A 设备听了半小时，
+    B 设备同一口令还是 0 分钟」，且没有任何报错。
+
+    只对**口令家族**生效（table `gate_codes` 里有记录）：注册流程建的家庭
+    保持「一个孩子都没有」的语义，由家长自己去家长中心添加，接口契约不变。
+    """
+    if conn.execute("SELECT 1 FROM children WHERE family_id=?", (family_id,)).fetchone():
+        return
+    if not conn.execute("SELECT 1 FROM gate_codes WHERE family_id=?", (family_id,)).fetchone():
+        return
+    conn.execute(
+        "INSERT INTO children (family_id, name, avatar) VALUES (?,?,?)",
+        (family_id, _DEFAULT_CHILD_NAME, _DEFAULT_CHILD_AVATAR),
+    )
+    conn.commit()
+
+
 def _family_children(conn, family_id: int) -> list[dict]:
+    """家庭的孩子列表（口令家族缺失时先补默认孩子，保证云端有数据归属者）。"""
+    _ensure_gate_child(conn, family_id)
     rows = conn.execute(
         "SELECT id, name, avatar, birth_date FROM children WHERE family_id=? ORDER BY id", (family_id,)
     ).fetchall()
@@ -155,6 +185,8 @@ def seed_gate_code() -> None:
             (g_digest, g_salt, family_id, "默认口令"),
         )
         conn.commit()
+        # 口令家族必须有数据归属者：没有孩子档案，前端所有云同步都会静默跳过
+        _ensure_gate_child(conn, family_id)
     finally:
         conn.close()
 

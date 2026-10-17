@@ -78,6 +78,79 @@ class TestAuth:
         assert client.get("/api/v1/content/lessons").status_code == 401
 
 
+class TestGate:
+    """应用入口口令：口令即身份（多台设备同一口令 → 同一份云端数据）。
+
+    回归点：口令家族若没有孩子档案，前端 `auth.currentChildId` 恒为 null，
+    progress 的拉取/上报会**全部在入口静默 return**（没有报错、也没有请求），
+    表现就是「A 设备听了半小时，B 设备同一口令还是 0 分钟」。
+    """
+
+    def _seed_gate(self, monkeypatch, passcode: str = "24681357") -> str:
+        monkeypatch.setenv("KIDS_GATE_PASSCODE", passcode)
+        from app.api import auth as auth_mod
+
+        auth_mod.seed_gate_code()
+        return passcode
+
+    def test_gate_family_gets_default_child(self, monkeypatch):
+        code = self._seed_gate(monkeypatch)
+        r = client.post("/api/v1/auth/gate", json={"passcode": code})
+        assert r.status_code == 200
+        children = r.json()["children"]
+        assert len(children) == 1, "口令家族必须自动补一个数据归属者（否则云同步全程跳过）"
+        assert children[0]["name"] == "宝贝"
+
+    def test_same_passcode_sees_same_listen_time(self, monkeypatch):
+        code = self._seed_gate(monkeypatch)
+        a = client.post("/api/v1/auth/gate", json={"passcode": code}).json()
+        cid = a["children"][0]["id"]
+
+        # A 设备：磨耳朵 300s
+        meta = {
+            "_daily": {"date": "2026-10-17", "durationSec": 300, "activities": 0, "listenSec": 300},
+            "_last": "l4",
+            "_dailyLog": {
+                "2026-10-17": {"durationSec": 300, "activities": 0, "mastered": 0, "listenSec": 300}
+            },
+        }
+        put = client.put(
+            f"/api/v1/children/{cid}/progress",
+            headers={"Authorization": f"Bearer {a['token']}"},
+            json={"data": {}, "meta": meta},
+        )
+        assert put.status_code == 200
+
+        # B 设备：同一口令 → 同一个孩子 → 同一份时长
+        b = client.post("/api/v1/auth/gate", json={"passcode": code}).json()
+        assert b["children"][0]["id"] == cid
+        got = client.get(
+            f"/api/v1/children/{cid}/progress",
+            headers={"Authorization": f"Bearer {b['token']}"},
+        ).json()
+        assert got["meta"]["_daily"]["listenSec"] == 300
+        assert got["meta"]["_dailyLog"]["2026-10-17"]["listenSec"] == 300
+
+    def test_auth_me_heals_legacy_family_without_child(self, monkeypatch):
+        """存量部署：口令家族早就存在（设备已 7 天免输），但历史版本从没建过孩子。
+        老设备重启只会打 /auth/me，不会重新输口令，所以自愈必须发生在读路径上。"""
+        code = self._seed_gate(monkeypatch)
+        a = client.post("/api/v1/auth/gate", json={"passcode": code}).json()
+
+        from app.db import connect
+
+        conn = connect()
+        conn.execute("DELETE FROM children")
+        conn.commit()
+        conn.close()
+
+        me = client.get(
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {a['token']}"}
+        ).json()
+        assert len(me["children"]) == 1
+        assert me["children"][0]["name"] == "宝贝"
+
+
 class TestChildren:
     def test_create_child_and_me(self):
         token = _auth()

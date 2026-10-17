@@ -97,6 +97,34 @@ describe("progress store · 云同步", () => {
     expect(d.activities).toBe(3);
   });
 
+  it("每日快照逐日取 max：本地旧的当天快照不得盖住云端更大值（日历跨设备一致）", async () => {
+    const today = "2026-09-27";
+    mockFetch({
+      "/api/v1/children/1/progress": {
+        ok: true,
+        data: {},
+        meta: {
+          _daily: null,
+          _last: null,
+          _dailyLog: {
+            [today]: { durationSec: 1800, activities: 4, mastered: 12, listenSec: 1500 },
+          },
+        },
+      },
+    });
+    const p = useProgressStore();
+    // 设备 B 本地只磨了 60s；若按"本地覆盖云端"，A 设备的 25 分钟会被永远盖住
+    p.addListenActivity(60);
+
+    await p.syncFromServer();
+
+    const snap = p.progress._dailyLog[today];
+    expect(snap.listenSec).toBe(1500);
+    expect(snap.durationSec).toBe(1800);
+    expect(snap.activities).toBe(4);
+    expect(snap.mastered).toBe(12);
+  });
+
   it("进度变更后防抖上报（3s 内合并，携带 data + meta）", async () => {
     const { calls, fn } = mockFetch({
       "/api/v1/children/1/progress": { ok: true },
