@@ -185,6 +185,11 @@
   --talk-ask-bg: #fff3c2; /* 提问气泡 */
   --talk-ask-line: #f5d97a;
   --talk-ans-line: #9fe0f5;
+  /* 气泡里的文字必须用**固定深色**：气泡和聊天底板都是"插画"，两套主题下都保持浅底，
+   * 而 --ink / --ink-soft 在暗色主题会变成浅色 → 白底白字（对比度 1.05:1，实测不可读）。
+   * 与 --chest-ink 同一个思路：画在固定浅色面上，就用固定的深墨色。 */
+  --talk-ink: #3d3327;
+  --talk-ink-soft: #6d5f4e;
   --mic-face: linear-gradient(180deg, #ff9d5c, #ff7a3c);
   --mic-base: #e05f1e;
   --mic-rec-face: linear-gradient(180deg, #ff5c5c, #e63939);

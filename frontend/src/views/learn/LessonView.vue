@@ -189,14 +189,8 @@ const playTotal = ref(0);
       @back="back"
     >
       <template #title>
-        <!-- 亲子对话：中间一条进度条 -->
-        <div v-if="stage === 'talk'" class="talk-progress">
-          <div class="tp-track">
-            <div class="tp-fill" :style="{ width: ((talkIdx + 1) / (lesson.words?.length || 1)) * 100 + '%' }"></div>
-          </div>
-        </div>
         <LessonProgressHeader
-          v-else-if="isPlay"
+          v-if="isPlay"
           :activities="activities"
           :stage="stage"
           :play-pct="playPct"
@@ -211,8 +205,7 @@ const playTotal = ref(0);
         >
       </template>
       <template #right>
-        <span v-if="stage === 'talk'" class="talk-round">第 {{ talkIdx + 1 }}/{{ lesson.words?.length || 0 }} 轮</span>
-        <div v-else class="badge star-badge" role="img" aria-label="已获得星星"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</div>
+        <div class="badge star-badge" role="img" aria-label="已获得星星"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</div>
       </template>
     </HeaderBar>
 
@@ -248,7 +241,7 @@ const playTotal = ref(0);
       @total="playTotal = $event"
     />
     <SongView v-else-if="stage === 'song'" :lesson="lesson" @song-done="afterSong" @back="toMenu" />
-    <TalkView v-else-if="stage === 'talk'" :lesson="lesson" @idx="talkIdx = $event" @done="afterGame" />
+    <TalkView v-else-if="stage === 'talk'" :lesson="lesson" @progress="playPct = $event" @total="playTotal = $event" @done="afterGame" />
 
 
     <!-- 结算（闯关/自由统一组件） -->
@@ -281,28 +274,7 @@ const playTotal = ref(0);
 .hdr-title-tap:active {
   background: var(--btn-plain-bg);
 }
-/* 亲子对话顶部进度条：顶栏里放不下全局 .progress 的高度，这里用细条变体 */
-.talk-progress {
-  flex: 1;
-  max-width: 200px;
-  margin: 0 var(--gap-s);
-}
-.tp-track {
-  height: var(--gap-xs);
-  border-radius: var(--radius-pill);
-  background: var(--line);
-  overflow: hidden;
-}
-.tp-fill {
-  height: 100%;
-  border-radius: var(--radius-pill);
-  background: var(--brand-grad);
-  transition: width var(--dur-base) var(--ease-out);
-}
-.talk-round {
-  font-weight: var(--fw-strong);
-  font-size: var(--fs-small);
-  color: var(--ink-soft);
-  white-space: nowrap;
-}
+/* 亲子对话的顶栏进度已并入 LessonProgressHeader（与其他玩法同一根圆点进度），
+ * 原来这里有一条自造的细进度条 + 右侧"第 N/M 轮"文字，两处状态各自维护，
+ * 而且和「跟我读」的页内 `3 / 7` 位置不一致（2026-10-17 删除）。 */
 </style>

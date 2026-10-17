@@ -19,7 +19,8 @@ defineProps<{
   hasStars: (key: string) => boolean;
 }>();
 
-const stepKeys = ["learn", "quiz", "match", "speak"];
+/** 逐项推进的玩法：显示"每项一个圆点"（学/辨/连/读/亲子对话的每一轮） */
+const stepKeys = ["learn", "quiz", "match", "speak", "talk"];
 </script>
 
 <template>

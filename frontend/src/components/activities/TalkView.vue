@@ -10,6 +10,14 @@
  * 录音会话复用 useSpeechSession（与「跟我读」一致）：
  *  - 浏览器支持语音识别 → ASR 自动打分（perfect/good 自动通过，retry 再试）
  *  - 不支持 → 录音回放 + 家长判定（读对了 / 没读准）
+ *
+ * 2026-10-17 两处调整（用户反馈）：
+ *  ① 进度位置对齐「跟我读」：页内顶部一行 `3 / 7` + 玩法标签（StageHead），
+ *    顶栏改回与其他玩法同一根分段/圆点进度（LessonProgressHeader），
+ *    不再自造一条"顶栏细进度条 + 第 N/M 轮"。
+ *  ② 读对了**不留展示态**：过去读对后停在"太棒了，妈妈要问下一个啦！"上，
+ *    底部还是上一轮的句子，孩子不知道该说什么。现在读对即推进下一轮
+ *    （ADVANCE_MS 后切索引），底部立刻换成新的一句"宝宝要说的话"。
  */
 import { computed, nextTick, ref, watch, onMounted } from "vue";
 import { speak } from "../../services/speech";
@@ -17,13 +25,14 @@ import { hapticTap } from "../../services/haptics";
 import { sfxCorrect, sfxWrong, bigCelebrate } from "../../services/effects";
 import { useSpeechSession } from "../../composables/useSpeechSession";
 import type { Lesson, Word, Phrase } from "../../data/lessons";
-import { Check, Mic, Square, Volume2 } from "@lucide/vue";
+import { Check, MessageCircle, Mic, Square, Volume2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import SafeBottom from "../layout/SafeBottom.vue";
+import StageHead from "./StageHead.vue";
 import LessonFooter from "./LessonFooter.vue";
 
 const props = defineProps<{ lesson: Lesson }>();
-const emit = defineEmits(["done", "idx"]);
+const emit = defineEmits(["done", "progress", "total"]);
 
 const words = computed(() => props.lesson.words ?? []);
 const phrases = computed<Phrase[]>(() => props.lesson.phrases ?? []);
@@ -91,6 +100,11 @@ const allPassed = computed(
 );
 
 /** 亲子对话录音会话（与「跟我读」同一会话逻辑） */
+/** 读对后推进下一轮的间隔：够孩子看见自己那条消息落地，又不至于干等 */
+const ADVANCE_MS = 420;
+/** 正在推进（挡住"读对了/没读准"的重复点击，避免同一轮推两条孩子消息） */
+const advancing = ref(false);
+
 const session = useSpeechSession(words, {
   onCorrect: (w) => {
     passedIds.value = new Set(passedIds.value).add(w.id);
@@ -100,27 +114,48 @@ const session = useSpeechSession(words, {
     if (allPassed.value) {
       bigCelebrate(); // 全部对话完成 → 庆祝
     } else {
-      // 通过一轮 → 稍等片刻家长自动发出下一轮问句
-      window.setTimeout(() => {
-        if (!allPassed.value) next();
-      }, 900);
+      advance(); // 通过一轮 → 立刻进入下一轮（不留"太棒了"的展示态）
     }
   },
   onWrong: () => sfxWrong(),
 });
 /** 解构会话状态/方法（模板中 ref 自动解包） */
-const { idx: dlgIdx, cur, status, grade, heard, mode, micBlocked, stars, recAudio, recUrl, startMic, stopMic, parentJudge, retry, next } = session;
+const { idx: dlgIdx, cur, status, grade, heard, mode, micBlocked, stars, progressText, total, recAudio, recUrl, startMic, stopMic, parentJudge, retry, next } = session;
+
+/**
+ * 推进到下一轮：切索引 → status/grade 归位（下一轮回到"等你说"）。
+ * 底部"宝宝要说的话"由 cur 驱动，索引一变就换成新的一句。
+ */
+function advance() {
+  if (advancing.value || allPassed.value) return;
+  advancing.value = true;
+  window.setTimeout(() => {
+    advancing.value = false;
+    if (allPassed.value) return;
+    next();
+  }, ADVANCE_MS);
+}
+
+/** 轮次（与「跟我读」同一根进度：顶栏圆点 + 页内 `3 / 7`） */
+watch(
+  [dlgIdx, total],
+  () => {
+    emit("total", total.value);
+    emit("progress", Math.round(((dlgIdx.value + 1) / total.value) * 100));
+  },
+  { immediate: true }
+);
 
 /** 轮次切换 → 家长发出问句消息 + 自动朗读（孩子先听再回答） */
 let questionTimer: ReturnType<typeof setTimeout> | null = null;
 watch(dlgIdx, (v) => {
-  emit("idx", v);
   if (questionPhrase.value) {
     if (questionTimer) clearTimeout(questionTimer);
+    // 260 → 180ms：上一轮"孩子消息"刚落到底，新问句紧跟着出现才像对话
     questionTimer = window.setTimeout(() => {
       pushParent(cur.value, questionPhrase.value!.en);
       speak(questionPhrase.value!.en);
-    }, 260);
+    }, 180);
   }
 });
 onMounted(() => {
@@ -164,6 +199,9 @@ function finish() {
 
 <template>
   <div class="talk view">
+    <!-- 进度位置与「跟我读」完全一致：页内顶部一行「3 / 7」+ 玩法标签 -->
+    <StageHead :text="progressText" tag="亲子对话" :icon="MessageCircle" />
+
     <!-- 对话流：家长消息（左） ⇄ 孩子消息（右），微信气泡样式 -->
     <div class="chat-msgs" ref="msgBox">
       <div
@@ -212,15 +250,21 @@ function finish() {
 
     <!-- 底部输入条 / 判定区（微信聊天输入框位）——全部完成时隐藏，只留"我都会啦"按钮 -->
     <div v-if="!allPassed" class="chat-input">
-      <!-- 孩子要说的话：显示在输入框上方（点喇叭听发音）——麦克风不可用时不重复显示（答案已在聊天里） -->
-      <button v-if="!micBlocked" class="ci-say" aria-label="宝宝要说的话，点一下听发音" @click="playWord(cur)">
+      <!-- 孩子这一轮要说的句子：**始终显示**（点喇叭听发音）。
+           麦克风不可用时更要显示——对话流里只有"上一轮"的答句，孩子根本不知道该说什么。 -->
+      <button class="ci-say" aria-label="宝宝要说的话，点一下听发音" @click="playWord(cur)">
         <span class="ci-say-text">{{ answerText(cur) }}</span>
         <Volume2 class="ci-say-vol k-ico" />
       </button>
 
       <template v-if="micBlocked && !recUrl">
         <p class="ci-hint">麦克风不可用，点大图听发音后完成这一轮吧</p>
-        <BaseButton class="ci-pass" variant="green" :disabled="passedIds.has(cur.id)" @click="parentJudge(true)">
+        <BaseButton
+          class="ci-pass"
+          variant="green"
+          :disabled="passedIds.has(cur.id) || advancing"
+          @click="parentJudge(true)"
+        >
           读对了 ✓
         </BaseButton>
       </template>
@@ -239,7 +283,7 @@ function finish() {
       </template>
 
       <template v-else>
-        <!-- ASR 自动打分：读到 perfect/good → 自动下一轮；retry → 再试 -->
+        <!-- ASR 自动打分：读到 perfect/good → 直接进入下一轮（只闪一下"读对了"，不占着屏） -->
         <template v-if="mode === 'asr'">
           <p class="ci-hint" aria-live="polite">
             {{ heard ? `你说的是：${heard}` : "我没听清，再试一次吧" }}
@@ -248,7 +292,7 @@ function finish() {
             <BaseButton v-if="grade === 'retry'" variant="green" @click="retry()">
               再试一次
             </BaseButton>
-            <span v-else class="ci-auto">太棒了，妈妈要问下一个啦！</span>
+            <span v-else class="ci-auto">✓ 读对了</span>
           </div>
         </template>
         <!-- 录音回放 + 家长判定（识别不可用时的降级） -->
@@ -260,8 +304,12 @@ function finish() {
               <BaseButton variant="green" @click="retry()">再试一次</BaseButton>
             </template>
             <template v-else>
-              <BaseButton variant="green" @click="parentJudge(true)">读对了 ✓</BaseButton>
-              <BaseButton variant="orange" @click="parentJudge(false)">没读准</BaseButton>
+              <BaseButton variant="green" :disabled="advancing" @click="parentJudge(true)">
+                读对了 ✓
+              </BaseButton>
+              <BaseButton variant="orange" :disabled="advancing" @click="parentJudge(false)">
+                没读准
+              </BaseButton>
             </template>
           </div>
         </template>
@@ -286,36 +334,6 @@ function finish() {
 <style scoped>
 .talk {
   align-items: center;
-}
-
-/* ===== 轮次条（精简一行） ===== */
-.chat-head {
-  flex: none;
-  width: 100%;
-  max-width: 560px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 4px 0;
-}
-.ch-av {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-}
-.ch-av.mom { background: var(--talk-warm); }
-.ch-av.kid { background: var(--talk-cool); }
-.ch-round {
-  font-weight: var(--fw-strong);
-  font-size: var(--fs-small);
-  color: var(--brand-dark);
-  white-space: nowrap;
 }
 
 /* ===== 对话流 ===== */
@@ -373,7 +391,9 @@ function finish() {
   font-weight: var(--fw-strong);
   font-size: 15px;
   line-height: 1.35;
-  color: var(--ink);
+  /* 气泡是"插画"：两套主题下都是浅底，所以文字用固定的 --talk-ink。
+   * 用 --ink 会在暗色主题变成浅色 → 白底白字（实测对比度 1.05:1）。 */
+  color: var(--talk-ink);
   box-shadow: var(--shadow-soft);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -405,7 +425,7 @@ function finish() {
 .msg-heard {
   font-size: 12px;
   font-weight: var(--fw-strong);
-  color: var(--ink-soft);
+  color: var(--talk-ink-soft);
 }
 .msg-time {
   font-size: 10px;
@@ -432,7 +452,7 @@ function finish() {
 .msg-pic.parent-pic .msg-pic-zh {
   font-size: 13px;
   font-weight: var(--fw-strong);
-  color: var(--ink);
+  color: var(--talk-ink);
 }
 .msg-pic-emoji {
   font-size: 56px;
@@ -447,12 +467,12 @@ function finish() {
 .msg-pic-en {
   font-weight: var(--fw-strong);
   font-size: 18px;
-  color: var(--ink);
+  color: var(--talk-ink);
 }
 .msg-pic-zh {
   font-size: 11px;
   font-weight: var(--fw-mid);
-  color: var(--ink-faint);
+  color: var(--talk-ink-soft);
 }
 
 /* ===== 底部输入条 / 判定区 ===== */
@@ -478,12 +498,6 @@ function finish() {
   box-shadow: var(--shadow-soft);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-}
-.ci-say-label {
-  font-size: 11px;
-  font-weight: var(--fw-strong);
-  color: var(--ink-faint);
-  white-space: nowrap;
 }
 .ci-say-text {
   font-weight: var(--fw-strong);

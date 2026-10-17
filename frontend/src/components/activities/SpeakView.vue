@@ -8,6 +8,7 @@ import type { Word } from "../../data/lessons";
 import { ChevronRight, Mic, RotateCcw, Square, ThumbsUp, Volume2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
 import SafeBottom from "../layout/SafeBottom.vue";
+import StageHead from "./StageHead.vue";
 
 const props = defineProps<{ words: Word[] }>();
 const emit = defineEmits(["done", "progress", "total"]);
@@ -83,12 +84,12 @@ function next() {
 
 <template>
   <div class="speak view">
-    <div class="speak-head">
-      <span class="prog">{{ progressText }}</span>
-      <span class="mode-tag">
-        <Mic class="k-ico" />{{ mode === "asr" ? "小耳朵打分" : "亲子跟读" }}
-      </span>
-    </div>
+    <!-- 进度位置由 StageHead 统一（亲子对话的进度也在同一处，见 TalkView） -->
+    <StageHead
+      :text="progressText"
+      :tag="mode === 'asr' ? '小耳朵打分' : '亲子跟读'"
+      :icon="Mic"
+    />
 
     <div class="word-zone">
       <div class="pic anim-pop" data-haptic @click="hearExample">
@@ -203,31 +204,6 @@ function next() {
 .speak {
   align-items: center;
 }
-.speak-head {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex: none;
-  gap: var(--gap-s);
-}
-.prog {
-  font-weight: var(--fw-strong);
-  color: var(--ink-soft);
-}
-.mode-tag {
-  background: var(--card-bg);
-  border-radius: var(--radius-pill);
-  padding: 3px clamp(8px, 1.2vw, 12px);
-  font-weight: var(--fw-strong);
-  font-size: var(--fs-small);
-  box-shadow: var(--shadow-soft);
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35em;
-}
-
 .word-zone {
   display: flex;
   flex-direction: column;

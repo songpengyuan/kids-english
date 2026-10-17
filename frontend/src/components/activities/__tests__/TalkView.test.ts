@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 /**
  * 亲子对话（TalkView · 微信聊天式）逐轮对话行为：
- * - 渲染聊天头部（妈妈/宝宝头像+轮次）；进页家长自动发出问句消息并朗读
- * - 录音 → 判定通过 → 孩子"发消息"（大图+答句+语音文本）并自动进入下一轮
+ * - 页内顶部进度与「跟我读」同构（StageHead：`1 / 3` + 玩法标签），并上报 progress/total
+ * - 进页家长自动发出问句消息并朗读
+ * - 录音 → 判定通过 → 孩子"发消息"（大图+答句+语音文本）**并立刻进入下一轮**
+ *   （2026-10-17：读对后不能停在"读对了"的展示态，底部要换成新的一句）
  * - 判定「没读准」→ 可再试，轮次不变
  * - 全部单词对话完 → 完成按钮可用，emit done(星级)
  */
@@ -80,9 +82,18 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     vi.useRealTimers();
   });
 
-  it("渲染聊天头部与输入框；进页家长自动发出问句消息并朗读（不算通过）", async () => {
+  it("页内进度与「跟我读」同构，并上报 progress/total（供顶栏圆点）", async () => {
     const wrapper = mount(TalkView, { props: { lesson } });
-    // 头部有妈妈 / 宝宝头像
+    // 位置/写法与 SpeakView 的 StageHead 一致：左侧 `1 / 3`，右侧玩法标签
+    expect(wrapper.find(".stage-head .prog").text()).toBe("1 / 3");
+    expect(wrapper.find(".stage-head .mode-tag").text()).toContain("亲子对话");
+    expect(wrapper.emitted("total")?.[0]?.[0]).toBe(3);
+    expect(wrapper.emitted("progress")?.[0]?.[0]).toBe(33); // 1/3 → 33%
+  });
+
+  it("渲染输入框与「宝宝要说的话」；进页家长自动发出问句消息并朗读（不算通过）", async () => {
+    const wrapper = mount(TalkView, { props: { lesson } });
+    // 输入区就位
     expect(wrapper.find(".input-bar").exists()).toBe(true);
     // 输入框上方显示孩子要说的话（点喇叭听发音）
     expect(wrapper.find(".ci-say-text").text()).toBe("It's a frog.");
@@ -97,14 +108,14 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     const parentPic = parentMsg[0].find(".msg-pic");
     expect(parentPic.exists()).toBe(true);
     expect(parentPic.find(".msg-pic-en").exists()).toBe(false);
-    // 未完成：底部不显示按钮（头部轮次已是进度）
+    // 未完成：底部不显示按钮
     expect(wrapper.find(".lf-btn").exists()).toBe(false);
     // 家长消息文字在上、图片在下
     const html = parentMsg[0].html();
     expect(html.indexOf("What's that?")).toBeLessThan(html.indexOf("msg-pic"));
   });
 
-  it("一轮录音通过 → 孩子「发消息」（大图+答句）并自动进入下一轮", async () => {
+  it("一轮通过 → 孩子「发消息」并立刻进入下一轮，底部换成新的一句", async () => {
     const stop = vi.fn().mockResolvedValue("blob:rec-url");
     vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);
     const wrapper = mount(TalkView, { props: { lesson } });
@@ -114,10 +125,16 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     expect(kidMsg.length).toBe(1);
     expect(kidMsg[0].find(".msg-pic-en").text()).toBe("frog");
     expect(kidMsg[0].find(".msg-text").text()).toContain("It's a frog.");
-    // 900ms 后自动进入第 2 轮
-    await vi.advanceTimersByTimeAsync(1000);
-    // 新轮 260ms 后家长再发问句消息 + 朗读
-    await vi.advanceTimersByTimeAsync(400);
+    // 关键：不留"读对了"的展示态 —— 读对就推进（ADVANCE_MS=420 → 新问句 180）。
+    // 推进中判定按钮被锁住，避免同一轮连点推出两条孩子消息。
+    expect(wrapper.find(".ci-judge .k-btn-green").attributes("disabled")).toBeDefined();
+    await vi.advanceTimersByTimeAsync(700);
+    expect(wrapper.find(".input-bar").exists()).toBe(true); // 回到"等你说话"
+    // 底部立刻换成第 2 轮孩子要说的话（不是还停在 frog）
+    expect(wrapper.find(".ci-say-text").text()).toBe("It's a monkey.");
+    expect(wrapper.find(".stage-head .prog").text()).toBe("2 / 3");
+    expect(wrapper.emitted("progress")?.at(-1)?.[0]).toBe(67);
+    // 家长第 2 轮问句也发了
     expect(wrapper.findAll(".msg-row.parent").length).toBe(2);
     expect(speak).toHaveBeenCalledWith("What's that?");
   });
@@ -139,6 +156,7 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     expect(wrapper.find(".input-bar").exists()).toBe(true);
     // 未通过不发孩子消息
     expect(wrapper.findAll(".msg-row.kid").length).toBe(0);
+    expect(wrapper.find(".stage-head .prog").text()).toBe("1 / 3");
   });
 
   it("三轮全部通过 → 完成按钮可用，emit done(3 星)", async () => {
@@ -146,9 +164,9 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);
     const wrapper = mount(TalkView, { props: { lesson } });
     await passOneRound(wrapper);
-    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(700);
     await passOneRound(wrapper);
-    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(700);
     await passOneRound(wrapper);
     expect(wrapper.findAll(".msg-row.kid").length).toBe(3);
     const btn = wrapper.find(".lf-btn");
