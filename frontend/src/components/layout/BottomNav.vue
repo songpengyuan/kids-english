@@ -3,16 +3,16 @@
  * 底部导航（App 风格常驻）：📖 学习 / 🎧 磨耳朵 / 👤 我的
  *
  * - 学习是独立路由 #/course；游戏入口收在学习页右上角按钮（非底部主 tab）。
- * - 中间位**永远是「磨耳朵」入口**，但有两副面孔（位置决定语义，见 onMiddle）：
- *     · 站在别的 tab（哪怕有歌在播）→ 槽位就是入口本身：🎧 + 正在播放的小圆点；
- *     · 已站在磨耳朵页 → 槽位换成播放/暂停键（--tap-min，品牌蓝）。
- *      列表页本身一个 transport 都没有，这颗键只有在这里才是真的"暂停键"。
- *   两副面孔的关键是**键面必须等于它的行为**：不能长得像暂停键、点下去却是导航，
- *   也不能"有歌就永远是播放键"——那颗键会盖住整格唯一的命中区（52px 图标位
- *   ≈ 整格 60% 高度），孩子点上去只暂停不导航，而磨耳朵全站只此一个入口，
- *   于是开始播放后中间 tab 等于失灵，从别的 tab 再也回不来（2026-10-17 反馈）。
- *   也不再把封面/歌名/进度塞进槽位——那是播放页的事，塞进来只会让歌名被
- *   截成 "Walki…"，还把三格的宽度与基线一起撑歪。
+ * - 中间位**永远是「磨耳朵」入口**，整格只有一种行为：进/留在磨耳朵页。
+ *   图标只是**状态显示**（2026-10-17 反馈：只换图标、不要做成播放键）：
+ *     · 没在播 → 🎧 耳机；
+ *     · 正在播 → 三根跳动的声波条（与歌单行里的 SpeakWave 同一套"声音在播"语言）。
+ *   为什么不在这里放播放/暂停键：tab 的第一职责是导航，键面必须等于行为。
+ *   上一版"有歌就整体换成一颗暂停键"，那颗键盖住整格唯一的命中区（52px 图标位
+ *   ≈ 整格 60% 高度），孩子点上去只暂停、不导航，而磨耳朵全站只此一个入口，
+ *   于是开始播放后从别的 tab 再也回不去（2026-10-17 反馈）。
+ *   暂停**不需要**这颗键：磨耳朵列表里当前那首自带 `.sr-play`，播放页有完整 transport。
+ *   也不把封面/歌名/进度塞进槽位——那是播放页的事，塞进来只会把歌名截成 "Walki…"。
  * - 我的 tab 高亮覆盖其子页：/me、/treasure、/report、/review。
  * - 玩法页（/course/:id）与播放页（歌词全屏页展开时）不渲染本组件（沉浸，见 App.vue）。
  */
@@ -22,7 +22,6 @@ import PathIcon from "../PathIcon.vue";
 import { speakZh } from "../../services/speech";
 import { hapticTap } from "../../services/haptics";
 import { usePlayerStore } from "../../stores/player";
-import { Pause, Play } from "@lucide/vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -52,30 +51,12 @@ function goMe() {
   if (route.name === "me") return;
   void router.push("/me").catch(() => {});
 }
-/** 磨耳朵入口（点槽位进列表） */
+/** 磨耳朵入口（中间整格，任何状态下都是导航，不做播放控制） */
 function goListen() {
   hapticTap();
   speakZh("磨耳朵");
   if (isListen.value) return;
   void router.push("/listen").catch(() => {});
-}
-
-/**
- * 中间位：位置决定语义。
- * - 已在磨耳朵页 → 这颗键是播放/暂停（列表页没有别的 transport，它是唯一一颗）；
- * - 在其他 tab → 整格都是回磨耳朵列表的入口（有歌在播也一样）。
- *
- * 上一版是"有歌就永远是播放键"，命中区被那颗键吃掉，从别的 tab 点中间位
- * 只暂停、不导航 —— 而磨耳朵全站只有这一个入口，等于再也回不去。
- * tab 的第一职责是导航，任何状态下都不能失效。
- */
-function onMiddle() {
-  if (isListen.value) {
-    hapticTap();
-    player.togglePlay();
-    return;
-  }
-  goListen();
 }
 </script>
 
@@ -93,36 +74,19 @@ function onMiddle() {
       <span class="bn-cap">学习</span>
     </button>
 
-    <!-- 中间位·入口形态：没在磨耳朵页时（含"有歌在播但在别的 tab"）。
-         整格都是入口，图标只是一个状态显示（正在播放 → 右上角小圆点）。 -->
+    <!-- 中间位：入口形态恒定，只有"脸"在变（耳机 ⇄ 声波）。
+         图标是状态显示，不是可点控件 —— 整格一个 handler，不存在内层拦截。 -->
     <button
-      v-if="!isListen || !player.currentSong"
       role="tab"
       class="bn-tab"
-      aria-label="磨耳朵"
+      :aria-label="player.playing ? '磨耳朵（正在播放）' : '磨耳朵'"
       :aria-selected="isListen"
       :class="{ on: isListen }"
       @click="goListen"
     >
       <span class="bn-zone">
-        <span class="bn-ico" :class="{ live: player.playing }">🎧</span>
-      </span>
-      <span class="bn-cap">磨耳朵</span>
-    </button>
-    <!-- 中间位·播放键形态：只出现在磨耳朵页上（此时导航目标就是当前页） -->
-    <button
-      v-else
-      role="tab"
-      class="bn-tab"
-      :aria-label="player.playing ? '暂停' : '播放'"
-      :aria-selected="isListen"
-      :class="{ on: isListen }"
-      @click="onMiddle"
-    >
-      <span class="bn-zone">
-        <span class="bn-play round" :class="{ live: player.playing }">
-          <Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" />
-        </span>
+        <span v-if="player.playing" class="bn-eq" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span v-else class="bn-ico" aria-hidden="true">🎧</span>
       </span>
       <span class="bn-cap">磨耳朵</span>
     </button>
@@ -203,7 +167,7 @@ function onMiddle() {
   to { opacity: 1; }
 }
 /* 图标位：三格统一 --tap-min 高。
- * 中间那颗播放键和左右图标尺寸不同，靠固定高的图标位，
+ * 三种"脸"（PathIcon / 耳机 emoji / 声波条）的光学高度不同，靠固定高的图标位，
  * 三格的标签才能落在同一条基线上（否则底栏会像以前那样左右不齐）。 */
 .bn-zone {
   display: flex;
@@ -217,55 +181,56 @@ function onMiddle() {
   position: relative;
   line-height: 1;
 }
-/* 正在播放：图标右上角一颗呼吸小圆点（状态信号，不是可点区域）。
- * 不能做成"长着暂停脸的键"——那颗键只在磨耳朵页存在，这里的图标点了是导航。 */
-.bn-ico.live::after {
-  content: "";
-  position: absolute;
-  top: 1px;
-  right: -7px;
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-pill);
-  background: var(--brand);
-  animation: nav-dot 1.8s ease-in-out infinite;
+/* 正在播放：三根跳动的声波条（取代 🎧）。
+ * 用 em 定尺寸，跟着 .bn-zone 的 font-size 走，光学大小与左右两个图标一致；
+ * 这是"状态显示"，不是键 —— 整格都是导航，别给它加 click。
+ * 与歌单行里「正在播放」的 SpeakWave 是同一套语言：会动的声波 = 声音在放。 */
+.bn-eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.14em;
+  height: 0.92em;
+  color: var(--brand);
 }
-@keyframes nav-dot {
-  0%, 100% { opacity: 0.35; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1); }
+.bn-eq i {
+  width: 0.2em;
+  height: 0.42em;
+  border-radius: 0.1em;
+  background: currentColor;
+  animation: bn-eq 0.9s ease-in-out infinite;
+}
+.bn-eq i:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.bn-eq i:nth-child(3) {
+  animation-delay: 0.32s;
+}
+@keyframes bn-eq {
+  0%,
+  100% {
+    height: 0.42em;
+  }
+  50% {
+    height: 0.92em;
+  }
+}
+/* 减少动态偏好：不跳，但保留"高矮不一"的静态波形，仍看得出在放歌 */
+@media (prefers-reduced-motion: reduce) {
+  .bn-eq i {
+    animation: none;
+  }
+  .bn-eq i:nth-child(1) {
+    height: 0.56em;
+  }
+  .bn-eq i:nth-child(2) {
+    height: 0.92em;
+  }
+  .bn-eq i:nth-child(3) {
+    height: 0.72em;
+  }
 }
 .bn-cap {
   font-size: var(--fs-small);
   font-weight: var(--fw-strong);
-}
-/* ===== 槽位里的播放/暂停键（只在磨耳朵页出现） =====
- * 底栏唯一带颜色的元素，也是全站最容易够到的一颗键。
- * 它是 <span>：整格是一个 <button>（tab），键只是这颗 tab 的"脸"——
- * 三个 tab 结构一致，基线、灰底、焦点环都不会再各走一套。
- * 宽度用 --tap-min：儿童手指定位精度低，这颗键会是他们按得最多的一个。 */
-.bn-play {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--tap-min);
-  height: var(--tap-min);
-  background: var(--brand);
-  color: var(--on-tone);
-  box-shadow: 0 var(--press) 0 var(--brand-dark);
-  font-size: var(--fs-body);
-}
-/* 播放中：外扩一圈呼吸光环（"正在唱"的状态信号，颜色跟随品牌色） */
-.bn-play.live {
-  animation: play-live 2s ease-in-out infinite;
-}
-@keyframes play-live {
-  0%, 100% {
-    box-shadow: 0 var(--press) 0 var(--brand-dark),
-      0 0 0 0 color-mix(in srgb, var(--brand) 34%, transparent);
-  }
-  50% {
-    box-shadow: 0 var(--press) 0 var(--brand-dark),
-      0 0 0 6px color-mix(in srgb, var(--brand) 14%, transparent);
-  }
 }
 </style>
