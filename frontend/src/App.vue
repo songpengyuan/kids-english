@@ -3,6 +3,7 @@ import { computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import CuteBackdrop from "./components/CuteBackdrop.vue";
 import BottomNav from "./components/layout/BottomNav.vue";
+import { shouldShowNav } from "./components/layout/nav-visibility";
 import { useStreakStore } from "./stores/streak";
 import { useAuthStore } from "./stores/auth";
 import { useContentStore } from "./stores/content";
@@ -23,10 +24,21 @@ const player = usePlayerStore();
  *  游戏入口在课程页右上角按钮（#/game 无底部导航，沉浸闯关，顶栏返回可回课程）；
  *  宝藏罐/报告/复习/课程详情等子页面都隐藏，沉浸进入。
  *  播放页（磨耳朵的歌词全屏页）同样隐藏：它自带完整 transport，
- *  底栏再留一颗播放键就是同一屏两个播放键、两个"底部"互相打架（退出用顶栏收起键）。 */
-const showNav = computed(() =>
-  (route.path === "/course" || route.path === "/listen" || route.path === "/me") &&
-  !player.nowPlaying
+ *  底栏再留一颗播放键就是同一屏两个播放键、两个"底部"互相打架（退出用顶栏收起键）。
+ *
+ *  ⚠️ 隐藏条件必须**同时**绑在路由上（只有 /listen 才可能藏底栏）。
+ *  曾经的写法是 `三个首页 && !player.nowPlaying`——nowPlaying 是脱离路由的状态，
+ *  从歌词页用系统返回手势离开 /listen 时它不会复位，于是 /course 上整条底栏
+ *  也一起消失，孩子再也点不进磨耳朵、也去不了任何 tab（无路可退）。 */
+const showNav = computed(() => shouldShowNav(route.path, player.nowPlaying));
+
+/** 离开磨耳朵 = 收起歌词全屏页（返回手势 / 浏览器后退 / 任何跳转都算）。
+ *  否则回到磨耳朵时仍停在那个隐藏底栏的页面，回来就等于又"没有 tab"了。 */
+watch(
+  () => route.path,
+  (to, from) => {
+    if (from === "/listen" && to !== "/listen" && player.nowPlaying) player.closeLyrics();
+  },
 );
 
 /** 答题页无底部导航：去掉 #app 预留的 nav-h 底部 padding，让 footer 真正贴底 */
@@ -71,13 +83,17 @@ onMounted(() => {
   onVisible();
   // 离开兜底上报：切后台 / 关标签页时立即把本地未上报数据推上云
   // （3s 防抖的 setTimeout 在关页时会被浏览器终止，最后一次时长必须在这里补上；未登录自动跳过）
+  // ⚠️ 先 player.settle() 再 flushReport：播放中的最后一段还没落盘（5s 一结算），
+  //    顺序反了就会把"刚听的那几分钟"漏在本地，跨设备自然也看不到。
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
+      player.settle();
       progress.flushReport();
       void flushTelemetry(); // 切后台时把埋点队列一并推走
     }
   });
   window.addEventListener("pagehide", () => {
+    player.settle();
     progress.flushReport();
     void flushTelemetry();
   });

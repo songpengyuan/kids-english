@@ -3,12 +3,16 @@
  * 底部导航（App 风格常驻）：📖 学习 / 🎧 磨耳朵 / 👤 我的
  *
  * - 学习是独立路由 #/course；游戏入口收在学习页右上角按钮（非底部主 tab）。
- * - 中间位**永远是「磨耳朵」入口**；一旦有歌在播，槽位里换成一颗播放/暂停键
- *   （--tap-min，品牌蓝）。不再把封面/歌名/进度塞进槽位——那是播放页的事，
- *   塞进来只会让歌名被截成 "Walki…"，还把三格的宽度与基线一起撑歪。
- *   点那颗键 = 播放/暂停；点槽位其余 = 进磨耳朵列表。
- *   为什么不能"只留一个播放键"：磨耳朵全站只有这一个入口（别处没有 push /listen），
- *   一旦放歌就再也回不去列表，所以入口必须留着。
+ * - 中间位**永远是「磨耳朵」入口**，但有两副面孔（位置决定语义，见 onMiddle）：
+ *     · 站在别的 tab（哪怕有歌在播）→ 槽位就是入口本身：🎧 + 正在播放的小圆点；
+ *     · 已站在磨耳朵页 → 槽位换成播放/暂停键（--tap-min，品牌蓝）。
+ *      列表页本身一个 transport 都没有，这颗键只有在这里才是真的"暂停键"。
+ *   两副面孔的关键是**键面必须等于它的行为**：不能长得像暂停键、点下去却是导航，
+ *   也不能"有歌就永远是播放键"——那颗键会盖住整格唯一的命中区（52px 图标位
+ *   ≈ 整格 60% 高度），孩子点上去只暂停不导航，而磨耳朵全站只此一个入口，
+ *   于是开始播放后中间 tab 等于失灵，从别的 tab 再也回不来（2026-10-17 反馈）。
+ *   也不再把封面/歌名/进度塞进槽位——那是播放页的事，塞进来只会让歌名被
+ *   截成 "Walki…"，还把三格的宽度与基线一起撑歪。
  * - 我的 tab 高亮覆盖其子页：/me、/treasure、/report、/review。
  * - 玩法页（/course/:id）与播放页（歌词全屏页展开时）不渲染本组件（沉浸，见 App.vue）。
  */
@@ -48,12 +52,30 @@ function goMe() {
   if (route.name === "me") return;
   void router.push("/me").catch(() => {});
 }
-/** 磨耳朵入口（点槽位进列表，点槽位里的播放键只切播放态） */
+/** 磨耳朵入口（点槽位进列表） */
 function goListen() {
   hapticTap();
   speakZh("磨耳朵");
   if (isListen.value) return;
   void router.push("/listen").catch(() => {});
+}
+
+/**
+ * 中间位：位置决定语义。
+ * - 已在磨耳朵页 → 这颗键是播放/暂停（列表页没有别的 transport，它是唯一一颗）；
+ * - 在其他 tab → 整格都是回磨耳朵列表的入口（有歌在播也一样）。
+ *
+ * 上一版是"有歌就永远是播放键"，命中区被那颗键吃掉，从别的 tab 点中间位
+ * 只暂停、不导航 —— 而磨耳朵全站只有这一个入口，等于再也回不去。
+ * tab 的第一职责是导航，任何状态下都不能失效。
+ */
+function onMiddle() {
+  if (isListen.value) {
+    hapticTap();
+    player.togglePlay();
+    return;
+  }
+  goListen();
 }
 </script>
 
@@ -71,9 +93,10 @@ function goListen() {
       <span class="bn-cap">学习</span>
     </button>
 
-    <!-- 中间位：没有在播 = 磨耳朵入口；有歌在播 = 槽位里只放一颗播放/暂停键 -->
+    <!-- 中间位·入口形态：没在磨耳朵页时（含"有歌在播但在别的 tab"）。
+         整格都是入口，图标只是一个状态显示（正在播放 → 右上角小圆点）。 -->
     <button
-      v-if="!player.currentSong"
+      v-if="!isListen || !player.currentSong"
       role="tab"
       class="bn-tab"
       aria-label="磨耳朵"
@@ -81,32 +104,28 @@ function goListen() {
       :class="{ on: isListen }"
       @click="goListen"
     >
-      <span class="bn-zone"><span class="bn-ico">🎧</span></span>
-      <span class="bn-cap">磨耳朵</span>
-    </button>
-    <div
-      v-else
-      role="tab"
-      tabindex="0"
-      class="bn-tab"
-      aria-label="磨耳朵（正在播放）"
-      :aria-selected="isListen"
-      :class="{ on: isListen }"
-      @click="goListen"
-      @keydown.enter="goListen"
-    >
       <span class="bn-zone">
-        <button
-          class="bn-play round"
-          :class="{ live: player.playing }"
-          :aria-label="player.playing ? '暂停' : '播放'"
-          @click.stop="player.togglePlay()"
-        >
-          <Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" />
-        </button>
+        <span class="bn-ico" :class="{ live: player.playing }">🎧</span>
       </span>
       <span class="bn-cap">磨耳朵</span>
-    </div>
+    </button>
+    <!-- 中间位·播放键形态：只出现在磨耳朵页上（此时导航目标就是当前页） -->
+    <button
+      v-else
+      role="tab"
+      class="bn-tab"
+      :aria-label="player.playing ? '暂停' : '播放'"
+      :aria-selected="isListen"
+      :class="{ on: isListen }"
+      @click="onMiddle"
+    >
+      <span class="bn-zone">
+        <span class="bn-play round" :class="{ live: player.playing }">
+          <Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" />
+        </span>
+      </span>
+      <span class="bn-cap">磨耳朵</span>
+    </button>
 
     <button role="tab" class="bn-tab" aria-label="我的" :aria-selected="isMe" :class="{ on: isMe }" @click="goMe">
       <span class="bn-zone"><PathIcon name="me" /></span>
@@ -195,17 +214,39 @@ function goListen() {
   line-height: 1;
 }
 .bn-ico {
+  position: relative;
   line-height: 1;
+}
+/* 正在播放：图标右上角一颗呼吸小圆点（状态信号，不是可点区域）。
+ * 不能做成"长着暂停脸的键"——那颗键只在磨耳朵页存在，这里的图标点了是导航。 */
+.bn-ico.live::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  right: -7px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  animation: nav-dot 1.8s ease-in-out infinite;
+}
+@keyframes nav-dot {
+  0%, 100% { opacity: 0.35; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
 }
 .bn-cap {
   font-size: var(--fs-small);
   font-weight: var(--fw-strong);
 }
-/* ===== 槽位里的播放/暂停键 =====
+/* ===== 槽位里的播放/暂停键（只在磨耳朵页出现） =====
  * 底栏唯一带颜色的元素，也是全站最容易够到的一颗键。
- * 它只负责播放/暂停；导航仍由整个槽位负责（点槽位=进磨耳朵列表）。
+ * 它是 <span>：整格是一个 <button>（tab），键只是这颗 tab 的"脸"——
+ * 三个 tab 结构一致，基线、灰底、焦点环都不会再各走一套。
  * 宽度用 --tap-min：儿童手指定位精度低，这颗键会是他们按得最多的一个。 */
 .bn-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: var(--tap-min);
   height: var(--tap-min);
   background: var(--brand);
