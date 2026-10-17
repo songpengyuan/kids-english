@@ -18,6 +18,11 @@
  *  ② 读对了**不留展示态**：过去读对后停在"太棒了，妈妈要问下一个啦！"上，
  *    底部还是上一轮的句子，孩子不知道该说什么。现在读对即推进下一轮
  *    （ADVANCE_MS 后切索引），底部立刻换成新的一句"宝宝要说的话"。
+ *
+ * 2026-10-17 ③ 对话区整体放大一档：面板占屏 70%，里面却是 15px 小字 + 140px 小图，
+ *    "大框里装小内容"。气泡字号/配图/头像/内边距统一走 --talk-* 尺寸 token
+ *    （锚 vh，窄屏不会像 --fs-body / --gap-* 那样被压到最小值）；
+ *    顺带把「宝宝要说的话」补到 --tap-min（原来只有 42px，不够孩子点）。
  */
 import { computed, nextTick, ref, watch, onMounted } from "vue";
 import { speak } from "../../services/speech";
@@ -341,13 +346,13 @@ function finish() {
   flex: 1;
   min-height: 0;
   width: 100%;
-  max-width: 560px;
+  max-width: 620px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px 8px;
+  gap: var(--talk-gap);
+  padding: var(--talk-pad) var(--talk-gap);
   scrollbar-width: none;
   background:
     radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.5) 0, transparent 40%),
@@ -359,20 +364,20 @@ function finish() {
 .msg-row {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
+  gap: var(--gap-m);
   animation: anim-pop 0.25s;
 }
 .msg-row.parent { justify-content: flex-start; }
 .msg-row.kid { justify-content: flex-end; }
 .msg-av {
   flex: none;
-  width: 30px;
-  height: 30px;
+  width: var(--talk-av);
+  height: var(--talk-av);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: calc(var(--talk-av) * 0.56);
   box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.06);
 }
 .msg-av.mom { background: var(--talk-warm); }
@@ -380,16 +385,16 @@ function finish() {
 .msg-col {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-width: 72%;
+  gap: var(--gap-xs);
+  max-width: 82%;
 }
 .msg-row.parent .msg-col { align-items: flex-start; }
 .msg-row.kid .msg-col { align-items: flex-end; }
 .msg-bubble {
-  padding: 8px 12px;
-  border-radius: 14px;
+  padding: var(--talk-pad) calc(var(--talk-pad) * 1.35);
+  border-radius: var(--radius-s);
   font-weight: var(--fw-strong);
-  font-size: 15px;
+  font-size: var(--talk-bubble-fs);
   line-height: 1.35;
   /* 气泡是"插画"：两套主题下都是浅底，所以文字用固定的 --talk-ink。
    * 用 --ink 会在暗色主题变成浅色 → 白底白字（实测对比度 1.05:1）。 */
@@ -399,7 +404,7 @@ function finish() {
   -webkit-tap-highlight-color: transparent;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--gap-s);
   max-width: 100%;
 }
 .msg-bubble.parent {
@@ -423,12 +428,12 @@ function finish() {
   word-break: break-word;
 }
 .msg-heard {
-  font-size: 12px;
+  font-size: calc(var(--talk-bubble-fs) * 0.74);
   font-weight: var(--fw-strong);
   color: var(--talk-ink-soft);
 }
 .msg-time {
-  font-size: 10px;
+  font-size: var(--fs-small);
   font-weight: var(--fw-mid);
   color: var(--ink-faint);
 }
@@ -436,41 +441,41 @@ function finish() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 8px 14px;
+  gap: var(--gap-xs);
+  padding: var(--gap-s) var(--talk-pad);
   background: var(--white);
-  border-radius: 12px;
+  border-radius: var(--radius-s);
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.06);
 }
 .msg-pic.parent-pic {
-  padding: 12px 18px;
-  border-radius: 14px;
+  padding: var(--gap-m) calc(var(--talk-pad) * 1.3);
+  border-radius: var(--radius-s);
 }
 .msg-pic.parent-pic .msg-pic-emoji {
-  font-size: 72px;
+  font-size: calc(var(--talk-pic) * 0.5);
 }
 .msg-pic.parent-pic .msg-pic-zh {
-  font-size: 13px;
+  font-size: calc(var(--talk-bubble-fs) * 0.74);
   font-weight: var(--fw-strong);
   color: var(--talk-ink);
 }
 .msg-pic-emoji {
-  font-size: 56px;
+  font-size: calc(var(--talk-pic) * 0.42);
   line-height: 1;
 }
 .msg-pic-img {
-  width: 140px;
-  height: 140px;
+  width: var(--talk-pic);
+  height: var(--talk-pic);
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
 }
 .msg-pic-en {
   font-weight: var(--fw-strong);
-  font-size: 18px;
+  font-size: calc(var(--talk-bubble-fs) * 1.12);
   color: var(--talk-ink);
 }
 .msg-pic-zh {
-  font-size: 11px;
+  font-size: var(--fs-small);
   font-weight: var(--fw-mid);
   color: var(--talk-ink-soft);
 }
@@ -483,17 +488,19 @@ function finish() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 6px 0 0;
+  gap: var(--talk-gap);
+  padding: var(--gap-s) 0 0;
 }
 .ci-say {
   width: 100%;
+  /* 「宝宝要说的话」是要点的（听发音），触控目标得够 --tap-min（原来只有 42px） */
+  min-height: var(--tap-min);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 7px 16px;
-  border-radius: 999px;
+  gap: var(--gap-m);
+  padding: calc(var(--talk-pad) * 0.5) var(--talk-pad);
+  border-radius: var(--radius-pill);
   background: var(--card-bg);
   box-shadow: var(--shadow-soft);
   touch-action: manipulation;
@@ -501,13 +508,13 @@ function finish() {
 }
 .ci-say-text {
   font-weight: var(--fw-strong);
-  font-size: 18px;
+  font-size: calc(var(--talk-bubble-fs) * 1.05);
   color: var(--brand-dark);
   letter-spacing: 0.02em;
 }
 .ci-say-vol {
-  width: 18px;
-  height: 18px;
+  width: calc(var(--talk-bubble-fs) * 1.05);
+  height: calc(var(--talk-bubble-fs) * 1.05);
   color: var(--orange);
   flex: none;
 }

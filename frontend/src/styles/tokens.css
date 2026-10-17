@@ -190,6 +190,15 @@
    * 与 --chest-ink 同一个思路：画在固定浅色面上，就用固定的深墨色。 */
   --talk-ink: #3d3327;
   --talk-ink-soft: #6d5f4e;
+  /* 对话玩法的**尺寸**组（2026-10-17）：气泡字号 / 配图 / 头像 / 内边距 / 行距。
+   * 为什么不直接用 --fs-body / --gap-*：那两个按 min(vh, vw) 取值，窄屏上一路压到
+   * 最小值（390 宽实测 --fs-body=14px、--gap-s=6px）。气泡是这块界面的主角，
+   * 跟着一起被压小，就成了"大片面板里的小图小字"。这组锚 vh，窄屏也不缩水。 */
+  --talk-bubble-fs: clamp(17px, min(2.8vh, 4.8vw), 23px);
+  --talk-pic: clamp(150px, min(24vh, 46vw), 220px);
+  --talk-av: clamp(32px, min(5vh, 10vw), 42px);
+  --talk-pad: clamp(10px, min(1.8vh, 3.6vw), 20px);
+  --talk-gap: clamp(10px, min(1.5vh, 3vw), 18px);
   --mic-face: linear-gradient(180deg, #ff9d5c, #ff7a3c);
   --mic-base: #e05f1e;
   --mic-rec-face: linear-gradient(180deg, #ff5c5c, #e63939);
@@ -493,5 +502,12 @@
     --tap-min: 64px; /* 儿童手指定位精度低，宽屏给更大目标 */
     --play-btn: clamp(72px, min(10vh, 14vw), 96px);
     --slider-thumb: clamp(24px, min(3.4vh, 4vw), 36px);
+
+    /* 宽屏下对话气泡整体再放大一档（iPad 上一屏能装下两条完整对话） */
+    --talk-bubble-fs: clamp(21px, min(2.8vh, 3.4vw), 30px);
+    --talk-pic: clamp(200px, min(22vh, 26vw), 300px);
+    --talk-av: clamp(40px, min(4.6vh, 6vw), 56px);
+    --talk-pad: clamp(14px, min(1.8vh, 2.2vw), 26px);
+    --talk-gap: clamp(14px, min(1.6vh, 2vw), 24px);
   }
 }
