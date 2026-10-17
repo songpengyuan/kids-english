@@ -17,10 +17,10 @@ import PathIcon from "../PathIcon.vue";
 import {
   bigCelebrate,
   sfxChestOpen,
+  sfxChestTap,
   sfxCoin,
   sfxCollect,
-  sfxSticker,
-  sfxTap
+  sfxSticker
 } from "../../services/effects";
 import { useRewardsStore } from "../../stores/rewards";
 import { parabola } from "../../utils/flyCurve";
@@ -94,7 +94,9 @@ function tapChest() {
   }
   if (taps.value >= 3) return; // 开箱瞬间（open 阶段）不再响应
   taps.value++;
-  sfxTap(); // 每次敲击：轻点音 + 触感
+  // 每一下敲击都要"听得见"：旧的 sfxTap 只有 7ms/0.06 增益，手机上等于静音，
+  // 孩子会以为点了没反应。sfxChestTap 按第几下升调，三下有"越来越近"的推进感。
+  sfxChestTap(taps.value);
   shakeTick.value++; // 重触发晃动动画
   if (taps.value === 3) {
     phase.value = "open";

@@ -6,6 +6,7 @@ import { createPinia, setActivePinia } from "pinia";
 // 音效/haptics 桩：ChestReward 引入 effects 但浏览器 AudioContext 在 jsdom 不存在
 vi.mock("../../../services/effects", () => ({
   sfxTap: vi.fn(),
+  sfxChestTap: vi.fn(),
   sfxChestOpen: vi.fn(),
   sfxCoin: vi.fn(),
   sfxSticker: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock("../../../services/haptics", () => ({
 
 import ChestReward from "../ChestReward.vue";
 import { useRewardsStore } from "../../../stores/rewards";
+import { sfxChestTap, sfxChestOpen } from "../../../services/effects";
 
 /**
  * 收取动画"剩余贝壳保持原位"的核心：固定渲染本次掉落总数，
@@ -87,5 +89,21 @@ describe("ChestReward 收取动画：固定渲染、剩余原位", () => {
     const w = await openChest(4);
     expect(w.find(".chest").exists()).toBe(false);
     expect(w.findAll(".shell-item")).toHaveLength(4);
+  });
+
+  it("每点一下箭头都有音效，且按第几下升调（不再用几乎听不见的通用点击音）", async () => {
+    const pinia = seedReward(3);
+    const w = mount(ChestReward, {
+      global: { plugins: [pinia], stubs: { BaseButton: { template: "<button><slot /></button>" } } },
+    });
+    const arrows = w.findAll(".arrow");
+    expect(arrows).toHaveLength(3);
+    for (const a of arrows) {
+      await a.trigger("click");
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    // 三下 = 三次敲击音，参数 1/2/3（第 3 下同时触发开箱音）
+    expect(vi.mocked(sfxChestTap).mock.calls.map((c) => c[0])).toEqual([1, 2, 3]);
+    expect(sfxChestOpen).toHaveBeenCalledTimes(1);
   });
 });
