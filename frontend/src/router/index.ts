@@ -20,7 +20,6 @@
  *     ├─ /me/calendar                   学习日历（**已合并原连击日历**，/me/streak 重定向至此）
  *     ├─ /me/treasure                   宝藏罐（图鉴 + 贴纸商店）
  *     │   └─ /me/treasure/hero/:id      英雄图鉴详情
- *     ├─ /me/cards                      我的卡片
  *     ├─ /me/report                     家长学情报告（requiresParent）
  *     └─ /me/parent                     家长中心（requiresParent）
  *
@@ -30,9 +29,12 @@
  *
  * - 加载策略（配合 sw 预缓存清单，见 vite.config.js kids-pwa 插件）：
  *   · 学习主链路（学习主页/课程/玩法）**同步加载**——离线首开最稳，装完即有；
- *   · 低频页（我的/日历/宝藏/卡片/报告/家长/复习/英雄详情）**路由懒加载**——
+ *   · 低频页（我的/日历/宝藏/报告/家长/复习/英雄详情）**路由懒加载**——
  *     在线首屏更小；离线也不降级：懒加载 chunk 会进入 sw 预缓存清单，
  *     首次安装即全部就位。
+ *
+ * - 2026-10-17：删除 /me/cards（我的卡片）。奖励体系已统一到宝藏罐，
+ *   卡片收集册是并行的第二套货币，页面与 store 一并下线，不留死链。
  *
  * - 未知路径兜底：统一由 beforeEach 送回课程主页（见文件底部）。
  */
@@ -119,7 +121,6 @@ export const router = createRouter({
           ],
         },
         { path: "report", name: "report", component: () => import("../views/me/ReportView.vue"), meta: { title: "家长报告", requiresParent: true } },
-        { path: "cards", name: "cards", component: () => import("../views/me/CardsView.vue"), meta: { title: "我的卡片" } },
         { path: "parent", name: "parent", component: () => import("../views/me/ParentView.vue"), meta: { title: "家长中心", requiresParent: true } },
       ],
     },

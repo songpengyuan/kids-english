@@ -23,7 +23,6 @@ import { useContentStore } from "../../stores/content";
 import { speak, speakZh } from "../../services/speech";
 import { useProgressStore } from "../../stores/progress";
 import { useStreakStore } from "../../stores/streak";
-import { useCardsStore, type Card } from "../../stores/cards";
 import { track } from "../../services/telemetry";
 import { useRoute, useRouter } from "vue-router";
 import { useViewport } from "../../composables/useViewport";
@@ -33,7 +32,6 @@ import { BookOpen, Headphones, Link2, MessageCircle, Mic, Music, Star } from "@l
 
 const progress = useProgressStore();
 const streak = useStreakStore();
-const cards = useCardsStore();
 const content = useContentStore();
 const route = useRoute();
 const router = useRouter();
@@ -130,15 +128,6 @@ const {
   startLessonQuest
 } = flow;
 
-// 结算页：课内通关有 lastCard 时展示卡片奖励
-watch(stage, (v) => {
-  if (v === "result" && cards.lastCard) {
-    rewardCard.value = cards.lastCard;
-  } else if (v !== "result") {
-    rewardCard.value = null;
-  }
-});
-
 /** 菜单数据：玩法 + 已获星徽章（星数来自进度，注入后交给 LessonMenu 纯渲染） */
 const menuActs = computed(() =>
   activities.value.map((a) => ({ ...a, stars: showStars(a.key) }))
@@ -186,12 +175,8 @@ const isPlay = computed(() =>
 );
 /** 玩法进度（0-100），由 Learn/Quiz/Match/Speak 上报到顶栏进度条（多邻国式） */
 const playPct = ref(0);
-/** 课内通关奖励卡片 */
-const rewardCard = ref<Card | null>(null);
-/** 本局总量（题数/页数/对数/词数）与已完成量 → 顶栏显示 x/y，孩子知道一共要做多少 */
+/** 本局总量（题数/页数/对数/词数/轮数）与已完成量 → 顶栏显示 x/y，孩子知道一共要做多少 */
 const playTotal = ref(0);
-/** 亲子对话当前轮次 */
-const talkIdx = ref(0);
 </script>
 
 
@@ -271,7 +256,6 @@ const talkIdx = ref(0);
       v-else-if="stage === 'result'"
       :mode="questMode && questDone ? 'quest' : 'free'"
       :stars="lastStars"
-      :reward-card="rewardCard"
       :streak-just-hit="streakJustHit"
       :streak-days="streak.streak"
       :quest-level="questLevel"

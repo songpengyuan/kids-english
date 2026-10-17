@@ -20,7 +20,6 @@ import { useContentStore } from "../stores/content";
 import type { QuestAct, UseQuest } from "./useQuest";
 import { bigCelebrate, celebrate } from "../services/effects";
 import { speak, speakZh } from "../services/speech";
-import { useCardsStore } from "../stores/cards";
 import { hapticTap } from "../services/haptics";
 import { track } from "../services/telemetry";
 
@@ -215,13 +214,12 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
         speakZh("下一关，加油");
         setTimeout(() => open(next), 800);
       } else {
-        // 最后一关完成 → 通关结算 + 抽卡片
+        // 最后一关完成 → 通关结算（奖励统一由结算页的开宝箱发放）
         lessonQuest.value = false;
         quest.finish();
         markLevelPass();
-        useCardsStore().collect();
         bigCelebrate();
-        speakZh("闯关完成，获得新卡片");
+        speakZh("闯关完成，打开宝箱看看");
         stage.value = "result";
       }
     } else if (quest.questMode.value) {

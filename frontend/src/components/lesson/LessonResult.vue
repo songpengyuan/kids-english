@@ -5,15 +5,14 @@
  * - 星星展示（1~3 星渐次弹出）；
  * - 闯关模式：第 N 关完成大徽章 + 玩法名 + 重玩提示；
  * - 今日目标首次达成：连击火焰横幅；
- * - 开宝箱（ChestReward）统一挂载，25% 随机掉英雄卡片；
+ * - 开宝箱（ChestReward）统一挂载：闯关/自由练习都开箱，25% 随机掉英雄形态；
+ *   （原「课内通关奖励奥特曼卡片」已于 2026-10-17 下线，奖励只走宝藏罐一套）
  * - 底部动作：返回地图/下一关（quest）、再选玩法/下一课（free），由父组件处理。
  */
 import { Star } from "@lucide/vue";
 import { ref } from "vue";
 import PathIcon from "../PathIcon.vue";
 import ChestReward from "../rewards/ChestReward.vue";
-
-import type { Card } from "../../stores/cards";
 import BaseButton from "../ui/BaseButton.vue";
 
 defineProps<{
@@ -25,8 +24,6 @@ defineProps<{
   actName?: string;
   nextLevel?: { actKey: string; name: string } | null;
   nextLesson?: { id: string; title: string } | null;
-  /** 课内通关奖励卡片 */
-  rewardCard?: Card | null;
 }>();
 
 const emit = defineEmits<{
@@ -96,15 +93,6 @@ function nav(fn: () => void) {
         </span>
       </div>
       <h2>真棒！获得 <span class="star-num">{{ stars }}</span> 颗星</h2>
-      <!-- 课内通关：奥特曼卡片奖励 -->
-      <div v-if="rewardCard" class="card-reward anim-pop">
-        <div class="card" :class="'rarity-' + rewardCard.rarity">
-          <div class="card-emoji">{{ rewardCard.emoji }}</div>
-          <div class="card-name">{{ rewardCard.name }}</div>
-          <div class="card-rarity">{{ rewardCard.rarity }}</div>
-        </div>
-        <p class="card-tip">🎉 获得新卡片！</p>
-      </div>
       <div v-if="streakJustHit" class="streak-banner anim-pop">
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
@@ -246,54 +234,6 @@ function nav(fn: () => void) {
   font-size: var(--fs-small);
   color: var(--ink-faint);
 }
-/* 奥特曼卡片奖励 */
-.card-reward {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.card {
-  width: clamp(120px, 22vh, 160px);
-  border-radius: var(--radius);
-  padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  background: var(--rarity-face);
-  border: 3px solid var(--c-gold);
-  box-shadow: 0 4px 20px rgba(240, 180, 41, 0.4);
-}
-.card.rarity-SR {
-  border-color: var(--c-purple);
-  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
-  background: var(--rarity-sr-face);
-}
-.card.rarity-SSR {
-  border-color: var(--c-gold);
-  box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
-  background: var(--rarity-ssr-face);
-}
-.card-emoji {
-  font-size: 48px;
-}
-.card-name {
-  font-weight: var(--fw-strong);
-  font-size: 14px;
-}
-.card-rarity {
-  font-size: 12px;
-  font-weight: var(--fw-strong);
-  color: var(--c-gold);
-  background: rgba(240, 180, 41, 0.15);
-  padding: 2px 10px;
-  border-radius: var(--radius-pill);
-}
-.card-tip {
-  margin: 0;
-  font-weight: var(--fw-strong);
-}
 .streak-banner {
   display: flex;
   align-items: center;
@@ -332,11 +272,10 @@ function nav(fn: () => void) {
     padding: 6px 16px;
     border-width: 2px;
   }
-  /* 奥特曼卡片奖励 */
   /* ⚠️ 这里曾有一份 .card-reward / .card / .card.rarity-* / .card-tip 的**逐字重复**定义，
    * 而且因为上面 @media 的大括号多撑了一段，整块被吞进"手机横屏"媒体查询里 ——
    * 只在矮屏生效、且与媒体查询外的同名规则值完全相同，纯冗余（2026-10 删除）。
-   * 奖励卡的样式只有媒体查询外那一份，改色改版请改那里。 */
+   * 2026-10-17：卡片奖励整体下线（奖励统一走宝藏罐），媒体查询内外两份都已清除。 */
   .streak-banner {
     padding: 5px 12px;
     font-size: var(--fs-small);

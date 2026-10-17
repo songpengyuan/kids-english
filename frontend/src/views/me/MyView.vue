@@ -8,8 +8,12 @@
  * 结构遵循「一屏三问」，按孩子的视线顺序排唯一注意力：
  *   ① 今天怎么样 → 今日卡（全页唯一的品牌蓝实底大卡）
  *   ② 现在干嘛   → 主行动「继续学习」（.entry-row--primary，一页仅一个）
- *   ③ 我攒了什么 → 我的收藏三卡
+ *   ③ 我攒了什么 → 我的收藏两卡（贝壳 / 英雄）
  * 其余（闯关 / 复习 / 家长中心）降为次要入口，不与主行动抢注意力。
+ *
+ * 2026-10-17：下线「我的卡片」收集册（奥特曼卡池）—— 奖励体系早已统一到
+ * 「宝藏罐」（贝壳 + 英雄形态 + 贴纸），卡片是并行维护的第二套货币，
+ * 孩子在两个地方看到两种"我收集了什么"，反而说不清哪个才算数。
  *
  * 变更记录：原版把身份、星、连击、两个大数字、一句提示全塞进 Hero，
  * 五类信息同权重，孩子抓不到重点；且「今日目标」与「今日数据」是两张各自独立、
@@ -20,7 +24,6 @@ import { useProgressStore } from "../../stores/progress";
 import { useRewardsStore } from "../../stores/rewards";
 import { FORM_TOTAL } from "../../data/heroes";
 import { useStreakStore } from "../../stores/streak";
-import { useCardsStore } from "../../stores/cards";
 import { useAuthStore } from "../../stores/auth";
 import { useRoute, useRouter } from "vue-router";
 import { lessons } from "../../data/lessons";
@@ -37,7 +40,6 @@ import {
   CalendarDays,
   Flame,
   Gamepad2,
-  Layers,
   Play,
   RotateCcw,
   Shield,
@@ -48,7 +50,6 @@ import { speakZh } from "../../services/speech";
 const progress = useProgressStore();
 const rewards = useRewardsStore();
 const streak = useStreakStore();
-const cards = useCardsStore();
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
@@ -203,16 +204,12 @@ function sayEntry(name: string, path: string) {
       </template>
     </EntryRow>
 
-    <!-- ④ 我的收藏 -->
+    <!-- ④ 我的收藏（2026-10-17：卡片收集册已下线，奖励统一走宝藏罐） -->
     <SectionTitle>我的收藏</SectionTitle>
     <section class="stat-row">
       <button class="card stat-card" @click="sayEntry('宝藏罐', '/me/treasure')">
         <IconTile tone="gold"><ShellIcon /></IconTile>
         <MetricTile :value="rewards.shells" label="贝壳" />
-      </button>
-      <button class="card stat-card" @click="sayEntry('我的卡片', '/me/cards')">
-        <IconTile tone="pink"><Layers class="k-ico" /></IconTile>
-        <MetricTile :value="cards.uniqueCount" :total="cards.allCards.length" label="卡片" />
       </button>
       <button class="card stat-card" @click="sayEntry('英雄图鉴', '/me/treasure')">
         <IconTile tone="teal"><Award class="k-ico" /></IconTile>
@@ -376,7 +373,7 @@ function sayEntry(name: string, path: string) {
 /* ---------- 我的收藏 ---------- */
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--gap-s);
 }
 .stat-card {
