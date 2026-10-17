@@ -101,7 +101,10 @@
 
 播放器跟随主题：`--player-bg-*` / `--player-surface` / `--player-text*` 都已指向主题变量，新代码直接引用即可，不要再写 `#1e293b` 这类固定深色。
 
-**播放页（磨耳朵播放中，`/listen` + `player.nowPlaying`）自己带完整播放控制，不依赖底栏**，因此进播放态时**隐藏底部导航**（`App.vue` 的 `showNav` 判 `!player.nowPlaying`），页面高度按 `--nav-h: 0` 计算。播放页尺寸走三个专用 token：`--fs-emoji-hero`（大封面）、`--play-btn`（播放主键）、`--slider-thumb`（进度条滑块）。
+**播放页（磨耳朵播放中，`/listen` + `player.nowPlaying`）自己带完整播放控制，不依赖底栏**，因此进播放态时**隐藏底部导航**（规则在 `components/layout/nav-visibility.ts` 的 `shouldShowNav(path, nowPlaying)`，单测 `nav-visibility.test.ts` 锁死），页面高度按 `--nav-h: 0` 计算。播放页尺寸走三个专用 token：`--fs-emoji-hero`（大封面）、`--play-btn`（播放主键）、`--slider-thumb`（进度条滑块）。
+
+> ⚠️ 隐藏底栏的条件**必须同时锚定路径**（只有 `path === "/listen"` 才可能隐藏）。`nowPlaying` 是脱离路由的全局状态，从歌词页用系统返回手势离开 `/listen` 时它不会自己复位；若写成「三个首页 && !nowPlaying」，`/course` 上整条底栏会一起消失——屏幕上没有任何 tab，孩子彻底无路可退。配套：`App.vue` 里 watch `route.path`，离开 `/listen` 时 `closeLyrics()`。
+
 
 ### 2.7 绝对色与玩法插画色板
 
@@ -205,7 +208,7 @@
 
 | 组件 | 路径 | 用途 |
 |------|------|------|
-| `BottomNav` | `components/layout/BottomNav.vue` | 底部三 tab（学习 / 磨耳朵 / 我的）。中间位**恒为磨耳朵入口**（全站唯一入口）：无歌时是普通磨耳朵 tab，有歌时 tab 内只放一个播放/暂停键（不是迷你播放条） |
+| `BottomNav` | `components/layout/BottomNav.vue` | 底部三 tab（学习 / 磨耳朵 / 我的），三个都是 `<button>`。中间位**恒为磨耳朵入口**（全站唯一入口），两副面孔：不在磨耳朵页 → 🎧 + 在播小圆点（整格 = 入口）；已在磨耳朵页 → 图标位换成播放/暂停键（列表页唯一的 transport） |
 | `SafeBottom` | `components/layout/SafeBottom.vue` | 底部安全距离共用容器 |
 | `HeaderBar` | `components/layout/HeaderBar.vue` | **全站唯一子页面顶栏**；返回钮 `--tap-min` 正圆 + 标题绝对居中 + 右侧 `showBadges` 徽章或 `#right` 插槽 |
 
@@ -270,8 +273,10 @@
 - **首页无顶栏**：`/course`、`/listen`、`/me` 用 `<PageShell bare>`。
 - **带返回的二级页**：一律 `HeaderBar`（= `PageShell` 默认模式），答题中用 `close`（房子图标）。
 - 底部导航只在三个首页显示；闯关入口在「我的」页。
-- **磨耳朵播放中隐藏底栏**：`showNav` 额外判 `!player.nowPlaying`。播放页自带播放/进度/歌词，再留一条底栏只会分走视线与纵向空间。
-- **底栏中间位是磨耳朵的唯一入口**，不能简化成纯播放键——`/listen` 的 `router.push` 全站只出现在 `BottomNav.vue`。所以做法是：tab 仍是可点的导航项，只在它的图标位里换成播放/暂停键。
+- **磨耳朵播放中隐藏底栏**：`shouldShowNav()` 里只有 `path === "/listen" && nowPlaying` 才隐藏，其它路径永远保留（见 §2.6 的警告）。播放页自带播放/进度/歌词，再留一条底栏只会分走视线与纵向空间。
+- **底栏中间位是磨耳朵的唯一入口**，它的第一职责是导航，任何播放状态下都不能失效——`/listen` 的 `router.push` 全站只出现在 `BottomNav.vue`。所以只有**站在磨耳朵页**时，图标位才换成播放/暂停键；站在别的 tab 时整格就是入口。
+- **键面必须等于行为**：长得像暂停键、点下去却是导航（或反过来）都是 bug。播放键只在磨耳朵页出现，那里点它真的暂停；别的 tab 上放的是 🎧 + 在播小圆点，点它就是导航。
+- **tab 的命中区不能被内层控件吃掉**：`@click.stop` 的键若盖住整格唯一命中区（图标位约占整格 60% 高度），用户点上去只会触发那个键，导航形同消失。要么整格一个 handler（`onMiddle()` 按位置分派），要么把内层键缩到不会误导的尺寸。
 - 带底栏页面的底部安全距离用 `SafeBottom`，不各自写 `env(safe-area-inset-bottom)`。
 
 ## 11. 三端适配
@@ -309,6 +314,8 @@
 - ❌ `font-weight: 900`（超出 Baloo 2 的 400–800 范围）
 - ❌ 在 `.view` 内部再补一次 `--pad-x`
 - ❌ 底部导航出现在非首页；首页出现顶栏
+- ❌ 让某状态下 tab 变得不可导航（如「有歌就整体换成播放键」，命中区被 `@click.stop` 的键吃掉）——tab 的第一职责是导航，任何状态都不能失效
+- ❌ 用**脱离路由的全局状态**决定导航可见性（`showNav` 曾因 `nowPlaying` 残留，在 `/course` 上整条底栏消失）——可见性判断必须有路径锚点
 
 ## 14. 守卫（把规范变成会失败的检查）
 

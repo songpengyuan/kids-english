@@ -107,7 +107,7 @@ kids-english/
 │   │   ├── speechScore.ts      # 发音评分（ASR + 录音双模式）
 │   │   └── quizSession / matchBoard / reviewQueue / reviewSchedule / learnSession / stars / flyCurve / pathGeometry / errors
 │   ├── data/                   # 数据唯一入口（lessons.ts / heroes.ts / pathLevels.ts / song-timings.json）
-│   └── **/__tests__/           # vitest 单测（25 文件 / 206 用例）
+│   └── **/__tests__/           # vitest 单测（44 文件 / 335 用例）
 ├── scripts/
 │   ├── guard-build.mjs         # 部署构建防护（build:ci 用，强制 GH_REPO）
 │   ├── validate-data.mjs       # ★ 数据层静态校验（结构/引用/去重/song.mp3 硬校验，build:ci 用）
@@ -1380,7 +1380,7 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
 1. **git mv 搬文件**：移动组件/测试后必须同步：①所有 import（含测试与 mock 的 specifier）②
    KeepAlive include 的组件名 ③相对路径层数（`../` → `../../`）④文档目录表。
    搬完跑 `grep` 残留检查（import 路径、组件名、注释里的旧路径）。
-2. **质量三件套**：`pnpm test`（基线：**42 文件 / 325 用例**，2026-10-17）+ `pnpm type-check` + `pnpm build:ci`
+2. **质量三件套**：`pnpm test`（基线：**44 文件 / 335 用例**，2026-10-17）+ `pnpm type-check` + `pnpm build:ci`
    全绿才算完成；CI 里 test + type-check + build:ci（含数据校验）是部署门禁。
    （⚠️ 基线数字会随迭代漂移，以当次输出为准；别拿本文档里的数字当断言。）
    - **本机已把这套门禁前移到 git 钩子**（2026-10-16 加）：`bash scripts/ci-local.sh` 是唯一实现，
@@ -1661,4 +1661,31 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
 - `GamePath.vue` 的 `.gp-unit.tone-blue …` / `.lv-wrap.tone-blue …`（各 6 行）是**与全局同值的重复**，
   把色板的 `--tone` / `--tone-deep` 又抄了一遍。渲染正确，但属于"看起来像本地色板"的陷阱，
   以后给这一页换色会踩（优先删掉，让它落回全局 `.tone-*`）。
+
+#### 14.9.11 交互层的"静默失效"：导航还点得动吗？（2026-10-17）
+
+样式失效至少看得出来；**导航失效没人报错，用户只会说"点不过去"**。这一类只能自己建护栏。
+
+- **tab 的第一职责是导航，任何状态都不能失效。** 底栏中间位曾被写成"有歌就整体换成
+  一个播放键"，那颗键带 `@click.stop`、占满 52px 图标位（整格竖直方向约 60%）。
+  从学习/我的点中间位，手指落在**看得见的那块图标**上 → 只暂停、不导航；
+  而磨耳朵全站只有这一个入口（`router.push("/listen")` 只出现在 `BottomNav.vue`），
+  于是开始播放后孩子被锁在别的 tab 外，反馈是"切不回磨耳朵 tab"。
+  现行做法：**位置决定语义**（`onMiddle()`）——站在磨耳朵页才是播放/暂停键
+  （列表页唯一的 transport），站在别的 tab 整格就是入口（🎧 + 在播小圆点）。
+- **键面必须等于行为。** 长得像暂停键、点下去却是导航（或反过来）都是 bug。
+  状态不是动作，就用状态表达（小圆点、声波），不要借一个可点控件的脸。
+- **命中区别用 `@click.stop` 分层拦截**：一个格子一个 handler，按位置 / 状态分派。
+  内层带 `.stop` 的键会把整格的语义吃掉，而用户根本不会精确区分图标与空白。
+  顺带：三个 tab 统一成 `<button>`（别混 `<div role="tab">`），底色/基线/焦点环不会各走一套。
+- **决定"导航是否存在"的条件必须锚定路径，不能让脱离路由的全局状态单独说了算。**
+  `showNav` 曾写成 `三首页 && !player.nowPlaying`；`nowPlaying` 是"歌词页展开"的全局标志，
+  从歌词页用**系统返回手势**离开 `/listen` 时它不复位，于是 `/course` 上整条底栏也判成隐藏
+  —— 屏幕上一条导航都没有，彻底无路可退。
+  现在规则收进 `components/layout/nav-visibility.ts` 的 `shouldShowNav(path, nowPlaying)`：
+  **只有 `path === "/listen"` 才可能隐藏**；`App.vue` 里再 watch `route.path`，
+  离开 `/listen` 时 `closeLyrics()`。两者都有单测锁死。
+- **这类 bug 的通用自检**：① 每个 tab 在**任何状态下**都点一遍，看 `location.hash` 变没变；
+  ② 用 `history.back()` 模拟返回手势 —— hash 路由下歌词页不是一条历史记录，
+  返回会直接跳到上一个 tab，这条路径手工测最容易漏。
 
