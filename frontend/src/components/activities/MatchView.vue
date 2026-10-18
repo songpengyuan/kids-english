@@ -40,10 +40,18 @@ function setMode(m) {
   }
 }
 
-/** 分组与星级口径见 utils/matchBoard（分组随屏幕大小变化，规则可单测） */
-const groups = computed(() =>
-  buildMatchGroups(props.words, matchGroupRange(isNarrow.value, sizeTier.value))
+/** 分组与星级口径见 utils/matchBoard（分组随屏幕大小变化，规则可单测）。
+ *  ⚠️ 分组必须**只在这些输入真变时重算**：buildMatchGroups 内含随机洗牌，
+ *  若用 computed，任何无关重渲染都可能触发重算 → 游戏途中棋盘重洗、进度清零。 */
+const groupRange = computed(() => matchGroupRange(isNarrow.value, sizeTier.value));
+const groupKey = computed(
+  () => props.words.map((w) => w.id).join("|") + `@${groupRange.value.min}-${groupRange.value.max}`
 );
+const groups = ref(buildMatchGroups(props.words, groupRange.value));
+watch(groupKey, () => {
+  groups.value = buildMatchGroups(props.words, groupRange.value);
+  groupIdx.value = 0;
+});
 
 const groupIdx = ref(0);
 const curGroup = computed(() => groups.value[groupIdx.value] || []);
@@ -54,9 +62,20 @@ const rightImgs = ref([]); // 右列图片（组内后半）
 const midWords = ref([]); // 中间单词列
 
 const board = ref(null);
-const leftEls = ref([]);
-const rightEls = ref([]);
-const wordEls = ref([]);
+/** 卡片元素**按 id 存**（图片格 / 单词格各一张表）。
+ *  ⚠️ 不能按 v-for 索引存：换组重排时 ref 数组与数据数组会错位，
+ *  measure() 会把 B 卡的坐标写进 A 词名下 → 连线从别的卡片中心画出来，
+ *  看起来就是"同一个图片连了两个单词"（2026-10-18 实测复现）。 */
+const picEls = {};
+const wordElsById = {};
+function setPicEl(id, el) {
+  if (el) picEls[id] = el;
+  else delete picEls[id];
+}
+function setWordEl(id, el) {
+  if (el) wordElsById[id] = el;
+  else delete wordElsById[id];
+}
 const imgPos = reactive({}); // 所有图片格中心（board 坐标）
 const wordPos = reactive({}); // 单词格中心
 const ready = ref(false);
@@ -66,22 +85,23 @@ let raf = null;
 
 function measure() {
   if (!board.value) return;
-  const put = (els, list, map) =>
-    els.forEach((el, i) => {
-      if (!el || !list[i]) return;
+  const put = (list, els, map) =>
+    list.forEach((w) => {
+      const el = els[w.id];
+      if (!el) return;
       // 用 offset* 测量（不受 transform 影响）：格子的入场动画 pop-in 带
       // fill-mode:both + 延迟，动画未播完时 getBoundingClientRect 会量到
       // scale(0) 的错误宽高，导致连线端点裁剪失效
-      map[list[i].id] = {
+      map[w.id] = {
         x: el.offsetLeft + el.offsetWidth / 2,
         y: el.offsetTop + el.offsetHeight / 2,
         w: el.offsetWidth,
         h: el.offsetHeight
       };
     });
-  put(leftEls.value, leftImgs.value, imgPos);
-  put(rightEls.value, rightImgs.value, imgPos);
-  put(wordEls.value, midWords.value, wordPos);
+  put(leftImgs.value, picEls, imgPos);
+  put(rightImgs.value, picEls, imgPos);
+  put(midWords.value, wordElsById, wordPos);
   ready.value = true;
 }
 
@@ -104,8 +124,10 @@ function scheduleMeasure() {
  */
 function matchedLine(wordId) {
   const fromImg = (matchFrom[wordId] || "img") === "img";
-  const start = fromImg ? imgPos[wordId] : wordPos[wordId];
-  const end = fromImg ? wordPos[wordId] : imgPos[wordId];
+  // 端点**实时测量**两张卡：快照坐标会随内容/字体加载漂移（实测 5~10px），
+  // 漂移大时看起来就像线连到了别的卡
+  const start = liveCenter(fromImg ? picEls[wordId] : wordElsById[wordId]);
+  const end = liveCenter(fromImg ? wordElsById[wordId] : picEls[wordId]);
   if (!start || !end) return null;
   return { x1: start.x, y1: start.y, x2: end.x, y2: end.y };
 }
@@ -173,11 +195,32 @@ function localPoint(e) {
   return { x: p.clientX - rect.left, y: p.clientY - rect.top };
 }
 
-let downInfo = null; // 本次按下的意图：drag（拉线）/ pair（点选配对）/ cancel（取消选择）
+let downInfo = null; // 主指针本次按下的意图：drag（拉线）/ pair（点选配对）/ cancel（取消选择）
+let dragPointer = null; // 正在拖拽的 pointerId（多指隔离：move/up 只认同一根手指）
+let pairIntent = null; // 第二指的配对意图 { word, side, pid }（按住一张 + 点另一张的多指玩法）
 
 /** 卡片中心坐标（board 坐标系），按所在侧取对应位置表 */
 function centerOf(id, side) {
   return (side === "img" ? imgPos[id] : wordPos[id]) || null;
+}
+
+/** 实时测量卡片中心（board 坐标系）。连线端点必须用它：
+ *  imgPos/wordPos 是测量快照，列宽会随内容/字体加载微漂移（实测 5~10px）。
+ *  ⚠️ 必须走 offsetLeft/offsetTop（布局位置）而不是 getBoundingClientRect：
+ *  后者包含 transform——连错后的 shake-x 抖动进行中连线正好重渲染时，
+ *  端点会被量到抖动的半途上并永久定格（偏移可达 ±9px）。 */
+function liveCenter(el) {
+  if (!el || !board.value) return null;
+  if (el.offsetParent === board.value) {
+    return { x: el.offsetLeft + el.offsetWidth / 2, y: el.offsetTop + el.offsetHeight / 2 };
+  }
+  const r = el.getBoundingClientRect();
+  const b = board.value.getBoundingClientRect();
+  return { x: r.left - b.left + r.width / 2, y: r.top - b.top + r.height / 2 };
+}
+
+function pidOf(e) {
+  return e.pointerId ?? 0;
 }
 
 /** id → 单词数据（同一 id 只出现在"一侧图片 + 中间单词"） */
@@ -198,6 +241,17 @@ function findWord(id) {
  */
 function onCardDown(word, side, e) {
   if (matched.has(word.id) || transitioning.value) return;
+  const pid = pidOf(e);
+  // 多指隔离：一根手指正在拖拽时，其余手指只允许"按到另一侧 = 配对意图"，
+  // 其它按下全部忽略（否则 downInfo 被第二指覆盖、抬指顺序一乱，
+  // dragging 收不回来，屏幕上会留下一根"从一张图连到另一个词"的幽灵虚线）
+  if (dragPointer !== null) {
+    if (pairIntent === null && startWord.value && startSide.value !== side) {
+      pairIntent = { word, side, pid };
+    }
+    return;
+  }
+  if (pairIntent !== null) return;
   // 听音模式：点声音卡只做"播放 + 选中"，不直接判定配对
   // （孩子想"逐个听一遍再连"，不能把听一下当成连错）
   if (mode.value === "sound" && side === "word") {
@@ -211,9 +265,10 @@ function onCardDown(word, side, e) {
       return;
     }
     dragging.value = true;
+    dragPointer = pid;
     startWord.value = word;
     startSide.value = "word";
-    const c = centerOf(word.id, side) || localPoint(e);
+    const c = liveCenter(e.currentTarget) || centerOf(word.id, side) || localPoint(e);
     line.x1 = c.x;
     line.y1 = c.y;
     const p = localPoint(e);
@@ -233,9 +288,10 @@ function onCardDown(word, side, e) {
     return;
   }
   dragging.value = true;
+  dragPointer = pid;
   startWord.value = word;
   startSide.value = side;
-  const c = centerOf(word.id, side) || localPoint(e);
+  const c = liveCenter(e.currentTarget) || centerOf(word.id, side) || localPoint(e);
   line.x1 = c.x;
   line.y1 = c.y;
   const p = localPoint(e);
@@ -248,6 +304,7 @@ function onCardDown(word, side, e) {
 
 function onMove(e) {
   if (!dragging.value || !downInfo) return;
+  if (dragPointer !== null && pidOf(e) !== dragPointer) return; // 别的手指的移动
   const p = localPoint(e);
   line.x2 = p.x;
   line.y2 = p.y;
@@ -261,7 +318,20 @@ function onMove(e) {
   pendingSide = ok ? hit.getAttribute("data-side") : null;
 }
 
-function onUp() {
+function onUp(e) {
+  const pid = pidOf(e);
+  // 第二指抬起 = 执行多指配对（按住一张 + 点另一张）
+  if (pairIntent && pid === pairIntent.pid) {
+    const info = pairIntent;
+    pairIntent = null;
+    dragging.value = false;
+    tryMatch(info.word, info.side);
+    return;
+  }
+  if (dragPointer !== null && pid !== dragPointer) return; // 别的手指的抬起，与本次手势无关
+  dragPointer = null;
+  // 所有路径都把 dragging 收干净——它残留时模板里的拖拽虚线会一直挂在屏幕上
+  dragging.value = false;
   const info = downInfo;
   downInfo = null;
   if (!info) return;
@@ -274,7 +344,6 @@ function onUp() {
     return;
   }
   // 拖拽结束：压在对面卡片上就配对，否则保留选中（点选模式接着点另一侧）
-  dragging.value = false;
   const target = pendingWord ? findWord(pendingWord) : null;
   const targetSide = pendingSide;
   pendingWord = null;
@@ -285,6 +354,8 @@ function onUp() {
 /** 手势被系统抢占（来电 / 切后台）→ 只清拖拽态，保留选中 */
 function onCancel() {
   downInfo = null;
+  pairIntent = null;
+  dragPointer = null;
   dragging.value = false;
   pendingWord = null;
   pendingSide = null;
@@ -333,6 +404,12 @@ watch(groupDone, async (done) => {
 function setupGroup(g) {
   matched.clear();
   Object.keys(matchFrom).forEach((k) => delete matchFrom[k]); // 方向随配对一起重置
+  // 坐标表必须随组清空：id 不跨组复用，但留着旧条目既是泄漏，
+  // 也让"测量还没跑完就渲染的线"拿到上一组的错误坐标
+  Object.keys(imgPos).forEach((k) => delete imgPos[k]);
+  Object.keys(wordPos).forEach((k) => delete wordPos[k]);
+  Object.keys(picEls).forEach((k) => delete picEls[k]);
+  Object.keys(wordElsById).forEach((k) => delete wordElsById[k]);
   clearTimeout(wrongTimer);
   imgWrong.value = null;
   wordWrong.value = null;
@@ -353,11 +430,6 @@ watch(curGroup, async (g) => {
   measure();
 });
 
-/** 换课时或屏幕分档变化导致重新分组时，回到第一组 */
-watch(groups, () => {
-  groupIdx.value = 0;
-});
-
 onMounted(async () => {
   setupGroup(curGroup.value);
   await nextTick();
@@ -370,7 +442,10 @@ onMounted(async () => {
     ro = new ResizeObserver(scheduleMeasure);
     ro.observe(board.value);
   }
+  // 字体加载完成会改变单词列的内容宽度（列宽重新分配），补一次测量
+  document.fonts?.ready?.then(() => scheduleMeasure());
 });
+
 onBeforeUnmount(() => {
   window.removeEventListener("pointermove", onMove);
   window.removeEventListener("pointerup", onUp);
@@ -442,7 +517,7 @@ onBeforeUnmount(() => {
         <div
           v-for="(w, i) in midWords"
           :key="w.id"
-          :ref="(el) => (wordEls[i] = el)"
+          :ref="(el) => setWordEl(w.id, el)"
           class="cell word anim-pop"
           data-haptic
           data-side="word"
@@ -469,7 +544,7 @@ onBeforeUnmount(() => {
         <div
           v-for="(w, i) in leftImgs"
           :key="w.id"
-          :ref="(el) => (leftEls[i] = el)"
+          :ref="(el) => setPicEl(w.id, el)"
           class="cell pic anim-pop"
           data-haptic
           data-side="img"
