@@ -34,7 +34,7 @@
  *  · 补上播放模式（此前 store 里 repeatMode/shuffleOn 一直存在，界面上却没有入口）：
  *    随机 + 循环三档（顺序播放 → 列表循环 → 单曲循环），按钮带中文标注。
  */
-import { ref, computed, onBeforeUnmount, onMounted } from "vue";
+import { ref, computed, watch, nextTick, onBeforeUnmount, onMounted } from "vue";
 import { lessons, asset } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
@@ -51,9 +51,7 @@ import type { ListenSubTab } from "../../types";
 const player = usePlayerStore();
 const progStore = useProgressStore();
 
-/* ---------- 播放页的歌词窗（卡拉 OK） ---------- */
-/** 歌词窗固定 5 行：当前行永远是正中那行（上 2 行、下 2 行当上下文） */
-const LINE_WINDOW = 5;
+/* ---------- 播放页的歌词（卡拉 OK，整篇可滚动） ---------- */
 
 /** 当前唱到第几行（0 起；-1 = 这首没有歌词） */
 const activeLine = computed(() => {
@@ -62,22 +60,45 @@ const activeLine = computed(() => {
   return Math.min(n - 1, Math.max(0, Math.round(player.progress * n)));
 });
 
-/**
- * 歌词窗内容：只取当前行前后各 2 行。
- * 为什么不做"整篇滚动 + 当前行高亮"：一屏十几行还是一面文字墙，孩子得自己找；
- * 固定 5 行窗口让"当前行"永远落在同一个位置——位置本身就是信号，不用教。
- * 超出范围的位置留空槽（模板渲染 &nbsp; 撑住行高），这样歌首/歌尾当前行也照样居中。
- */
-const lyricWindow = computed(() => {
-  const lines = player.currentLyrics;
-  const center = activeLine.value;
-  const half = Math.floor(LINE_WINDOW / 2);
-  return Array.from({ length: LINE_WINDOW }, (_, i) => {
-    const idx = center - half + i;
-    const text = idx >= 0 && idx < lines.length ? lines[idx] : "";
-    return { text, on: idx === center };
-  });
+/* ===== 整篇歌词滚动（2026-10-18 按家长反馈从"固定 5 行窗"升级）=====
+ * 完整歌词列表 + 当前行高亮 + 自动滚动跟随；家长手动滚动后 3 秒内
+ * 不自动抢滚动（看完想看的那段，歌词自己"回来"）。 */
+const lyricsEl = ref<HTMLElement | null>(null);
+const userScrolling = ref(false);
+let userScrollTimer = 0;
+/** 程序滚动进行中的计数（smooth scroll 期间触发的 scroll 事件不算用户手势） */
+let programmaticScrolls = 0;
+
+function followActiveLine() {
+  const box = lyricsEl.value;
+  if (!box || activeLine.value < 0) return;
+  const line = box.querySelector<HTMLElement>(`.pl-line[data-line="${activeLine.value}"]`);
+  if (!line) return;
+  const target = line.offsetTop - box.clientHeight / 2 + line.offsetHeight / 2;
+  if (Math.abs(box.scrollTop - target) < 4) return;
+  programmaticScrolls++;
+  box.scrollTo({ top: target, behavior: "smooth" });
+  window.setTimeout(() => (programmaticScrolls = Math.max(0, programmaticScrolls - 1)), 700);
+}
+
+function onLyricsScroll() {
+  if (programmaticScrolls > 0) return;
+  userScrolling.value = true;
+  clearTimeout(userScrollTimer);
+  userScrollTimer = window.setTimeout(() => (userScrolling.value = false), 3000);
+}
+
+watch(activeLine, () => {
+  if (!userScrolling.value) followActiveLine();
 });
+watch(
+  () => player.currentSong?.id,
+  () => {
+    userScrolling.value = false; // 换歌重新跟随
+    nextTick(followActiveLine);
+  }
+);
+onMounted(followActiveLine);
 
 /** tab 定义提到 setup 顶层，避免每次渲染新建数组导致子组件 props 反复 diff */
 const TABS = [
@@ -165,14 +186,20 @@ onMounted(() => {
           <p class="pl-sub">{{ player.currentSong.titleZh }}</p>
         </div>
 
-        <!-- 卡拉 OK 歌词窗：固定 5 行，当前行永远在正中（位置 + 药丸底 + 字重三重信号） -->
-        <div class="pl-lyrics">
-          <template v-if="player.currentLyrics.length">
-            <p v-for="(slot, i) in lyricWindow" :key="i" class="pl-line" :class="{ on: slot.on }">{{
-              slot.text || "\u00A0"
-            }}</p>
-          </template>
-          <p v-else class="pl-line on">🎵</p>
+        <!-- 整篇歌词：当前行高亮 + 自动滚动跟随；家长可手动滚动（3s 后自动跟随恢复） -->
+        <div class="pl-lyrics" ref="lyricsEl" @scroll.passive="onLyricsScroll">
+          <div class="pl-lines">
+            <template v-if="player.currentLyrics.length">
+              <p
+                v-for="(line, i) in player.currentLyrics"
+                :key="i"
+                class="pl-line"
+                :class="{ on: i === activeLine }"
+                :data-line="i"
+              >{{ line }}</p>
+            </template>
+            <p v-else class="pl-line on">🎵</p>
+          </div>
         </div>
 
         <!-- 播放模式：随机 + 循环三档（顺序播放 → 列表循环 → 单曲循环）。
@@ -402,16 +429,33 @@ onMounted(() => {
   font-weight: var(--fw-mid);
   font-size: var(--fs-small);
 }
-/* 歌词窗：永远 5 行（见 lyricWindow）。
- * 不设 flex:1，而是靠 margin-block:auto 吸收多出来的高度 ——
- * 卡片始终是一个"窗口"，而不是被拉满整页的大白块。 */
+/* 歌词卡：整篇可滚动（家长手动滑 / 播放时自动跟随当前行）。
+ * flex:1 + min-height:0 吃掉剩余高度；内层 .pl-lines 用 margin-block:auto
+ * 安全居中——行数少时垂直居中，行数多溢出时可滚（auto margin 溢出时自动归零，
+ * 不会像 justify-content:center 那样把顶部内容裁进摸不到的区域）。 */
 .pl-lyrics {
-  margin-block: auto;
+  position: relative; /* 行的 offsetTop 以此为基准，供自动滚动计算 */
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* 孩子界面不露滚动条，滚动手感保留 */
   padding: var(--gap-m) var(--gap-s);
   background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow-hard);
   text-align: left;
+}
+.pl-lyrics::-webkit-scrollbar {
+  display: none;
+}
+.pl-lines {
+  margin-block: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .pl-line {
   margin: 0;
@@ -421,14 +465,8 @@ onMounted(() => {
   font-weight: var(--fw-mid);
   font-size: var(--fs-body);
   line-height: 1.6;
-  /* 离当前行越远越淡。窗口固定 5 槽，所以"位置"就是"距离"：
-   * 第 1/5 槽 = 距当前行 2 行，第 2/4 槽 = 距 1 行，正中 = 当前行。 */
-  opacity: 0.32;
+  opacity: 0.45;
   transition: opacity var(--dur-base), background var(--dur-base);
-}
-.pl-line:nth-child(2),
-.pl-line:nth-child(4) {
-  opacity: 0.6;
 }
 .pl-line.on {
   background: var(--brand-soft);
@@ -572,11 +610,7 @@ onMounted(() => {
   .pl-hero { grid-area: hero; align-self: center; }
   .pl-lyrics {
     grid-area: lyrics;
-    margin-block: 0;
     height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
   }
   .pl-modes { grid-area: modes; }
   .pl-transport { grid-area: transport; }
