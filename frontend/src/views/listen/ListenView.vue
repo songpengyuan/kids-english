@@ -547,6 +547,69 @@ onMounted(() => {
   font-variant-numeric: tabular-nums;
 }
 
+/* ===== iPad 横屏 / 桌面：单列必溢出，改双栏 =====
+ * 根因（2026-10-17 反馈"播放页看不到播放键"）：单列总高约 850px，
+ * 而浮层只有 视口-底栏 ≈ 652px（iPad 横屏 1024×768、--nav-h=116）——
+ * flex 收缩压不掉固定尺寸的 transport，主播放键 bottom=809 直接被裁出视口。
+ * 解法：宽横屏用 grid 两栏，左列封面+模式+控制+进度，右列歌词卡占满整高。
+ * 用 grid-area 重排而**不动 DOM**：手机竖屏的单列节奏（封面→歌词→控制）原样保留。
+ * 行分布 1fr 给 hero 行：封面在左列垂直居中，控制键贴底（拇指落点）。 */
+@media (min-width: 768px) and (orientation: landscape) {
+  .player {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+    grid-template-areas:
+      "bar bar"
+      "hero lyrics"
+      "modes lyrics"
+      "transport lyrics"
+      "progress lyrics";
+    column-gap: var(--gap-l);
+    align-content: stretch;
+  }
+  .pl-bar { grid-area: bar; }
+  .pl-hero { grid-area: hero; align-self: center; }
+  .pl-lyrics {
+    grid-area: lyrics;
+    margin-block: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .pl-modes { grid-area: modes; }
+  .pl-transport { grid-area: transport; }
+  .pl-progress-row { grid-area: progress; }
+}
+
+/* ===== 手机横屏（tiny）兜底：竖排塞不下，砍装饰保控制 =====
+ * 可用高约 290px：歌词窗（~290px）与播放模式行整块砍掉，标题/副标题并入封面行，
+ * 间距收紧；overflow-y:auto 只做最后保险 —— 任何情况下 transport 不能被裁掉。 */
+@media (max-height: 480px) {
+  .player {
+    gap: var(--gap-s);
+    overflow-y: auto;
+  }
+  .pl-modes,
+  .pl-lyrics,
+  .pl-sub {
+    display: none;
+  }
+  .pl-hero {
+    flex: none;
+    flex-direction: row;
+    gap: var(--gap-m);
+  }
+  .pl-title {
+    margin: 0;
+    text-align: left;
+  }
+  .pl-hero :deep(.emoji-tile) {
+    font-size: clamp(48px, 13vh, 64px);
+  }
+}
+
 /* 歌词全屏页 = 抽屉：进入/收起都从底部丝滑滑出（大元素位移 → --dur-slow） */
 .lyrics-enter-active {
   transition: transform var(--dur-slow) var(--ease-out), opacity var(--dur-slow) ease;

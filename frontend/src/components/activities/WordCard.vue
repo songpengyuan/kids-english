@@ -125,8 +125,9 @@ function onWord() {
   cursor: pointer;
 }
 .pic img {
-  width: 86%;
-  height: 86%;
+  /* 94%：留一点呼吸边，但别像 86% 那样浪费卡片空间（iPad 横屏实测差出一截） */
+  width: 94%;
+  height: 94%;
   object-fit: contain;
   pointer-events: none;
 }

@@ -623,7 +623,7 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 .cell.word {
-  font-size: clamp(13px, min(2.6vh, 2.1vw), 23px);
+  font-size: clamp(15px, min(3.2vh, 2.4vw), 30px);
   font-weight: var(--fw-strong);
   cursor: grab;
   padding: 0 4px;
@@ -642,13 +642,13 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 .sound-ico {
-  width: clamp(24px, 5vh, 40px);
-  height: clamp(24px, 5vh, 40px);
+  width: clamp(24px, 6vh, 52px);
+  height: clamp(24px, 6vh, 52px);
   color: var(--blue-dark);
   flex: none;
 }
 .sound-word {
-  font-size: clamp(12px, min(2.4vh, 2vw), 19px);
+  font-size: clamp(13px, min(2.9vh, 2.2vw), 26px);
   font-weight: var(--fw-strong);
   color: var(--ink);
   line-height: 1.15;
@@ -751,6 +751,27 @@ onBeforeUnmount(() => {
 @media (max-height: 480px) {
   .tip {
     display: none;
+  }
+}
+
+/* ===== 平板/桌面（宽且不太矮）：图片卡方形化 + 图片填满 =====
+ * 修复 iPad 横屏「图片小」：拉伸布局下图片列和单词列各分一半宽（约 440px），
+ * 但行高被对数均摊（5 对 → 每行约 110px），图片 object-fit 后实际只有 ~65px 高，
+ * 卡片左右大片白底。这里让图片卡按行高取正方形、图片撑满卡片、列内居中：
+ * 行高多少图片就多大，视觉密度立刻回来。手机竖屏（<600px）保持拉伸布局不动。 */
+@media (min-width: 600px) and (min-height: 640px) {
+  .col.imgs {
+    justify-items: center;
+  }
+  .cell.pic {
+    aspect-ratio: 1 / 1;
+    height: 100%;
+    width: auto;
+    padding: 4px;
+  }
+  .cell.pic img {
+    width: 100%;
+    height: 100%;
   }
 }
 </style>

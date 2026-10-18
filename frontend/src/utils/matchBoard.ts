@@ -11,9 +11,15 @@ export interface MatchGroupRange {
 }
 
 /**
- * 每组几对：统一 3~5 对（孩子注意力窗口，太多会疲劳）。
+ * 每组几对：3~5 对（孩子注意力窗口，太多会疲劳），按屏幕高矮收紧：
+ * - tiny（手机横屏，<480px 高）：固定 3 对 —— 行数是图片大小的瓶颈，矮屏宁可多分一组；
+ * - regular（平板横屏，640~900px 高）：最多 4 对 —— iPad 横屏 5 对时每行只有 ~110px，
+ *   图片被压到 65px（2026-10-17 反馈"连一连图片太小"），减到 4 对行高 +30%；
+ * - compact / roomy（手机竖屏 / 平板竖屏）：3~5 对不变。
  */
-export function matchGroupRange(_isNarrow: boolean, _sizeTier: string): MatchGroupRange {
+export function matchGroupRange(_isNarrow: boolean, sizeTier: string): MatchGroupRange {
+  if (sizeTier === "tiny") return { min: 3, max: 3 };
+  if (sizeTier === "regular") return { min: 3, max: 4 };
   return { min: 3, max: 5 };
 }
 

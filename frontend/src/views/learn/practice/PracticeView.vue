@@ -178,4 +178,16 @@ function enter(l: Lesson) {
     gap: var(--gap-m);
   }
 }
+
+/* iPad 横屏 / 桌面宽窗：4:5 竖版卡在高约 540px 的滚动容器里一行都放不下第二张，
+ * 第二行只露半截又没有滚动提示，孩子以为只有 3 课。
+ * 改 4 列方形卡：8 课以内两行正好一屏放完，课再多滚动也只差一点点。 */
+@media (min-width: 768px) and (orientation: landscape) {
+  .course-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .lesson-card {
+    aspect-ratio: 1 / 1;
+  }
+}
 </style>

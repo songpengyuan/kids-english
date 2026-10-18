@@ -3,7 +3,7 @@
  * 布局算法是"一屏装下"承诺的核心，任何改动必须过这里。
  */
 import { describe, expect, it } from "vitest";
-import { fitGrid, pickColumns, splitBalanced } from "../layout";
+import { fitGrid, fitLearnGrid, pickColumns, splitBalanced } from "../layout";
 
 describe("fitGrid", () => {
   it("按最小可读尺寸反推行列数与每页容量", () => {
@@ -26,6 +26,32 @@ describe("fitGrid", () => {
     expect(
       fitGrid({ width: 2000, height: 2000, minCardW: 170, minCardH: 120, maxCols: 5, maxRows: 2 })
     ).toEqual({ cols: 5, rows: 2, perPage: 10 });
+  });
+});
+
+describe("fitLearnGrid", () => {
+  // iPad 横屏实测场景：内容区约 918×539，l4 有 9 个词
+  const ipad = { width: 918, height: 539, minCardW: 110, minCardH: 118, gap: 12, maxCols: 5, maxRows: 3 };
+
+  it("9 词一页装下：5 列 × 2 行（行数少 → 行高足 → 图片大）", () => {
+    expect(fitLearnGrid({ ...ipad, count: 9 })).toEqual({ cols: 5, rows: 2, perPage: 10 });
+  });
+
+  it("7 词用 4 列 × 2 行：图片比 5 列更大，仍一页装下", () => {
+    expect(fitLearnGrid({ ...ipad, count: 7 })).toEqual({ cols: 4, rows: 2, perPage: 8 });
+  });
+
+  it("词数超过两行上限（11 词）时退回 3 行，保住一页装下", () => {
+    // 11 词：2 行需 6 列 > maxCols 5 → 用 4×3 = 12/页 单页装下（图片仍比旧逻辑大）
+    expect(fitLearnGrid({ ...ipad, count: 11 })).toEqual({ cols: 4, rows: 3, perPage: 12 });
+  });
+
+  it("屏幕过小无候选时退回通用铺满逻辑", () => {
+    expect(fitLearnGrid({ width: 300, height: 200, count: 9, minCardW: 110, minCardH: 118 })).toEqual({
+      cols: 2,
+      rows: 1,
+      perPage: 2
+    });
   });
 });
 

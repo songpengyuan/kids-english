@@ -21,7 +21,7 @@ import {
 } from "vue";
 import { useViewport } from "./useViewport";
 import { usePager } from "./usePager";
-import { fitGrid } from "../utils/layout";
+import { fitGrid, fitLearnGrid } from "../utils/layout";
 import { learnStars } from "../utils/learnSession";
 import type { Word } from "../data/lessons";
 
@@ -73,14 +73,28 @@ export function useLearnSession(
   const fit = computed(() => {
     // 尺寸还没测出来时给保守值，避免首帧把所有词铺出来再收缩
     if (!area.w || !area.h) return { cols: 2, rows: 2, perPage: 4 };
-    return fitGrid({
+    if (isNarrow.value) {
+      // 手机：最多 2 列（再窄卡片看不清），行数按可用高度铺
+      return fitGrid({
+        width: area.w,
+        height: area.h,
+        minCardW: MIN_CARD_W,
+        minCardH: MIN_CARD_H,
+        gap: GAP,
+        maxCols: 2,
+        maxRows: 3,
+      });
+    }
+    // 平板/桌面（iPad 横屏为主）：以图片实际绘制尺寸为目标挑容量，
+    // 优先一页装下本课全部词（详见 fitLearnGrid 注释）
+    return fitLearnGrid({
       width: area.w,
       height: area.h,
+      count: unref(words).length,
       minCardW: MIN_CARD_W,
       minCardH: MIN_CARD_H,
       gap: GAP,
-      // 手机最多 2 列（再窄卡片看不清）；平板最多 4 列（别一行摊太散）
-      maxCols: isNarrow.value ? 2 : 4,
+      maxCols: 5,
       maxRows: 3,
     });
   });

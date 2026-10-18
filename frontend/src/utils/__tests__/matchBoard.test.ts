@@ -10,10 +10,16 @@ function seeded(seed = 7) {
 }
 
 describe("matchGroupRange", () => {
-  it("统一 3~5 对", () => {
-    expect(matchGroupRange(true, "wide")).toEqual({ min: 3, max: 5 });
-    expect(matchGroupRange(false, "tiny")).toEqual({ min: 3, max: 5 });
+  it("手机竖屏 / 平板竖屏：3~5 对", () => {
+    expect(matchGroupRange(true, "compact")).toEqual({ min: 3, max: 5 });
+    expect(matchGroupRange(false, "roomy")).toEqual({ min: 3, max: 5 });
     expect(matchGroupRange(false, "wide")).toEqual({ min: 3, max: 5 });
+  });
+  it("平板横屏（regular）：最多 4 对，行高换图片大小", () => {
+    expect(matchGroupRange(false, "regular")).toEqual({ min: 3, max: 4 });
+  });
+  it("手机横屏（tiny）：固定 3 对", () => {
+    expect(matchGroupRange(true, "tiny")).toEqual({ min: 3, max: 3 });
   });
 });
 
