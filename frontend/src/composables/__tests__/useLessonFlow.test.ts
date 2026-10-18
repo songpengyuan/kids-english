@@ -48,9 +48,9 @@ async function bootHost(url: string): Promise<Host> {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
+      { path: "/course/:id/game", name: "course-game", component: { template: "<div />" } },
       { path: "/course/:id/:stage?", name: "lesson", component: { template: "<div />" } },
       { path: "/game/quest/:id/:stage?", name: "quest", component: { template: "<div />" } },
-      { path: "/game/lesson/:id", name: "game-lesson", component: { template: "<div />" } },
       { path: "/", name: "home", component: { template: "<div />" } }
     ]
   });
@@ -243,10 +243,10 @@ describe("useLessonFlow 结算", () => {
     flow.boot();
     const push = vi.spyOn(router, "push");
     flow.backToMap();
-    expect(push).toHaveBeenCalledWith("/game/lesson/l4");
+    expect(push).toHaveBeenCalledWith("/course/l4/game");
     push.mockClear();
     flow.back();
-    expect(push).toHaveBeenCalledWith("/game/lesson/l4");
+    expect(push).toHaveBeenCalledWith("/course/l4/game");
   });
 });
 

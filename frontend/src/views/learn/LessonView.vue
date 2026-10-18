@@ -156,7 +156,7 @@ function openLearn() {
 function startQuest() {
   // 当前课游戏地图：只显示这一课的关卡
   const id = route.params.id as string;
-  router.push(`/game/lesson/${id}`);
+  router.push(`/course/${id}/game`);
 }
 
 /** 闯关入口进度：与地图**同源**（本课玩法关 x/y，宝箱不计入）。

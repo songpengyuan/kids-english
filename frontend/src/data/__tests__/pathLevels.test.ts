@@ -10,7 +10,7 @@
  *
  * 两种作用域（2026-10-17）：
  *  - `buildLevels()`：全站序列，序号跨课连续（多课总地图 #/game）；
- *  - `lessonLevels(lesson)`：本课序列，序号本课内 1..N（本课地图 #/game/lesson/:id，
+ *  - `lessonLevels(lesson)`：本课序列，序号本课内 1..N（本课地图 #/course/:id/game，
  *    以及单关「下一关」推进）——必须保证不跨课。
  */
 import { describe, expect, it } from "vitest";

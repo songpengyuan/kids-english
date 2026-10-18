@@ -25,7 +25,7 @@ import { track } from "../services/telemetry";
 
 /**
  * 课时流程阶段。
- * 曾经还有一个 `questMap`（课内闯关地图）——现在闯关是独立的 `/game/lesson/:id`，
+ * 曾经还有一个 `questMap`（课内闯关地图）——现在闯关是独立的 `/course/:id/game`，
  * 课内不再画地图，这个阶段已下线（LessonView 里的分支与 LessonQuestMap 组件一并删除）。
  */
 export type LessonStage = "menu" | "learn" | "quiz" | "match" | "speak" | "song" | "talk" | "result";
@@ -153,9 +153,9 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     stage.value = "result";
   }
 
-  /** 返回闯关地图：回到当前课的地图（#/game/lesson/:id，只服务本课） */
+  /** 返回闯关地图：回到当前课的地图（#/course/:id/game，只服务本课） */
   function backToMap() {
-    router.push(`/game/lesson/${lesson.value?.id ?? ""}`);
+    router.push(`/course/${lesson.value?.id ?? ""}/game`);
   }
 
   /** 进入下一关（单关完成画面按钮） */
@@ -234,7 +234,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
       if (lid) router.replace(`/course/${lid}`);
       return;
     }
-    router.push(quest.questMode.value ? `/game/lesson/${lesson.value?.id ?? ""}` : "/course");
+    router.push(quest.questMode.value ? `/course/${lesson.value?.id ?? ""}/game` : "/course");
   }
 
   function toMenu() {

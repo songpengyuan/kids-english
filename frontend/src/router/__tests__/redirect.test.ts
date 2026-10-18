@@ -78,6 +78,24 @@ describe("关键路径能落到正确路由", () => {
     expect(router.currentRoute.value.name).toBe("lesson-quiz");
   });
 
+  it("#/course/l4/game 本课闯关地图可达（URL 归属课程域）", async () => {
+    await router.push("/course/l4/game");
+    expect(router.currentRoute.value.name).toBe("course-game");
+    expect(router.currentRoute.value.params.id).toBe("l4");
+    expect(router.currentRoute.value.meta.sky).toBe(true);
+  });
+
+  it("旧 #/game/lesson/l4 重定向到 #/course/l4/game", async () => {
+    await router.push("/game/lesson/l4");
+    expect(router.currentRoute.value.path).toBe("/course/l4/game");
+    expect(router.currentRoute.value.name).toBe("course-game");
+  });
+
+  it("#/game/quest/... 仍是单关玩法（不落在课程域）", async () => {
+    await router.push("/game/quest/l4?step=learn");
+    expect(router.currentRoute.value.name).toBe("quest");
+  });
+
   it("#/gate 放行后落到课程主页，不卡死（本次事故的直接现场）", async () => {
     await router.push("/gate");
     expect(router.currentRoute.value.path).toBe("/course");

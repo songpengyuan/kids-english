@@ -258,7 +258,7 @@
 **奖励/报告/门禁**：`ChestReward` `MasteryTrend` `ParentGate`
 **宝藏**：`HeroPoseStage` `HeroFormThumbs` `HeroInfoPanel` `HeroZoomViewer`
 
-> `LessonQuestMap` 与 `LessonView` 的 `questMap` 阶段已于 2026-10 删除：闯关已改为独立的 `/game/lesson/:id`，课内不再画地图。
+> `LessonQuestMap` 与 `LessonView` 的 `questMap` 阶段已于 2026-10 删除：闯关已改为独立的 `/course/:id/game`（本课地图，URL 归属课程域），课内不再画地图。
 
 ### 9.4 通用 CSS 类（② 层，base.css）
 

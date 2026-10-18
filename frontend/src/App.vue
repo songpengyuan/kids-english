@@ -21,7 +21,7 @@ const progress = useProgressStore();
 const player = usePlayerStore();
 
 /** 底部导航只在三个主 tab 显示：课程（/course）/ 磨耳朵（/listen）/ 我的（/me）；
- *  闯关入口在课时菜单的「闯关挑战」/「我的」页（本课地图 #/game/lesson/:id；
+ *  闯关入口在课时菜单的「闯关挑战」/「我的」页（本课地图 #/course/:id/game；
  *  无底部导航、沉浸闯关，顶栏返回可回课程）；宝藏罐/报告/复习/课程详情等子页面都隐藏，沉浸进入。
  *  磨耳朵播放页**也显示底栏**（2026-10-17 改）：播放浮层不再盖满全屏，
  *  下边界抬到底栏之上（见 ListenView.vue 的 .player），于是两个底部不再打架，
@@ -109,7 +109,7 @@ onMounted(() => {
 
 <template>
   <CuteBackdrop />
-  <!-- 缓存三个页面壳（学习主页 #/course、多课总地图 #/game、本课地图 #/game/lesson/:id）：
+  <!-- 缓存三个页面壳（学习主页 #/course、多课总地图 #/game、本课地图 #/course/:id/game）：
        回地图时 GamePath 的 onActivated 对比关卡状态触发解锁动效、恢复滚动位置 -->
   <router-view v-slot="{ Component }">
     <KeepAlive include="LearnView,GameView,GameLessonView">

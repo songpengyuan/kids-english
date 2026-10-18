@@ -10,11 +10,13 @@
  *   #/course（课程域；历史旧路径 #/learn 已不再兼容，见文件底部说明）
  *     ├─ /course                         课程主页（父容器空 path 子路由，顶层渲染）
  *     ├─ /course/:id                     课程菜单（父路由带组件）
- *     │   └─ /course/:id/learn|hear|...  题型子路由（二级，继承父组件，仅声明 name/meta）
+ *     │   ├─ /course/:id/learn|hear|...  题型子路由（二级，继承父组件，仅声明 name/meta）
+ *     │   └─ /course/:id/game            本课闯关地图（URL 归属课程域；天空场景）
  *     └─ /course/review                  错词复习（学习闭环：学 → 错 → 复习）
  *   #/game（游戏域）
- *     ├─ /game                          游戏闯关地图
- *     └─ /game/quest/:id/:stage?        闯关玩法（地图点关卡直达）
+ *     ├─ /game                          多课总地图（入口已收起）
+ *     ├─ /game/quest/:id/:stage?        闯关玩法（地图点关卡直达）
+ *     └─ /game/lesson/:id               旧本课地图路径 → 重定向到 /course/:id/game
  *   #/me（我的域）
  *     ├─ /me                            我的
  *     ├─ /me/calendar                   学习日历（**已合并原连击日历**，/me/streak 重定向至此）
@@ -25,7 +27,7 @@
  *
  *   父路由**不带组件**（纯路径容器）：所有页面组件都渲染在 App 顶层 router-view，
  *   行为与平铺一致、各页自带 HeaderBar 全屏，仅 URL 语义分层；
- *   KeepAlive 只缓存两个页面壳（LearnView/GameView）。
+ *   KeepAlive 缓存三个页面壳（LearnView / GameView / GameLessonView）。
  *
  * - 加载策略（配合 sw 预缓存清单，见 vite.config.js kids-pwa 插件）：
  *   · 学习主链路（学习主页/课程/玩法）**同步加载**——离线首开最稳，装完即有；
@@ -77,6 +79,11 @@ export const router = createRouter({
             { path: "talk", name: "lesson-talk", component: LessonView, meta: { title: "亲子对话", stage: "talk" } },
           ],
         },
+        // 本课闯关地图（URL 归属课程域：#/course/:id/game）。
+        // 必须放在 `:id` 的**同级**而不是子路由：`:id` 父路由带 LessonView 组件但没有
+        // <router-view>，它的题型子路由只用来声明 name/meta（复用父组件）；
+        // 地图是另一个页面组件，作为兄弟路由才会被 App 顶层 router-view 渲染。
+        { path: ":id/game", name: "course-game", component: () => import("../views/game/GameLessonView.vue"), meta: { title: "游戏闯关", sky: true } },
         { path: "review", name: "review", component: () => import("../views/learn/ReviewView.vue"), meta: { title: "错词复习" } },
       ],
     },
@@ -85,11 +92,12 @@ export const router = createRouter({
     {
       path: "/game",
       children: [
-        { path: "", name: "game", component: GameView, meta: { title: "游戏闯关" } },
+        // 多课总地图（入口已收起，路由保留；天空场景由 meta.sky 决定）
+        { path: "", name: "game", component: GameView, meta: { title: "游戏闯关", sky: true } },
         // 闯关玩法（地图点关卡 → /game/quest/:id?step=玩法）
         { path: "quest/:id/:stage?", name: "quest", component: () => import("../views/game/QuestView.vue"), meta: { title: "闯关" } },
-        // 当前课游戏地图（只显示这一课的关卡；多课总地图入口暂搁置）
-        { path: "lesson/:id", name: "game-lesson", component: () => import("../views/game/GameLessonView.vue"), meta: { title: "游戏闯关" } },
+        // 旧路径兼容：本课地图已挪到课程域 /course/:id/game（只留一个 redirect，不留两份页面）
+        { path: "lesson/:id", redirect: (to) => ({ name: "course-game", params: { id: to.params.id } }) },
       ],
     },
 

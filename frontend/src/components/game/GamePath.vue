@@ -3,7 +3,7 @@
  * 模块级滚动/定位记忆：KeepAlive 缓存下子树可能被重建，
  * script setup 内局部变量每次挂载重置，故存模块作用域，跨实例/跨 KeepAlive 保留。
  *
- * ⚠️ **必须按地图作用域分开记**（2026-10-17）：本课地图（#/game/lesson/:id）与
+ * ⚠️ **必须按地图作用域分开记**（2026-10-17）：本课地图（#/course/:id/game）与
  * 多课总地图（#/game）共用同一个 GamePath 实现，而 GameLessonView 是 KeepAlive
  * 缓存、换课时不重建实例。原来只有一份 `savedGameTop`，l4 地图的滚动位置会串到
  * l5 地图（打开就停在别人的半山腰）。key = ""（总地图）或课时 id。
@@ -18,7 +18,7 @@ const lastSeenByScope = new Map<string, string>();
  * 游戏模式：多邻国式关卡路径图（DOM 版）。
  *
  * - **两种作用域**：不传 `lesson` = 多课总地图（#/game，全部课程）；
- *   传 `lesson` = 本课地图（#/game/lesson/:id，只画这一课）。
+ *   传 `lesson` = 本课地图（#/course/:id/game，只画这一课）。
  *   两种模式共用同一套几何/绘制/交互，关卡数据分别来自
  *   `buildLevels()`（跨课序号）与 `lessonLevels(lesson)`（本课序号 1..N）。
  * - 地图本身是**滚动容器**（`.game-path-scroll`）：滚动条贴视口右缘，
@@ -409,7 +409,7 @@ function unitLesson(id: string) {
 <template>
   <!-- 地图自带滚动容器：页面壳只给剩余高度；滚动条贴视口右缘（见 .game-path-scroll）。
        本课地图曾只写 flex:1 漏了 overflow → 7 关超出一屏时底部被裁掉且滚不动。 -->
-  <div ref="stageEl" class="game-path-scroll">
+  <div ref="stageEl" class="game-path-scroll" :class="{ 'is-single': !!lesson }">
     <div class="game-path anim-fade-up">
       <!-- 蛇形路径（文档流：课名横幅全宽；关卡节点默认居中，translateX 左右摆动成 S 形） -->
       <div class="gp-canvas">
@@ -612,6 +612,14 @@ function unitLesson(id: string) {
 }
 .gp-unit.is-stuck::after {
   opacity: 0;
+}
+/* 本课地图只有一门课：分隔线不再拉通整宽（会横穿背景的太阳/月亮），
+   收成课程名下方一小段下划线；多课总地图仍保留整条线分隔课程。 */
+.game-path-scroll.is-single .gp-unit::after {
+  left: 50%;
+  right: auto;
+  width: 56px;
+  transform: translateX(-50%);
 }
 
 /* ---------- 已通关关卡：主色调跟随所属课程横幅（孩子一眼看出这组关卡属于哪门课） ---------- */

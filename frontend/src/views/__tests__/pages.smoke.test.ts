@@ -90,6 +90,7 @@ const routes = [
           { path: "talk", name: "lesson-talk", component: LessonView },
         ],
       },
+      { path: ":id/game", name: "course-game", component: GameLessonView },
       { path: "review", name: "review", component: ReviewView },
     ],
   },
@@ -97,10 +98,7 @@ const routes = [
     path: "/game",
     name: "game",
     component: GameView,
-    children: [
-      { path: "quest/:id/:stage?", name: "quest", component: LessonView },
-      { path: "lesson/:id", name: "game-lesson", component: GameLessonView },
-    ],
+    children: [{ path: "quest/:id/:stage?", name: "quest", component: LessonView }],
   },
   {
     path: "/me",
@@ -157,7 +155,7 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   });
 
   it("当前课游戏地图（只服务本课关卡）", async () => {
-    const w = await mountPage(GameLessonView, "/game/lesson/l10");
+    const w = await mountPage(GameLessonView, "/learn/l10/game");
     // 标题显示本课课程名 + 关卡列表（唱童谣/学单词…）
     expect(w.text()).toContain("Walking In The Jungle");
     expect(w.text()).toContain("学单词");

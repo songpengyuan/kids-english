@@ -137,7 +137,7 @@ function goContinue() {
 function goGame() {
   speakZh("游戏闯关");
   const id = progress.lastLesson || lessons[0]?.id || "l4";
-  router.push(`/game/lesson/${id}`);
+  router.push(`/course/${id}/game`);
 }
 /** 带语音的跳转（收藏卡用） */
 function sayEntry(name: string, path: string) {

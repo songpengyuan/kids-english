@@ -1,15 +1,17 @@
 <script setup>
 /**
  * 全站背景质感层 —— 两个主题，由路由自动切换：
- *  · 默认（水彩晕染）：不规则水彩色斑 + 纸纹颗粒 + 低打扰云朵/星星/圆点。
- *  · 游戏闯关地图（#/game 路由）：天空草地场景（太阳 / 云朵 / 草地山丘 / 碎星）。
- *  两版都支持暗色模式（夜空 / 月亮 / 暗丘）。
+ *  · 默认（暖纸底）：纯色 --bg + 纸纹颗粒 + 低打扰云朵/星星/圆点（学习/我的等）。
+ *  · 关卡地图（#/game 总地图、#/course/:id/game 本课地图）：暖纸底或夜空 +
+ *    太阳/月亮 + 云朵 + 草地山丘 + 碎星。
+ *  玩法页（/game/quest/…）**保持默认水彩**——答题时背景越安静越专注。
  *
- * 三层质感（都是纯 CSS / 一个内联 SVG，无图片资源）：
- *  1. 底色：顶部与 --bg 完全一致（状态栏 theme-color 不会跳色），向下过渡
- *  2. 彩层：水彩版=多团不规则品牌色斑；天空版=天空渐变 + 太阳 + 云 + 草地
+ * 质感构成（都是纯 CSS / 一个内联 SVG，无图片资源）：
+ *  1. 底色：**纯色 --bg**，与顶栏/状态栏 theme-color 完全一致（不跳色）。
+ *     历史上试过整屏渐变/极光/水彩色斑，都会在状态栏与卡片边缘产生色差，已回退。
+ *  2. 装饰：太阳/月亮、卡通云（胶囊 + 两个上凸圆）、草地山丘、星星/圆点。
  *  3. 细颗粒：内联 SVG feTurbulence 噪声（140px 无缝平铺）压到 3~7% 不透明度，
- *     像水彩纸/布纹，消掉渐变的"塑料感"。静态图层，不掉帧。
+ *     像水彩纸/布纹，消掉纯色的"塑料感"。静态图层，不掉帧。
  *
  * 元素层原则：
  *  · pointer-events: none，绝不挡操作；
@@ -26,8 +28,14 @@ import { useRoute } from "vue-router";
 import { Star } from "@lucide/vue";
 
 const route = useRoute();
-/** 游戏闯关地图页：只 #/game（独立路由）切天空场景；quest 关卡内保持水彩，答题更专注。 */
-const isSky = computed(() => route.path.startsWith("/game"));
+/**
+ * 主题由路由 meta 决定（见 router/index.ts）：
+ *   · meta.sky = true → 天空草地场景（#/game 多课总地图、#/course/:id/game 本课地图）；
+ *   · 其余（含 /game/quest/… 答题页）→ 默认暖纸底，答题时背景越安静越专注。
+ * 用 meta 而不是拼路径：地图路由从 /game/lesson/:id 搬到 /course/:id/game 后，
+ * 背景不会因为忘改前缀而静默失效，也不会把玩法页误判成地图。
+ */
+const isSky = computed(() => route.meta.sky === true);
 
 const stars = [
   { top: "12%", left: "6%", s: 1, d: 0 },
@@ -68,7 +76,7 @@ const grainStyle = { "--grain": GRAIN };
 
 <template>
   <div class="backdrop" :class="{ sky: isSky }" :style="grainStyle" aria-hidden="true">
-    <!-- 水彩版装饰：云朵 + 星星 + 圆点 -->
+    <!-- 默认（暖纸底）装饰：云朵 + 星星 + 圆点 -->
     <template v-if="!isSky">
       <span class="cloud c1"></span>
       <span class="cloud c2"></span>
@@ -113,11 +121,9 @@ const grainStyle = { "--grain": GRAIN };
   z-index: -1; /* 负层级：垫在内容下面、body 背景上面（#app 不创建层叠上下文，恰好可用） */
   pointer-events: none;
   overflow: hidden;
-  /* 水彩晕染：5 团品牌色斑（蓝/粉/紫/绿/橙）+ 顶部白光 + 暖纸底（向下微微加深）。
-   * 色斑位置错落、半径不均，像水彩在纸上晕开。顺序：先写的在上层。
-   * ⚠️ 全部用固定 rgba（不用 color-mix(var(--token))：scoped 样式下会被浏览器解析丢弃，
-   *    导致整条 background-image 变 none —— 背景就只剩纯色）。 */
-  /* 底色与 header 一致，靠装饰层（星星/圆点/云朵）做小动态点缀 */
+  /* 底色 = 纯色 --bg：与顶栏/状态栏 theme-color 完全一致，不做整屏渐变
+   *（历史尝试过水彩/极光渐变，都会与状态栏或卡片边缘跳色，已回退）。
+   * 质感交给颗粒层 + 低干扰装饰（云朵/星星/圆点）。 */
   background: var(--bg);
 }
 /* 细颗粒：在打底之上、云朵/星星之下（负 z-index 子层 = 父背景之上、其余内容之下） */
@@ -132,7 +138,7 @@ const grainStyle = { "--grain": GRAIN };
   pointer-events: none;
 }
 
-/* ---------- 天空草地版（游戏闯关地图 #/game 路由） ---------- */
+/* ---------- 天空草地版（关卡地图：#/game 与 #/course/:id/game） ---------- */
 .backdrop.sky {
   background: var(--bg);
 }
@@ -155,15 +161,11 @@ const grainStyle = { "--grain": GRAIN };
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.06); }
 }
-/* 天空云朵：更白更大更实（区别于水彩版的半透明） */
-.backdrop.sky .cloud {
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow:
-    calc(var(--w, 26px)) calc(var(--h, -12px)) 0 -4px rgba(255, 255, 255, 0.92);
-}
-.backdrop.sky .cloud.c1 { --w: 34px; --h: -14px; top: 9%; left: 6%; transform: scale(1.35); }
-.backdrop.sky .cloud.c2 { --w: 22px; --h: -10px; top: 22%; left: 52%; transform: scale(1.05); }
-.backdrop.sky .cloud.c3 { --w: 16px; --h: -7px; top: 58%; left: 74%; transform: scale(0.85); opacity: 0.9; }
+/* 天空云朵：比默认版更白、更软，但仍是背景陪衬（别抢关卡节点） */
+.backdrop.sky .cloud { --cloud-op: 0.62; background: rgba(255, 255, 255, 1); }
+.backdrop.sky .cloud.c1 { top: 30%; left: 4%; transform: scale(1.2); }
+.backdrop.sky .cloud.c2 { top: 22%; left: 52%; transform: scale(1.05); }
+.backdrop.sky .cloud.c3 { top: 58%; left: 74%; transform: scale(0.85); }
 /* 天空碎星：亮色下很淡（点缀），暗色下自然显亮 */
 .backdrop.sky .deco-star {
   color: rgba(255, 255, 255, 0.9);
@@ -181,25 +183,37 @@ const grainStyle = { "--grain": GRAIN };
 .hill.h2 { right: -16%; width: 66%; height: 44%; }
 .hill.h3 { left: 28%; bottom: -12%; width: 46%; height: 32%; opacity: 0.9; }
 
-/* 装饰元素（水彩版与天空版共用类） */
+/* 装饰元素（两个主题共用）：卡通云 = 胶囊主体 + 两个上凸圆。
+ * 之前是"胶囊 + box-shadow 再叠一坨"，真机上像白色/灰色药丸。
+ * 三个形状用**同一个实色**、透明度统一加在外层 opacity 上 —— 若各自带 alpha，
+ * 叠加区域会变深，出现"三个圆片"的接缝。 */
 .cloud {
+  --cloud-op: 0.5;
   position: absolute;
-  width: clamp(70px, 16vw, 150px);
-  height: clamp(24px, 5.4vw, 48px);
+  width: clamp(62px, 13vw, 128px);
+  height: clamp(20px, 4.2vw, 38px);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow:
-    calc(var(--w, 26px)) calc(var(--h, -12px)) 0 -4px rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 1);
+  opacity: var(--cloud-op);
   animation: cloud-drift ease-in-out infinite alternate;
 }
-.cloud.c1 { --w: 26px; --h: -12px; top: 7%; left: 8%; animation-duration: 17s; }
+.cloud::before,
+.cloud::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: inherit;
+}
+.cloud::before { left: 13%; bottom: 34%; width: 44%; aspect-ratio: 1; }
+.cloud::after { left: 43%; bottom: 40%; width: 31%; aspect-ratio: 1; }
+.cloud.c1 { top: 30%; left: 5%; animation-duration: 17s; }
 /* 常规页（学习/我的等，非天空场景）：云朵静止——横向漂移会被误读为"页面在左右滚动"；
    天空草地场景保留慢漂移（空旷背景上更自然） */
 .backdrop:not(.sky) .cloud {
   animation: none;
 }
-.cloud.c2 { --w: 18px; --h: -9px; top: 17%; left: 58%; animation-duration: 23s; transform: scale(0.7); }
-.cloud.c3 { --w: 14px; --h: -7px; top: 56%; left: 78%; animation-duration: 29s; transform: scale(0.5); opacity: 0.7; }
+.cloud.c2 { --cloud-op: 0.4; top: 17%; left: 58%; animation-duration: 23s; transform: scale(0.72); }
+.cloud.c3 { --cloud-op: 0.3; top: 56%; left: 78%; animation-duration: 29s; transform: scale(0.55); }
 @keyframes cloud-drift {
   from { translate: -2.5% 0; }
   to { translate: 2.5% 0; }
@@ -256,14 +270,12 @@ const grainStyle = { "--grain": GRAIN };
   box-shadow: 0 0 36px 14px rgba(190, 210, 255, 0.55);
 }
 :root[data-theme="dark"] .backdrop.sky .cloud {
-  background: rgba(206, 219, 246, 0.24);
-  box-shadow:
-    calc(var(--w, 26px)) calc(var(--h, -12px)) 0 -4px rgba(206, 219, 246, 0.24);
+  background: rgba(206, 219, 246, 1);
+  opacity: calc(var(--cloud-op) * 0.4);
 }
 :root[data-theme="dark"] .backdrop .cloud {
-  background: rgba(150, 160, 190, 0.20);
-  box-shadow:
-    calc(var(--w, 26px)) calc(var(--h, -12px)) 0 -4px rgba(150, 160, 190, 0.20);
+  background: rgba(160, 172, 200, 1);
+  opacity: calc(var(--cloud-op) * 0.34);
 }
 :root[data-theme="dark"] .backdrop.sky .deco-star {
   color: rgba(255, 255, 255, 0.98);

@@ -7,7 +7,7 @@
  *
  * **两种作用域，序号语义不同**（2026-10-17 收口，别再把两者混用）：
  *  - `buildLevels()`：多课总地图（#/game）用，序号跨课连续（第 1…N 关）；
- *  - `lessonLevels(lesson)`：本课闯关地图（#/game/lesson/:id）用，序号本课内 1…？。
+ *  - `lessonLevels(lesson)`：本课闯关地图（#/course/:id/game）用，序号本课内 1…？。
  * 本课地图/单关推进必须用 lessonLevels：否则会显示"第 8 关"、下一关跑到别的课。
  *
  * 该模块是 GamePath（地图绘制）与 useQuest（单关完成画面/下一关按钮）的共享数据源，
@@ -72,7 +72,7 @@ function makeLevel(l: Lesson, actKey: string, no: number): PathLevel {
 }
 
 /**
- * 单课关卡序列（本课闯关地图 #/game/lesson/:id 与单关推进用）。
+ * 单课关卡序列（本课闯关地图 #/course/:id/game 与单关推进用）。
  *
  * - 只含本课：玩法关按 activityKeys 顺序 + 末尾宝箱关；
  * - 序号从 1 起 —— 本课地图上就是「第 1…N 关」，不会出现全站累计的「第 8 关」；
