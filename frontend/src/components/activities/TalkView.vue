@@ -23,6 +23,16 @@
  *    "大框里装小内容"。气泡字号/配图/头像/内边距统一走 --talk-* 尺寸 token
  *    （锚 vh，窄屏不会像 --fs-body / --gap-* 那样被压到最小值）；
  *    顺带把「宝宝要说的话」补到 --tap-min（原来只有 42px，不够孩子点）。
+ *
+ * 2026-10-18 ④ 放大之后露出的三处层级问题（都是"量出来"的，不是看出来的）：
+ *   · 主行动键最小：气泡已 18.7px，录音键却写死 15px / 54px 高 —— 孩子每轮都要点的
+ *     那颗键，字是全屏最小、高度只够 --tap-min 的下沿。新增 --talk-bar-fs / --talk-bar-h，
+ *     主行动必须是这屏最大最亮的可点目标。
+ *   · 单词标签比句子还大：孩子气泡里 `.msg-pic-en`（21px）比答句本身（18.7px）还大，
+ *     主次颠倒。降到 0.85× 并转 --talk-ink-soft —— 句子才是主信息。
+ *   · "宝宝"小标签用 --ink-faint 画在固定浅绿底板上：又是"插画面上用主题态文字色"，
+ *     实测亮色 2.19:1 / 暗色 3.47:1 都不达标，改用 --talk-ink-soft（4.98:1）。
+ *   另外把"🎤 按住说话"改成"点一下说话"——实现是点击切换，键面必须等于行为。
  */
 import { computed, nextTick, ref, watch, onMounted } from "vue";
 import { speak } from "../../services/speech";
@@ -278,12 +288,12 @@ function finish() {
         <button
           class="input-bar"
           :class="{ talking: listening }"
-          aria-label="按住说话或点击录音"
+          aria-label="点一下开始说话，再点一下结束"
           @click="toggleMic"
         >
           <Mic v-if="!listening" class="ib-ico" />
           <Square v-else class="ib-ico" />
-          <span class="ib-text">{{ listening ? "松开 结束 · 我在听…" : "🎤 按住说话" }}</span>
+          <span class="ib-text">{{ listening ? "点一下结束 · 我在听…" : "🎤 点一下说话" }}</span>
         </button>
       </template>
 
@@ -346,11 +356,18 @@ function finish() {
   flex: 1;
   min-height: 0;
   width: 100%;
-  max-width: 620px;
+  max-width: var(--talk-w);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
+  /* 消息沉底 —— 但**不能**用 justify-content: flex-end。
+   * flex 容器 + overflow:auto + flex-end 是经典陷阱：内容一超出，多出来的部分被顶到
+   * 起始边**之上**，scrollHeight 仍等于 clientHeight、scrollTop 恒为 0 —— 滚不回去。
+   * 实测 5 条消息时首条落在 -766px，家长问句永远看不见了。
+   * 正确写法：justify 保持 flex-start，靠首条的 margin-top:auto 把短对话压到底；
+   * 内容超出时 auto 余量归零，溢出方向变成向下，滚动正常。 */
+  justify-content: flex-start;
   gap: var(--talk-gap);
   padding: var(--talk-pad) var(--talk-gap);
   scrollbar-width: none;
@@ -366,6 +383,10 @@ function finish() {
   align-items: flex-end;
   gap: var(--gap-m);
   animation: anim-pop 0.25s;
+}
+/* 对话少时沉底（auto 余量把首条推到底部）；对话超出面板时余量归零，改为向下溢出可滚 */
+.chat-msgs > .msg-row:first-child {
+  margin-top: auto;
 }
 .msg-row.parent { justify-content: flex-start; }
 .msg-row.kid { justify-content: flex-end; }
@@ -435,7 +456,9 @@ function finish() {
 .msg-time {
   font-size: var(--fs-small);
   font-weight: var(--fw-mid);
-  color: var(--ink-faint);
+  /* 这行小字画在 .chat-msgs 的固定浅绿底板上（插画面，不随主题变），
+   * 所以同样不能用 --ink-faint：亮色实测 2.19:1、暗色 3.47:1，都不达标。 */
+  color: var(--talk-ink-soft);
 }
 .msg-pic {
   display: flex;
@@ -454,11 +477,6 @@ function finish() {
 .msg-pic.parent-pic .msg-pic-emoji {
   font-size: calc(var(--talk-pic) * 0.5);
 }
-.msg-pic.parent-pic .msg-pic-zh {
-  font-size: calc(var(--talk-bubble-fs) * 0.74);
-  font-weight: var(--fw-strong);
-  color: var(--talk-ink);
-}
 .msg-pic-emoji {
   font-size: calc(var(--talk-pic) * 0.42);
   line-height: 1;
@@ -469,14 +487,11 @@ function finish() {
   object-fit: contain;
   border-radius: var(--radius-s);
 }
+/* 图下的单词标签：答句本身已经含这个词，标签是"图→词"的对照，属次要信息。
+ * 以前 1.12× 气泡字号（21px）比答句（18.7px）还大，主次颠倒 → 降到 0.85× 并转软色。 */
 .msg-pic-en {
-  font-weight: var(--fw-strong);
-  font-size: calc(var(--talk-bubble-fs) * 1.12);
-  color: var(--talk-ink);
-}
-.msg-pic-zh {
-  font-size: var(--fs-small);
   font-weight: var(--fw-mid);
+  font-size: calc(var(--talk-bubble-fs) * 0.85);
   color: var(--talk-ink-soft);
 }
 
@@ -484,7 +499,7 @@ function finish() {
 .chat-input {
   flex: none;
   width: 100%;
-  max-width: 560px;
+  max-width: var(--talk-w);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -520,17 +535,18 @@ function finish() {
 }
 .input-bar {
   width: 100%;
-  min-height: 54px;
+  /* 每轮都要点的主行动：高度走 --talk-bar-h（> --tap-min），不再写死 54px */
+  min-height: var(--talk-bar-h);
   border: none;
-  border-radius: 22px;
+  border-radius: var(--radius);
   background: var(--mic-face);
   color: var(--on-tone);
   box-shadow: 0 4px 0 var(--mic-base), var(--shadow-hard);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 0 18px;
+  gap: var(--gap-m);
+  padding: 0 var(--talk-pad);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.1s, box-shadow 0.1s;
@@ -546,13 +562,14 @@ function finish() {
   50% { box-shadow: 0 4px 0 var(--mic-rec-base), 0 0 0 16px rgba(230, 57, 57, 0.3); }
 }
 .ib-ico {
-  width: 22px;
-  height: 22px;
+  width: calc(var(--talk-bar-fs) * 1.15);
+  height: calc(var(--talk-bar-fs) * 1.15);
   flex: none;
 }
 .ib-text {
   font-weight: var(--fw-strong);
-  font-size: 15px;
+  /* 以前写死 15px：气泡已经 18.7px，主行动的字反而是全屏最小 */
+  font-size: var(--talk-bar-fs);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -566,7 +583,7 @@ function finish() {
 }
 .ci-judge {
   display: flex;
-  gap: 10px;
+  gap: var(--gap-m);
   align-items: center;
   justify-content: center;
 }
@@ -578,7 +595,7 @@ function finish() {
 }
 .ci-pass {
   width: auto;
-  min-width: 160px;
+  min-width: min(60%, 220px);
 }
 .ci-audio {
   display: none;

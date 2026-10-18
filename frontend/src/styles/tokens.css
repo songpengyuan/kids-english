@@ -199,6 +199,14 @@
   --talk-av: clamp(32px, min(5vh, 10vw), 42px);
   --talk-pad: clamp(10px, min(1.8vh, 3.6vw), 20px);
   --talk-gap: clamp(10px, min(1.5vh, 3vw), 18px);
+  /* 底部主行动键（录音 / 判定）的字号与高度。
+   * 为什么要单开一组：以前 .input-bar 写死 54px 高 / 15px 字，而气泡已经放大到
+   * 18.7px —— 孩子每轮都要点的那颗键，字反而是全屏最小的，层级倒挂。
+   * 主行动必须是这屏最大、最亮的可点目标，所以键高取到 --tap-min 之上。 */
+  --talk-bar-fs: clamp(18px, min(2.8vh, 5vw), 24px);
+  --talk-bar-h: clamp(58px, min(8.5vh, 15vw), 78px);
+  /* 对话区与底部输入条同宽（以前 620 / 560 两处各写各的，宽屏下错开一截） */
+  --talk-w: 620px;
   --mic-face: linear-gradient(180deg, #ff9d5c, #ff7a3c);
   --mic-base: #e05f1e;
   --mic-rec-face: linear-gradient(180deg, #ff5c5c, #e63939);
@@ -509,5 +517,7 @@
     --talk-av: clamp(40px, min(4.6vh, 6vw), 56px);
     --talk-pad: clamp(14px, min(1.8vh, 2.2vw), 26px);
     --talk-gap: clamp(14px, min(1.6vh, 2vw), 24px);
+    --talk-bar-fs: clamp(24px, min(2.8vh, 3.4vw), 34px);
+    --talk-bar-h: clamp(72px, min(8vh, 11vw), 96px);
   }
 }

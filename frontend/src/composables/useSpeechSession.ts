@@ -178,7 +178,10 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
     });
   }
 
-  /* ---------- 统一交互：按住说话，松开停止 ---------- */
+  /* ---------- 统一交互：点一下开始，再点一下结束 ----------
+   * 曾经写"按住说话，松开停止"，但两处调用方（LearnStage 的 .mic-btn、TalkView 的
+   * .input-bar）都只接了 @click —— 键面写着"按住"、实际是点击切换。
+   * 键面必须等于行为，所以统一按点击语义描述（对孩子也更友好：长按更难控制）。 */
   function startMic() {
     if (mode.value === "asr") startAsr();
     else startRecord();

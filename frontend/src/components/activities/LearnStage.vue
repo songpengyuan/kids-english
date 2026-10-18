@@ -217,7 +217,7 @@ const listening = computed(() => status.value === "listening");
             <button
               class="mic-btn"
               :class="{ listening }"
-              aria-label="按住说话或点击录音"
+              aria-label="点一下开始说话，再点一下结束"
               @click="toggleMic"
             >
               <Mic v-if="!listening" class="mic-ico" />
