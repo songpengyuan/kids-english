@@ -1,178 +1,142 @@
-# 丞丞英语乐园 · 儿童英语单词学习 Web
+# 丞丞ABC
 
-面向 5 岁孩子的线下培训班作业补充应用。每节课对应一首童谣，孩子围绕童谣里的单词进行「看图学词 → 听音选图 → 图词连线 → 跟我读 → 唱童谣 → 亲子对话」的趣味练习，点图片/点单词都会朗读发音，答对有彩带和星星奖励。参考多邻国的即时反馈与激励节奏设计。
+面向 5 岁孩子的儿童英语学习 Web 应用。每节课围绕一首童谣展开六步练习（看图学词 → 听音选图 → 连一连 → 跟我读 → 唱童谣 → 亲子对话），点图片/点单词都会朗读发音，答对有彩带和星星奖励。参考多邻国的即时反馈与激励节奏设计。
 
-> **开发者请看 [DEVELOPMENT.md](./DEVELOPMENT.md)** —— 架构说明、响应式与分页规范、调试深链、布局走查脚本、排错清单都在那里。
-> **设计与走查请看 [DESIGN-GUIDELINES.md](./docs/DESIGN-GUIDELINES.md)** —— 面向 5 岁孩子的设计原则、视觉/交互规范、组件契约与 AI 生成/走查 Checklist。
-> 本文档只讲日常使用。
+线上：**https://zelab.cn/app/**（GitHub Pages + 华为云双线部署）。
+
+> **日常使用**看本文档。**架构、远端同步、排错**看 [DEVELOPMENT.md](./DEVELOPMENT.md)（16 章，含布局走查、调试深链、排错清单）。
+> **设计规范**看 [frontend/DESIGN_SYSTEM.md](./frontend/DESIGN_SYSTEM.md)（设计 token、响应式断点、组件契约、CI 守卫）。
+> **设计原则与走查 Checklist** 看 [docs/DESIGN-GUIDELINES.md](./docs/DESIGN-GUIDELINES.md)。
+> **演进方向**看 [docs/ROADMAP.md](./docs/ROADMAP.md) / [docs/P1-BACKLOG.md](./docs/P1-BACKLOG.md)。
 
 ## 技术栈
 
-- Vue 3 + Vite + vue-router（hash 模式）+ Pinia（纯前端，无后端）
-- Web Speech API 朗读单词发音（浏览器内置 TTS，零成本、任意单词可读）+ 预生成童声 mp3 优先
-- canvas-confetti 彩带 + CSS 关键帧动画 + Web Audio 合成音效
-- SVG 实现图词连线，Pointer Events 兼容鼠标与平板触屏
-- localStorage 保存进度 / 奖励 / 连击（含单词级掌握度与今日学情，供家长报告）
+**前端**（`frontend/`，独立 pnpm 项目）：Vue 3.5 + Vite 8 + Pinia 4 + vue-router（hash 模式）+ TypeScript。预生成童声 mp3（edge-tts）优先、Web Speech API 回退朗读；canvas-confetti 彩带、CSS 关键帧、Web Audio 合成音效；SVG + Pointer Events 做图词连线（鼠标与平板触屏同源）；PWA 可离线玩。
+
+**后端**（`backend/`，独立 Python 项目）：FastAPI + SQLite（10 张表，版本化迁移），只做**跨设备同步**与埋点聚合，不是应用的运行前提。
+
+> ⚠️ 这是**两个独立项目，不是 monorepo**：前端在 `frontend/` 用 pnpm、后端在 `backend/` 用 Python venv，各自管依赖，仓库根**没有** package.json。两边的命令要在各自目录里跑。
 
 ## 快速开始
 
 ```bash
+# 前端（需要 nvm + pnpm）
+cd frontend
 pnpm install
-pnpm dev      # 本地开发，浏览器打开终端提示的地址
-pnpm test     # 单元测试（vitest）
-pnpm build    # 产出 dist/，可静态托管或双击预览（本地预览：base 指向根路径，正常）
-pnpm build:ci # CI/部署构建：强制要求 GH_REPO 环境变量，防止子路径部署 404
+pnpm dev          # 开发服务器
+pnpm test         # 单测（vitest，偏逻辑层）
+pnpm type-check   # vue-tsc
+pnpm build:root   # 生产构建（自定义域名根路径部署）
+
+# 后端（可选，只在需要跨设备同步时）
+cd backend
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000   # 健康检查 GET /api/ping
+.venv/bin/python -m pytest tests/ -q                    # 后端单测（7 个测试文件）
 ```
 
-## 目录结构
+**⚠️ 应用在 `/app/` 子路径下**：SPA 入口是 `frontend/app/index.html` 构建的 `/app/`，站点根路径 `frontend/public/index.html` 是备案落地页（标题"闲思杂记"）。本地预览、走查、日志排查都要带 `/app/`——在根路径看到落地页不是构建坏了。
+
+## 功能面（hash 路由，四域）
+
+| 域 | 路径 | 说明 |
+|---|---|---|
+| 课程 | `/course`（正式课/加餐两个 tab） | 课时卡片网格 |
+| | `/course/:id` | 单课菜单（6 个玩法入口） |
+| | `/course/:id/{learn,hear,match,speak,song,talk}` | 六种玩法，**复用同一个组件**，由 `meta.stage` 区分 |
+| | `/course/:id/game` | 本课闯关地图（背景由 `meta.sky` 驱动） |
+| | `/course/review` | 错词复习（间隔重复队列） |
+| 游戏 | `/game`、`/game/quest/:id/:stage?` | 全局闯关入口 |
+| 磨耳朵 | `/listen` | 童谣/动画视频播放 + 歌词页 |
+| 我的 | `/me` | 星星·连击·贝壳·今日学情 |
+| | `/me/calendar` | 学习日历（打卡） |
+| | `/me/treasure`、`/me/treasure/hero/:id` | 宝藏罐 + 英雄图鉴 |
+| | `/me/report`、`/me/parent` | 家长报告 / 家长中心（`requiresParent`，算术题门禁） |
+
+另有 `/gate`（应用口令）与家长算术题两级门禁，见 `frontend/src/router/gateGuard.ts` / `parentGuard.ts`。
+
+## 数据策略
+
+**localStorage 是唯一真相源**（离线可用），后端只做跨设备同步，**合并口径是逐字段取 max**（学习时长只增不减），全链路可降级——后端挂了不影响孩子正常玩。
+
+7 个 Pinia store：`progress`（进度/掌握度/今日学情，含云同步状态机）、`rewards`（贝壳与英雄形态）、`streak`（连击）、`player`（磨耳朵播放）、`auth`（家长登录与孩子档案）、`gate`（应用口令门禁）、`content`（课时种子）。
+
+## 课时资源
+
+7 节课：`l4` 水手出海去、`l5` 我是一个音乐人、`l6` 彩虹颜色歌、`l7` 跟我数数、`l8` 字母歌、`l9` 一根小手指、`l10` 丛林里散步（共 7 课）。其中 **l6/l7/l8 是"加餐"课**，其余为正式课（`BONUS_IDS`）。
+
+资源按约定放好即自动生效，**不用改代码**：
 
 ```
-kids-english/
-├── src/
-│   ├── styles/                # 设计 token + 基础样式（响应式规范的落点）
-│   ├── composables/           # useViewport 视口分档 / usePager 分页
-│   ├── data/lessons.js        # ★ 课时数据（每节课：童谣 + 单词表 + activityKeys 玩法口径）
-│   ├── stores/                # Pinia：progress（进度/掌握度/今日学情）/ streak（连击）/ rewards（贝壳/贴纸）
-│   ├── router/                # vue-router（hash 模式）：首页 / 我的 / 课程 / 宝藏罐 / 家长报告 / 错词复习
-│   ├── components/
-│   │   ├── HomePage.vue       # 首页课时卡片（分页）+ 复习/继续学习，模式由底部导航驱动
-│   │   ├── BottomNav.vue      # 底部导航：自由 / 游戏 / 我的（App 风格常驻三入口）
-│   │   ├── MyView.vue         # 我的（个人中心：统计 + 宝藏/报告/复习入口）
-│   │   ├── LessonView.vue     # 单课流程与活动菜单
-│   │   ├── LearnView.vue      # 看图学词（按屏幕大小自动分页）
-│   │   ├── QuizView.vue       # 听音选图（答错词自动进复习池）
-│   │   ├── MatchView.vue      # 图词连线（分组随屏幕大小变化，连错词进复习池）
-│   │   ├── SpeakView.vue      # 跟我读（发音打分/录音回放）
-│   │   ├── SongView.vue       # 童谣音频/视频
-│   │   ├── TalkView.vue       # 亲子对话（点句听发音，带首次引导）
-│   │   ├── ReviewView.vue     # 到期复习（间隔重复队列，听音选图式）
-│   │   ├── ReportView.vue     # 家长学情页（今日时长/单词明细/错词清单/宝藏概览）
-│   │   ├── TreasureView.vue   # 宝藏罐（贝壳 + 贴纸图鉴 + 贴纸商店）
-│   │   ├── ChestReward.vue    # 开宝箱（可跳过动画）
-│   │   ├── WordCard.vue       # 可复用的发音词卡
-│   │   └── Pager.vue          # 通用翻页控件
-│   ├── utils/                 # layout.js 布局算法 / speech / effects / speechScore / errors
-│   └── __tests__              # vitest 单元测试（layout/speechScore/streak/usePager）
-├── scripts/                   # layout-audit / verify-pwa / gen-* / guard-build
-└── public/lessons/            # ★ 课时资源目录（见下）
+frontend/public/lessons/<课时id>/
+├── song.mp3          童谣音频
+├── song.mp4          童谣视频（可选，有则音乐页先播视频）
+├── audio/<单词id>.mp3 单词发音（可选，缺失回退浏览器 TTS）
+└── words/<单词id>.png 单词图片（缺失回退 emoji 占位）
 ```
 
-## 你后续要补充的资源（重要）
+**l6/l7/l8 的音视频与图片全部是仓库自研合成的**（无版权风险）：`scripts/gen-songs.py` 合成童谣并写回逐行时间轴、`gen-word-art.py` 生成贴纸风 SVG、`gen-word-audio.py` 生成童声发音。改内容重跑脚本即可，没有素材也能完整试玩。⚠️ `gen-songs.py` **只**作用于 l6/l7/l8，不会覆盖你自己提供的 l4/l5。
 
-每节课一个子文件夹，命名与 `src/data/lessons.js` 里的 `id` 对应（当前 l4–l8）。**只要文件同名放入，应用自动加载，无需改代码。**
+**新增课时**：编辑 `frontend/src/data/lessons.ts` 的 `rawLessons`。一节课的结构见 `RawLesson` 接口，要点：
 
-```
-public/lessons/
-└── l4/
-    ├── song.mp3            童谣音频
-    ├── song.mp4            童谣视频（可选）
-    ├── audio/              单词发音 mp3（gen-word-audio.py 生成）
-    │   └── sailor.mp3      与单词 id 对应
-    └── words/
-        ├── sailor.png      与单词 id 对应的图片（建议 512×512 透明底）
-        └── ...
-```
+- `tone` **只能取 6 个卡片色调之一**（`blue|green|orange|purple|pink|teal`）——⚠️ 不要写十六进制色值，相邻课时用不同 hue，孩子靠颜色区分课程。
+- 资源路径写站点根形式（`/lessons/l4/song.mp3`），文件末尾的 `asset()` 会自动补部署基路径，本地与子路径部署通用。
+- `date` 与 `type`（`official`/`bonus`）会影响首页 tab 与排序。
 
-- 图片找不到时会自动显示单词的 emoji 占位；音频/视频缺失时会显示「未上传」占位并可点按钮领星星——所以现在没有真实素材也能完整试玩。
-- 单词发音：优先播放 `audio/` 下的预生成 mp3（童声），缺失时自动回退浏览器 TTS。
-- **l6 颜色 / l7 数字 / l8 字母 三课的音频与图片都是仓库自己合成的**
-  （`scripts/gen-songs.py` 生成童谣与时间轴、`scripts/gen-word-art.py` 画 29 张 SVG 贴纸），
-  改内容时重跑脚本即可，无需外部素材；细节见 [DEVELOPMENT.md](./DEVELOPMENT.md) §5.2。
+## 激励闭环
 
-## 新增/修改课时
-
-编辑 `src/data/lessons.js` 的 `lessons` 数组即可。一节课的结构：
-
-```js
-{
-  id: "l4",
-  title: "Row Row Row Your Boat",
-  titleZh: "划小船",
-  emoji: "🚣",
-  color: "#4bc6f0",
-  song: { audio: "/lessons/l4/song.mp3", video: "/lessons/l4/song.mp4" },
-  words: [
-    { id: "boat", en: "boat", zh: "小船", emoji: "🚣", image: "/lessons/l4/words/boat.png" },
-    { id: "river", en: "river", zh: "河流", emoji: "🏞️", image: "/lessons/l4/words/river.png" }
-  ]
-}
-```
-
-| 字段 | 含义 |
-|---|---|
-| `id` | 课时唯一标识，同时是资源文件夹名 |
-| `en` / `zh` | 单词英文（发音用）/ 中文释义 |
-| `image` | 图片路径，放进 `words/` 即自动生效 |
-| `emoji` | 图片未就绪时的占位 |
-
-## 学习闭环：复习 + 家长报告
-
-应用不只"玩过就完"，练习中对错的单词都会落库：
-
-- **到期复习**（首页"今天该复习 N 个词"入口）：练习中答错/连错的单词进入**间隔重复队列**，
-  按 1 / 3 / 7 / 14 天的节奏回到复习页；连续答对 4 次算"已掌握"，移出队列。
-  练习里答错的词第二天到期，不会当天反复打扰。
-- **每日目标**："复习 N 个到期词（N = min(5, 今天到期数)） + 新学 1 关"。
-  原来的"完成 1 个玩法即达标"太松（点一分钟就能打卡），新口径把复习和新内容都串起来；
-  "新学"只认首次通关的关卡，重刷不算。
-- **家长报告**（"我的"页 → 家长报告）：今日学习时长、完成玩法数、今日单词明细（点读/答对/答错）、
-  错词清单、连击天数与宝藏概览——给家长一个"作业完成情况"的视图。数据只在本机，不上传。
-- **底部导航**：自由（课程列表）/ 游戏（闯关路径图）/ 我的（个人中心：星星·连击·贝壳·贴纸·今日学情
-  + 宝藏/报告/复习入口），App 风格常驻三入口，课程内自动隐藏（沉浸学习）。
-- **通关口径**：一课显示"全部通关"需要全部玩法都玩过 **且** 星级达标
-  （学/辨/连/读需 ≥2 星，唱/对话 ≥1 分），避免"只玩过一遍就显示通关"。
-- **英雄图鉴**（宝藏罐内）：贝壳的消耗出口。结构是**世代 → 角色 → 形态**三级
-  （昭和 / 平成 / 新生代 / 令和，共 **41 位角色 / 81 个形态**，如迪迦的复合型·强力型·空中型、
-  泽塔的原生形态·阿尔法装甲·贝塔进攻·伽马未来·德尔塔天爪），每个形态独立收集，按稀有度定价
-  （常见 20 / 稀有 60 / 传说 120 贝壳）；重复兑换同一形态可升星（最高 ★★★），
-  所以"集齐就没目标"的问题不会出现。点任意形态卡会朗读介绍（英文 + 中文）。
-  单形态角色（昭和居多）用紧凑卡网格排，多形态角色一角色一段。
-- **英雄图片可以自己换**：把图片放进 `public/heroes/<形态id>.png` 即自动替换
-  （缺图时用项目自带的**原创**占位形象 `public/heroes/<形态id>.svg`，不用改代码）。
-  形态 id 与角色名/英文名都在 `src/data/heroes.ts`。
-  ⚠️ 仓库内的形象全部是原创占位图；真实角色图片由使用者自行放入并仅供家庭内部使用。
-  取图/归位可以用现成脚本（自己跑，脚本不会替你分发素材）：
+- **星星**：每个玩法结算给 0–3 星；一课"全部通关"要求全部玩法都玩过**且**星级达标（学/辨/连/读 ≥2 星，唱/对话 ≥1 分），避免"只晃一圈就显示通关"。
+- **宝箱**：每完成一个玩法都开一次宝箱，固定掉贝壳 3–6 个 + **25% 概率掉英雄卡片**；闯关地图上另有金色宝箱关卡（本课 6 个玩法全通后解锁）。
+- **英雄图鉴**：贝壳的消耗出口。**世代 → 角色 → 形态**三级（昭和/平成/新生代/令和，41 位角色 / 81 个形态，如迪迦的复合型·强力型·空中型），按稀有度定价（常见 20 / 稀有 60 / 传说 120 贝壳）；重复兑换同一形态可升星（最高 ★★★），所以不会出现"集齐就没目标"。点形态卡朗读中英文介绍。
+- **到期复习**：练习中答错/连错的词进入间隔重复队列，按 1/3/7/14 天回到复习页，连对 4 次算掌握并出队。
+- **家长报告**：今日时长、完成玩法数、单词明细、错词清单、连击与宝藏概览。
+- **英雄图片可自选**：图片命名为 `<形态id>.png` 放进 `frontend/public/heroes/` 即自动替换；缺图时用 `scripts/gen-hero-art.py` 生成的原创 SVG 占位（png 优先，加载失败自动回退 svg）。多姿势轮播用 `<形态id>-2.png`、`-3.png` 同理生效。仓库内形象**全部是原创占位**，真实角色图片由使用者自行放入并仅供家庭内部使用。取图脚本：
 
   ```bash
-  python3 scripts/fetch-hero-art.py --auto --limit 5     # 联网自动搜图，先试 5 张看质量
-  python3 scripts/fetch-hero-art.py --auto               # 全量（81 个形态）
-  python3 scripts/fetch-hero-art.py --auto --source bing,baidu   # 只走必应/百度（国内更快）
-  python3 scripts/fetch-hero-art.py --urls urls.txt      # 用浏览器复制的图片直链
-  python3 scripts/fetch-hero-art.py --from-dir ~/Downloads/ultraman --map map.txt
-  python3 scripts/fetch-hero-art.py --check              # 只看还缺哪些
+  python3 frontend/scripts/fetch-hero-art.py --auto --limit 5   # 先试 5 张看质量
+  python3 frontend/scripts/fetch-hero-art.py --check            # 只看还缺哪些
   ```
 
-  可用的图源：**必应图片**（`bing`，优先 .png）、**百度图片**（`baidu`，中文关键词）、
-  **萌娘百科**（`moegirl`，中文条目图）、**Fandom**（`fandom`，形态覆盖最全）；默认四个依次尝试。
-  脚本会转 PNG、保留透明通道、最长边压到 512px，并输出 `public/heroes/fetch-report.tsv` 供逐张复核
-  （**同一张图被多个形态命中会标 ⚠️**，说明那个形态要手动换图）。
-  `public/heroes/*.png` **默认已在 .gitignore**（图片只在你本机，不进公开仓库）；要让线上也显示，
-  删掉 .gitignore 里那一行并自行 `git add`，或把图片放自己的图床再把 `heroes.ts` 里的路径改成 https 绝对地址。
-
-## 离线与更新（PWA）
-
-应用已 PWA 化：加到主屏幕后以独立窗口打开，**断网也能玩**（页面壳 + 单词图片/发音 + 童谣音视频都会被缓存）。
-
-- 装到桌面：手机/iPad 浏览器里「添加到主屏幕」即可；安卓桌面端会用 `manifest.webmanifest` 里的图标（含 maskable 版）。
-- 缓存策略见 `src/sw.js` 顶部注释：页面导航永远 network-first（新部署立刻生效），哈希资源 cache-first，媒体"先用缓存 + etag 条件校验"（304 零成本）。
-- **换素材/发新版本**：正常 `pnpm ship` 即可。用户端下次打开/切回应用就会拿到新版；如果更新发生孩子正在玩的时候，会等他回到首页再静默刷新，不打断玩法。
-- 注意：替换**同名**媒体文件后，客户端最多会多播一次旧版本（SWR 语义），再刷新即是新的。
+  图源：必应 / 百度 / 萌娘百科 / Fandom（默认依次尝试）。脚本转 PNG、保留透明通道、最长边压到 512px，并输出 `frontend/public/heroes/fetch-report.tsv` 供复核（同一张图命中多个形态会标 ⚠️）。
 
 ## 跟我读（发音打分）
 
-孩子按住大麦克风跟读单词，松开后系统判断读得准不准，给三档反馈：🌟 很棒 / 😊 不错 / 🔁 再试一次。采用**双模式自动降级**：
+按住大麦克风跟读，松开后给三档反馈：🌟 很棒 / 😊 不错 / 🔁 再试一次。双模式自动降级：
 
-1. **自动打分模式（首选）**：使用浏览器内置语音识别（Web Speech API `SpeechRecognition`）听写孩子的发音，与目标单词做编辑距离相似度打分。免费、零配置。
-   - ⚠️ 注意：Chrome/Edge 的识别请求要发往 Google 服务。**国内网络环境下可能识别失败，此时应用会自动切换到下面的录音模式**，不会卡死。
-   - 首次使用需允许麦克风权限（localhost / 文件打开均允许；局域网 http 访问可能被浏览器拒权，建议 https 或本机打开）。
-2. **录音回放模式（降级）**：识别不可用时，孩子按住录音、松手后回放给自己听，由家长/老师点 👍 或 🔁 判定——保证任何环境下玩法闭环。
+1. **自动打分（首选）**：浏览器内置 `SpeechRecognition` 听写，与目标单词做编辑距离相似度打分，免费零配置。Chrome/Edge 的识别请求发往 Google 服务，国内可能失败——**失败会自动切录音模式，不会卡死**。
+2. **录音回放（降级）**：识别不可用时由家长/老师点 👍 / 🔁 判定，任何环境下玩法都闭环。
 
-**想要更专业的发音评分**（逐音素打分、准确评估小朋友发音），当前方案是够用的免费近似；后续可接入讯飞开放平台「少儿语音评测」或 Azure Pronunciation Assessment，需要在 `src/utils/speechScore.js` 里替换打分实现（需注册获取 API Key，属付费/配额服务）。
+更专业的逐音素评分需接讯飞少儿语音评测或 Azure Pronunciation Assessment（付费），替换 `frontend/src/utils/speechScore.ts` 里的打分实现。
+
+## 提交门禁与部署
+
+`.husky/pre-commit` 与 `pre-push` 都调同一个实现 **`scripts/ci-local.sh`**（本地门禁与 CI 跑的是同一套 [1]–[7] 步检查，前面失败就短路，按 mode 决定跑到哪一步）。
+
+- **pre-commit**：冲突标记 / 误提交 `.only` / 密钥泄漏 / 暂存区类型检查 / 设计系统守卫 —— 秒级。
+- **pre-push**：额外跑全量（前端 test + type-check → 后端 pytest → OpenAPI 契约 diff → 课程种子 diff → 生产构建 → 白屏冒烟），**约 2 分钟**。
+
+> 钩子跑在非交互 shell 里，nvm 不会被自动加载；脚本自己会 source nvm 再 `nvm use`。若本机找不到 node/pnpm，它会直接报错而不是假装通过。
+
+另外 `frontend/scripts/guard-tokens.mjs`（独立可跑 `pnpm guard:tokens`）强制五项设计系统规则，其中值得一提的两条：**样式里除 `src/styles/` 外不许有硬编码颜色**、**`@media` 断点必须在批准清单内**（`(max-height:480px)` / `(min-width:600px)` / `(min-width:768px)+landscape` / 指针设备 / 减动效）。
+
+> 断点记法：**改"值"用 600，改"结构"用 768 + landscape**。600 是 iPad/手机的宽窄分界（与 `useViewport.isNarrow` 同刀口，iPad mini 竖屏 744 也算平板）；768+landscape 才是允许分栏/加列的结构档。详见 DESIGN_SYSTEM §11.4。
+
+部署由 `.github/workflows/deploy.yml` 单 workflow 做双线：GitHub Pages（zelab.cn）+ rsync 到华为云 `110.41.61.4`（前端静态 + 后端代码同步、`requirements.txt` 有变化才装依赖、重启 systemd 后健康探测）。
+
+服务器侧的定时任务是**版本化的**（`backend/deploy/*.cron`，安装到 `/etc/cron.d/`，可以用 `diff` 校验是否与仓库漂移）——这是刻意的：`crontab -e` 改的是一份服务器上不透明的表，机器挂了就再也说不清当时跑的是什么。
+
+| 任务 | 频率 | 做什么 |
+|---|---|---|
+| `kids-db-backup` | 每天 02:30 | SQLite 备份（在维护之前，要的是"当天已跑完"的快照） |
+| `kids-maintenance` | 每天 03:30 | 事件汇总 + 录音保留期清理；用 `flock` 保证不与上一轮重叠 |
+| `kids-health` | 每 5 分钟 | API 存活 / systemd 状态 / 磁盘水位 |
+
+运维细节值得一看（都在脚本注释里）：cron 行里**不能出现 `%`**（会被当标准输入、命令被截断且不报错）；健康检查还承担**维护任务的心跳反查**，把"脚本还在、cron 还在，但永远不再执行"这类静默故障变成 `MAINTENANCE_MISSING/FAILED/STALE` 日志。
 
 ## 已知边界
 
-- iOS Safari 需在用户点击后才会播放音频（已用点击触发规避）；系统未安装英文语音包时发音音色会变。
-- 进度保存在本机浏览器，换设备/清缓存会重置；如需跨设备记录需另接后端。
-- 当前为纯前端静态应用，不含账号与班级管理。
-- iOS 触感依赖系统"触感反馈"开关；为保证点击可靠，导航类按钮（返回/底部 tab/课程入口）在 iOS 上不提供震动（安卓正常），震动用于玩法反馈（点词听音/答题/宝箱等）。
-- 打卡日历的历史记录从 2026-09-28 起积累，更早的日期没有打卡记录可回溯（此前只统计连续天数，未存逐日历史）。
+- iOS Safari 需用户点击后才播放音频（已用点击触发规避）；系统未装英文语音包时发音音色会变。
+- 进度默认存本机浏览器；跨设备记录需要后端在线并已绑定孩子档案。
+- iOS 触感依赖系统开关；为保证点击可靠，**导航类按钮在 iOS 上不给震动**，震动只用于玩法反馈。
+- 打卡日历历史从 2026-09-28 起积累，更早日期无法回溯。
+- 录音文件存服务器本地磁盘（未上云），90 天后删除音频但保留分数。

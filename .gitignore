@@ -25,6 +25,9 @@ dist-ssr
 *.sw?
 _tmp_*
 
+# WorkBuddy 会话数据（截图 / 笔记），纯本地，不进仓库
+.workbuddy/
+
 # 英雄图鉴真实角色图片：2026-09-28 确认随仓库分发（线上图鉴需真实图，见 scripts/fetch-hero-art.py）。
 # 素材下载报告（含来源 URL）只留本地
 **/public/heroes/fetch-report.tsv
