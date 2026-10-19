@@ -40,6 +40,17 @@
  *     静默引入；金色那张因为 .tone-gold 把 --on-tone 改写成深棕 --on-gold
  *     而侥幸可见，所以只有它看起来是正常的）。
  *
+ *  ⑤ **使用了白名单外的 @media 断点**
+ *     本应用的布局由**视口档位**（宽/高）决定，与设备型号无关 ——
+ *     同一台 iPad 在横屏、竖屏、分屏三种形态下会落进三个不同档位，
+ *     所以适配规则必须挂在统一的档位断点上，不能各写各的魔法数字。
+ *     以前出现过 9 种不同条件，而 tokens.css 约定的只有 4 个 +
+ *     reduced-motion，其余全是临时起意的值（700 / 900 / 340 / 420 …），
+ *     改档位时要靠人肉 grep 同步，注定会漏。
+ *     现在：**未知条件直接 fail**，逼你把断点写进唯一的清单里。
+ *     仍在使用的旧值登记在 BREAKPOINT_LEGACY —— 只告警不失败，
+ *     留给你在真机上验证后再迁移（收口完一项就从清单里删一项）。
+ *
  * 定义来源：任何文件里出现 `--name:` 都算已定义 —— 既覆盖 tokens.css / base.css，
  * 也覆盖组件里 `:style="{ '--n': … }"` 这种运行时注入的局部变量。
  */
@@ -234,6 +245,74 @@ for (const f of files) {
   })(root)
 }
 
+/* ---------- ⑤ 视口断点白名单 ---------- */
+/**
+ * 批准清单（改这里务必同步 DESIGN_SYSTEM.md §11）。
+ * 归一化方式：去掉 `@media` 前缀、删掉所有空白、转小写。
+ *
+ * 四条的含义：
+ *   (max-height:480px)                     tiny  —— 手机横屏，压高度（砍装饰 / 缩字号）
+ *   (min-width:600px)                      wide  —— iPad / Mac，token 整体放大一档
+ *   (min-width:768px)+(orientation)        widels—— 宽横屏，允许分栏（grid 两列 / 4 列宫格）
+ *   (hover:hover)+(pointer:fine)           非触屏（hover 效果只在有鼠标时才给）
+ * 外加 reduced-motion：它是无障碍偏好，跟布局档位无关，单独放行。
+ *
+ * ⚠️ wide 是 600 而不是 768（2026-10-19 定，见 DESIGN_SYSTEM.md §11.5）：
+ *   768 会把 iPad mini 竖屏（744px）判成手机档，与 useViewport.isNarrow（<600）打架。
+ *   而 widels 那两条仍守 768：它们是**结构**改动（分栏/加列），需要真实横向余量，
+ *   降到 600 会让 iPhone SE 横屏（667×375）挤爆。
+ *   → 一句话：**改"值"用 600，改"结构"用 768+landscape。**
+ *
+ * 阈值来源（别随手改，改了要在三端都过一遍）：
+ *   600 = narrow/wide 分界（useViewport.isNarrow 同值）
+ *   480 / 640 / 900 = tiny / compact / regular / roomy 的高度分界（useViewport.sizeTier 同值）
+ */
+const BREAKPOINT_APPROVED = [
+  '(max-height:480px)',
+  '(min-width:600px)',
+  '(min-width:768px)and(orientation:landscape)',
+  '(hover:hover)and(pointer:fine)',
+  '(prefers-reduced-motion:reduce)'
+]
+
+/** 待收口的旧值：只告警不失败（见文件头 ⑤ 的说明） */
+const BREAKPOINT_LEGACY = [
+  '(min-width:700px)and(orientation:portrait)',
+  '(min-width:900px)',
+  '(max-width:600px)',
+  '(min-width:600px)and(min-height:640px)',
+  '(max-height:420px),(max-width:340px)'
+]
+
+const normMedia = (s) => s.replace(/^@media/i, '').replace(/\s+/g, '').toLowerCase()
+
+const mediaViolations = []
+const mediaLegacy = []
+for (const f of files) {
+  const rel = relative(SRC, f)
+  if (!/\.(vue|css)$/.test(rel)) continue
+  const text = readFileSync(f, 'utf8')
+  const styleBlocks = [...text.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => ({
+    body: m[1],
+    // 行号要报成文件里的真实行号（m[1] 是从 `<style>` 同一行开始的内容）
+    line0: text.slice(0, m.index).split('\n').length - 1
+  }))
+  const bodies = styleBlocks.length ? styleBlocks : [{ body: text, line0: 0 }]
+  for (const { body, line0 } of bodies) {
+    stripComments(body)
+      .split('\n')
+      .forEach((line, i) => {
+        const m = line.match(/@media([^{;]*)/i)
+        if (!m) return
+        const cond = normMedia('@media' + m[1])
+        if (BREAKPOINT_APPROVED.includes(cond)) return
+        const where = `${rel}:${line0 + i + 1}`
+        if (BREAKPOINT_LEGACY.includes(cond)) mediaLegacy.push(`${where}  ${line.trim()}`)
+        else mediaViolations.push(`${where}  ${line.trim()}`)
+      })
+  }
+}
+
 /* ---------- 汇总 ---------- */
 let failed = false
 
@@ -268,9 +347,32 @@ if (classClash.length) {
   console.error('   组件自己的瓷片请用独立类名（如 LessonMenu 的 .tile），别借用 .card。\n')
 }
 
+if (mediaViolations.length) {
+  failed = true
+  console.error(`\n✋ 使用了白名单外的 @media 断点（${mediaViolations.length} 处）：`)
+  for (const v of mediaViolations) console.error('   ' + v)
+  console.error('   允许的断点（见 scripts/guard-tokens.mjs 的 BREAKPOINT_APPROVED）：')
+  for (const b of BREAKPOINT_APPROVED) console.error('     ' + b)
+  console.error('   布局由视口档位决定，不是由设备决定 —— 新断点意味着"第 N 种屏幕形态"，')
+  console.error('   请先确认它是新档位还是能用现有档位表达；确需新增请改 BREAKPOINT_APPROVED')
+  console.error('   并同步 DESIGN_SYSTEM.md §11，且必须在 iPad 横/竖屏、iPad 分屏、手机竖屏都验过。\n')
+}
+
+if (mediaLegacy.length) {
+  // 债务要看得见：每次跑都报一遍，收口一项就从 BREAKPOINT_LEGACY 里删一项
+  console.warn(`\n⚠️  仍在使用待收口的旧断点（${mediaLegacy.length} 处，不阻断构建）：`)
+  for (const v of mediaLegacy) console.warn('   ' + v)
+  console.warn('   这些值已在受控清单内，验证后迁移到批准断点即可从清单移除。')
+  console.warn('   迁移顺序建议：先在 iPad mini 竖屏(744)/iPad 竖屏(768)/手机横屏(390) 三个形态上比对截图。\n')
+}
+
 if (failed) process.exit(1)
 
-console.log(
+const summary =
   `✅ 设计系统守卫通过：${files.length} 个文件，${defined.size} 个 token，` +
-    `无未定义变量、无块外游离内容、无 tone 与全局面类混用、除 src/${COLOR_SOURCE.join('/')}/ 外无硬编码颜色`
-)
+  `无未定义变量、无块外游离内容、无 tone 与全局面类混用、` +
+  `除 src/${COLOR_SOURCE.join('/')}/ 外无硬编码颜色、断点未超出批准清单`
+console.log(summary)
+if (mediaLegacy.length) {
+  console.log(`   （另有 ${mediaLegacy.length} 处待收口的旧断点，见上方告警）`)
+}
