@@ -515,8 +515,9 @@ function unitLesson(id: string) {
   max-width: 440px;
   margin-inline: auto; /* 内容区居中 */
 }
-/* 宽屏档（iPad/Mac）：地图更舒展，S 形摆动幅度随容器宽自动放大 */
-@media (min-width: 768px) {
+/* 宽屏档（iPad/Mac）：地图更舒展，S 形摆动幅度随容器宽自动放大。
+ * 边界 600：与 tokens.css 宽屏档、useViewport.isNarrow 同刀口（见 tokens.css 断点约定）。 */
+@media (min-width: 600px) {
   .game-path {
     max-width: 600px;
   }

@@ -162,4 +162,32 @@ function onClick(c: MenuCard) {
 .tile.quest {
   border: 3px solid var(--c-gold);
 }
+
+/* 手机横屏（tiny）：7 个入口在 390px 高里排 3 行会顶出视口。
+ * 外层 #app 是 overflow:hidden（一屏装下、不滚动），所以第 3 行会被
+ * 直接裁掉**且滚不动** —— 走查（scripts/layout-audit.mjs）在 844×390
+ * 抓到"闯关挑战"整块只露出上半截、点不到。
+ * 先把瓷片压扁让 3 行装得下；万一后续再加入口，允许内部滚动兜底 ——
+ * 宁可滚，不能藏。 */
+@media (max-height: 480px) {
+  .menu {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .bar {
+    height: 6px;
+  }
+  .tile {
+    min-height: 72px;
+    padding: var(--gap-xs) var(--gap-s);
+    gap: 2px;
+  }
+  .tile-ico {
+    font-size: 20px;
+  }
+  .tile-name {
+    font-size: var(--fs-small);
+  }
+}
 </style>

@@ -303,9 +303,98 @@
 
 ## 11. 三端适配
 
-- **手机**（竖屏，主场景）：按 `clamp(min(vh, vw))` 流体缩放，触控 ≥52px
-- **iPad**：触控 ≥64px，内容居中限宽，间距/字号整体上调一档（`@media (min-width: 768px)`）
-- **网页/Mac**：`#app` 限宽 1180px 居中
+### 11.1 适配轴是「视口档位」，不是「设备型号」
+
+同一台 iPad 在不同形态下落进不同档位，所以**不要按 PC / iPad / 手机拆适配文件**：
+
+| 场景 | 视口 | 档位 | 若按设备拆文件 |
+|---|---|---|---|
+| iPad 横屏 | 1024×768 | wide · regular | PC 文件 |
+| Mac 浏览器 | 1180×800 | wide · regular | PC 文件 |
+| **iPad 分屏** | 507×768 | narrow · regular | 手机文件 ← 错配（它是 iPad，触控该给 64px） |
+| **iPhone 横屏** | 844×390 | wide · tiny | PC 文件 ← 错配（宽够 768 但高只有 390） |
+| iPhone 竖屏 | 390×844 | narrow · regular | 手机文件 |
+
+档位定义在 `src/composables/useViewport.js`（模块级单例，避免 N 份 resize 监听），
+阈值与 `tokens.css` 注释里的断点表一致：
+
+- **宽**（决定列数）：`narrow` < 600 / `wide` ≥ 600
+- **高**（决定行数与砍多少装饰）：`tiny` < 480 / `compact` < 640 / `regular` < 900 / `roomy` ≥ 900
+
+### 11.2 三端的处理方式
+
+- **手机**（竖屏）：按 `clamp(min(vh, vw))` 流体缩放，触控 ≥52px
+- **iPad**：触控 ≥64px，内容居中限宽，间距/字号整体上调一档（`@media (min-width: 600px)`）
+- **网页/Mac**：`#app` 限宽 1180px 居中 —— 所以 Mac 只是"wide + regular"，
+  真正有 Mac/iPad 专属**结构**的只有 3 处：PracticeView（4 列宫格）、
+  ListenView（grid 两栏重排）、LessonMenu（分列）
+
+### 11.3 按「变的是什么」分层，不要按设备分文件
+
+| 变化类型 | 做法 | 是否拆文件 |
+|---|---|---|
+| **值变**（尺寸/间距/字号） | 改 token，让 `clamp()` 流体缩放自己适应 | ❌ 不拆 |
+| **样式变**（同一结构微调） | 留在组件 `<style>` 内的 `@media`，紧挨被覆盖的规则 | ❌ 不拆 |
+| **结构变**（DOM 本身不同） | 拆成档位组件 `XxxView.landscape.vue` / `XxxView.tiny.vue` | ✅ 才拆 |
+
+跨ViewController文件的适配文件不可取：Vue scoped 的 scope hash 让外部 CSS 够不到
+组件内部类，只能 `:deep()` 或放弃 scoped（→ 特异性战争）；且组件改名/删除后，
+适配文件里会**静默留存死规则**。同类坑已经踩过：§13 记着的
+"LessonResult 曾有一份 48 行的逐字重复"。
+
+### 11.4 允许的断点（超出即 CI 失败）
+
+`scripts/guard-tokens.mjs` 检查项 ⑤ 强制执行，只有这 5 个：
+
+```
+(max-height: 480px)                              tiny   —— 手机横屏，压高度
+(min-width: 600px)                               wide   —— iPad/Mac，token 放大一档
+(min-width: 768px) and (orientation: landscape)  宽横屏 —— 允许分栏 / 加列
+(hover: hover) and (pointer: fine)               非触屏 —— hover 效果
+(prefers-reduced-motion: reduce)                 无障碍 —— 与布局无关，单独放行
+```
+
+**一句话记法：改「值」用 600，改「结构」用 768 + landscape。**
+
+- `600` = `useViewport.isNarrow`（`width < 600`）的同一刀口。只放大 token
+  （字号/间距/触控/圆角），不改任何列数或分栏 —— 所以可以放心覆盖到 600 起的
+  所有视口，包括 iPad mini 竖屏（744）和桌面窄窗。
+- `768 + landscape` = 需要**真实横向余量**的结构改动（PracticeView 4 列宫格、
+  ListenView 双栏重排）。故意不降到 600：iPhone SE 横屏是 667×375，
+  一旦命中就会挤爆（4 列方形卡只露 1.5 行且无滚动提示）。
+
+新增断点**必须**同时改三处：`BREAKPOINT_APPROVED`、本文档 §11.4，以及在
+iPad 横向 / iPad 竖向 / iPad 分屏 / 手机竖向四个形态下验证。
+
+### 11.5 已定案（2026-10-19）：600–767 宽的判定不一致 → 取方案 A
+
+**曾经的矛盾**：`useViewport.isNarrow` 用 `width < 600`，而 CSS 的宽屏 token 放大
+挂在 `min-width: 768px` —— 两者对 **600–767** 这一段给出的答案相反。
+
+这一段是真实存在的设备：**iPad mini 竖屏 744×1133**。它上面会出现：
+
+- JS 走"平板/桌面"分支（`fitLearnGrid`，按允许的最大卡片数分页）
+- CSS 却是手机档（--tap-min 52px 而非 64px，课程网格 2 列而非 3 列）
+
+实测截图确认：744 与 768 只差 24px，课程首页却是完全不同的两套构图。
+`tokens.css` 顶部的断点表写的是「wide: width >= 600」，与 JS 一致 —— 说明是
+**CSS 实现偏离了约定**，而不是约定本身有歧义。
+
+**已采用方案 A（CSS 对齐 JS）**，改动如下：
+
+| 文件 | 原 | 现 | 说明 |
+|---|---|---|---|
+| `styles/tokens.css` | `min-width: 768px` | `min-width: 600px` | 宽屏 token 档（值） |
+| `components/game/GamePath.vue` | `min-width: 768px` | `min-width: 600px` | 地图限宽（值） |
+| `views/learn/practice/PracticeView.vue` | `min-width: 768px` | `min-width: 600px` | 3 列宫格（值级列数，随档位） |
+| 同上，4 列规则 | `768 + landscape` | **保持 768** | 结构改动，需真实余量（见 §11.4） |
+| `views/listen/ListenView.vue` | `768 + landscape` | **保持 768** | 双栏重排，同上 |
+
+**曾担心但实测不成立的缺口**：iPad 分屏 2/3 横屏约 678×768 —— 宽够 600 拿到宽屏
+token，却够不到 768 拿不到播放页双栏。按 ListenView 注释里的「单列约 850px」推算
+应该裁掉播放键，**实测 678×768 单列播放器完整装下**：封面与字号随宽度收缩，
+总高远不到 850px（850 是 1024 宽下的数）。`layout-audit` 已把播放器纳入常驻页面
+（`listen-player`），13 个视口全过，不会再靠推算。
 
 ## 12. 暗色模式
 
@@ -345,7 +434,7 @@
 
 ## 14. 守卫（把规范变成会失败的检查）
 
-`frontend/scripts/guard-tokens.mjs` 检查四件事，任何一项都会让 CI 失败：
+`frontend/scripts/guard-tokens.mjs` 检查五件事，前四项任何一项都会让 CI 失败：
 
 1. 引用了不存在的 CSS 变量（且没有 fallback）——这类声明会被**静默丢弃**
 2. **样式里的硬编码颜色**：`.vue` 的 `<style>` / `.css` 中除 `src/styles/` 之外一个都不许有
@@ -354,8 +443,11 @@
 4. **同一个元素上把 `.tone-*` 和「会自己上底色的全局类」混用**——会互相覆盖成白底白字。
    互斥清单（`.card` / `.field` / `.k-btn-*`）不写死在脚本里，而是**从 base.css 现推**：
    凡是单类选择器且声明里带 `background` 的，就是独立的一套上色方案；以后新增这类面类自动纳入。
+5. **使用了白名单外的 `@media` 断点**（详见 §11.4）——布局由视口档位决定，
+   散落的魔法数字会让"改一个档位"变成靠人肉 grep 同步的活儿。
+   当前登记在 `BREAKPOINT_LEGACY` 的旧断点**只告警不阻断**，收口一项就从清单删一项。
 
-这四项的共同点：**都是构建、类型检查、单测全都看不见的静默失效**，只有真机看一眼才发现
+前四项是构建、类型检查、单测全都看不见的静默失效，只有真机看一眼才发现
 「某个底色/描边/文字没了」。所以它们的价值全在于"不用靠人肉走查发现"。
 
 2026-10 分四批推进，当前状态：**除 `src/styles/` 外，整个 `src/` 零硬编码颜色**

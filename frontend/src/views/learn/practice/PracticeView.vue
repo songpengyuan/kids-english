@@ -172,7 +172,9 @@ function enter(l: Lesson) {
   z-index: 2;
 }
 
-@media (min-width: 768px) {
+/* 3 列：宽屏档边界 600（与 tokens.css / useViewport.isNarrow 同刀口），
+ * iPad mini 竖屏 744 也能拿到 3 列而不是手机档的 2 列。 */
+@media (min-width: 600px) {
   .course-grid {
     grid-template-columns: 1fr 1fr 1fr;
     gap: var(--gap-m);
@@ -181,7 +183,11 @@ function enter(l: Lesson) {
 
 /* iPad 横屏 / 桌面宽窗：4:5 竖版卡在高约 540px 的滚动容器里一行都放不下第二张，
  * 第二行只露半截又没有滚动提示，孩子以为只有 3 课。
- * 改 4 列方形卡：8 课以内两行正好一屏放完，课再多滚动也只差一点点。 */
+ * 改 4 列方形卡：8 课以内两行正好一屏放完，课再多滚动也只差一点点。
+ *
+ * 这一条**故意留在 768**（不跟值档降到 600）：4 列是结构改动，需要真实横向余量。
+ * 若降到 600，iPhone SE 横屏（667×375）会命中它——可用高只剩约 275px，
+ * 4 列方形卡（约 160px）只能露 1.5 行且无滚动提示，正好复现上面那个"以为只有 3 课"的 bug。 */
 @media (min-width: 768px) and (orientation: landscape) {
   .course-grid {
     grid-template-columns: repeat(4, 1fr);

@@ -8,6 +8,10 @@
  * 组件只做引用计数订阅，避免 N 个组件各写一份监听 + 各自 rAF 抖动。
  *
  * 分档阈值与 src/styles/tokens.css 中注释的断点表保持一致，改动时需同步。
+ *
+ * isNarrow 的 600 不是孤立的：CSS 宽屏档（tokens.css 的 @media (min-width:600px)）
+ * 用的就是同一刀口，两边必须一起改，否则会出现"JS 说是平板、CSS 按手机渲染"
+ * 的错位（iPad mini 竖屏 744px 曾因此拿到 2 列 + 52px 触控）。
  */
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
