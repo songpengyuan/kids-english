@@ -155,6 +155,11 @@ function openLearn() {
 function sayTitle() {
   if (lesson.value) speak(lesson.value.title, { ttsOnly: true });
 }
+/** 卡片目录 → 闯关地图（孩子主入口） */
+function openGame() {
+  speakZh("闯关地图");
+  void router.push({ name: "course-game", params: { id: lessonId.value } });
+}
 const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
 /** 玩法页（答题中）：顶部按钮用"关闭"（✕）而非返回箭头（多邻国式） */
 const isPlay = computed(() =>
@@ -186,11 +191,24 @@ const playTotal = ref(0);
           :current-key="stage"
           :has-stars="(k) => showStars(k) > 0"
         />
-        <template v-else
-          ><span class="hdr-title-tap" role="button" tabindex="0" aria-label="朗读课程名" @click="sayTitle" @keydown.enter.prevent="sayTitle"
-            >{{ lesson.emoji }} {{ lesson.titleZh || lesson.title }}</span
-          ></template
+        <button
+          v-else
+          class="hdr-title-tap"
+          role="button"
+          tabindex="0"
+          aria-label="朗读课程名"
+          @click="sayTitle"
+          @keydown.enter.prevent="sayTitle"
         >
+          <span class="hdr-zh">{{ lesson.emoji }} {{ lesson.titleZh || lesson.title }}</span>
+          <span v-if="lesson.titleZh && lesson.title" class="hdr-en">{{ lesson.title }}</span>
+        </button>
+      </template>
+      <!-- 卡片目录模式：右上角切到闯关地图（孩子主入口） -->
+      <template v-if="stage === 'menu' && !questMode" #right>
+        <button class="mode-fab" aria-label="闯关地图" title="闯关地图" @click="openGame">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h6a4 4 0 0 0 0-8h-4a4 4 0 0 1 0-8h6"/></svg>
+        </button>
       </template>
     </HeaderBar>
 
@@ -251,16 +269,29 @@ const playTotal = ref(0);
   border-radius: var(--radius-s);
   padding: var(--gap-xs) var(--gap-s);
   margin: calc(var(--gap-xs) * -1) calc(var(--gap-s) * -1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  line-height: 1.15;
 }
 .hdr-title-tap:active {
   background: var(--btn-plain-bg);
 }
-.right-cluster {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-s);
+.hdr-zh {
+  font-size: var(--fs-title);
+  font-weight: var(--fw-strong);
+  color: var(--ink);
+  white-space: nowrap;
 }
-.icon-fab {
+.hdr-en {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.mode-fab {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -273,7 +304,7 @@ const playTotal = ref(0);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.icon-fab:hover, .icon-fab:active {
+.mode-fab:hover, .mode-fab:active {
   background: color-mix(in srgb, var(--ink-soft) 12%, transparent);
   color: var(--brand);
 }
