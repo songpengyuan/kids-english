@@ -29,7 +29,7 @@ import { useViewport } from "../../composables/useViewport";
 import { useQuest, type QuestAct } from "../../composables/useQuest";
 import { useLessonFlow } from "../../composables/useLessonFlow";
 import { lessonDoneCount, lessonLevels } from "../../data/pathLevels";
-import { BookOpen, Headphones, Link2, MessageCircle, Mic, Music, Star } from "@lucide/vue";
+import { BookOpen, Headphones, Link2, Map as MapIcon, MessageCircle, Mic, Music, Star } from "@lucide/vue";
 
 const progress = useProgressStore();
 const streak = useStreakStore();
@@ -208,7 +208,18 @@ const playTotal = ref(0);
         >
       </template>
       <template #right>
-        <div class="badge star-badge" role="img" aria-label="已获得星星"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</div>
+        <div class="right-cluster">
+          <button
+            v-if="stage === 'menu' && !questMode"
+            class="icon-fab"
+            @click="startQuest"
+            aria-label="切换到闯关地图"
+            title="闯关地图"
+          >
+            <MapIcon :size="20" />
+          </button>
+          <div class="badge star-badge" role="img" aria-label="已获得星星"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</div>
+        </div>
       </template>
     </HeaderBar>
 
@@ -276,7 +287,26 @@ const playTotal = ref(0);
 .hdr-title-tap:active {
   background: var(--btn-plain-bg);
 }
-/* 亲子对话的顶栏进度已并入 LessonProgressHeader（与其他玩法同一根圆点进度），
- * 原来这里有一条自造的细进度条 + 右侧"第 N/M 轮"文字，两处状态各自维护，
- * 而且和「跟我读」的页内 `3 / 7` 位置不一致（2026-10-17 删除）。 */
+.right-cluster {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-s);
+}
+.icon-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.icon-fab:hover, .icon-fab:active {
+  background: color-mix(in srgb, var(--ink-soft) 12%, transparent);
+  color: var(--brand);
+}
 </style>
