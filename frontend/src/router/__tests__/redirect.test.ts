@@ -66,9 +66,15 @@ describe("关键路径能落到正确路由", () => {
     expect(router.currentRoute.value.path).toBe("/course");
   });
 
-  it("#/course/l4 课程菜单可达", async () => {
+  it("#/course/l4 课程详情默认 redirect 到本课闯关地图", async () => {
     await router.push("/course/l4");
-    expect(router.currentRoute.value.name).toBe("lesson");
+    expect(router.currentRoute.value.name).toBe("course-game");
+    expect(router.currentRoute.value.params.id).toBe("l4");
+  });
+
+  it("#/course/l4/menu 卡片目录可达（家长陪练视角）", async () => {
+    await router.push("/course/l4/menu");
+    expect(router.currentRoute.value.name).toBe("lesson-menu");
   });
 
   it("#/course/l4/learn 与 #/course/l4/hear 题型子路由可达", async () => {

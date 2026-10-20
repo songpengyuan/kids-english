@@ -67,16 +67,24 @@ export const router = createRouter({
         { path: "", name: "learn", component: LearnView, meta: { title: "丞丞ABC" } },
         {
           path: ":id",
-          name: "lesson",
+          // 2026-10-20：点进课程默认直接落本课闯关地图（孩子视角：亮着哪关打哪关）。
+          // 学习卡片目录（家长陪练时按玩法选）挪到 /course/:id/menu，右上角书本图标切换。
+          redirect: (to) => ({ name: "course-game", params: { id: to.params.id } }),
+        },
+        // 学习卡片目录（家长视角）：6 张玩法卡片网格，做完任一玩法回此页。
+        // 子路由用绝对路径，URL 保持 /course/:id/learn 不变（与旧版一致，深链不破）。
+        {
+          path: ":id/menu",
+          name: "lesson-menu",
           component: LessonView,
-          meta: { title: "学习" },
+          meta: { title: "课程" },
           children: [
-            { path: "learn", name: "lesson-learn", component: LessonView, meta: { title: "学单词", stage: "learn" } },
-            { path: "hear", name: "lesson-quiz", component: LessonView, meta: { title: "听音选图", stage: "quiz" } },
-            { path: "match", name: "lesson-match", component: LessonView, meta: { title: "连一连", stage: "match" } },
-            { path: "speak", name: "lesson-speak", component: LessonView, meta: { title: "跟读", stage: "speak" } },
-            { path: "song", name: "lesson-song", component: LessonView, meta: { title: "唱童谣", stage: "song" } },
-            { path: "talk", name: "lesson-talk", component: LessonView, meta: { title: "亲子对话", stage: "talk" } },
+            { path: "/course/:id/learn", name: "lesson-learn", component: LessonView, meta: { title: "学单词", stage: "learn" } },
+            { path: "/course/:id/hear", name: "lesson-quiz", component: LessonView, meta: { title: "听音选图", stage: "quiz" } },
+            { path: "/course/:id/match", name: "lesson-match", component: LessonView, meta: { title: "连一连", stage: "match" } },
+            { path: "/course/:id/speak", name: "lesson-speak", component: LessonView, meta: { title: "跟读", stage: "speak" } },
+            { path: "/course/:id/song", name: "lesson-song", component: LessonView, meta: { title: "唱童谣", stage: "song" } },
+            { path: "/course/:id/talk", name: "lesson-talk", component: LessonView, meta: { title: "亲子对话", stage: "talk" } },
           ],
         },
         // 本课闯关地图（URL 归属课程域：#/course/:id/game）。

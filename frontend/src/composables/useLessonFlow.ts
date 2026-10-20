@@ -67,7 +67,6 @@ export interface UseLessonFlow {
   toMenu: () => void;
   afterGame: (stars?: number) => void;
   afterSong: () => void;
-  backToMap: () => void;
   goNextLevel: () => void;
   settleActivity: () => void;
 }
@@ -153,11 +152,6 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     stage.value = "result";
   }
 
-  /** 返回闯关地图：回到当前课的地图（#/course/:id/game，只服务本课） */
-  function backToMap() {
-    router.push(`/course/${lesson.value?.id ?? ""}/game`);
-  }
-
   /** 进入下一关（单关完成画面按钮） */
   function goNextLevel() {
     if (!quest.nextLevel.value) return;
@@ -225,23 +219,24 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     return Math.min(100, Math.round((done / activities.value.length) * 100));
   });
 
-  /** 左上角 ←：玩法中先回本课菜单，菜单里再点才回课程列表（两步退出，防止误触跳走） */
+  /** 左上角 ←：玩法中先回本课卡片目录，目录里再点才回地图（两步退出，防止误触跳走） */
   function back() {
     if (!quest.questMode.value && stage.value !== "menu") {
-      // 玩法中：回本课菜单，URL 同步去掉题型段（/course/l4）
+      // 玩法中：回本课卡片目录，URL 同步到 /course/:id/menu
       stage.value = "menu";
       const lid = lesson.value?.id;
-      if (lid) router.replace(`/course/${lid}`);
+      if (lid) router.replace(`/course/${lid}/menu`);
       return;
     }
-    router.push(quest.questMode.value ? `/course/${lesson.value?.id ?? ""}/game` : "/course");
+    // 目录页再点返回：闯关模式回地图，卡片模式也回地图（地图是主入口）
+    router.push(`/course/${lesson.value?.id ?? ""}/game`);
   }
 
   function toMenu() {
     stage.value = "menu";
-    // 结算页"再选玩法"：URL 同步回菜单（/course/l4）
+    // 结算页"再选玩法"：URL 同步回卡片目录
     const lid = lesson.value?.id;
-    if (lid && !quest.questMode.value) router.replace(`/course/${lid}`);
+    if (lid && !quest.questMode.value) router.replace(`/course/${lid}/menu`);
   }
 
   /** 下一课（与课程列表同源：远端详情优先、本地兜底；最后一课为 null） */
@@ -264,7 +259,6 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     toMenu,
     afterGame,
     afterSong,
-    backToMap,
     goNextLevel,
     settleActivity
   };

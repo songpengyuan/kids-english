@@ -36,9 +36,13 @@ watch(
 );
 
 function goBack() {
-  // 从课程页进入 → 返回上一页；无历史（直接输地址）回学习主页
-  if (window.history.length > 1) router.back();
-  else void router.push("/course");
+  // 直接回课程列表（/course/:id 现在默认 redirect 到本页，history.back 会兜回来）
+  void router.push("/course");
+}
+
+/** 切到学习卡片目录（家长陪练视角） */
+function openMenu() {
+  void router.push({ name: "lesson-menu", params: { id: lessonId.value } });
 }
 </script>
 
@@ -51,7 +55,33 @@ function goBack() {
     back-label="返回"
     @back="goBack"
   >
+    <!-- 右上角：切到学习卡片目录（低调书本图标，主要给家长用） -->
+    <template #right>
+      <button class="menu-fab" @click="openMenu" aria-label="学习卡片" title="学习卡片">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+      </button>
+    </template>
     <!-- 课时未就绪（仅远端新增课的首帧）不渲染地图：不传 lesson 会退化成总地图 -->
     <GamePath v-if="lesson" :lesson="lesson" />
   </PageShell>
 </template>
+
+<style scoped>
+.menu-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.menu-fab:hover, .menu-fab:active {
+  background: color-mix(in srgb, var(--ink-soft) 12%, transparent);
+  color: var(--brand);
+}
+</style>

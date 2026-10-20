@@ -127,7 +127,6 @@ const {
   toMenu,
   afterGame,
   afterSong,
-  backToMap,
   goNextLevel
 } = flow;
 
@@ -189,7 +188,7 @@ const playTotal = ref(0);
     <HeaderBar
       show-back
       :close="isPlay"
-      :back-label="questMode ? '返回闯关地图' : stage === 'menu' ? '返回课程列表' : '返回本课菜单'"
+      :back-label="questMode ? '返回闯关地图' : stage === 'menu' ? '返回地图' : '返回本课菜单'"
       @back="back"
     >
       <template #title>
@@ -259,7 +258,6 @@ const playTotal = ref(0);
       :act-name="currentActName"
       :next-level="questMode && questDone ? (nextLevel || null) : null"
       :next-lesson="!questMode ? (nextLesson || null) : null"
-      @back-to-map="backToMap"
       @go-next-level="goNextLevel"
       @to-menu="toMenu"
       @go-next-lesson="router.push('/course/' + (nextLesson?.id ?? ''))"
