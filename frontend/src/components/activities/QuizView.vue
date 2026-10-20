@@ -37,7 +37,7 @@ const session = useQuizSession<Word>(() => props.words, {
   },
 });
 
-const { q, total, picked, wrongPicks, locked, stars, pick, next: gotoNext, cleanup } = session;
+const { q, total, picked, wrongPicks, locked, stars, pick, next: gotoNext, cleanup, inCatchUp } = session;
 
 /** 题目总数上报 → 顶栏显示"x/y"（孩子知道一共要做几题） */
 watch(total, () => emit("total", total.value), { immediate: true });
@@ -97,7 +97,7 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
       <Volume2 class="k-ico" />
       <SpeakWave v-if="speaking" size="lg" />
     </button>
-    <p class="tip">听一听，点正确的图片</p>
+    <p class="tip">{{ inCatchUp ? "刚才卡住的词，再来挑战一次！" : "听一听，点正确的图片" }}</p>
 
     <div class="options view-body">
       <div

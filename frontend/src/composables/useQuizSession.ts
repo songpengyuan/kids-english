@@ -1,15 +1,17 @@
 /**
  * 听音选图会话状态机（从 QuizView 抽出的逻辑层）。
  *
- * 规则（多邻国式）：
+ * 规则（多邻国式 + 错题加赛）：
  * - 答错不推进：错的选项短暂标红后消失，不揭示答案、不自动读答案，孩子继续选；
  * - 答对锁定本题，底部出现"继续"，由小朋友自己点进下一题；
- * - 星级 = **首次答对率**（见 utils/quizSession）。
+ * - 主线做完后，凡第一遍错过的词自动进入一轮「难词再挑战」（2~N 题），
+ *   趁热打铁重考一遍；全会的孩子直接结算，不多做一题。
+ * - 星级：一遍过 = 3 星；错过但加赛全对 = 2 星；加赛还错 = 1 星。
  *
  * 副作用（音效/朗读/掌握度落库）由调用方通过 hooks 注入 —— 逻辑层保持可单测。
  */
-import { computed, ref, watch } from "vue";
-import { buildQuizQuestions, starsForFirstTry, type QuizWord } from "../utils/quizSession";
+import { computed, ref, shallowRef, watch } from "vue";
+import { buildQuizQuestions, starsForFirstTry, type QuizQuestion, type QuizWord } from "../utils/quizSession";
 
 export interface QuizSessionHooks<T> {
   /** 答对一题（firstTry = 这一题是不是第一下就选对） */
@@ -38,18 +40,28 @@ export function useQuizSession<T extends QuizWord>(
   const wrongFlashMs = hooks.wrongFlashMs ?? 600;
   const keyOf = hooks.keyOf ?? ((w: T) => w.id);
 
-  const questions = computed(() =>
+  /** 主线题目：每个词一题 */
+  const mainQuestions = computed(() =>
     buildQuizQuestions(words(), Math.random, hooks.distractors?.() ?? words(), keyOf)
   );
+  /** 错题加赛题目：主线结束后由错过的词生成 */
+  const catchQuestions = shallowRef<QuizQuestion<T>[]>([]);
+  /** 当前是否处于错题加赛轮 */
+  const inCatchUp = ref(false);
+
   const idx = ref(0);
   /** 答对时锁定为正确项 id；答错保持 null（可继续选） */
   const picked = ref<string | null>(null);
   /** 选错的选项集合：只标红，不揭示正确答案 */
   const wrongPicks = ref<Set<string>>(new Set());
-  /** 第一下就选对的题数（星级依据） */
+  /** 第一下就选对的题数（主线星级依据） */
   const firstTryRight = ref(0);
   /** 本题是否已经错过（用于判定"首次答对"） */
   const missedThisQuestion = ref(false);
+  /** 主线里第一遍错过的词 key（加赛素材） */
+  const missedInMain = ref<Set<string>>(new Set());
+  /** 加赛轮里又错过的词 key（最终 1 星依据） */
+  const missedInCatch = ref<Set<string>>(new Set());
 
   const timers = new Set<ReturnType<typeof setTimeout>>();
   function later(fn: () => void, ms: number) {
@@ -60,6 +72,9 @@ export function useQuizSession<T extends QuizWord>(
     timers.add(t);
   }
 
+  const questions = computed(() =>
+    inCatchUp.value ? catchQuestions.value : mainQuestions.value
+  );
   const q = computed(() => questions.value[Math.min(idx.value, Math.max(0, questions.value.length - 1))]);
   const total = computed(() => questions.value.length);
   const locked = computed(() => picked.value !== null);
@@ -67,7 +82,8 @@ export function useQuizSession<T extends QuizWord>(
   const percent = computed(() =>
     total.value ? Math.round((idx.value / total.value) * 100) : 0
   );
-  const stars = computed(() => starsForFirstTry(firstTryRight.value, total.value));
+  /** 进行中的实时星级（主线 = 首次答对率；加赛轮用加赛进度占位） */
+  const stars = computed(() => starsForFirstTry(firstTryRight.value, mainQuestions.value.length));
 
   watch(percent, (p) => hooks.onProgress?.(p), { immediate: true });
 
@@ -85,7 +101,13 @@ export function useQuizSession<T extends QuizWord>(
     if (key === keyOf(q.value.target)) {
       picked.value = key;
       const firstTry = !missedThisQuestion.value;
-      if (firstTry) firstTryRight.value++;
+      if (firstTry) {
+        firstTryRight.value++;
+      } else {
+        // 这题第一遍错过：记入对应轮次的 missed 集合
+        if (inCatchUp.value) missedInCatch.value.add(key);
+        else missedInMain.value.add(key);
+      }
       hooks.onCorrect?.(opt, firstTry);
       return "correct";
     }
@@ -101,10 +123,41 @@ export function useQuizSession<T extends QuizWord>(
     return "wrong";
   }
 
-  /** 点"继续"：最后一题 → 结束（返回星级），否则进入下一题 */
+  /** 主线结束时，若有第一遍错过的词，生成加赛轮 */
+  function startCatchUp() {
+    const missedWords = words().filter((w) => missedInMain.value.has(keyOf(w)));
+    if (missedWords.length === 0) return false;
+    catchQuestions.value = buildQuizQuestions(
+      missedWords,
+      Math.random,
+      hooks.distractors?.() ?? words(),
+      keyOf
+    );
+    inCatchUp.value = true;
+    idx.value = 0;
+    picked.value = null;
+    missedThisQuestion.value = false;
+    wrongPicks.value = new Set();
+    return true;
+  }
+
+  /** 最终星级：3=一遍过；2=错过但加赛全对；1=加赛还错 */
+  function finalStars(): number {
+    if (missedInMain.value.size === 0) return 3;
+    if (missedInCatch.value.size === 0) return 2;
+    return 1;
+  }
+
+  /** 点"继续"：主线最后一题 → 进入加赛或结算；加赛最后一题 → 结算 */
   function next(): { done: boolean; stars: number } {
     if (!locked.value) return { done: false, stars: stars.value };
-    if (isLast.value) return { done: true, stars: stars.value };
+    if (isLast.value) {
+      // 主线最后一题：有错题就开加赛，否则直接结算
+      if (!inCatchUp.value && startCatchUp()) {
+        return { done: false, stars: stars.value };
+      }
+      return { done: true, stars: finalStars() };
+    }
     idx.value++;
     picked.value = null;
     missedThisQuestion.value = false;
@@ -126,6 +179,10 @@ export function useQuizSession<T extends QuizWord>(
     wrongPicks.value = new Set();
     missedThisQuestion.value = false;
     firstTryRight.value = 0;
+    missedInMain.value = new Set();
+    missedInCatch.value = new Set();
+    catchQuestions.value = [];
+    inCatchUp.value = false;
   }
 
   return {
@@ -139,6 +196,9 @@ export function useQuizSession<T extends QuizWord>(
     percent,
     stars,
     firstTryRight,
+    inCatchUp,
+    missedInMain,
+    missedInCatch,
     pick,
     next,
     reset,

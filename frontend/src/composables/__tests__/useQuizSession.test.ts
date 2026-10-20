@@ -130,4 +130,72 @@ describe("useQuizSession", () => {
     expect(s.pick(l4Blue)).toBe("correct"); // 真正该选的那张
     expect(s.locked.value).toBe(true);
   });
+
+  // ===== 错题加赛轮 =====
+
+  /** 连续答对 n 题并点继续，返回最后一次 next() 的结果 */
+  async function playThrough(s: ReturnType<typeof useQuizSession<(typeof words)[number]>>, n: number) {
+    let last = { done: false, stars: 0 };
+    for (let i = 0; i < n; i++) {
+      s.pick(s.q.value.target);
+      last = s.next();
+      await nextTick();
+    }
+    return last;
+  }
+
+  it("一遍过：主线最后一题直接 done，3 星，不进加赛", async () => {
+    const s = useQuizSession(() => words, {});
+    const r = await playThrough(s, s.total.value);
+    expect(r.done).toBe(true);
+    expect(r.stars).toBe(3);
+    expect(s.inCatchUp.value).toBe(false);
+  });
+
+  it("主线错过 1 词：主线最后一题不 done，进入加赛轮", async () => {
+    const s = useQuizSession(() => words, {});
+    // 第一题先错后对
+    const wrongOpt = s.q.value.options.find((o) => o.id !== s.q.value.target.id)!;
+    s.pick(wrongOpt);
+    s.pick(s.q.value.target);
+    // 推进到剩余主线题目并全部一遍过（含最后一题，触发加赛）
+    const lastMain = await playThrough(s, s.total.value);
+    expect(lastMain.done).toBe(false);
+    expect(s.inCatchUp.value).toBe(true);
+    // 加赛应只考错过的那 1 个词
+    expect(s.total.value).toBe(1);
+  });
+
+  it("加赛全对 → done，2 星（错过但补救成功）", async () => {
+    const s = useQuizSession(() => words, {});
+    // 第一题先错后对
+    const wrongOpt = s.q.value.options.find((o) => o.id !== s.q.value.target.id)!;
+    s.pick(wrongOpt);
+    s.pick(s.q.value.target);
+    await playThrough(s, s.total.value);
+    expect(s.inCatchUp.value).toBe(true);
+    // 加赛题一遍过
+    s.pick(s.q.value.target);
+    const r = s.next();
+    await nextTick();
+    expect(r.done).toBe(true);
+    expect(r.stars).toBe(2);
+  });
+
+  it("加赛还错 → done，1 星", async () => {
+    const s = useQuizSession(() => words, {});
+    // 第一题先错后对
+    const wrongOpt = s.q.value.options.find((o) => o.id !== s.q.value.target.id)!;
+    s.pick(wrongOpt);
+    s.pick(s.q.value.target);
+    await playThrough(s, s.total.value);
+    // 加赛题再错一次再对
+    const wrong2 = s.q.value.options.find((o) => o.id !== s.q.value.target.id)!;
+    s.pick(wrong2);
+    s.pick(s.q.value.target);
+    const r = s.next();
+    await nextTick();
+    expect(r.done).toBe(true);
+    expect(r.stars).toBe(1);
+  });
 });
