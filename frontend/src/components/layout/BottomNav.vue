@@ -111,9 +111,9 @@ function goListen() {
   display: flex;
   gap: var(--gap-s);
   padding:
-    var(--gap-xs)
+    4px
     calc(var(--pad-x) + env(safe-area-inset-right))
-    max(var(--gap-xs), env(safe-area-inset-bottom))
+    max(4px, env(safe-area-inset-bottom))
     calc(var(--pad-x) + env(safe-area-inset-left));
   /* 毛玻璃：与 HeaderBar 同一套 token（--bar-bg / --bar-blur） */
   background: var(--bar-bg, var(--bg));
@@ -126,8 +126,8 @@ function goListen() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--gap-xs);
-  padding: var(--gap-xs) 0;
+  gap: 2px;
+  padding: 4px 0 2px;
   /* 显式透明：全局 button 重置没有重置 background，不写这一行就会带出
    * 浏览器默认的浅灰底（左右两个 tab 是 <button>、中间是 <div>，
    * 三者底色就会不一致）。选中态由 .on 上色。 */
@@ -166,14 +166,14 @@ function goListen() {
   from { opacity: 0.4; }
   to { opacity: 1; }
 }
-/* 图标位：三格统一 --tap-min 高。
+/* 图标位：三格统一高度。
  * 三种"脸"（PathIcon / 耳机 emoji / 声波条）的光学高度不同，靠固定高的图标位，
  * 三格的标签才能落在同一条基线上（否则底栏会像以前那样左右不齐）。 */
 .bn-zone {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: var(--tap-min);
+  height: 30px;
   font-size: var(--fs-title);
   line-height: 1;
 }

@@ -22,7 +22,6 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useProgressStore } from "../../stores/progress";
 import { useRewardsStore } from "../../stores/rewards";
-import { FORM_TOTAL } from "../../data/heroes";
 import { useStreakStore } from "../../stores/streak";
 import { useAuthStore } from "../../stores/auth";
 import { useRoute, useRouter } from "vue-router";
@@ -31,15 +30,11 @@ import { dueWords } from "../../utils/reviewQueue";
 import PageShell from "../../components/ui/PageShell.vue";
 import EntryRow from "../../components/ui/EntryRow.vue";
 import IconTile from "../../components/ui/IconTile.vue";
-import MetricTile from "../../components/ui/MetricTile.vue";
-import SectionTitle from "../../components/ui/SectionTitle.vue";
 import ShellIcon from "../../components/ShellIcon.vue";
 import ParentGate from "../../components/gate/ParentGate.vue";
 import {
-  Award,
   CalendarDays,
   Flame,
-  Gamepad2,
   Play,
   RotateCcw,
   Shield,
@@ -134,10 +129,9 @@ function goContinue() {
   const id = continueLesson.value?.id;
   if (id) router.push(`/course/${id}`);
 }
-function goGame() {
-  speakZh("游戏闯关");
-  const id = progress.lastLesson || lessons[0]?.id || "l4";
-  router.push(`/course/${id}/game`);
+function goTreasure() {
+  speakZh("宝藏罐");
+  router.push("/me/treasure");
 }
 /** 带语音的跳转（收藏卡用） */
 function sayEntry(name: string, path: string) {
@@ -155,11 +149,16 @@ function sayEntry(name: string, path: string) {
         <span class="me-name">{{ kidName }}</span>
         <span class="me-sub">第 {{ streak.streak }} 天连击</span>
       </span>
-      <span class="me-pill" :title="`共 ${progress.totalStars} 颗星`">
-        <Star class="k-ico star-fill" />{{ progress.totalStars }}
-      </span>
-      <span class="me-pill me-pill--flame" :title="`已连击 ${streak.streak} 天`">
-        <Flame class="k-ico" />{{ streak.streak }}
+      <span class="me-pills">
+        <span class="me-pill" :title="`共 ${progress.totalStars} 颗星`">
+          <Star class="k-ico star-fill" />{{ progress.totalStars }}
+        </span>
+        <span class="me-pill me-pill--flame" :title="`已连击 ${streak.streak} 天`">
+          <Flame class="k-ico" />{{ streak.streak }}
+        </span>
+        <button class="me-pill me-pill--shell" title="宝藏罐：贝壳余额" @click="goTreasure">
+          <ShellIcon />{{ rewards.shells }}
+        </button>
       </span>
     </header>
 
@@ -196,26 +195,6 @@ function sayEntry(name: string, path: string) {
     >
       <template #icon><IconTile><Play class="k-ico" /></IconTile></template>
     </EntryRow>
-
-    <!-- 次行动：白底卡，不与主行动抢注意力 -->
-    <EntryRow title="闯关挑战" desc="打完单词，赢英雄卡" @click="goGame">
-      <template #icon>
-        <IconTile tone="purple"><Gamepad2 class="k-ico" /></IconTile>
-      </template>
-    </EntryRow>
-
-    <!-- ④ 我的收藏（2026-10-17：卡片收集册已下线，奖励统一走宝藏罐） -->
-    <SectionTitle>我的收藏</SectionTitle>
-    <section class="stat-row">
-      <button class="card stat-card" @click="sayEntry('宝藏罐', '/me/treasure')">
-        <IconTile tone="gold"><ShellIcon /></IconTile>
-        <MetricTile :value="rewards.shells" label="贝壳" />
-      </button>
-      <button class="card stat-card" @click="sayEntry('英雄图鉴', '/me/treasure')">
-        <IconTile tone="teal"><Award class="k-ico" /></IconTile>
-        <MetricTile :value="rewards.ownedCount" :total="FORM_TOTAL" label="英雄" />
-      </button>
-    </section>
 
     <!-- 到期复习：有才出现 -->
     <EntryRow
@@ -270,11 +249,16 @@ function sayEntry(name: string, path: string) {
   font-size: var(--fs-small);
   color: var(--ink-soft);
 }
+.me-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
 .me-pill {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  flex: none;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
   background: var(--brand-soft);
@@ -285,6 +269,15 @@ function sayEntry(name: string, path: string) {
 .me-pill--flame {
   background: var(--tint-yellow);
   color: var(--orange-dark);
+}
+.me-pill--shell {
+  background: color-mix(in srgb, var(--c-gold) 18%, transparent);
+  color: var(--c-gold-deep);
+  border: none;
+  cursor: pointer;
+}
+.me-pill--shell .k-ico {
+  color: inherit;
 }
 
 /* ---------- 今日卡 ---------- */
@@ -368,24 +361,6 @@ function sayEntry(name: string, path: string) {
   border-radius: var(--radius-pill);
   background: var(--on-tone);
   transition: width var(--dur-slow) var(--ease-pop);
-}
-
-/* ---------- 我的收藏 ---------- */
-.stat-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--gap-s);
-}
-.stat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--gap-xs);
-  padding: var(--gap-m) var(--gap-s);
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-.stat-card:active {
-  transform: translateY(calc(var(--press) - 1px)) scale(0.97);
 }
 
 /* ---------- 家长中心 ---------- */
