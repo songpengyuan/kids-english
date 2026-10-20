@@ -5,9 +5,11 @@
  * - 星星展示（1~3 星渐次弹出）；
  * - 闯关模式：第 N 关完成大徽章 + 玩法名 + 重玩提示；
  * - 今日目标首次达成：连击火焰横幅；
- * - 开宝箱（ChestReward）统一挂载：闯关/自由练习都开箱，25% 随机掉英雄形态；
- *   （原「课内通关奖励奥特曼卡片」已于 2026-10-17 下线，奖励只走宝藏罐一套）
- * - 底部动作：返回地图/下一关（quest）、再选玩法/下一课（free），由父组件处理。
+ * - 开宝箱（ChestReward）**只在自由练习结算挂载**：
+ *   2026-10-19 产品口径调整——闯关完成直接停在「第 N 关完成」大画面，不再插一段开箱；
+ *   返回地图只走左上角 ←（闯关模式顶栏 back-label 就是「返回闯关地图」），
+ *   底部保留「下一关」一个动作，避免孩子误点直接退出连锁闯关。
+ * - 底部动作：下一关（quest）、再选玩法/下一课（free），由父组件处理。
  */
 import { Star } from "@lucide/vue";
 import { ref } from "vue";
@@ -27,7 +29,6 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  backToMap: [];
   goNextLevel: [];
   toMenu: [];
   goNextLesson: [];
@@ -69,11 +70,9 @@ function nav(fn: () => void) {
       <div v-if="streakJustHit" class="streak-banner anim-pop">
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
-      <!-- 普通关卡完成也开宝箱：与所有宝箱统一规则，25% 随机掉英雄卡片 -->
-      <ChestReward v-if="!chestDone" @done="chestDone = true" />
-      <div class="btn-row">
-        <BaseButton variant="green" @click="emit('backToMap')">返回闯关地图</BaseButton>
-        <BaseButton v-if="nextLevel" :disabled="navClicked" @click="nav(() => emit('goNextLevel'))">
+      <!-- 闯关完成不开箱：停在大画面，只给「下一关」一个出口（返回地图走左上角 ←） -->
+      <div v-if="nextLevel" class="btn-row">
+        <BaseButton :disabled="navClicked" @click="nav(() => emit('goNextLevel'))">
           下一关：<PathIcon :name="nextLevel.actKey" /> {{ nextLevel.name }} →
         </BaseButton>
       </div>

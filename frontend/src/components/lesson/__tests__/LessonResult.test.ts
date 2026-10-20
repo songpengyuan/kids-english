@@ -49,3 +49,57 @@ describe("LessonResult 星星", () => {
     expect(w.find("h2").text()).toContain("真棒！获得 2 颗星");
   });
 });
+
+/**
+ * 闯关结算口径（2026-10-19 产品调整）：
+ *  - 关卡完成**不再开宝箱**——完成即停在大画面；
+ *  - 底部**不再有**「返回闯关地图」按钮（回地图只走左上角 ←）；
+ *  - 只在有下一关时给「下一关」一个按钮。
+ * 这三条是显式口径，容易被"顺手加回来"，所以各锁一条用例。
+ */
+describe("LessonResult 闯关结算", () => {
+  /** 按钮用渲染 slot 的桩（真按钮的文案才能被 text() 断言到） */
+  const btnStub = { template: "<button><slot /></button>" };
+
+  function mountQuest(nextLevel: { actKey: string; name: string } | null) {
+    return mount(LessonResult, {
+      props: {
+        mode: "quest",
+        stars: 3,
+        streakJustHit: false,
+        streakDays: 0,
+        questLevel: 2,
+        actName: "听音选图",
+        nextLevel,
+      },
+      global: { stubs: { BaseButton: btnStub, ChestReward: true } },
+    });
+  }
+
+  it("闯关完成：显示「第 N 关完成」且不开宝箱", () => {
+    const w = mountQuest({ actKey: "match", name: "连一连" });
+    expect(w.text()).toContain("第 2 关完成！");
+    expect(w.findComponent({ name: "ChestReward" }).exists()).toBe(false);
+  });
+
+  it("闯关完成：没有「返回闯关地图」按钮，只有「下一关」", () => {
+    const w = mountQuest({ actKey: "match", name: "连一连" });
+    const btns = w.findAll("button");
+    expect(btns).toHaveLength(1);
+    expect(btns[0].text()).toContain("下一关");
+    expect(w.text()).not.toContain("返回闯关地图");
+  });
+
+  it("闯关最后一关：没有下一关时不渲染任何按钮", () => {
+    const w = mountQuest(null);
+    expect(w.findAll("button")).toHaveLength(0);
+  });
+
+  it("自由练习结算仍开宝箱", () => {
+    const w = mount(LessonResult, {
+      props: { mode: "free", stars: 2, streakJustHit: false, streakDays: 0 },
+      global: { stubs: { BaseButton: btnStub, ChestReward: true } },
+    });
+    expect(w.findComponent({ name: "ChestReward" }).exists()).toBe(true);
+  });
+});
