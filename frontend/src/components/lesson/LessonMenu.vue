@@ -4,19 +4,16 @@
  * iPhone 竖屏 2 列，宽屏/iPad 自动多列
  */
 import { computed } from "vue";
-import { Star, Music, BookOpen, Swords } from "@lucide/vue";
+import { Star, Music, BookOpen } from "@lucide/vue";
 import type { QuestAct } from "../../composables/useQuest";
 
 const props = defineProps<{
   activities: (QuestAct & { stars?: number })[];
   progress: number;
-  questDone: number;
-  questTotal: number;
 }>();
 const emit = defineEmits<{
   openSong: [];
   openLearn: [];
-  openQuest: [];
   openActivity: [a: QuestAct & { stars?: number }];
 }>();
 
@@ -30,8 +27,6 @@ interface MenuCard {
   tone: string;
   icon: any;
   stars?: number;
-  quest?: boolean;
-  questText?: string;
 }
 
 const cards = computed<MenuCard[]>(() => {
@@ -40,21 +35,15 @@ const cards = computed<MenuCard[]>(() => {
     { key: "learn", name: "学单词", desc: "看图听发音", tone: "orange", icon: BookOpen, stars: learnStars.value },
   ];
   for (const a of props.activities) {
-    if (["song", "learn", "quest"].includes(a.key)) continue;
+    if (["song", "learn"].includes(a.key)) continue;
     list.push({ key: a.key, name: a.name, tone: a.tone, icon: a.icon, stars: a.stars });
   }
-  list.push({
-    key: "quest", name: "闯关挑战", tone: "gold", icon: Swords, quest: true,
-    desc: props.questDone >= props.questTotal ? "已通关" : `${props.questTotal}关`,
-    questText: `${props.questDone}/${props.questTotal}`,
-  });
   return list;
 });
 
 function onClick(c: MenuCard) {
   if (c.key === "song") emit("openSong");
   else if (c.key === "learn") emit("openLearn");
-  else if (c.key === "quest") emit("openQuest");
   else emit("openActivity", props.activities.find((a) => a.key === c.key)!);
 }
 </script>
@@ -68,15 +57,14 @@ function onClick(c: MenuCard) {
         v-for="(c, i) in cards"
         :key="c.key"
         class="tile anim-fade-up"
-        :class="['tone-' + c.tone, { quest: c.quest }]"
-        :style="{ animationDelay: (i * 0.06) + 's', gridColumn: c.quest ? 'span 2' : 'span 1' }"
+        :class="['tone-' + c.tone]"
+        :style="{ animationDelay: (i * 0.06) + 's' }"
         @click="onClick(c)"
       >
         <component :is="c.icon" class="tile-ico" />
         <span class="tile-name">{{ c.name }}</span>
         <span v-if="c.desc" class="tile-desc">{{ c.desc }}</span>
         <span v-if="c.stars" class="tile-badge"><Star class="k-ico star-fill" />{{ c.stars }}</span>
-        <span v-if="c.questText" class="tile-badge quest-badge">{{ c.questText }}</span>
       </button>
     </div>
   </div>
@@ -157,17 +145,7 @@ function onClick(c: MenuCard) {
   align-items: center;
   gap: 2px;
 }
-.quest-badge { color: var(--gold); background: rgba(240, 180, 41, 0.15); }
-
-.tile.quest {
-  border: 3px solid var(--c-gold);
-}
-
-/* 手机横屏（tiny）：7 个入口在 390px 高里排 3 行会顶出视口。
- * 外层 #app 是 overflow:hidden（一屏装下、不滚动），所以第 3 行会被
- * 直接裁掉**且滚不动** —— 走查（scripts/layout-audit.mjs）在 844×390
- * 抓到"闯关挑战"整块只露出上半截、点不到。
- * 先把瓷片压扁让 3 行装得下；万一后续再加入口，允许内部滚动兜底 ——
+/* 手机横屏（tiny）：玩法入口在 390px 高里排不下时允许内部滚动兜底 ——
  * 宁可滚，不能藏。 */
 @media (max-height: 480px) {
   .menu {

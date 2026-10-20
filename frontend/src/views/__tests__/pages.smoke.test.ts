@@ -224,14 +224,13 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   it("课程页（菜单）", async () => {
     const w = await mountPage(LessonView, "/learn/l4");
     expect(w.find(".lesson").exists()).toBe(true);
-    // 菜单顺序 = activityKeys（song 打头）：童谣→学单词→听音→连线→跟读→亲子对话→闯关挑战
+    // 菜单顺序 = activityKeys（song 打头）：童谣→学单词→听音→连线→跟读→亲子对话
+    // 2026-10：闯关地图是默认落地页，卡片目录不再放"闯关挑战"入口
     const tiles = w.findAll(".tile").map((t) => t.text());
     expect(tiles[0]).toContain("学童谣");
     expect(tiles[1]).toContain("学单词");
     expect(tiles[2]).toContain("听音选图");
-    // 闯关入口的关数与地图同源（l4 共 6 个玩法关 + 宝箱）
-    expect(w.text()).toContain("闯关挑战");
-    expect(w.text()).toContain("6关");
+    expect(w.text()).not.toContain("闯关挑战");
   });
 
   it("玩法直达子路径 /learn/:id/:stage 能渲染（#/learn/l4/learn）", async () => {

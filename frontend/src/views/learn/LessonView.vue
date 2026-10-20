@@ -28,8 +28,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useViewport } from "../../composables/useViewport";
 import { useQuest, type QuestAct } from "../../composables/useQuest";
 import { useLessonFlow } from "../../composables/useLessonFlow";
-import { lessonDoneCount, lessonLevels } from "../../data/pathLevels";
-import { BookOpen, Headphones, Link2, Map as MapIcon, MessageCircle, Mic, Music, Star } from "@lucide/vue";
+import { BookOpen, Headphones, Link2, MessageCircle, Mic, Music } from "@lucide/vue";
 
 const progress = useProgressStore();
 const streak = useStreakStore();
@@ -151,22 +150,7 @@ function openLearn() {
   const learn = activities.value.find((a) => a.key === "learn");
   if (learn) { speakZh("学单词"); open(learn); }
 }
-/** 菜单：闯关挑战 */
-function startQuest() {
-  // 当前课游戏地图：只显示这一课的关卡
-  const id = route.params.id as string;
-  router.push(`/course/${id}/game`);
-}
 
-/** 闯关入口进度：与地图**同源**（本课玩法关 x/y，宝箱不计入）。
- * 旧口径是"activities 去掉 song/learn"= 4 关，但地图画的是整课 6 关（含童谣/学单词），
- * 入口徽章与进地图后看到的关卡数对不上。 */
-const mapTotal = computed(() =>
-  lesson.value ? lessonLevels(lesson.value).filter((l) => l.actKey !== "chest").length : 0
-);
-const mapDoneCount = computed(() =>
-  lesson.value ? lessonDoneCount(lesson.value.id, progress.progress, lesson.value) : 0
-);
 /** 点击顶栏课程名：朗读英文标题 */
 function sayTitle() {
   if (lesson.value) speak(lesson.value.title, { ttsOnly: true });
@@ -188,6 +172,7 @@ const playTotal = ref(0);
     <HeaderBar
       show-back
       :close="isPlay"
+      show-badges
       :back-label="questMode ? '返回闯关地图' : stage === 'menu' ? '返回地图' : '返回本课菜单'"
       @back="back"
     >
@@ -203,36 +188,19 @@ const playTotal = ref(0);
         />
         <template v-else
           ><span class="hdr-title-tap" role="button" tabindex="0" aria-label="朗读课程名" @click="sayTitle" @keydown.enter.prevent="sayTitle"
-            >{{ lesson.emoji }} {{ lesson.title }}</span
+            >{{ lesson.emoji }} {{ lesson.titleZh || lesson.title }}</span
           ></template
         >
       </template>
-      <template #right>
-        <div class="right-cluster">
-          <button
-            v-if="stage === 'menu' && !questMode"
-            class="icon-fab"
-            @click="startQuest"
-            aria-label="切换到闯关地图"
-            title="闯关地图"
-          >
-            <MapIcon :size="20" />
-          </button>
-          <div class="badge star-badge" role="img" aria-label="已获得星星"><Star class="k-ico star-fill" />{{ progress.lessonStars(lesson.id) }}</div>
-        </div>
-      </template>
     </HeaderBar>
 
-    <!-- 课时菜单：3 个大入口 -->
+    <!-- 课时菜单：玩法瓷片（家长陪练视角；闯关地图是默认落地页，这里不再放闯关入口） -->
     <LessonMenu
       v-if="stage === 'menu' && !questMode"
       :activities="menuActs"
       :progress="lessonProgress"
-      :quest-done="mapDoneCount"
-      :quest-total="mapTotal"
       @open-song="openSong"
       @open-learn="openLearn"
-      @open-quest="startQuest"
       @open-activity="openSound"
     />
 

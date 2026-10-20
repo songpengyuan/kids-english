@@ -49,12 +49,14 @@ function openMenu() {
 <template>
   <PageShell
     fill
-    :title="lesson?.titleZh || '游戏闯关'"
-    icon="game"
     show-badges
     back-label="返回"
     @back="goBack"
   >
+    <!-- 标题口径与卡片目录页一致：emoji + 中文名 -->
+    <template #title>
+      <span>{{ lesson?.emoji }} {{ lesson?.titleZh || '游戏闯关' }}</span>
+    </template>
     <!-- 右上角：切到学习卡片目录（低调书本图标，主要给家长用） -->
     <template #right>
       <button class="menu-fab" @click="openMenu" aria-label="学习卡片" title="学习卡片">
