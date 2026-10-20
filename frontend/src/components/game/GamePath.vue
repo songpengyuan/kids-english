@@ -45,7 +45,7 @@ import {
   type LevelState,
 } from "../../data/pathLevels";
 import { useProgressStore } from "../../stores/progress";
-import { speak } from "../../services/speech";
+import { speak, speakZh } from "../../services/speech";
 import { hapticTap } from "../../services/haptics";
 import { sfxWrong } from "../../services/effects";
 import PathIcon from "../PathIcon.vue";
@@ -343,6 +343,11 @@ function enterLevel(lv: PathLevel) {
   }
   hapticTap();
   if (lv.actKey === "chest") {
+    // 宝箱是一次性奖励：已领取过就不再开箱（防止重复刷贝壳）
+    if (st === "done") {
+      speakZh("已经开过啦");
+      return;
+    }
     chestLessonId.value = lv.lessonId;
     chestOpen.value = true;
     return;
@@ -471,9 +476,9 @@ function unitLesson(id: string) {
               @keydown.space.prevent="enterLevel((it as GeoItem).level!)"
             >
               <span class="lv-pulse" aria-hidden="true"></span>
-              <!-- 未学习只显示锁；宝箱关显示礼物；其余显示玩法图标 -->
-              <PathIcon v-if="(it as GeoItem).state === 'locked'" name="lock" class="lv-ico lv-ico-lock" />
-              <PathIcon v-else-if="(it as GeoItem).level!.actKey === 'chest'" name="chest" class="lv-ico lv-ico-chest" />
+              <!-- 宝箱关永远显示箱子图标（未解锁时整体置灰），其余未学习关显示锁 -->
+              <PathIcon v-if="(it as GeoItem).level!.actKey === 'chest'" name="chest" class="lv-ico lv-ico-chest" />
+              <PathIcon v-else-if="(it as GeoItem).state === 'locked'" name="lock" class="lv-ico lv-ico-lock" />
               <PathIcon v-else :name="(it as GeoItem).level!.actKey" class="lv-ico" />
               <span v-if="(it as GeoItem).stars && (it as GeoItem).level!.actKey !== 'chest'" class="lv-star" aria-hidden="true">★{{ (it as GeoItem).stars }}</span>
             </button>
@@ -614,13 +619,10 @@ function unitLesson(id: string) {
 .gp-unit.is-stuck::after {
   opacity: 0;
 }
-/* 本课地图只有一门课：分隔线不再拉通整宽（会横穿背景的太阳/月亮），
-   收成课程名下方一小段下划线；多课总地图仍保留整条线分隔课程。 */
-.game-path-scroll.is-single .gp-unit::after {
-  left: 50%;
-  right: auto;
-  width: 56px;
-  transform: translateX(-50%);
+/* 本课地图只有一门课：课名横幅不再渲染（顶栏已有中英文标题，内容区重复显示课名），
+   直接从第一关开始；多课总地图仍保留横幅分隔课程。 */
+.game-path-scroll.is-single .gp-unit {
+  display: none;
 }
 
 /* ---------- 已通关关卡：主色调跟随所属课程横幅（孩子一眼看出这组关卡属于哪门课） ---------- */
