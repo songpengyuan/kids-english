@@ -525,6 +525,7 @@ const rawLessons: RawLesson[] = [
       { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l11/words/frog.png" },
       { id: "cat", en: "cat", zh: "小猫", emoji: "🐱", image: "/lessons/l11/words/cat.png" },
       { id: "dog", en: "dog", zh: "小狗", emoji: "🐶", image: "/lessons/l11/words/dog.png" },
+      { id: "sheep", en: "sheep", zh: "绵羊", emoji: "🐑", image: "/lessons/l11/words/sheep.png" },
       { id: "goldfish", en: "goldfish", zh: "金鱼", emoji: "🐟", image: "/lessons/l11/words/goldfish.png" },
       { id: "brown", en: "brown", zh: "棕色", emoji: "🟤", image: "/lessons/l11/words/brown.png" }
     ],

@@ -1235,6 +1235,14 @@
         "audio": "/lessons/l11/audio/dog.mp3"
       },
       {
+        "id": "sheep",
+        "en": "sheep",
+        "zh": "绵羊",
+        "emoji": "🐑",
+        "image": "/lessons/l11/words/sheep.png",
+        "audio": "/lessons/l11/audio/sheep.mp3"
+      },
+      {
         "id": "goldfish",
         "en": "goldfish",
         "zh": "金鱼",
