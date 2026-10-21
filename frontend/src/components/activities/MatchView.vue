@@ -9,12 +9,23 @@ import { shuffleWith } from "../../utils/quizSession";
 import { BookOpenText, Link2, Volume2 } from "@lucide/vue";
 import SpeakWave from "../ui/SpeakWave.vue";
 
-const props = defineProps({ words: { type: Array, required: true } });
+const props = defineProps({
+  words: { type: Array, required: true },
+  /** 颜色配对（l11 Brown Bear）：传了就切到"左列颜色圆 ↔ 右列动物图"模式 */
+  colorPairs: { type: Array, default: () => null }
+});
 const emit = defineEmits(["done", "progress", "total", "page"]);
 
 const progress = useProgressStore();
 
 const { sizeTier, isNarrow } = useViewport();
+
+/** 颜色配对模式：左列颜色圆 ↔ 右列动物图（l11 Brown Bear） */
+const colorMode = computed(() => Array.isArray(props.colorPairs) && props.colorPairs.length > 0);
+const COLOR_HEX = {
+  red: "#e53935", yellow: "#fdd835", blue: "#1e88e5", green: "#43a047",
+  purple: "#8e24aa", white: "#f5f5f5", black: "#212121", brown: "#8d6e63"
+};
 
 /**
  * 两种练习方式（用户要求：不显示单词的形式也要有，两种切换着来）：
@@ -44,14 +55,23 @@ function setMode(m) {
  *  ⚠️ 分组必须**只在这些输入真变时重算**：buildMatchGroups 内含随机洗牌，
  *  若用 computed，任何无关重渲染都可能触发重算 → 游戏途中棋盘重洗、进度清零。 */
 const groupRange = computed(() => matchGroupRange(isNarrow.value, sizeTier.value));
+/** colorMode 时只对"有颜色配对的动物词"分组，其余词不参与 */
+const pairedWords = computed(() => {
+  if (!colorMode.value) return props.words;
+  const ids = new Set(props.colorPairs.map((p) => p.wordId));
+  return props.words.filter((w) => ids.has(w.id));
+});
 const groupKey = computed(
-  () => props.words.map((w) => w.id).join("|") + `@${groupRange.value.min}-${groupRange.value.max}`
+  () => pairedWords.value.map((w) => w.id).join("|") + `@${groupRange.value.min}-${groupRange.value.max}`
 );
-const groups = ref(buildMatchGroups(props.words, groupRange.value));
+const groups = ref(buildMatchGroups(pairedWords.value, groupRange.value));
 watch(groupKey, () => {
-  groups.value = buildMatchGroups(props.words, groupRange.value);
+  groups.value = buildMatchGroups(pairedWords.value, groupRange.value);
   groupIdx.value = 0;
 });
+
+/** colorMode：wordId → color */
+const colorOf = (wordId) => props.colorPairs?.find((p) => p.wordId === wordId)?.color;
 
 const groupIdx = ref(0);
 const curGroup = computed(() => groups.value[groupIdx.value] || []);
@@ -123,6 +143,15 @@ function scheduleMeasure() {
  * 才会从孩子出手的那张卡流向另一张，而不是反过来"倒着长"。
  */
 function matchedLine(wordId) {
+  // colorMode：两端都在 picEls，通过 pairMap 互查
+  if (colorMode.value) {
+    const other = pairMap[wordId];
+    if (!other) return null;
+    const a = liveCenter(picEls[wordId]);
+    const b = liveCenter(picEls[other]);
+    if (!a || !b) return null;
+    return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+  }
   const fromImg = (matchFrom[wordId] || "img") === "img";
   // 端点**实时测量**两张卡：快照坐标会随内容/字体加载漂移（实测 5~10px），
   // 漂移大时看起来就像线连到了别的卡
@@ -134,6 +163,8 @@ function matchedLine(wordId) {
 
 const matched = reactive(new Set()); // 当前组已配对 id
 const matchFrom = reactive({}); // id → 'img' | 'word'：该配对的起点侧（决定连线方向）
+/** colorMode：配对对互查（c-bird ↔ bird），两端都在 picEls 里 */
+const pairMap = reactive({});
 const dragging = ref(false);
 const startWord = ref(null);
 const startSide = ref("img"); // 起点所在侧：'img'（两侧图片）| 'word'（中间单词）
@@ -368,14 +399,18 @@ function tryMatch(other, otherSide) {
   pendingWord = null;
   pendingSide = null;
   if (!first) return;
-  if (first.id === other.id) {
+  // colorMode 时颜色圆.matchId === 动物.id；普通模式 first.id === other.id
+  const firstKey = first.matchId || first.id;
+  const otherKey = other.matchId || other.id;
+  if (firstKey === otherKey) {
     matched.add(first.id);
+    matched.add(other.id);
     matchFrom[first.id] = from;
+    pairMap[first.id] = other.id;
+    pairMap[other.id] = first.id;
     justMatched.value = first.id;
     sfxMatch();
     speak(other.en, { lessonId: other.lessonId, wordId: other.id });
-    // 撒花只在关卡完成时（useLessonFlow）触发，单次配对成功只用音效+触感反馈
-    // 单词掌握度：配对成功记一次正确（first/other 同 id，记一次）
     progress.recordWord(other.lessonId, other.id, { correct: 1 });
     setTimeout(() => (justMatched.value = null), 600);
   } else {
@@ -404,6 +439,7 @@ watch(groupDone, async (done) => {
 function setupGroup(g) {
   matched.clear();
   Object.keys(matchFrom).forEach((k) => delete matchFrom[k]); // 方向随配对一起重置
+  Object.keys(pairMap).forEach((k) => delete pairMap[k]); // colorMode 配对对随组重置
   // 坐标表必须随组清空：id 不跨组复用，但留着旧条目既是泄漏，
   // 也让"测量还没跑完就渲染的线"拿到上一组的错误坐标
   Object.keys(imgPos).forEach((k) => delete imgPos[k]);
@@ -416,11 +452,22 @@ function setupGroup(g) {
   pendingWord = null;
   pendingSide = null;
   ready.value = false;
-  // 两列布局：左列全部图片，右列全部单词/声音（中间连线空间更大）
-  const imgs = shuffleWith(g);
-  leftImgs.value = imgs;
-  rightImgs.value = [];
-  midWords.value = shuffleWith(g);
+  if (colorMode.value) {
+    // 颜色配对：左列颜色圆（伪对象），右列动物图，无中间单词列
+    const shuffled = shuffleWith(g);
+    leftImgs.value = shuffled.map((w) => ({
+      id: `c-${w.id}`, en: colorOf(w.id), matchId: w.id,
+      color: colorOf(w.id), lessonId: w.lessonId
+    }));
+    rightImgs.value = shuffled;
+    midWords.value = [];
+  } else {
+    // 两列布局：左列全部图片，右列全部单词/声音（中间连线空间更大）
+    const imgs = shuffleWith(g);
+    leftImgs.value = imgs;
+    rightImgs.value = [];
+    midWords.value = shuffleWith(g);
+  }
   transitioning.value = false;
 }
 
@@ -462,11 +509,12 @@ onBeforeUnmount(() => {
     <div class="head">
       <p class="tip">
         <Link2 class="k-ico tip-ico" />
-        <template v-if="mode === 'word'">图片和单词连起来，从哪边开始都行</template>
+        <template v-if="colorMode">把颜色和对应的小动物连起来</template>
+        <template v-else-if="mode === 'word'">图片和单词连起来，从哪边开始都行</template>
         <template v-else>点声音听一听，再连到对应的图片</template>
       </p>
-      <!-- 练习方式切换：认字（显示单词）/ 听力（只显示声音） -->
-      <div class="mode-switch" role="group" aria-label="练习方式">
+      <!-- 练习方式切换：认字（显示单词）/ 听力（只显示声音）；颜色配对模式隐藏 -->
+      <div v-if="!colorMode" class="mode-switch" role="group" aria-label="练习方式">
         <button
           class="mode-btn"
           :class="{ on: mode === 'word' }"
@@ -557,15 +605,24 @@ onBeforeUnmount(() => {
           }"
           @pointerdown="onCardDown(w, 'img', $event)"
         >
-          <img
-            :src="w.image"
-            :alt="w.en"
-            @error="
-              $event.target.style.display = 'none';
-              $event.target.nextElementSibling.style.display = 'flex';
-            "
+          <!-- 颜色配对模式：左列渲染纯色圆 -->
+          <span
+            v-if="w.color"
+            class="color-dot"
+            :style="{ background: COLOR_HEX[w.color] || '#ccc' }"
+            :aria-label="w.en"
           />
-          <span class="ph" style="display: none">{{ w.emoji }}</span>
+          <template v-else>
+            <img
+              :src="w.image"
+              :alt="w.en"
+              @error="
+                $event.target.style.display = 'none';
+                $event.target.nextElementSibling.style.display = 'flex';
+              "
+            />
+            <span class="ph" style="display: none">{{ w.emoji }}</span>
+          </template>
         </div>
       </div>
 
@@ -691,6 +748,15 @@ onBeforeUnmount(() => {
   width: 62%;
   height: 62%;
   object-fit: contain;
+  pointer-events: none;
+}
+/* 颜色配对：纯色圆，带细边框（白色/浅色圆需要描边才能看清） */
+.color-dot {
+  width: 58%;
+  height: 58%;
+  border-radius: 50%;
+  border: 3px solid var(--line, rgba(0,0,0,0.12));
+  box-shadow: inset 0 -4px 8px rgba(0,0,0,0.12);
   pointer-events: none;
 }
 .cell.pic .ph {

@@ -71,6 +71,8 @@ export interface RawLesson {
   song: RawLessonSong;
   words: RawLessonWord[];
   phrases?: { en: string; zh: string }[];
+  /** 颜色配对（l11 Brown Bear）：左列颜色圆 ↔ 右列动物图，练"什么颜色配什么动物" */
+  colorPairs?: { color: string; wordId: string }[];
 }
 
 /** 单词（映射后：补课时归属 + 资源路径化） */
@@ -113,6 +115,8 @@ export interface Lesson {
   song: LessonSong;
   words: Word[];
   phrases: Phrase[];
+  /** 颜色配对（l11）：左列颜色圆 ↔ 右列动物图 */
+  colorPairs?: { color: string; wordId: string }[];
 }
 
 
@@ -535,6 +539,17 @@ const rawLessons: RawLesson[] = [
       { en: "It's brown.", zh: "是棕色。" },
       { en: "What animal is it?", zh: "这是什么动物？" },
       { en: "It's a bear.", zh: "是一只棕熊。" }
+    ],
+    /* 绘本颜色-动物配对：red bird / yellow duck / blue horse / green frog /
+       purple cat / white dog / black sheep（连一连关卡用，练"什么颜色配什么动物"） */
+    colorPairs: [
+      { color: "red", wordId: "bird" },
+      { color: "yellow", wordId: "duck" },
+      { color: "blue", wordId: "horse" },
+      { color: "green", wordId: "frog" },
+      { color: "purple", wordId: "cat" },
+      { color: "white", wordId: "dog" },
+      { color: "black", wordId: "sheep" }
     ]
   },
   {

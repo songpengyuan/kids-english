@@ -236,6 +236,7 @@ const playTotal = ref(0);
       v-else-if="stage === 'quiz' || stage === 'match' || stage === 'speak'"
       :is="stage === 'quiz' ? QuizView : stage === 'match' ? MatchView : SpeakView"
       :words="lesson.words"
+      :color-pairs="lesson.colorPairs"
       @done="afterGame"
       @progress="playPct = $event"
       @total="playTotal = $event"
