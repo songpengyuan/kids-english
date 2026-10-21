@@ -51,6 +51,16 @@ import type { ListenSubTab } from "../../types";
 const player = usePlayerStore();
 const progStore = useProgressStore();
 
+/* ---------- 播放模式：单按钮三档循环（随机 → 列表循环 → 单曲循环 → 随机） ---------- */
+const modeIcon = computed(() => {
+  if (player.shuffleOn) return Shuffle;
+  return player.repeatMode === "one" ? Repeat1 : Repeat;
+});
+const modeLabel = computed(() => {
+  if (player.shuffleOn) return "随机";
+  return player.repeatMode === "one" ? "单曲循环" : "列表循环";
+});
+
 /* ---------- 播放页的歌词（卡拉 OK，整篇可滚动） ---------- */
 
 /** 当前唱到第几行（0 起；-1 = 这首没有歌词） */
@@ -202,20 +212,13 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 播放模式：随机 + 循环三档（顺序播放 → 列表循环 → 单曲循环）。
-             带中文标注而不是纯图标：孩子/家长都不用猜"这个圈圈箭头现在是哪种"。
-             两者互斥（单曲循环 + 随机同亮 = 点了没反应），互斥规则在 store 里。 -->
+        <!-- 播放模式：单按钮三档循环（随机 → 列表循环 → 单曲循环 → 随机）。
+             原来两个并排按钮（随机/循环）有互斥关系，孩子/家长容易点出"两个都亮"的死状态；
+             合并成一个后点一下切下一档，图标+文字即时反馈当前是哪种。 -->
         <div class="pl-modes">
-          <button class="pl-mode" :class="{ on: player.shuffleOn }"
-            :aria-pressed="player.shuffleOn" aria-label="随机播放" @click="player.toggleShuffle()">
-            <Shuffle class="k-ico" />
-            <span class="pl-mode-label">随机</span>
-          </button>
-          <button class="pl-mode" :class="{ on: player.repeatMode !== 'off' }"
-            :aria-label="player.repeatLabel" @click="player.toggleRepeat()">
-            <Repeat1 v-if="player.repeatMode === 'one'" class="k-ico" />
-            <Repeat v-else class="k-ico" />
-            <span class="pl-mode-label">{{ player.repeatLabel }}</span>
+          <button class="pl-mode on" :aria-label="`播放模式：${modeLabel}，点击切换`" @click="player.cycleMode()">
+            <component :is="modeIcon" class="k-ico" />
+            <span class="pl-mode-label">{{ modeLabel }}</span>
           </button>
         </div>
 

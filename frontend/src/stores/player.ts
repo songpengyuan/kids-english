@@ -240,6 +240,21 @@ export const usePlayerStore = defineStore("player", () => {
     shuffleOn.value = on;
   }
 
+  /** 三档循环：随机 → 列表循环 → 单曲循环 → 随机。
+   *  界面上合并成一个按钮，点击切下一档（孩子/家长不用猜两个按钮的互斥关系）。 */
+  function cycleMode() {
+    if (shuffleOn.value) {
+      shuffleOn.value = false;
+      repeatMode.value = "all";
+    } else if (repeatMode.value === "one") {
+      repeatMode.value = "all";
+      shuffleOn.value = true;
+    } else {
+      // all（或 off）→ 单曲循环
+      repeatMode.value = "one";
+    }
+  }
+
   function seek(e: Event) {
     const el = e.target as HTMLInputElement;
     if (el) audio.currentTime = (Number(el.value) / 100) * (audio.duration || 0);
@@ -273,6 +288,7 @@ export const usePlayerStore = defineStore("player", () => {
     prev,
     toggleRepeat,
     toggleShuffle,
+    cycleMode,
     seek,
     formatTime,
     settle,
