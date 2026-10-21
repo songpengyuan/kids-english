@@ -113,8 +113,13 @@ const geo = computed<GeoItem[]>(() => {
 
 /* ---------- 宽度响应式布局（ResizeObserver：容器宽变化才重算 S 形 x） ---------- */
 const stageEl = ref<HTMLDivElement | null>(null);
+const canvasEl = ref<HTMLDivElement | null>(null);
 const w = ref(320);
 let ro: ResizeObserver | null = null;
+
+/** 相邻同课节点之间的路径连线（贝塞尔曲线 d 字符串数组）。
+ *  绝对定位覆盖在 .gp-canvas 上，测量真实 DOM 按钮中心绘制，不参与文档流。 */
+const linkPaths = ref<string[]>([]);
 
 /** 按课预计算 S 形等距节点 x（纯函数 snakeNodes，TDD 基线）；
  *  文档流布局下垂直间距由 CSS margin 控制（ROW_H），y 仅作曲线采样参数 */
@@ -156,6 +161,39 @@ function measure() {
   const el = stageEl.value;
   if (!el) return;
   w.value = el.clientWidth || 320;
+  measureLinks();
+}
+
+/** 测量所有关卡按钮中心，在同课相邻节点之间画贝塞尔曲线（"沿着小路走"）。
+ *  跨课不连（unit 横幅分隔）；单课地图全连。 */
+function measureLinks() {
+  const canvas = canvasEl.value;
+  if (!canvas) return;
+  const wraps = Array.from(canvas.querySelectorAll<HTMLElement>(".lv-wrap"));
+  if (wraps.length < 2) {
+    linkPaths.value = [];
+    return;
+  }
+  const cRect = canvas.getBoundingClientRect();
+  const pts = wraps.map((wrap) => {
+    const btn = wrap.querySelector<HTMLElement>(".gp-level");
+    const r = (btn ?? wrap).getBoundingClientRect();
+    return {
+      x: r.left - cRect.left + r.width / 2,
+      y: r.top - cRect.top + r.height / 2,
+      lessonId: wrap.dataset.lessonId || "",
+    };
+  });
+  const ds: string[] = [];
+  for (let i = 1; i < pts.length; i++) {
+    // 跨课不连（lessonId 前缀变了）
+    if (pts[i].lessonId !== pts[i - 1].lessonId) continue;
+    const p0 = pts[i - 1];
+    const p1 = pts[i];
+    const my = (p0.y + p1.y) / 2;
+    ds.push(`M ${p0.x} ${p0.y} C ${p0.x} ${my}, ${p1.x} ${my}, ${p1.x} ${p1.y}`);
+  }
+  linkPaths.value = ds;
 }
 function scheduleMeasure() {
   // 等容器定宽后量一次（含 KeepAlive 恢复）
@@ -417,7 +455,11 @@ function unitLesson(id: string) {
   <div ref="stageEl" class="game-path-scroll" :class="{ 'is-single': !!lesson }">
     <div class="game-path anim-fade-up">
       <!-- 蛇形路径（文档流：课名横幅全宽；关卡节点默认居中，translateX 左右摆动成 S 形） -->
-      <div class="gp-canvas">
+      <div ref="canvasEl" class="gp-canvas">
+      <!-- 路径连线层：绝对定位，同课相邻节点之间的贝塞尔小路 -->
+      <svg class="lv-links" aria-hidden="true">
+        <path v-for="(d, i) in linkPaths" :key="i" :d="d" />
+      </svg>
       <!-- 按几何顺序交替渲染：课横幅 → 关卡 → 课横幅 → 关卡（文档流保持真实阅读顺序） -->
       <template v-for="(it, i) in layout" :key="it.type === 'unit' ? 'u-' + it.lessonId : 'l-' + (it as GeoItem).level!.id">
         <!-- 课程横幅（文档流全宽块） -->
@@ -441,9 +483,10 @@ function unitLesson(id: string) {
         <div
           v-else
           class="lv-wrap"
-          :class="[states[(it as GeoItem).level!.id], { flash: flashIds.has((it as GeoItem).level!.id), chest: (it as GeoItem).level!.actKey === 'chest', shake: shakeIds.has((it as GeoItem).level!.id) }, 'tone-' + (unitLesson((it as GeoItem).level!.lessonId)?.tone || 'blue')]"
+          :class="[states[(it as GeoItem).level!.id], { flash: flashIds.has((it as GeoItem).level!.id), chest: (it as GeoItem).level!.actKey === 'chest', shake: shakeIds.has((it as GeoItem).level!.id) }, 'tone-' + (unitLesson((it as GeoItem).level!.lessonId)?.tone || 'blue'), dxOf(it as GeoItem) < -80 ? 'guide-left' : dxOf(it as GeoItem) > 80 ? 'guide-right' : 'guide-center']"
           :style="{ '--dx': dxOf(it as GeoItem) + 'px', '--gap-above': ((it as GeoItem).marginTop ?? 0) + 'px' }"
           :data-lv-id="(it as GeoItem).level!.id"
+          :data-lesson-id="(it as GeoItem).level!.lessonId"
         >
           <!-- 关卡进度环：6 段断开圆弧（每颗星 = 2 段），**只有该关有进度时才显示**
                （挂 lv-wrap 层：wrap 无边框，绝对定位恒定与按钮同心） -->
@@ -476,6 +519,8 @@ function unitLesson(id: string) {
               @keydown.space.prevent="enterLevel((it as GeoItem).level!)"
             >
               <span class="lv-pulse" aria-hidden="true"></span>
+              <!-- 关卡序号：左上角白色小圆底（宝箱是奖励关不编号） -->
+              <span v-if="(it as GeoItem).level!.actKey !== 'chest'" class="lv-no">{{ (it as GeoItem).level!.no }}</span>
               <!-- 宝箱关永远显示箱子图标（未解锁时整体置灰），其余未学习关显示锁 -->
               <PathIcon v-if="(it as GeoItem).level!.actKey === 'chest'" name="chest" class="lv-ico lv-ico-chest" />
               <PathIcon v-else-if="(it as GeoItem).state === 'locked'" name="lock" class="lv-ico lv-ico-lock" />
@@ -528,8 +573,25 @@ function unitLesson(id: string) {
   }
 }
 .gp-canvas {
+  position: relative;
   width: 100%;
   padding-top: 16px; /* TOP：首横幅上方留白 */
+}
+/* 路径连线层：铺满 canvas，同课相邻节点之间的贝塞尔小路 */
+.lv-links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+.lv-links path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ink-soft) 22%, transparent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 1 10;
 }
 /* ---------- 课程横幅 ---------- */
 .gp-unit {
@@ -656,9 +718,8 @@ function unitLesson(id: string) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* 按钮 → 关卡名的间距（与 utils/pathGeometry 的 LABEL_GAP 保持一致）：
-     18px 保证关卡名不会被本关自己的进度环（向下外扩 17px）压到 */
-  gap: 18px;
+  /* 按钮 → 关卡名的间距：22px 保证关卡名不被进度环（向下外扩 14px）压到 */
+  gap: 22px;
   transform: translateX(var(--dx, 0px)); /* 相对居中的左右摆动 */
   transition: transform var(--dur-base) var(--ease-out);
   /* ★ 覆盖全局 .tone-* 卡片规则（base.css 会给带 tone-* 类的元素整块着色+贴纸边）：
@@ -711,6 +772,23 @@ function unitLesson(id: string) {
   color: var(--ink-faint);
   pointer-events: none;
 }
+/* 关卡序号：左上角白色小圆底，孩子一眼可数"这是第几个" */
+.lv-no {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: var(--fw-strong);
+  line-height: 19px;
+  text-align: center;
+  pointer-events: none;
+}
 /* 说明：原来右下角还有个 ✓ 角标表示"已通关"，但进度环已在表达同一件事
  * （有环 = 做过的关卡），两个标记重复 → 2026-09-27 去掉，节点更干净。 */
 .lv-star {
@@ -753,9 +831,9 @@ function unitLesson(id: string) {
 
 .lv-name {
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.2;
-  font-weight: var(--fw-mid);
+  font-weight: var(--fw-strong);
   color: var(--ink-soft);
   pointer-events: none;
 }
@@ -763,8 +841,14 @@ function unitLesson(id: string) {
 /* 状态样式（状态类挂在 lv-wrap 上） */
 .lv-wrap.done .lv-ico { color: var(--gold); }
 .lv-wrap.done .lv-tag { border-color: var(--gold); }
-.lv-wrap.active .gp-level { border: 4px solid var(--c-blue); }
-.lv-wrap.active .lv-ico { color: var(--c-blue); }
+/* 当前可玩关：高饱和黄色填充 + 深黄底座，与已通关（课程色）形成最强对比，
+   孩子一眼锁定"这个就是下一个要玩的"。深色端/图标色直接用 gold 系 token。 */
+.lv-wrap.active .gp-level {
+  --face: linear-gradient(180deg, var(--yellow), var(--c-gold-deep));
+  --base: rgba(180, 120, 0, 0.5);
+}
+.lv-wrap.active .lv-ico { color: var(--on-gold); }
+.lv-wrap.active .lv-no { background: var(--on-gold); color: var(--yellow); }
 /* 锁定关卡：只显示锁、整体置灰（灰圆面 + 灰投影 + 灰锁），不掺任何主题色 */
 .lv-wrap.locked .gp-level {
   --face: var(--path-face-locked);
@@ -868,6 +952,18 @@ function unitLesson(id: string) {
   --face: var(--chest-cube);
   --base: rgba(176, 120, 0, 0.42);
 }
+/* 宝箱即使 locked 也保留淡金轮廓（不是纯灰），让孩子预期"打完前面有个金箱子" */
+.lv-wrap.locked.chest .gp-level {
+  --face: color-mix(in srgb, var(--chest-cube) 45%, var(--path-face-locked));
+  --base: rgba(176, 120, 0, 0.25);
+  box-shadow:
+    0 var(--depth) 0 var(--base),
+    0 calc(var(--depth) + 5px) 14px rgba(0, 0, 0, 0.12),
+    0 0 0 3px color-mix(in srgb, var(--chest-cube) 40%, transparent);
+}
+.lv-wrap.locked.chest .lv-ico-chest {
+  color: color-mix(in srgb, var(--chest-ink) 60%, transparent);
+}
 .lv-wrap.chest .lv-ico-chest {
   width: 34px;
   height: 34px;
@@ -889,12 +985,11 @@ function unitLesson(id: string) {
   stroke: rgba(210, 210, 210, 0.14);
 }
 
-/* active 关卡引导标签：黄色胶囊 + 下指箭头，上下弹跳提示"从这里开始" */
+/* active 关卡引导标签：黄色胶囊 + 下指箭头，上下弹跳提示"从这里开始"。
+   位置根据节点在 S 形中的摆动方向智能偏移：偏左的节点放右边、偏右的放左边，
+   避免胶囊压到上一个节点。 */
 .lv-guide {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(100% + 14px);
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -909,6 +1004,28 @@ function unitLesson(id: string) {
   white-space: nowrap;
   pointer-events: none;
   animation: guide-bob 1.4s ease-in-out infinite;
+}
+.lv-wrap.guide-center .lv-guide {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(100% + 14px);
+  animation: guide-bob-center 1.4s ease-in-out infinite;
+}
+.lv-wrap.guide-left .lv-guide {
+  left: calc(100% + 6px);
+  bottom: 30%;
+}
+.lv-wrap.guide-right .lv-guide {
+  right: calc(100% + 6px);
+  bottom: 30%;
+}
+@keyframes guide-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes guide-bob-center {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-6px); }
 }
 .guide-chev {
   width: 11px;
