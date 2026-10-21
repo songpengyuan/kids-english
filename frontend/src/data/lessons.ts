@@ -754,7 +754,7 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
  * 结果同一课出现两条“关卡顺序”，地图的「从这里开始」与下一关推进对不上。
  */
 export function activityKeys(lesson: Pick<Lesson, "phrases">): string[] {
-  const base = ["song", "learn", "quiz", "match", "speak"];
+  const base = ["song", "learn", "quiz", "memory", "match", "speak"];
   if (lesson.phrases?.length) base.push("talk");
   return base;
 }

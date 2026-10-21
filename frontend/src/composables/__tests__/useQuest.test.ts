@@ -86,7 +86,7 @@ describe("useQuest 作用域", () => {
 
   it("本课最后一个玩法（talk）之后没有下一关（不会跨到下一课）", async () => {
     const talk = await boot("/game/quest/l4?step=talk");
-    expect(talk.bootFromQuery()).toBe(5);
+    expect(talk.bootFromQuery()).toBe(6);
     expect(talk.nextLevel.value).toBeNull();
   });
 });
