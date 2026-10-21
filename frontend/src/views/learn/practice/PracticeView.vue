@@ -129,12 +129,12 @@ function enter(l: Lesson) {
 /* 大 emoji 作为背景装饰 */
 .card-emoji {
   position: absolute;
-  right: -8px;
-  top: 10%;
-  font-size: var(--fs-emoji-xl);
+  right: 4%;
+  top: 8%;
+  font-size: clamp(80px, 18vw, 130px);
   line-height: 1;
-  opacity: 0.9;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+  opacity: 0.95;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2));
 }
 .card-text {
   position: relative;
