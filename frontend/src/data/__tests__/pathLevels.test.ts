@@ -205,9 +205,9 @@ describe("nextLevelAfter（总地图：玩法→玩法，跳过宝箱关）", ()
     expect(n?.id).toBe("l4-song");
   });
 
-  it("l10-talk 后跳过 chest 直达 l6-song（丛林后接彩虹）", () => {
+  it("l10-talk 后跳过 chest 直达 l11-song（丛林后接棕熊）", () => {
     const n = nextLevelAfter("l10-talk", LEVELS);
-    expect(n?.id).toBe("l6-song");
+    expect(n?.id).toBe("l11-song");
   });
 
   it("最后一课最后一个玩法后无下一关", () => {

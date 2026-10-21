@@ -1138,5 +1138,140 @@
         "audio": "/lessons/l10/audio/ph-5.mp3"
       }
     ]
+  },
+  {
+    "id": "l11",
+    "order": "11",
+    "title": "Brown Bear, Brown Bear",
+    "titleZh": "棕熊你看到了什么",
+    "emoji": "🐻",
+    "tone": "orange",
+    "type": "official",
+    "date": "2026-10-21",
+    "stageStyle": "cards",
+    "song": {
+      "audio": "/lessons/l11/song.mp3",
+      "video": "/lessons/l11/song.mp4",
+      "scene": "stage",
+      "lyrics": [
+        "Brown bear, brown bear, what do you see?",
+        "I see a red bird looking at me.",
+        "Red bird, red bird, what do you see?",
+        "I see a yellow duck looking at me.",
+        "Yellow duck, yellow duck, what do you see?",
+        "I see a blue horse looking at me.",
+        "Blue horse, blue horse, what do you see?",
+        "I see a green frog looking at me.",
+        "Green frog, green frog, what do you see?",
+        "I see a purple cat looking at me.",
+        "Purple cat, purple cat, what do you see?",
+        "I see a white dog looking at me.",
+        "White dog, white dog, what do you see?",
+        "I see a black sheep looking at me.",
+        "Black sheep, black sheep, what do you see?",
+        "I see a goldfish looking at me.",
+        "Goldfish, goldfish, what do you see?",
+        "I see a teacher looking at me.",
+        "Teacher, teacher, what do you see?",
+        "I see children looking at me."
+      ],
+      "timings": null
+    },
+    "words": [
+      {
+        "id": "bear",
+        "en": "bear",
+        "zh": "棕熊",
+        "emoji": "🐻",
+        "image": "/lessons/l11/words/bear.png",
+        "audio": "/lessons/l11/audio/bear.mp3"
+      },
+      {
+        "id": "bird",
+        "en": "bird",
+        "zh": "小鸟",
+        "emoji": "🐦",
+        "image": "/lessons/l11/words/bird.png",
+        "audio": "/lessons/l11/audio/bird.mp3"
+      },
+      {
+        "id": "duck",
+        "en": "duck",
+        "zh": "鸭子",
+        "emoji": "🦆",
+        "image": "/lessons/l11/words/duck.png",
+        "audio": "/lessons/l11/audio/duck.mp3"
+      },
+      {
+        "id": "horse",
+        "en": "horse",
+        "zh": "小马",
+        "emoji": "🐎",
+        "image": "/lessons/l11/words/horse.png",
+        "audio": "/lessons/l11/audio/horse.mp3"
+      },
+      {
+        "id": "frog",
+        "en": "frog",
+        "zh": "青蛙",
+        "emoji": "🐸",
+        "image": "/lessons/l11/words/frog.png",
+        "audio": "/lessons/l11/audio/frog.mp3"
+      },
+      {
+        "id": "cat",
+        "en": "cat",
+        "zh": "小猫",
+        "emoji": "🐱",
+        "image": "/lessons/l11/words/cat.png",
+        "audio": "/lessons/l11/audio/cat.mp3"
+      },
+      {
+        "id": "dog",
+        "en": "dog",
+        "zh": "小狗",
+        "emoji": "🐶",
+        "image": "/lessons/l11/words/dog.png",
+        "audio": "/lessons/l11/audio/dog.mp3"
+      },
+      {
+        "id": "goldfish",
+        "en": "goldfish",
+        "zh": "金鱼",
+        "emoji": "🐟",
+        "image": "/lessons/l11/words/goldfish.png",
+        "audio": "/lessons/l11/audio/goldfish.mp3"
+      },
+      {
+        "id": "brown",
+        "en": "brown",
+        "zh": "棕色",
+        "emoji": "🟤",
+        "image": "/lessons/l11/words/brown.png",
+        "audio": "/lessons/l11/audio/brown.mp3"
+      }
+    ],
+    "phrases": [
+      {
+        "en": "What color is it?",
+        "zh": "这是什么颜色？",
+        "audio": "/lessons/l11/audio/ph-1.mp3"
+      },
+      {
+        "en": "It's brown.",
+        "zh": "是棕色。",
+        "audio": "/lessons/l11/audio/ph-2.mp3"
+      },
+      {
+        "en": "What animal is it?",
+        "zh": "这是什么动物？",
+        "audio": "/lessons/l11/audio/ph-3.mp3"
+      },
+      {
+        "en": "It's a bear.",
+        "zh": "是一只棕熊。",
+        "audio": "/lessons/l11/audio/ph-4.mp3"
+      }
+    ]
   }
 ]

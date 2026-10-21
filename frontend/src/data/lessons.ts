@@ -480,6 +480,63 @@ const rawLessons: RawLesson[] = [
     ]
   },
   {
+    id: "l11",
+    title: "Brown Bear, Brown Bear",
+    titleZh: "棕熊你看到了什么",
+    emoji: "🐻",
+    tone: "orange",
+    date: "2026-10-21",
+    song: {
+      audio: "/lessons/l11/song.mp3",
+      video: "/lessons/l11/song.mp4",
+      scene: "stage",
+      /* 老师课堂绘本（2026-10-21）：一问一答重复句式，颜色+动物递进。
+       * 歌词按绘本原句逐行，音频缺失时回退浏览器 TTS。 */
+      lyrics: [
+        "Brown bear, brown bear, what do you see?",
+        "I see a red bird looking at me.",
+        "Red bird, red bird, what do you see?",
+        "I see a yellow duck looking at me.",
+        "Yellow duck, yellow duck, what do you see?",
+        "I see a blue horse looking at me.",
+        "Blue horse, blue horse, what do you see?",
+        "I see a green frog looking at me.",
+        "Green frog, green frog, what do you see?",
+        "I see a purple cat looking at me.",
+        "Purple cat, purple cat, what do you see?",
+        "I see a white dog looking at me.",
+        "White dog, white dog, what do you see?",
+        "I see a black sheep looking at me.",
+        "Black sheep, black sheep, what do you see?",
+        "I see a goldfish looking at me.",
+        "Goldfish, goldfish, what do you see?",
+        "I see a teacher looking at me.",
+        "Teacher, teacher, what do you see?",
+        "I see children looking at me."
+      ]
+    },
+    words: [
+      /* 老师词表（2026-10-21）：绘本核心 8 动物 + 新词色 brown；
+       * 图片老师未提供，缺失自动回退 emoji */
+      { id: "bear", en: "bear", zh: "棕熊", emoji: "🐻", image: "/lessons/l11/words/bear.png" },
+      { id: "bird", en: "bird", zh: "小鸟", emoji: "🐦", image: "/lessons/l11/words/bird.png" },
+      { id: "duck", en: "duck", zh: "鸭子", emoji: "🦆", image: "/lessons/l11/words/duck.png" },
+      { id: "horse", en: "horse", zh: "小马", emoji: "🐎", image: "/lessons/l11/words/horse.png" },
+      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l11/words/frog.png" },
+      { id: "cat", en: "cat", zh: "小猫", emoji: "🐱", image: "/lessons/l11/words/cat.png" },
+      { id: "dog", en: "dog", zh: "小狗", emoji: "🐶", image: "/lessons/l11/words/dog.png" },
+      { id: "goldfish", en: "goldfish", zh: "金鱼", emoji: "🐟", image: "/lessons/l11/words/goldfish.png" },
+      { id: "brown", en: "brown", zh: "棕色", emoji: "🟤", image: "/lessons/l11/words/brown.png" }
+    ],
+    phrases: [
+      /* 老师亲子口语模板：问颜色 / 问动物 */
+      { en: "What color is it?", zh: "这是什么颜色？" },
+      { en: "It's brown.", zh: "是棕色。" },
+      { en: "What animal is it?", zh: "这是什么动物？" },
+      { en: "It's a bear.", zh: "是一只棕熊。" }
+    ]
+  },
+  {
     id: "l6",
     title: "A Rainbow of Colors",
     titleZh: "彩虹颜色歌",
