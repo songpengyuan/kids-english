@@ -287,7 +287,7 @@
   --fs-small: clamp(11px, min(1.7vh, 1.4vw), 15px);
   --fs-btn: clamp(16px, min(2.6vh, 2.1vw), 23px);
   /* 大号 emoji / 表情图标 */
-  --fs-emoji-hero: clamp(64px, min(19vh, 40vw), 168px); /* 播放页封面：整页的主角 */
+  --fs-emoji-hero: clamp(56px, min(14vh, 32vw), 168px); /* 播放页封面：手机竖屏收小一档，不抢歌词/播放器空间 */
   --fs-emoji-xl: clamp(38px, min(9vh, 7vw), 74px);
   --fs-emoji-l: clamp(28px, min(6vh, 5vw), 48px);
 
