@@ -25,7 +25,7 @@ const videoEl = ref(null);
  *  配了词群的课（l11）按当前群过滤：Colors 只放颜色歌、Animals 只放 Brown Bear。 */
 const allTracks = computed(() => {
   const first = {
-    title: props.lesson.title,
+    title: props.lesson.song.title || props.lesson.title,
     audio: props.lesson.song.audio,
     video: props.lesson.song.video,
     lyrics: props.lesson.song.lyrics,

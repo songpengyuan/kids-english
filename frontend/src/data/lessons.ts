@@ -54,6 +54,8 @@ export interface SongTrack {
   group?: string;
 }
 export interface RawLessonSong {
+  /** 第一轨歌曲名（可选；缺省时磨耳朵列表用课程名） */
+  title?: string;
   audio?: string | null;
   video?: string | null;
   scene?: string;
@@ -111,6 +113,8 @@ export interface Phrase {
   audio: string;
 }
 export interface LessonSong {
+  /** 第一轨歌曲名（可选；缺省时磨耳朵列表用课程名） */
+  title?: string;
   audio: string | null;
   video: string | null;
   scene: string;
@@ -516,6 +520,7 @@ const rawLessons: RawLesson[] = [
     tone: "orange",
     date: "2026-10-21",
     song: {
+      title: "Brown Bear Song",
       /* 两首歌按词群拆开：第一轨 = Brown Bear 动物歌（课堂演唱版），
        * 第二轨 = Colors Song 颜色歌（ELF 彩色圆点动画）。
        * 学童谣页顶部「Colors / Animals」切换时只放对应那一轨。 */
@@ -770,6 +775,7 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
   // 缺失时兜底成蓝色，避免 class 变成 tone-undefined 导致卡片没有底色
   tone: lesson.tone || "blue",
   song: {
+    title: lesson.song.title,
     audio: asset(lesson.song.audio),
     video: lesson.song.video ? asset(lesson.song.video) : null,
     scene: lesson.song.scene || "stage",

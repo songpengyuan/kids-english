@@ -128,10 +128,11 @@ const videoList = computed(() =>
   lessons
     .filter((l) => !["l6", "l7", "l8"].includes(l.id))
     .flatMap((l) => {
+      // l.song.video / t.video 在 normalize 时已 asset 补 BASE，直接用，不要再 asset
       const first = l.song.video
         ? [{
-            id: l.id, title: l.title, titleZh: l.titleZh, emoji: l.emoji,
-            tone: l.tone ?? "blue", src: asset(l.song.video)!,
+            id: l.id, title: l.song.title || l.title, titleZh: l.titleZh, emoji: l.emoji,
+            tone: l.tone ?? "blue", src: l.song.video,
           }]
         : [];
       const extras = (l.song.tracks || [])
@@ -140,7 +141,7 @@ const videoList = computed(() =>
           id: `${l.id}-t${i + 2}`,
           title: t.title,
           titleZh: l.titleZh, emoji: l.emoji,
-          tone: l.tone ?? "blue", src: asset(t.video)!,
+          tone: l.tone ?? "blue", src: t.video!,
         }));
       return [...first, ...extras];
     })
