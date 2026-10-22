@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onBeforeUnmount } from "vue";
+import { ref, computed, onBeforeUnmount, watch } from "vue";
 import { bigCelebrate } from "../../services/effects";
 import { hapticTap } from "../../services/haptics";
 import { useProgressStore } from "../../stores/progress";
@@ -9,7 +9,11 @@ import BaseButton from "../ui/BaseButton.vue";
 
 const progress = useProgressStore();
 
-const props = defineProps({ lesson: { type: Object, required: true } });
+const props = defineProps({
+  lesson: { type: Object, required: true },
+  /** 当前词群（l11：colors/animals）：只放该群对应的那一轨歌曲与单词 */
+  group: { type: String, default: "" }
+});
 const emit = defineEmits(["back", "song-done"]);
 
 const playing = ref(false);
@@ -17,19 +21,48 @@ const audioEl = ref(null);
 const audioMissing = ref(false);
 const videoEl = ref(null);
 
-/** 多段音视频轨道：顶层 audio/video/lyrics 是第一轨，tracks 追加后续轨 */
-const tracks = computed(() => {
+/** 多段音视频轨道：顶层 audio/video/lyrics 是第一轨，tracks 追加后续轨。
+ *  配了词群的课（l11）按当前群过滤：Colors 只放颜色歌、Animals 只放 Brown Bear。 */
+const allTracks = computed(() => {
   const first = {
     title: props.lesson.title,
     audio: props.lesson.song.audio,
     video: props.lesson.song.video,
-    lyrics: props.lesson.song.lyrics
+    lyrics: props.lesson.song.lyrics,
+    group: props.lesson.song.group
   };
   return [first, ...(props.lesson.song.tracks || [])];
 });
+const tracks = computed(() => {
+  if (!props.group) return allTracks.value;
+  const picked = allTracks.value.filter((t) => t.group === props.group);
+  // 分组数据没配全时退回全部轨，别把歌曲页变成空白
+  return picked.length ? picked : allTracks.value;
+});
+/** 当前群对应的单词（歌词下方词条条也按颜色/动物分开） */
+const stripWords = computed(() =>
+  props.group
+    ? (props.lesson.words || []).filter((w) => w.group === props.group)
+    : (props.lesson.words || [])
+);
 const trackIdx = ref(0);
 const curTrack = computed(() => tracks.value[trackIdx.value] || tracks.value[0]);
 const videoMissing = ref(!curTrack.value.video);
+
+/** 切词群 = 换歌：停播、回到第一轨、重算素材状态（组件通常由上层 key 重挂载，这里兜底） */
+watch(
+  () => props.group,
+  () => {
+    pause();
+    videoEl.value?.pause();
+    trackIdx.value = 0;
+    watched.value = false;
+    audioMissing.value = false;
+    videoMissing.value = !curTrack.value.video;
+    duration.value = 0;
+    currentTime.value = 0;
+  }
+);
 
 /* ---------- 动画 / 视频 / 音乐 Tab ---------- */
 /* 没有视频文件 → 第一个 Tab 是内置动画舞台 */
@@ -371,7 +404,7 @@ function onTimeUpdate() {
     </template>
 
     <div v-if="mode !== 'audio'" class="words-strip">
-      <span v-for="w in lesson.words" :key="w.id" class="chip anim-pop">
+      <span v-for="w in stripWords" :key="w.id" class="chip anim-pop">
         {{ w.emoji }} {{ w.en }}
       </span>
     </div>

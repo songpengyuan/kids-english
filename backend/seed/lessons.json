@@ -13,6 +13,7 @@
       "audio": "/lessons/l4/song.mp3",
       "video": "/lessons/l4/song.mp4",
       "scene": "sea",
+      "group": null,
       "lyrics": [
         "A sailor went to sea, sea, sea",
         "To see what he could see, see, see",
@@ -106,7 +107,8 @@
           196.33
         ],
         "estimated": true
-      }
+      },
+      "tracks": []
     },
     "words": [
       {
@@ -209,6 +211,7 @@
       "audio": "/lessons/l5/song.mp3",
       "video": "/lessons/l5/song.mp4",
       "scene": "stage",
+      "group": null,
       "lyrics": [
         "I am the Music Man,",
         "I come from down your way,",
@@ -264,7 +267,8 @@
           98.49
         ],
         "estimated": true
-      }
+      },
+      "tracks": []
     },
     "words": [
       {
@@ -361,6 +365,7 @@
       "audio": "/lessons/l6/song.mp3",
       "video": null,
       "scene": "rainbow",
+      "group": null,
       "lyrics": [
         "Red, red, a red red apple",
         "Yellow, yellow, the yellow sun",
@@ -397,7 +402,8 @@
           56,
           60
         ]
-      }
+      },
+      "tracks": []
     },
     "words": [
       {
@@ -510,6 +516,7 @@
       "audio": "/lessons/l7/song.mp3",
       "video": null,
       "scene": "numbers",
+      "group": null,
       "lyrics": [
         "Zero, zero, zero!",
         "One, two, three",
@@ -552,7 +559,8 @@
           42,
           44
         ]
-      }
+      },
+      "tracks": []
     },
     "words": [
       {
@@ -681,6 +689,7 @@
       "audio": "/lessons/l8/song.mp3",
       "video": null,
       "scene": "letters",
+      "group": null,
       "lyrics": [
         "A B C D E F G",
         "H I J K L M N O P",
@@ -715,7 +724,8 @@
           42,
           44
         ]
-      }
+      },
+      "tracks": []
     },
     "words": [
       {
@@ -828,6 +838,7 @@
       "audio": "/lessons/l9/song.mp3",
       "video": "/lessons/l9/song.mp4",
       "scene": "stage",
+      "group": null,
       "lyrics": [
         "One little finger, one little finger, one little finger",
         "Tap tap tap!",
@@ -868,7 +879,8 @@
         "Now let's wave goodbye!",
         "Goodbye!"
       ],
-      "timings": null
+      "timings": null,
+      "tracks": []
     },
     "words": [
       {
@@ -970,6 +982,7 @@
       "audio": "/lessons/l10/song.mp3",
       "video": "/lessons/l10/song.mp4",
       "scene": "stage",
+      "group": null,
       "lyrics": [
         "Let's take a walk in the jungle.",
         "Walking in the jungle. Walking in the jungle.",
@@ -1051,7 +1064,8 @@
         "Stop! Listen! What's that?",
         "It's a tiger!"
       ],
-      "timings": null
+      "timings": null,
+      "tracks": []
     },
     "words": [
       {
@@ -1150,9 +1164,10 @@
     "date": "2026-10-21",
     "stageStyle": "cards",
     "song": {
-      "audio": "/lessons/l11/song.mp3",
-      "video": "/lessons/l11/song.mp4",
+      "audio": "/lessons/l11/brown-bear.mp3",
+      "video": "/lessons/l11/brown-bear.mp4",
       "scene": "stage",
+      "group": "animals",
       "lyrics": [
         "Brown bear, brown bear, what do you see?",
         "I see a red bird looking at me.",
@@ -1175,7 +1190,16 @@
         "Teacher, teacher, what do you see?",
         "I see children looking at me."
       ],
-      "timings": null
+      "timings": null,
+      "tracks": [
+        {
+          "title": "Colors Song",
+          "audio": "/lessons/l11/song.mp3",
+          "video": "/lessons/l11/song.mp4",
+          "lyrics": [],
+          "group": "colors"
+        }
+      ]
     },
     "words": [
       {
@@ -1221,6 +1245,24 @@
         "emoji": "🟢",
         "image": "/lessons/l11/words/green.svg",
         "audio": "/lessons/l11/audio/green.mp3",
+        "group": "colors"
+      },
+      {
+        "id": "orange",
+        "en": "orange",
+        "zh": "橙色",
+        "emoji": "🍊",
+        "image": "/lessons/l11/words/orange.svg",
+        "audio": "/lessons/l11/audio/orange.mp3",
+        "group": "colors"
+      },
+      {
+        "id": "pink",
+        "en": "pink",
+        "zh": "粉色",
+        "emoji": "🌸",
+        "image": "/lessons/l11/words/pink.svg",
+        "audio": "/lessons/l11/audio/pink.mp3",
         "group": "colors"
       },
       {
@@ -1387,11 +1429,11 @@
     "wordGroups": [
       {
         "key": "colors",
-        "name": "颜色"
+        "name": "Colors"
       },
       {
         "key": "animals",
-        "name": "动物"
+        "name": "Animals"
       }
     ]
   }

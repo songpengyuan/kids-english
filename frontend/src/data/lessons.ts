@@ -50,11 +50,15 @@ export interface SongTrack {
   audio?: string | null;
   video?: string | null;
   lyrics?: string[];
+  /** 所属词群（l11：colors 颜色歌 / animals Brown Bear 动物歌） */
+  group?: string;
 }
 export interface RawLessonSong {
   audio?: string | null;
   video?: string | null;
   scene?: string;
+  /** 第一轨所属词群（配合 tracks[].group；l11 用） */
+  group?: string;
   lyrics?: string[];
   /** 多段音视频播放列表（一课多首童谣/课堂视频）。
    *  有 tracks 时播放器按轨道切换，旧 audio/video/lyrics 作为第一轨兼容。 */
@@ -110,6 +114,8 @@ export interface LessonSong {
   audio: string | null;
   video: string | null;
   scene: string;
+  /** 第一轨所属词群（l11：animals） */
+  group?: string;
   lyrics: string[];
   /** 该课节奏（gen-songs.py 生成；手工换过 mp3 时自动没有 → 回退比例映射） */
   timings: SongTiming | null;
@@ -510,9 +516,13 @@ const rawLessons: RawLesson[] = [
     tone: "orange",
     date: "2026-10-21",
     song: {
-      audio: "/lessons/l11/song.mp3",
-      video: "/lessons/l11/song.mp4",
+      /* 两首歌按词群拆开：第一轨 = Brown Bear 动物歌（课堂演唱版），
+       * 第二轨 = Colors Song 颜色歌（ELF 彩色圆点动画）。
+       * 学童谣页顶部「Colors / Animals」切换时只放对应那一轨。 */
+      audio: "/lessons/l11/brown-bear.mp3",
+      video: "/lessons/l11/brown-bear.mp4",
       scene: "stage",
+      group: "animals",
       /* 老师课堂绘本（2026-10-21）：一问一答重复句式，颜色+动物递进。
        * 歌词按绘本原句逐行，音频缺失时回退浏览器 TTS。 */
       lyrics: [
@@ -537,12 +547,12 @@ const rawLessons: RawLesson[] = [
         "Teacher, teacher, what do you see?",
         "I see children looking at me."
       ],
-      /* 第二轨：Brown Bear 歌曲视频（老师课堂演唱版） */
       tracks: [
         {
-          title: "Brown Bear 歌曲",
-          audio: "/lessons/l11/brown-bear.mp3",
-          video: "/lessons/l11/brown-bear.mp4"
+          title: "Colors Song",
+          audio: "/lessons/l11/song.mp3",
+          video: "/lessons/l11/song.mp4",
+          group: "colors"
         }
       ]
     },
@@ -555,6 +565,8 @@ const rawLessons: RawLesson[] = [
       { id: "yellow", en: "yellow", zh: "黄色", emoji: "🟡", image: "/lessons/l11/words/yellow.svg", group: "colors" },
       { id: "blue", en: "blue", zh: "蓝色", emoji: "🔵", image: "/lessons/l11/words/blue.svg", group: "colors" },
       { id: "green", en: "green", zh: "绿色", emoji: "🟢", image: "/lessons/l11/words/green.svg", group: "colors" },
+      { id: "orange", en: "orange", zh: "橙色", emoji: "🍊", image: "/lessons/l11/words/orange.svg", group: "colors" },
+      { id: "pink", en: "pink", zh: "粉色", emoji: "🌸", image: "/lessons/l11/words/pink.svg", group: "colors" },
       { id: "purple", en: "purple", zh: "紫色", emoji: "🟣", image: "/lessons/l11/words/purple.svg", group: "colors" },
       { id: "white", en: "white", zh: "白色", emoji: "⚪", image: "/lessons/l11/words/white.svg", group: "colors" },
       { id: "black", en: "black", zh: "黑色", emoji: "⚫", image: "/lessons/l11/words/black.svg", group: "colors" },
@@ -569,8 +581,8 @@ const rawLessons: RawLesson[] = [
       { id: "goldfish", en: "goldfish", zh: "金鱼", emoji: "🐟", image: "/lessons/l11/words/goldfish.png", group: "animals" }
     ],
     wordGroups: [
-      { key: "colors", name: "颜色" },
-      { key: "animals", name: "动物" }
+      { key: "colors", name: "Colors" },
+      { key: "animals", name: "Animals" }
     ],
     phrases: [
       /* 老师亲子口语模板：问颜色 / 问动物 */
@@ -761,6 +773,7 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
     audio: asset(lesson.song.audio),
     video: lesson.song.video ? asset(lesson.song.video) : null,
     scene: lesson.song.scene || "stage",
+    group: lesson.song.group,
     lyrics: lesson.song.lyrics || [],
     // 该课的节奏与逐行时间轴（gen-songs.py 生成；手工换过 mp3 时会自动没有 → 回退比例映射）
     timings: songTimingsMap[lesson.id] || null,
@@ -769,7 +782,8 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
       title: t.title,
       audio: t.audio ? asset(t.audio) : null,
       video: t.video ? asset(t.video) : null,
-      lyrics: t.lyrics || []
+      lyrics: t.lyrics || [],
+      group: t.group
     }))
   },
   // 亲子对话口语句（TalkView 用），发音文件为 ph-<序号>.mp3，缺失时回退 TTS

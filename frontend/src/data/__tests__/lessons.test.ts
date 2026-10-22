@@ -15,8 +15,8 @@ describe("l11 词群", () => {
   it("配置两个部分：颜色 / 动物", () => {
     const groups = wordGroupsOf(L11);
     expect(groups.map((g) => g.key)).toEqual(["colors", "animals"]);
-    expect(groups.map((g) => g.name)).toEqual(["颜色", "动物"]);
-    expect(groups[0].words).toHaveLength(8); // brown + 7 颜色
+    expect(groups.map((g) => g.name)).toEqual(["Colors", "Animals"]);
+    expect(groups[0].words).toHaveLength(10); // 颜色歌/PDF 第一页的 10 个颜色（brown/red/yellow/blue/green/orange/pink/purple/white/black）
     expect(groups[1].words).toHaveLength(9); // 9 动物
   });
 

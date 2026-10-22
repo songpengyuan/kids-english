@@ -2409,6 +2409,17 @@
             "title": "Scene",
             "default": "stage"
           },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
           "lyrics": {
             "items": {
               "type": "string"
@@ -2426,10 +2437,70 @@
                 "type": "null"
               }
             ]
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/SongTrackOut"
+            },
+            "type": "array",
+            "title": "Tracks",
+            "default": []
           }
         },
         "type": "object",
         "title": "SongOut"
+      },
+      "SongTrackOut": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "audio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio"
+          },
+          "video": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video"
+          },
+          "lyrics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lyrics",
+            "default": []
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          }
+        },
+        "type": "object",
+        "title": "SongTrackOut"
       },
       "TimingOut": {
         "properties": {

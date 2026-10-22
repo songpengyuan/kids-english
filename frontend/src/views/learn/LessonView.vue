@@ -179,7 +179,7 @@ const playTotal = ref(0);
  * lesson.wordGroups 声明分组（如 l11：颜色 / 动物），词表按 word.group 归组。
  * 只有词类玩法（学单词/听音选图/翻牌记忆/跟我读）显示切换；
  * 连一连按 colorPairs 玩颜色-动物配对、唱童谣/拼句子/亲子对话用不到词表，不显示。 */
-const GROUPED_STAGES = new Set(["learn", "quiz", "memory", "speak"]);
+const GROUPED_STAGES = new Set(["learn", "quiz", "memory", "speak", "song"]);
 /** 分组后的词表（[{key,name,words}]）；无 wordGroups 的课是空数组 */
 const wordGroups = computed(() => (lesson.value ? wordGroupsOf(lesson.value) : []));
 /** 当前选中的词群 key（空串 = 该课没有分组） */
@@ -302,7 +302,14 @@ watch(activeGroup, () => {
       @progress="playPct = $event"
       @total="playTotal = $event"
     />
-    <SongView v-else-if="stage === 'song'" :lesson="lesson" @song-done="afterSong" @back="toMenu" />
+    <SongView
+      v-else-if="stage === 'song'"
+      :key="'song:' + activeGroup"
+      :lesson="lesson"
+      :group="activeGroup"
+      @song-done="afterSong"
+      @back="toMenu"
+    />
     <TalkView v-else-if="stage === 'talk'" :lesson="lesson" @progress="playPct = $event" @total="playTotal = $event" @done="afterGame" />
 
 

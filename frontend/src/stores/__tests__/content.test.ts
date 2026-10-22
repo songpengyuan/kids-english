@@ -44,8 +44,10 @@ const DETAIL: LessonDetailOut = {
       audio: "/lessons/l4/song.mp3",
       video: null,
       scene: "sea",
+      group: "animals",
       lyrics: ["A sailor went to sea, sea, sea", "To see what he could see"],
       timings: { bpm: 120, beatsPerBar: 4, duration: 10, timeline: [0, 1, 2] },
+      tracks: [{ title: "Colors Song", audio: "/lessons/l11/song.mp3", video: null, lyrics: [], group: "colors" }],
     },
     words: [
       { id: "seahorse", en: "seahorse", zh: "海马", emoji: "🐴", image: "/lessons/l4/words/seahorse.png", audio: "/lessons/l4/audio/seahorse.mp3", group: "animals" },
@@ -60,7 +62,7 @@ const DETAIL: LessonDetailOut = {
 type Tone = components["schemas"]["LessonOut"]["tone"];
 type LessonType = components["schemas"]["LessonOut"]["type"];
 function briefLesson(id: string, title: string, titleZh: string, tone: Tone, type: LessonType = "official", lyrics: string[] = []): LessonDetailOut {
-  return { ok: true, lesson: { id, title, titleZh, emoji: "", tone, type, song: { lyrics, scene: "stage" }, words: [], phrases: [] } };
+  return { ok: true, lesson: { id, title, titleZh, emoji: "", tone, type, song: { lyrics, scene: "stage", tracks: [] }, words: [], phrases: [] } };
 }
 
 describe("content store · 契约", () => {
@@ -109,6 +111,8 @@ describe("content store · 契约", () => {
     expect(lesson!.words[0].group).toBe("animals");
     expect(lesson!.wordGroups).toEqual([{ key: "animals", name: "动物" }]);
     expect(lesson!.colorPairs).toEqual([{ color: "blue", wordId: "seahorse" }]);
+    expect(lesson!.song.group).toBe("animals");
+    expect(lesson!.song.tracks[0]).toMatchObject({ title: "Colors Song", group: "colors" });
   });
 
   it("后端不可用：降级本地静态数据（功能不受影响）", async () => {

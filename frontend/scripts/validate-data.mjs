@@ -91,6 +91,14 @@ try {
     } else {
       check(!(l.words || []).some((w) => w.group), `课时 ${l.id} 有单词配了 group 但没声明 wordGroups`);
     }
+    // 歌曲也按词群拆分时（l11 颜色歌/动物歌），group 必须在 wordGroups 里登记
+    {
+      const groupKeys = new Set((l.wordGroups || []).map((g) => g.key));
+      const songGroups = [l.song?.group, ...(l.song?.tracks || []).map((t) => t.group)].filter(Boolean);
+      for (const g of songGroups) {
+        check(groupKeys.has(g), `课时 ${l.id} 歌曲 group 非法：${g}（须在 wordGroups 中声明）`);
+      }
+    }
     // 颜色配对引用必须存在（连一连 colorMode 静默失效的护栏）
     for (const p of l.colorPairs || []) {
       check(wordIds.has(p.wordId), `课时 ${l.id} colorPairs 引用不存在的单词：${p.wordId}`);

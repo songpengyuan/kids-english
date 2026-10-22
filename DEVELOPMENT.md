@@ -1779,19 +1779,24 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
 
 #### 14.9.15 一课多组词：wordGroups（l11 颜色 / 动物，2026-10-22）
 
-l11 Brown Bear 的词表同时包含颜色和动物，学单词/听音选图等玩法里要分成两个部分练：
+l11 Brown Bear 的词表同时包含颜色（10 个：brown/red/yellow/blue/green/orange/pink/purple/white/black）和动物（9 个），学单词/听音选图等玩法里要分成两个部分练：
 
-- **数据**：`Word.group`（colors/animals）+ `Lesson.wordGroups[{key,name}]`；派生函数
+- **数据**：`Word.group`（colors/animals）+ `Lesson.wordGroups[{key,name}]`；颜色组以老师提供的颜色 PDF 第一页为准（含 orange/pink）；派生函数
   `wordGroupsOf(lesson)`（分组并集必须 = 全部词，漏一个词该词就在分组玩法里静默消失）。
 - **契约**：这是内容字段，**必须同时改三处**，否则线上（后端详情覆盖本地）会静默丢分组：
   `backend/app/schemas.py`（WordOut.group / LessonOut.wordGroups / colorPairs）
   → 重导 `backend/openapi.json` → 重生成 `frontend/src/types/api.ts`；
   同时 `frontend/scripts/export-lessons.mjs` 导出新字段 + `stores/content.ts` 的
   `toLesson` 映射新字段（`colorPairs` 之前就漏了，本次一并补上）。
-- **UI**：`LessonView` 在词类玩法（learn/quiz/memory/speak）顶部显示 `SegmentedTabs`
-  颜色/动物；只把当前组的词传给玩法，并用 `:key="stage:group"` 强制重挂载（换组 = 换一套题，
-  不重挂载会带着上一组的会话状态）；切组时顶栏单局进度清零。
-  连一连按 `colorPairs` 自己玩颜色-动物配对，拼句子/亲子对话用 phrases，都不显示分组。
+- **UI**：`LessonView` 在词类/童谣玩法（learn/quiz/memory/speak/song）顶部显示
+  `SegmentedTabs`（标签直接取 `wordGroups[].name`，l11 配成英文 `Colors / Animals`）；
+  只把当前组的词传给玩法，并用 `:key="stage:group"` 强制重挂载（换组 = 换一套题/一首歌，
+  不重挂载会带着上一组的状态）；切组时顶栏单局进度清零。
+  `SongView` 按 `song.group/tracks[].group` 过滤轨道：Colors 放颜色歌（ELF 彩色圆点视频），
+  Animals 放 Brown Bear 动物歌，词条条也按组过滤；连一连按 `colorPairs` 自己玩颜色-动物配对，
+  拼句子/亲子对话用 phrases，都不显示分组。
+- **契约补充**：`SongOut.group` + `SongTrackOut`（多轨歌曲此前远端契约里没有 tracks，
+  线上会被静默丢成单轨，本次一并补上；export-lessons / content.ts 映射同步）。
 - **护栏**：`validate-data.mjs` 校验分组 key/name/覆盖性 + colorPairs 引用；
   `data/__tests__/lessons.test.ts` 锁 l11 分组数量与并集；`pages.smoke.test.ts` 锁
   「默认颜色组只有颜色词、切动物后出现动物词」。内容图/发音复用 l6 的彩色小熊一组资源。

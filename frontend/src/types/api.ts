@@ -943,12 +943,38 @@ export interface components {
              * @default stage
              */
             scene: string;
+            /** Group */
+            group?: string | null;
             /**
              * Lyrics
              * @default []
              */
             lyrics: string[];
             timings?: components["schemas"]["TimingOut"] | null;
+            /**
+             * Tracks
+             * @default []
+             */
+            tracks: components["schemas"]["SongTrackOut"][];
+        };
+        /** SongTrackOut */
+        SongTrackOut: {
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /** Audio */
+            audio?: string | null;
+            /** Video */
+            video?: string | null;
+            /**
+             * Lyrics
+             * @default []
+             */
+            lyrics: string[];
+            /** Group */
+            group?: string | null;
         };
         /** TimingOut */
         TimingOut: {

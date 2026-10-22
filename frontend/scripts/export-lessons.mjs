@@ -35,8 +35,16 @@ try {
       audio: l.song.audio,
       video: l.song.video,
       scene: l.song.scene,
+      group: l.song.group ?? null,
       lyrics: l.song.lyrics,
       timings: l.song.timings || null,
+      tracks: (l.song.tracks || []).map((t) => ({
+        title: t.title,
+        audio: t.audio ?? null,
+        video: t.video ?? null,
+        lyrics: t.lyrics ?? [],
+        group: t.group ?? null,
+      })),
     },
     words: l.words.map((w) => ({
       id: w.id,

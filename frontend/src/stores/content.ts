@@ -36,9 +36,16 @@ function toLesson(raw: LessonOut): Lesson {
       audio: song.audio ?? null,
       video: song.video ?? null,
       scene: song.scene ?? "stage",
+      group: song.group ?? undefined,
       lyrics: song.lyrics ?? [],
       timings: song.timings ?? null,
-      tracks: (song as { tracks?: { title: string; audio?: string | null; video?: string | null; lyrics?: string[] }[] }).tracks ?? [],
+      tracks: (song.tracks ?? []).map((t) => ({
+        title: t.title ?? "",
+        audio: t.audio ?? null,
+        video: t.video ?? null,
+        lyrics: t.lyrics ?? [],
+        group: t.group ?? undefined,
+      })),
     },
     words: (raw.words ?? []).map((w) => ({
       id: w.id,
