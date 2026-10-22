@@ -237,7 +237,7 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     const w = await mountPage(LessonView, "/learn/l11/learn");
     await flushPromises();
     // 两个分组 tab
-    const tabTexts = w.findAll(".seg-btn").map((b) => b.text());
+    const tabTexts = w.findAll(".group-switch__btn").map((b) => b.text());
     expect(tabTexts.some((t) => t.includes("Colors"))).toBe(true);
     expect(tabTexts.some((t) => t.includes("Animals"))).toBe(true);
     // 默认颜色组：只有颜色词（brown 是颜色组的第一个），不出现动物
@@ -245,7 +245,7 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(words()).toContain("brown");
     expect(words()).not.toContain("bear");
     // 切到动物：出现动物词、不再有颜色词
-    await w.findAll(".seg-btn").find((b) => b.text().includes("Animals"))!.trigger("click");
+    await w.findAll(".group-switch__btn").find((b) => b.text().includes("Animals"))!.trigger("click");
     await flushPromises();
     expect(words()).toContain("bear");
     expect(words()).not.toContain("brown");
@@ -259,7 +259,7 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(chipText()).toContain("brown");
     expect(chipText()).not.toContain("bear");
     // 切到 Animals：换成 Brown Bear 的动物词
-    await w.findAll(".seg-btn").find((b) => b.text().includes("Animals"))!.trigger("click");
+    await w.findAll(".group-switch__btn").find((b) => b.text().includes("Animals"))!.trigger("click");
     await flushPromises();
     expect(chipText()).toContain("bear");
     expect(chipText()).not.toContain("brown");

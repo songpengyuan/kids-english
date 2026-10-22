@@ -20,7 +20,6 @@ import HeaderBar from "../../components/layout/HeaderBar.vue";
 import LessonResult from "../../components/lesson/LessonResult.vue";
 import LessonMenu from "../../components/lesson/LessonMenu.vue";
 import LessonProgressHeader from "../../components/lesson/LessonProgressHeader.vue";
-import SegmentedTabs from "../../components/ui/SegmentedTabs.vue";
 import { activityKeys, getLesson as getLocalLesson, wordGroupsOf, type Lesson } from "../../data/lessons";
 import { useContentStore } from "../../stores/content";
 import { speak, speakZh } from "../../services/speech";
@@ -216,7 +215,7 @@ watch(activeGroup, () => {
     <HeaderBar
       show-back
       :close="isPlay"
-      show-badges
+      :show-badges="!showGroupSwitch"
       :back-label="questMode ? '返回闯关地图' : stage === 'menu' ? '返回地图' : '返回本课菜单'"
       @back="back"
     >
@@ -249,12 +248,19 @@ watch(activeGroup, () => {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h6a4 4 0 0 0 0-8h-4a4 4 0 0 1 0-8h6"/></svg>
         </button>
       </template>
+      <!-- 词群切换（l11：颜色 / 动物）：紧凑放右上角，不占整行 -->
+      <template v-if="showGroupSwitch" #right>
+        <div class="group-switch">
+          <button
+            v-for="g in groupTabs"
+            :key="g.value"
+            class="group-switch__btn"
+            :class="{ on: activeGroup === g.value }"
+            @click="activeGroup = g.value"
+          >{{ g.label }}</button>
+        </div>
+      </template>
     </HeaderBar>
-
-    <!-- 词群切换（l11：颜色 / 动物）：进玩法后按两部分分别练 -->
-    <div v-if="showGroupSwitch" class="word-groups anim-fade-up">
-      <SegmentedTabs v-model="activeGroup" :items="groupTabs" />
-    </div>
 
     <!-- 课时菜单：玩法瓷片（家长陪练视角；闯关地图是默认落地页，这里不再放闯关入口） -->
     <LessonMenu
@@ -333,8 +339,28 @@ watch(activeGroup, () => {
 </template>
 
 <style scoped>
-.word-groups {
-  flex: none;
+.group-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+}
+.group-switch__btn {
+  border: none;
+  background: transparent;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.group-switch__btn.on {
+  background: var(--brand);
+  color: var(--on-tone);
 }
 
 .hdr-title-tap {
