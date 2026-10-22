@@ -206,6 +206,18 @@ onBeforeUnmount(() => {
   font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   cursor: pointer;
+  position: relative;
+  transition: transform 0.1s, opacity 0.1s;
+}
+.slot-word:hover {
+  transform: scale(0.95);
+  opacity: 0.85;
+}
+.slot-word::after {
+  content: "×";
+  margin-left: 6px;
+  font-size: 0.85em;
+  opacity: 0.7;
 }
 /* 空槽位横线：宽度随目标词长度变化（模板内联 --width），与词块垂直居中对齐 */
 .slot-empty {
