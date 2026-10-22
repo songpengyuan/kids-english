@@ -81,8 +81,10 @@ export const router = createRouter({
           children: [
             { path: "/course/:id/learn", name: "lesson-learn", component: LessonView, meta: { title: "学单词", stage: "learn" } },
             { path: "/course/:id/hear", name: "lesson-quiz", component: LessonView, meta: { title: "听音选图", stage: "quiz" } },
+            { path: "/course/:id/memory", name: "lesson-memory", component: LessonView, meta: { title: "翻牌记忆", stage: "memory" } },
             { path: "/course/:id/match", name: "lesson-match", component: LessonView, meta: { title: "连一连", stage: "match" } },
             { path: "/course/:id/speak", name: "lesson-speak", component: LessonView, meta: { title: "跟读", stage: "speak" } },
+            { path: "/course/:id/order", name: "lesson-order", component: LessonView, meta: { title: "拼句子", stage: "order" } },
             { path: "/course/:id/song", name: "lesson-song", component: LessonView, meta: { title: "唱童谣", stage: "song" } },
             { path: "/course/:id/talk", name: "lesson-talk", component: LessonView, meta: { title: "亲子对话", stage: "talk" } },
           ],

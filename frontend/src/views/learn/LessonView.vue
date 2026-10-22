@@ -76,10 +76,10 @@ const ACT_META: Record<string, Omit<QuestAct, "key">> = {
   song: { name: "唱童谣", icon: Music, tone: "green", game: "song", desc: "听歌看视频" },
   learn: { name: "学单词", icon: BookOpen, tone: "orange", game: "learn", desc: "看图听发音" },
   quiz: { name: "听音选图", icon: Headphones, tone: "blue", game: "quiz", desc: "听声音找图片" },
-  memory: { name: "翻牌记忆", icon: Layers, tone: "brown", game: "memory", desc: "翻牌配对图和词" },
+  memory: { name: "翻牌记忆", icon: Layers, tone: "blue", game: "memory", desc: "翻牌配对图和词" },
   match: { name: "连一连", icon: Link2, tone: "purple", game: "match", desc: "图片连线单词" },
   speak: { name: "跟我读", icon: Mic, tone: "pink", game: "speak", desc: "按住麦克风读单词" },
-  order: { name: "拼句子", icon: PenLine, tone: "indigo", game: "order", desc: "把单词拼成句子" },
+  order: { name: "拼句子", icon: PenLine, tone: "teal", game: "order", desc: "把单词拼成句子" },
   talk: { name: "亲子对话", icon: MessageCircle, tone: "teal", game: "talk", desc: "和爸爸妈妈练口语" },
 };
 const activities = computed<QuestAct[]>(() => {
