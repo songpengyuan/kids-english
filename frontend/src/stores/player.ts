@@ -22,19 +22,36 @@ export interface PlayableSong {
   /** 卡片色调板（tokens.css）：别写十六进制，交给 .tone-* 工具类 */
   tone: Tone;
   src: string;
+  lyrics?: string[];
 }
 
-/** 歌曲播放列表（有 audio 的课，排除 l6-l8 素材缺失课） */
+/** 歌曲播放列表（有 audio 的课，排除 l6-l8 素材缺失课）。
+ *  一课多轨时，每轨展开成独立歌曲条目（第一轨用顶层 audio，后续从 tracks 取）。 */
 export const SONG_LIST: PlayableSong[] = lessons
   .filter((l) => l.song.audio && !["l6", "l7", "l8"].includes(l.id))
-  .map((l) => ({
-    id: l.id,
-    title: l.title,
-    titleZh: l.titleZh,
-    emoji: l.emoji,
-    tone: l.tone ?? "blue",
-    src: asset(l.song.audio)!,
-  }));
+  .flatMap((l) => {
+    const first = {
+      id: l.id,
+      title: l.title,
+      titleZh: l.titleZh,
+      emoji: l.emoji,
+      tone: l.tone ?? "blue",
+      src: asset(l.song.audio)!,
+      lyrics: l.song.lyrics,
+    };
+    const extras = (l.song.tracks || [])
+      .filter((t) => t.audio)
+      .map((t, i) => ({
+        id: `${l.id}-t${i + 2}`,
+        title: t.title,
+        titleZh: l.titleZh,
+        emoji: l.emoji,
+        tone: l.tone ?? "blue",
+        src: asset(t.audio)!,
+        lyrics: t.lyrics || [],
+      }));
+    return [first, ...extras];
+  });
 
 /** 全局唯一 audio 实例（模块级创建，永随应用存活，不随路由销毁） */
 const audio = new Audio();
@@ -57,6 +74,8 @@ export const usePlayerStore = defineStore("player", () => {
   const currentLyrics = computed<string[]>(() => {
     const s = currentSong.value;
     if (!s) return [];
+    // 每条歌（含多轨展开）自带 lyrics；兜底按 lesson id 找顶层歌词
+    if (s.lyrics?.length) return s.lyrics;
     const lesson = lessons.find((l) => l.id === s.id);
     return lesson?.song?.lyrics ?? [];
   });

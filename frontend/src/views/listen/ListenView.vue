@@ -125,10 +125,25 @@ function switchTab(t: ListenSubTab) {
 const showPlaylist = ref(false);
 
 const videoList = computed(() =>
-  lessons.filter((l) => l.song.video && !["l6", "l7", "l8"].includes(l.id)).map((l) => ({
-    id: l.id, title: l.title, titleZh: l.titleZh, emoji: l.emoji,
-    tone: l.tone ?? "blue", src: asset(l.song.video)!,
-  }))
+  lessons
+    .filter((l) => !["l6", "l7", "l8"].includes(l.id))
+    .flatMap((l) => {
+      const first = l.song.video
+        ? [{
+            id: l.id, title: l.title, titleZh: l.titleZh, emoji: l.emoji,
+            tone: l.tone ?? "blue", src: asset(l.song.video)!,
+          }]
+        : [];
+      const extras = (l.song.tracks || [])
+        .filter((t) => t.video)
+        .map((t, i) => ({
+          id: `${l.id}-t${i + 2}`,
+          title: t.title,
+          titleZh: l.titleZh, emoji: l.emoji,
+          tone: l.tone ?? "blue", src: asset(t.video)!,
+        }));
+      return [...first, ...extras];
+    })
 );
 
 /* ---------- 视频播放（局部全屏；计时独立，不影响歌曲全局计时） ---------- */
