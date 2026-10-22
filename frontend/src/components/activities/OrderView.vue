@@ -86,6 +86,7 @@ async function checkComplete() {
   }
   emit("progress", (sentenceIdx.value + 1) / total.value);
   sentenceIdx.value++;
+  buildSentence();
 }
 
 const wrongCount = ref(0);
