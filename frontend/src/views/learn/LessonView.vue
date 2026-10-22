@@ -162,7 +162,7 @@ function sayTitle() {
 /** 卡片目录 → 闯关地图（孩子主入口） */
 function openGame() {
   speakZh("闯关地图");
-  void router.push({ name: "course-game", params: { id: lessonId.value } });
+  void router.push({ name: "course-detail", params: { id: lessonId.value }, query: { view: "game" } });
 }
 const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
 /** 玩法页（答题中）：顶部按钮用"关闭"（✕）而非返回箭头（多邻国式）。

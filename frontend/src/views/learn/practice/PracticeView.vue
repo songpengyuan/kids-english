@@ -14,35 +14,27 @@
  *    连立体投影/贴纸描边/按下手感也一并统一；
  *  · 色值/字号/圆角/间距全部改回 token；横向 padding 由外层 .view 提供，去掉重复的那一层。
  */
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { activityKeys, type Lesson } from "../../../data/lessons";
 import { useContentStore } from "../../../stores/content";
 import { useProgressStore } from "../../../stores/progress";
 import { useRouter } from "vue-router";
 import { speak } from "../../../services/speech";
-import SegmentedTabs from "../../../components/ui/SegmentedTabs.vue";
 import { Check } from "@lucide/vue";
 
 const content = useContentStore();
 const progress = useProgressStore();
 /** 课程数据源：后端内容 API 优先（远端详情为准、本地补缺口），离线自动回退本地静态 */
 const lessons = content.lessons;
-/** 课程类型筛选：official=培训班课程，bonus=自定义加餐 */
-const typeTab = ref<"official" | "bonus">("official");
 /** 正式课显示顺序：音乐 → 水手 → 手指（培训班实际上课顺序） */
-const OFFICIAL_ORDER = ["l5", "l4", "l9"];
+const OFFICIAL_ORDER = ["l5", "l4", "l9", "l11"];
 const filteredLessons = computed(() => {
-  const list = lessons.filter((l) => l.type === typeTab.value);
-  if (typeTab.value === "official") {
-    return [...list].sort((a, b) => OFFICIAL_ORDER.indexOf(a.id) - OFFICIAL_ORDER.indexOf(b.id));
-  }
-  return list;
+  const list = lessons.filter((l) => l.type === "official" || !l.type);
+  return [...list].sort(
+    (a, b) => (OFFICIAL_ORDER.indexOf(a.id) === -1 ? 999 : OFFICIAL_ORDER.indexOf(a.id)) -
+              (OFFICIAL_ORDER.indexOf(b.id) === -1 ? 999 : OFFICIAL_ORDER.indexOf(b.id))
+  );
 });
-/** tab 定义提到 setup 顶层：模板里每次渲染都新建数组会让子组件的 props diff 白白失效 */
-const TABS = [
-  { value: "official", label: "正式课" },
-  { value: "bonus", label: "加餐" },
-];
 const router = useRouter();
 
 function enter(l: Lesson) {
@@ -53,11 +45,6 @@ function enter(l: Lesson) {
 
 <template>
   <div class="practice">
-    <!-- 课程类型 tab -->
-    <div class="type-tabs">
-      <SegmentedTabs v-model="typeTab" :items="TABS" />
-    </div>
-
     <!-- 课程列表：竖滑双列大卡片（汽水音乐风） -->
     <div class="stage">
       <div class="course-grid">

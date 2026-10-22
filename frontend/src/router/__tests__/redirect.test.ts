@@ -66,15 +66,16 @@ describe("关键路径能落到正确路由", () => {
     expect(router.currentRoute.value.path).toBe("/course");
   });
 
-  it("#/course/l4 课程详情默认 redirect 到本课闯关地图", async () => {
+  it("#/course/l4 课程详情默认 redirect 到本课详情页（地图视图）", async () => {
     await router.push("/course/l4");
-    expect(router.currentRoute.value.name).toBe("course-game");
+    expect(router.currentRoute.value.name).toBe("course-detail");
     expect(router.currentRoute.value.params.id).toBe("l4");
   });
 
-  it("#/course/l4/menu 卡片目录可达（家长陪练视角）", async () => {
+  it("#/course/l4/menu 卡片目录重定向到详情页 menu 视图", async () => {
     await router.push("/course/l4/menu");
-    expect(router.currentRoute.value.name).toBe("lesson-menu");
+    expect(router.currentRoute.value.name).toBe("course-detail");
+    expect(router.currentRoute.value.query.view).toBe("menu");
   });
 
   it("#/course/l4/learn 与 #/course/l4/hear 题型子路由可达", async () => {
@@ -84,17 +85,16 @@ describe("关键路径能落到正确路由", () => {
     expect(router.currentRoute.value.name).toBe("lesson-quiz");
   });
 
-  it("#/course/l4/game 本课闯关地图可达（URL 归属课程域）", async () => {
+  it("#/course/l4/game 本课闯关地图重定向到详情页 game 视图", async () => {
     await router.push("/course/l4/game");
-    expect(router.currentRoute.value.name).toBe("course-game");
+    expect(router.currentRoute.value.name).toBe("course-detail");
     expect(router.currentRoute.value.params.id).toBe("l4");
     expect(router.currentRoute.value.meta.sky).toBe(true);
   });
 
   it("旧 #/game/lesson/l4 重定向到 #/course/l4/game", async () => {
     await router.push("/game/lesson/l4");
-    expect(router.currentRoute.value.path).toBe("/course/l4/game");
-    expect(router.currentRoute.value.name).toBe("course-game");
+    expect(router.currentRoute.value.name).toBe("course-detail");
   });
 
   it("#/game/quest/... 仍是单关玩法（不落在课程域）", async () => {
