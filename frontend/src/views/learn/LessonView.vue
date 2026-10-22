@@ -11,6 +11,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import LearnStage from "../../components/activities/LearnStage.vue";
 import QuizView from "../../components/activities/QuizView.vue";
 import MemoryView from "../../components/activities/MemoryView.vue";
+import OrderView from "../../components/activities/OrderView.vue";
 import MatchView from "../../components/activities/MatchView.vue";
 import SongView from "../../components/activities/SongView.vue";
 import SpeakView from "../../components/activities/SpeakView.vue";
@@ -29,7 +30,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useViewport } from "../../composables/useViewport";
 import { useQuest, type QuestAct } from "../../composables/useQuest";
 import { useLessonFlow } from "../../composables/useLessonFlow";
-import { BookOpen, Headphones, Layers, Link2, MessageCircle, Mic, Music } from "@lucide/vue";
+import { BookOpen, Headphones, Layers, Link2, MessageCircle, Mic, Music, PenLine } from "@lucide/vue";
 
 const progress = useProgressStore();
 const streak = useStreakStore();
@@ -78,6 +79,7 @@ const ACT_META: Record<string, Omit<QuestAct, "key">> = {
   memory: { name: "翻牌记忆", icon: Layers, tone: "brown", game: "memory", desc: "翻牌配对图和词" },
   match: { name: "连一连", icon: Link2, tone: "purple", game: "match", desc: "图片连线单词" },
   speak: { name: "跟我读", icon: Mic, tone: "pink", game: "speak", desc: "按住麦克风读单词" },
+  order: { name: "拼句子", icon: PenLine, tone: "indigo", game: "order", desc: "把单词拼成句子" },
   talk: { name: "亲子对话", icon: MessageCircle, tone: "teal", game: "talk", desc: "和爸爸妈妈练口语" },
 };
 const activities = computed<QuestAct[]>(() => {
@@ -246,6 +248,13 @@ const playTotal = ref(0);
       :is="stage === 'quiz' ? QuizView : stage === 'match' ? MatchView : SpeakView"
       :words="lesson.words"
       :color-pairs="lesson.colorPairs"
+      @done="afterGame"
+      @progress="playPct = $event"
+      @total="playTotal = $event"
+    />
+    <OrderView
+      v-else-if="stage === 'order'"
+      :lesson="lesson"
       @done="afterGame"
       @progress="playPct = $event"
       @total="playTotal = $event"

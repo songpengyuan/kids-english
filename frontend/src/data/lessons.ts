@@ -755,7 +755,7 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
  */
 export function activityKeys(lesson: Pick<Lesson, "phrases">): string[] {
   const base = ["song", "learn", "quiz", "memory", "match", "speak"];
-  if (lesson.phrases?.length) base.push("talk");
+  if (lesson.phrases?.length) base.push("order", "talk");
   return base;
 }
 

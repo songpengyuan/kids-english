@@ -28,7 +28,7 @@ import { track } from "../services/telemetry";
  * 曾经还有一个 `questMap`（课内闯关地图）——现在闯关是独立的 `/course/:id/game`，
  * 课内不再画地图，这个阶段已下线（LessonView 里的分支与 LessonQuestMap 组件一并删除）。
  */
-export type LessonStage = "menu" | "learn" | "quiz" | "memory" | "match" | "speak" | "song" | "talk" | "result";
+export type LessonStage = "menu" | "learn" | "quiz" | "memory" | "match" | "speak" | "order" | "song" | "talk" | "result";
 
 /** 调试/兼容深链：?lesson=l4&stage=learn 直接进入玩法页 */
 const STAGES = ["learn", "quiz", "match", "speak", "song", "talk"];

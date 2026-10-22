@@ -47,16 +47,16 @@ describe("buildLevels（多课总地图：跨课连续序号）", () => {
     const expected = lessons.reduce((n, l) => n + activityKeys(l).length + 1, 0);
     expect(LEVELS).toHaveLength(expected);
     const l4 = LEVELS.filter((l) => l.lessonId === "l4");
-    expect(l4).toHaveLength(8);
-    expect(l4.map((l) => l.actKey)).toEqual(["song", "learn", "quiz", "memory", "match", "speak", "talk", "chest"]);
+    expect(l4).toHaveLength(9);
+    expect(l4.map((l) => l.actKey)).toEqual(["song", "learn", "quiz", "memory", "match", "speak", "order", "talk", "chest"]);
     expect(l4.map((l) => l.actKey).slice(0, -1)).toEqual(activityKeys(L4));
   });
 
-  it("序号跨课连续（第一课 1..8，第二课接着 9..）", () => {
+  it("序号跨课连续（第一课 1..9，第二课接着 10..）", () => {
     const first = LEVELS.filter((l) => l.lessonId === lessons[0].id).map((l) => l.no);
     const second = LEVELS.filter((l) => l.lessonId === lessons[1].id).map((l) => l.no);
-    expect(first).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
-    expect(second).toEqual([9, 10, 11, 12, 13, 14, 15, 16]);
+    expect(first).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(second).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18]);
   });
 
   it("chest 关卡名称为「开宝箱」，其余玩法名不变", () => {
@@ -68,10 +68,10 @@ describe("buildLevels（多课总地图：跨课连续序号）", () => {
 });
 
 describe("lessonLevels（本课地图：本课内 1..N，不跨课）", () => {
-  it("只含本课：l4 共 8 关，序号 1..8，末尾是宝箱", () => {
-    expect(L4_LEVELS).toHaveLength(8);
+  it("只含本课：l4 共 9 关，序号 1..9，末尾是宝箱", () => {
+    expect(L4_LEVELS).toHaveLength(9);
     expect(L4_LEVELS.every((l) => l.lessonId === "l4")).toBe(true);
-    expect(L4_LEVELS.map((l) => l.no)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(L4_LEVELS.map((l) => l.no)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     expect(L4_LEVELS.map((l) => l.id)).toEqual([
       "l4-song",
       "l4-learn",
@@ -79,12 +79,13 @@ describe("lessonLevels（本课地图：本课内 1..N，不跨课）", () => {
       "l4-memory",
       "l4-match",
       "l4-speak",
+      "l4-order",
       "l4-talk",
       "l4-chest",
     ]);
   });
 
-  it("没配 phrases 的课：只有 6 个玩法关（无 talk）+ 宝箱 = 7 关", () => {
+  it("没配 phrases 的课：只有 6 个玩法关（无 order/talk）+ 宝箱 = 7 关", () => {
     const noTalk: Lesson = { ...L4, id: "lnt", phrases: [] };
     const lv = lessonLevels(noTalk);
     expect(lv.map((l) => l.actKey)).toEqual(["song", "learn", "quiz", "memory", "match", "speak", "chest"]);
@@ -94,8 +95,8 @@ describe("lessonLevels（本课地图：本课内 1..N，不跨课）", () => {
   it("不依赖静态 lessons：传课时对象即可构建（后端新增课也能出地图）", () => {
     const remote: Lesson = { ...L4, id: "lx", title: "New Song", titleZh: "新歌" };
     const lv = lessonLevels(remote);
-    expect(lv).toHaveLength(8);
-    expect(lv.map((l) => l.no)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(lv).toHaveLength(9);
+    expect(lv.map((l) => l.no)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     expect(lv.every((l) => l.lessonId === "lx")).toBe(true);
     expect(lv[0].id).toBe("lx-song");
     expect(lv[0].titleZh).toBe("新歌");
@@ -103,7 +104,7 @@ describe("lessonLevels（本课地图：本课内 1..N，不跨课）", () => {
 
   it("本课内推进：song → learn；最后一个玩法（talk）之后没有下一关（宝箱不参与推进）", () => {
     expect(nextLevelAfter("l4-song", L4_LEVELS)?.id).toBe("l4-learn");
-    expect(nextLevelAfter("l4-speak", L4_LEVELS)?.id).toBe("l4-talk");
+    expect(nextLevelAfter("l4-speak", L4_LEVELS)?.id).toBe("l4-order");
     expect(nextLevelAfter("l4-talk", L4_LEVELS)).toBeNull();
   });
 
@@ -137,10 +138,10 @@ describe("computeStates（chest 解锁逻辑）", () => {
     expect(st["l5-chest"]).toBe("locked");
   });
 
-  it("一课 7 玩法全完成 → 该课 chest 解锁（active）", () => {
+  it("一课 8 玩法全完成 → 该课 chest 解锁（active）", () => {
     const p = {
-      l4: prog({ learn: 2, quiz: 2, memory: 2, match: 2, speak: 2, talk: 1, song: 1 },
-        ["song", "learn", "quiz", "memory", "match", "speak", "talk"]),
+      l4: prog({ learn: 2, quiz: 2, memory: 2, match: 2, speak: 2, order: 2, talk: 1, song: 1 },
+        ["song", "learn", "quiz", "memory", "match", "speak", "order", "talk"]),
     };
     const st = computeStates(LEVELS, p);
     expect(st["l4-chest"]).toBe("active");
@@ -150,8 +151,8 @@ describe("computeStates（chest 解锁逻辑）", () => {
 
   it("宝箱已领取 → chest 显示 done，不再可开", () => {
     const p = {
-      l4: prog({ learn: 2, quiz: 2, memory: 2, match: 2, speak: 2, talk: 1, song: 1 },
-        ["song", "learn", "quiz", "memory", "match", "speak", "talk", "chest"]),
+      l4: prog({ learn: 2, quiz: 2, memory: 2, match: 2, speak: 2, order: 2, talk: 1, song: 1 },
+        ["song", "learn", "quiz", "memory", "match", "speak", "order", "talk", "chest"]),
     };
     const st = computeStates(LEVELS, p);
     expect(st["l4-chest"]).toBe("done");

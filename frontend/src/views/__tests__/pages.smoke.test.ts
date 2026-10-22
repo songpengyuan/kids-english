@@ -159,11 +159,11 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     // 标题显示本课课程名 + 关卡列表（唱童谣/学单词…）
     expect(w.text()).toContain("Walking In The Jungle");
     expect(w.text()).toContain("学单词");
-    // 只画本课 8 关（7 玩法 + 宝箱），序号本课内 1..8，不出现全站累计序号
+    // 只画本课 9 关（8 玩法 + 宝箱），序号本课内 1..9
     const nodes = w.findAll(".gp-level");
-    expect(nodes).toHaveLength(8);
+    expect(nodes).toHaveLength(9);
     expect(nodes[0].attributes("aria-label")).toContain("第1关");
-    expect(nodes[7].attributes("aria-label")).toContain("第8关");
+    expect(nodes[8].attributes("aria-label")).toContain("第9关");
     expect(w.html()).not.toContain("第22关");
     // 地图自持滚动容器（本课地图曾漏写 overflow，底部关卡被裁掉且滚不动）
     expect(w.find(".game-path-scroll").exists()).toBe(true);

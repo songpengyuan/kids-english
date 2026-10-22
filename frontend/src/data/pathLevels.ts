@@ -48,8 +48,10 @@ export const ACT_EMOJI: Record<string, string> = {
 export const ACT_NAMES: Record<string, string> = {
   learn: "学单词",
   quiz: "听音选图",
+  memory: "翻牌记忆",
   match: "连一连",
   speak: "跟我读",
+  order: "拼句子",
   talk: "亲子对话",
   song: "唱童谣",
   chest: "开宝箱",

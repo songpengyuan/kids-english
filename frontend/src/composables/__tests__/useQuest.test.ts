@@ -81,12 +81,12 @@ describe("useQuest 作用域", () => {
 
     const speak = await boot("/game/quest/l4?step=speak");
     speak.bootFromQuery();
-    expect(speak.nextLevel.value).toMatchObject({ lessonId: "l4", actKey: "talk", name: "亲子对话" });
+    expect(speak.nextLevel.value).toMatchObject({ lessonId: "l4", actKey: "order", name: "拼句子" });
   });
 
   it("本课最后一个玩法（talk）之后没有下一关（不会跨到下一课）", async () => {
     const talk = await boot("/game/quest/l4?step=talk");
-    expect(talk.bootFromQuery()).toBe(6);
+    expect(talk.bootFromQuery()).toBe(7);
     expect(talk.nextLevel.value).toBeNull();
   });
 });
