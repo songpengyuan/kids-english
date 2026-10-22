@@ -626,6 +626,36 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
+      <!-- 颜色配对模式：右列动物图（colorMode 时右列单独渲染） -->
+      <div v-if="colorMode" class="col imgs right">
+        <div
+          v-for="(w, i) in rightImgs"
+          :key="w.id"
+          :ref="(el) => setPicEl(w.id, el)"
+          class="cell pic anim-pop"
+          data-haptic
+          data-side="img"
+          :data-word="w.id"
+          :style="{ animationDelay: i * 0.06 + 's' }"
+          :class="{
+            gone: matched.has(w.id),
+            wrong: imgWrong === w.id,
+            active: startWord && startSide === 'img' && startWord.id === w.id
+          }"
+          @pointerdown="onCardDown(w, 'img', $event)"
+        >
+          <img
+            :src="w.image"
+            :alt="w.en"
+            @error="
+              $event.target.style.display = 'none';
+              $event.target.nextElementSibling.style.display = 'flex';
+            "
+          />
+          <span class="ph" style="display: none">{{ w.emoji }}</span>
+        </div>
+      </div>
+
       <!-- 组间过场横幅：盖住整块棋盘（含连线），用 banner-in 入场 -->
       <div v-if="transitioning" class="banner">
         <span>{{ groupIdx + 1 >= groupCount ? "全部连完啦！" : "这组连完啦！下一组 →" }}</span>
