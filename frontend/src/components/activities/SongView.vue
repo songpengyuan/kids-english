@@ -3,7 +3,7 @@ import { ref, computed, onBeforeUnmount } from "vue";
 import { bigCelebrate } from "../../services/effects";
 import { hapticTap } from "../../services/haptics";
 import { useProgressStore } from "../../stores/progress";
-import { Clapperboard, Headphones, Music, Pause, Play, Repeat, Sparkles } from "@lucide/vue";
+import { Clapperboard, Headphones, Music, Pause, Play, Repeat, Sparkles, SkipBack, SkipForward } from "@lucide/vue";
 import SongStage from "./SongStage.vue";
 import BaseButton from "../ui/BaseButton.vue";
 
@@ -14,7 +14,7 @@ const emit = defineEmits(["back", "song-done"]);
 
 /* ---------- 动画 / 视频 / 音乐 Tab ---------- */
 /* 没有视频文件 → 第一个 Tab 是内置动画舞台 */
-const hasVideo = computed(() => !!props.lesson.song.video);
+const hasVideo = computed(() => !!curTrack.value.video);
 const firstTab = computed(() => (hasVideo.value ? "video" : "stage"));
 const mode = ref(firstTab.value);
 
@@ -23,6 +23,19 @@ const audioEl = ref(null);
 const audioMissing = ref(false);
 const videoEl = ref(null);
 const videoMissing = ref(!props.lesson.song.video);
+
+/** 多段音视频轨道：顶层 audio/video/lyrics 是第一轨，tracks 追加后续轨 */
+const tracks = computed(() => {
+  const first = {
+    title: props.lesson.title,
+    audio: props.lesson.song.audio,
+    video: props.lesson.song.video,
+    lyrics: props.lesson.song.lyrics
+  };
+  return [first, ...(props.lesson.song.tracks || [])];
+});
+const trackIdx = ref(0);
+const curTrack = computed(() => tracks.value[trackIdx.value] || tracks.value[0]);
 
 /** 离开本页（回菜单 / 换课）必须停播：脱离 DOM 的媒体元素在部分浏览器会继续出声 */
 onBeforeUnmount(() => {
@@ -42,6 +55,20 @@ function setMode(m) {
   if (m !== "video" && videoEl.value) videoEl.value.pause();
   if (m === "video" && playing.value) pause();
   mode.value = m;
+}
+
+/** 切轨道：停播、重置进度、换素材 */
+function switchTrack(i) {
+  if (i < 0 || i >= tracks.value.length || i === trackIdx.value) return;
+  hapticTap();
+  pause();
+  videoEl.value?.pause();
+  trackIdx.value = i;
+  watched.value = false;
+  audioMissing.value = false;
+  videoMissing.value = !curTrack.value.video;
+  duration.value = 0;
+  currentTime.value = 0;
 }
 
 function play() {
@@ -205,7 +232,7 @@ function onTimeUpdate() {
   <div class="song view">
     <audio
       ref="audioEl"
-      :src="lesson.song.audio"
+      :src="curTrack.audio"
       preload="metadata"
       @error="onAudioError"
       @ended="onEnded"
@@ -241,7 +268,7 @@ function onTimeUpdate() {
     <div v-if="mode === 'video' && hasVideo" class="video-zone view-body">
       <video
         ref="videoEl"
-        :src="lesson.song.video"
+        :src="curTrack.video"
         controls
         playsinline
         class="video"
@@ -271,13 +298,24 @@ function onTimeUpdate() {
         </button>
         <div class="audio-text">
           <template v-if="!audioMissing">
-            <p class="audio-title">{{ lesson.emoji }} {{ lesson.title }}</p>
+            <p class="audio-title">{{ lesson.emoji }} {{ curTrack.title }}</p>
             <p class="audio-sub">{{ playing ? "正在播放，看着歌词一起唱吧～" : "点我播放童谣音乐" }}</p>
           </template>
           <p v-else class="miss">
             童谣视频/音频还没有上传<br />（把 mp3/mp4 放进对应课时目录就能响）
           </p>
         </div>
+      </div>
+
+      <!-- 多轨切换 -->
+      <div v-if="tracks.length > 1" class="track-switch">
+        <button class="track-btn" :disabled="trackIdx === 0" data-haptic aria-label="上一首" @click="switchTrack(trackIdx - 1)">
+          <SkipBack class="k-ico" />
+        </button>
+        <span class="track-pos">{{ trackIdx + 1 }} / {{ tracks.length }}</span>
+        <button class="track-btn" :disabled="trackIdx === tracks.length - 1" data-haptic aria-label="下一首" @click="switchTrack(trackIdx + 1)">
+          <SkipForward class="k-ico" />
+        </button>
       </div>
 
       <!-- 播放进度条 + 循环播放（不能挂 data-haptic：透明开关的 touch-action:none 会吃掉拖动） -->
@@ -315,12 +353,12 @@ function onTimeUpdate() {
 
       <div
         class="lyrics view-body"
-        :class="{ empty: !lesson.song.lyrics.length }"
+        :class="{ empty: !curTrack.lyrics || !curTrack.lyrics.length }"
         ref="lyricsEl"
       >
-        <template v-if="lesson.song.lyrics.length">
+        <template v-if="curTrack.lyrics && curTrack.lyrics.length">
           <p
-            v-for="(line, i) in lesson.song.lyrics"
+            v-for="(line, i) in curTrack.lyrics"
             :key="i"
             class="line"
             :class="{ blank: !line }"
@@ -328,7 +366,7 @@ function onTimeUpdate() {
             {{ line }}
           </p>
         </template>
-        <p v-else class="miss">歌词还没录入（在 lessons.js 的 song.lyrics 里补充）</p>
+        <p v-else class="miss">这一段还没录入歌词</p>
       </div>
     </template>
 
@@ -599,6 +637,32 @@ function onTimeUpdate() {
   flex: none;
   width: 100%;
   max-width: 460px;
+}
+
+.track-switch {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-m);
+}
+.track-btn {
+  width: clamp(40px, 7vh, 52px);
+  height: clamp(40px, 7vh, 52px);
+  border-radius: 50%;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-hard);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+}
+.track-btn:disabled { opacity: 0.4; }
+.track-pos {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-strong);
+  color: var(--ink-soft);
+  min-width: 40px;
+  text-align: center;
 }
 
 /**

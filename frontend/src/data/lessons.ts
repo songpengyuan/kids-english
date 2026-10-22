@@ -45,11 +45,20 @@ import songTimings from "./song-timings.json";
 /* ===== 类型（阶段 2-4：lessons.js → TS 迁移，数据本体未改） ===== */
 export type Tone = "blue" | "green" | "orange" | "purple" | "pink" | "teal";
 
+export interface SongTrack {
+  title: string;
+  audio?: string | null;
+  video?: string | null;
+  lyrics?: string[];
+}
 export interface RawLessonSong {
   audio?: string | null;
   video?: string | null;
   scene?: string;
   lyrics?: string[];
+  /** 多段音视频播放列表（一课多首童谣/课堂视频）。
+   *  有 tracks 时播放器按轨道切换，旧 audio/video/lyrics 作为第一轨兼容。 */
+  tracks?: SongTrack[];
 }
 export interface RawLessonWord {
   id: string;
@@ -98,6 +107,8 @@ export interface LessonSong {
   lyrics: string[];
   /** 该课节奏（gen-songs.py 生成；手工换过 mp3 时自动没有 → 回退比例映射） */
   timings: SongTiming | null;
+  /** 多段音视频轨道（一课多首）。第一轨用顶层 audio/video/lyrics，后续在这里追加。 */
+  tracks: SongTrack[];
 }
 /** 课时（映射后：tone 兜底 + 资源路径化 + 词/句补全） */
 export type LessonType = "official" | "bonus";
@@ -517,6 +528,14 @@ const rawLessons: RawLesson[] = [
         "I see a teacher looking at me.",
         "Teacher, teacher, what do you see?",
         "I see children looking at me."
+      ],
+      /* 第二轨：Brown Bear 歌曲视频（老师课堂演唱版） */
+      tracks: [
+        {
+          title: "Brown Bear 歌曲",
+          audio: "/lessons/l11/brown-bear.mp3",
+          video: "/lessons/l11/brown-bear.mp4"
+        }
       ]
     },
     words: [
@@ -724,7 +743,14 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
     scene: lesson.song.scene || "stage",
     lyrics: lesson.song.lyrics || [],
     // 该课的节奏与逐行时间轴（gen-songs.py 生成；手工换过 mp3 时会自动没有 → 回退比例映射）
-    timings: songTimingsMap[lesson.id] || null
+    timings: songTimingsMap[lesson.id] || null,
+    // 多段音视频轨道：第一轨用顶层 audio/video/lyrics，后续在 tracks 里追加
+    tracks: (lesson.song.tracks || []).map((t) => ({
+      title: t.title,
+      audio: t.audio ? asset(t.audio) : null,
+      video: t.video ? asset(t.video) : null,
+      lyrics: t.lyrics || []
+    }))
   },
   // 亲子对话口语句（TalkView 用），发音文件为 ph-<序号>.mp3，缺失时回退 TTS
   phrases: (lesson.phrases || []).map((p, i) => ({
