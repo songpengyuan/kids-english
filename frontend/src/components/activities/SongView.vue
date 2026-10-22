@@ -12,17 +12,10 @@ const progress = useProgressStore();
 const props = defineProps({ lesson: { type: Object, required: true } });
 const emit = defineEmits(["back", "song-done"]);
 
-/* ---------- 动画 / 视频 / 音乐 Tab ---------- */
-/* 没有视频文件 → 第一个 Tab 是内置动画舞台 */
-const hasVideo = computed(() => !!curTrack.value.video);
-const firstTab = computed(() => (hasVideo.value ? "video" : "stage"));
-const mode = ref(firstTab.value);
-
 const playing = ref(false);
 const audioEl = ref(null);
 const audioMissing = ref(false);
 const videoEl = ref(null);
-const videoMissing = ref(!props.lesson.song.video);
 
 /** 多段音视频轨道：顶层 audio/video/lyrics 是第一轨，tracks 追加后续轨 */
 const tracks = computed(() => {
@@ -36,6 +29,13 @@ const tracks = computed(() => {
 });
 const trackIdx = ref(0);
 const curTrack = computed(() => tracks.value[trackIdx.value] || tracks.value[0]);
+const videoMissing = ref(!curTrack.value.video);
+
+/* ---------- 动画 / 视频 / 音乐 Tab ---------- */
+/* 没有视频文件 → 第一个 Tab 是内置动画舞台 */
+const hasVideo = computed(() => !!curTrack.value.video);
+const firstTab = computed(() => (hasVideo.value ? "video" : "stage"));
+const mode = ref(firstTab.value);
 
 /** 离开本页（回菜单 / 换课）必须停播：脱离 DOM 的媒体元素在部分浏览器会继续出声 */
 onBeforeUnmount(() => {
