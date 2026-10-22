@@ -42,9 +42,9 @@ function mountView() {
 }
 
 describe("OrderView", () => {
-  it("进页显示第一句中文和打乱单词", () => {
+  it("进页显示听句子按钮和打乱单词", () => {
     const w = mountView();
-    expect(w.text()).toContain("我看见一只猫");
+    expect(w.text()).toContain("Listen");
     // 4 个单词块
     const chips = w.findAll(".word-chip");
     expect(chips.length).toBe(4);
@@ -61,12 +61,10 @@ describe("OrderView", () => {
     expect(w.findAll(".slot-word")).toHaveLength(1);
   });
 
-  it("按顺序拼完第一句后自动切换到第二句", async () => {
+  it("拼完第一句后显示 Next 按钮，点 Next 才切到第二句", async () => {
     const w = mountView();
     await flushPromises();
 
-    // bank 里是打乱的单词，按正确顺序点 I / see / a / cat
-    // 正确顺序数组
     const words = ["I", "see", "a", "cat"];
     for (const target of words) {
       const chip = w.findAll(".word-chip").find((c) => c.text() === target);
@@ -74,21 +72,26 @@ describe("OrderView", () => {
       await chip!.trigger("click");
     }
     await flushPromises();
-    // 等待拼对后的发音+展示延迟（600ms）
     await new Promise((r) => setTimeout(r, 800));
-    // 拼完第一句后，应切换到第二句
-    expect(w.text()).toContain("它是红色的");
-    expect(w.text()).not.toContain("我看见一只猫");
+    // 拼对后显示 Next 按钮，bank 隐藏
+    expect(w.text()).toContain("Next");
+    expect(w.findAll(".word-chip")).toHaveLength(0);
+    // 点 Next
+    await w.find(".next-btn").trigger("click");
+    await flushPromises();
+    // 新句子的词出现在 bank 里
+    const bankTexts = w.findAll(".word-chip").map((c) => c.text());
+    expect(bankTexts).toContain("red");
+    expect(bankTexts).toContain("It");
   });
 
   it("拼错时整组弹回，仍停留在当前句", async () => {
     const w = mountView();
     await flushPromises();
-    // 故意乱点：先点 cat 再点 I
     await w.findAll(".word-chip").find((c) => c.text() === "cat")!.trigger("click");
     await w.findAll(".word-chip").find((c) => c.text() === "I")!.trigger("click");
     await flushPromises();
-    // 还在第一句
-    expect(w.text()).toContain("我看见一只猫");
+    // 还在第一句（bank 仍在）
+    expect(w.findAll(".word-chip").length).toBeGreaterThan(0);
   });
 });
