@@ -1,6 +1,6 @@
 /**
  * 学习进度 store（Pinia + TS，localStorage 持久化）
- * stars: { [lessonId]: { learn: 0-3, quiz: 0-3, match: 0-3, speak: 0-3, song: 0|1, talk: 0|1 } }
+ * stars: { [lessonId]: { learn: 0-3, quiz: 0-3, memory: 0-3, match: 0-3, speak: 0-3, order: 0-3, song: 0|1, talk: 0|1 } }
  * words: { [lessonId]: { [wordId]: { seen, correct, wrong, lastAt } } }  ← 单词级掌握度
  * _daily: { date, durationSec, activities }                              ← 今日学情统计
  * _last: 最近进入的课时 id（首页「继续学习」入口）
@@ -47,12 +47,29 @@ export interface WordStat {
 export interface LessonProgress {
   learn?: number;
   quiz?: number;
+  memory?: number;
   match?: number;
   speak?: number;
+  order?: number;
   song?: number;
   talk?: number;
   completed?: string[];
   words?: Record<string, WordStat>;
+}
+
+/**
+ * 单课星数 = 除 completed/words 外的所有数值字段之和。
+ * 故意按对象遍历而不是手写 key 列表：新增玩法（memory/order…）时星数自动计入，
+ * 不会出现"新关卡拿了星但顶栏/我的页总星数不动"的静默漏算。
+ */
+function sumStars(l: LessonProgress | undefined): number {
+  if (!l) return 0;
+  let sum = 0;
+  for (const [k, v] of Object.entries(l)) {
+    if (k === "completed" || k === "words") continue;
+    if (typeof v === "number") sum += v;
+  }
+  return sum;
 }
 
 /** 今日学情（家长报告）：跨天自动重置 */
@@ -310,23 +327,12 @@ export const useProgressStore = defineStore("progress", () => {
   const totalStars = computed(() =>
     Object.keys(progress)
       .filter(isLessonKey)
-      .reduce(
-        (sum, id) =>
-          sum +
-          (progress[id].learn || 0) + (progress[id].quiz || 0) + (progress[id].match || 0) +
-          (progress[id].speak || 0) + (progress[id].song || 0) + (progress[id].talk || 0),
-        0
-      )
+      .reduce((sum, id) => sum + sumStars(progress[id]), 0)
   );
 
   /** 一课的总星数（菜单进度条/关卡图用） */
   function lessonStars(id: string): number {
-    const l = progress[id];
-    if (!l) return 0;
-    return (
-      (l.learn || 0) + (l.quiz || 0) + (l.match || 0) + (l.speak || 0) +
-      (l.song || 0) + (l.talk || 0)
-    );
+    return sumStars(progress[id]);
   }
 
   function setGameStars(id: string, game: string, stars: number) {
@@ -361,7 +367,8 @@ export const useProgressStore = defineStore("progress", () => {
 
   /**
    * "学完"判定（新口径）：该课全部玩法都玩过 **且星级达标**——
-   * song/talk 需 ≥1 分，learn/quiz/match/speak 需 ≥2 星（玩法 key 顺序见 activityKeys）。
+   * song/talk 需 ≥1 分，其余玩法（learn/quiz/memory/match/speak/order）需 ≥2 星
+   *（玩法 key/顺序统一由 activityKeys 提供）。
    * 旧的"玩过 ≥3 种玩法"口径会让 1 星的课也显示"全部通关"，语义失真。
    * @param keys 该课的玩法 key 列表（data/lessons.js 的 activityKeys 提供）
    */

@@ -151,6 +151,19 @@ class WordOut(BaseModel):
     emoji: str = ""
     image: str | None = None
     audio: str | None = None
+    # 词群（如 l11 的 colors/animals）：配合 LessonOut.wordGroups 分组展示
+    group: str | None = None
+
+
+class WordGroupOut(BaseModel):
+    key: str
+    name: str
+
+
+class ColorPairOut(BaseModel):
+    """颜色配对（l11 连一连）：左列颜色 ↔ 右列动物词"""
+    color: str
+    wordId: str
 
 
 class PhraseOut(BaseModel):
@@ -172,6 +185,9 @@ class LessonOut(BaseModel):
     song: SongOut
     words: list[WordOut] = []
     phrases: list[PhraseOut] = []
+    # 颜色配对 / 词群（l11 Brown Bear）；其他课为 null
+    colorPairs: list[ColorPairOut] | None = None
+    wordGroups: list[WordGroupOut] | None = None
 
 
 class LessonSummaryOut(BaseModel):

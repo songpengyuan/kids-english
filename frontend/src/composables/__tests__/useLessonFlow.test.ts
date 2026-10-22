@@ -36,6 +36,12 @@ const acts: QuestAct[] = [
   { key: "quiz", name: "听音选图", icon: undefined as never, tone: "blue", game: "quiz", desc: "听声音找图片" },
   { key: "song", name: "唱童谣", icon: undefined as never, tone: "green", game: "song", desc: "听歌看视频" }
 ];
+/** 含新增玩法的序列（memory/order）：用于验证"新玩法不会卡在菜单"这一类回归 */
+const actsWithNew: QuestAct[] = [
+  ...acts,
+  { key: "memory", name: "翻牌记忆", icon: undefined as never, tone: "blue", game: "memory", desc: "翻牌配对图文" },
+  { key: "order", name: "拼句子", icon: undefined as never, tone: "teal", game: "order", desc: "把单词拼成句子" }
+];
 
 interface Host {
   wrapper: VueWrapper;
@@ -44,12 +50,14 @@ interface Host {
 }
 
 /** 挂载真实组件上下文（useRoute/useQuest/真实 stores），返回 flow 句柄 */
-async function bootHost(url: string): Promise<Host> {
+async function bootHost(url: string, activityList: QuestAct[] = acts): Promise<Host> {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: "/course/:id/game", name: "course-game", component: { template: "<div />" } },
       { path: "/course/:id/menu", name: "lesson-menu", component: { template: "<div />" } },
+      { path: "/course/:id/memory", name: "lesson-memory", component: { template: "<div />" } },
+      { path: "/course/:id/order", name: "lesson-order", component: { template: "<div />" } },
       { path: "/course/:id/:stage?", name: "lesson", component: { template: "<div />" } },
       { path: "/game/quest/:id/:stage?", name: "quest", component: { template: "<div />" } },
       { path: "/", name: "home", component: { template: "<div />" } }
@@ -59,7 +67,7 @@ async function bootHost(url: string): Promise<Host> {
   const Host = defineComponent({
     setup() {
       const lesson = computed(() => getLesson("l4") || null);
-      const activities = computed<QuestAct[]>(() => acts);
+      const activities = computed<QuestAct[]>(() => activityList);
       const route = useRoute();
       const quest = useQuest({ lesson, activities, route });
       const flow = useLessonFlow({
@@ -96,6 +104,20 @@ describe("useLessonFlow 引导（深链解析）", () => {
     expect(flow.stage.value).toBe("menu");
     vi.advanceTimersByTime(400);
     expect(speak).toHaveBeenCalledWith("A Sailor Went to Sea");
+  });
+
+  it("子路径深链 #/course/l4/order 直达拼句子（新玩法曾漏登记 → 首次点击回菜单、需点两次）", async () => {
+    const { flow } = await bootHost("/course/l4/order", actsWithNew);
+    flow.boot();
+    expect(flow.stage.value).toBe("order");
+    // 有直达 stage 时不朗读标题
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it("子路径深链 #/course/l4/memory 直达翻牌记忆", async () => {
+    const { flow } = await bootHost("/course/l4/memory", actsWithNew);
+    flow.boot();
+    expect(flow.stage.value).toBe("memory");
   });
 
   it("query stage 深链：?stage=learn 直接进入学单词", async () => {

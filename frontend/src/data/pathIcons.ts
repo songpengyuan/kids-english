@@ -1,7 +1,7 @@
 /**
  * 游戏模式矢量图标（lucide 风格 24×24 stroke path）。
  * 统一用矢量 icon 取代 emoji 表情：
- *  - 玩法图标：learn/quiz/match/speak/talk/song
+ *  - 玩法图标：learn/quiz/memory/match/speak/order/talk/song
  *  - 课程图标：l4（波浪·水手）/ l5（号角·音乐人）/ l6（彩虹·颜色）
  * 数字课（l7）/ 字母课（l8）用文本图标（"123" / "ABC"，非 emoji）。
  */
@@ -17,6 +17,16 @@ export const ICON_PATHS: Record<string, string[]> = {
     "M3 18v-6a9 9 0 0 1 18 0v6",
     "M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z",
     "M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z",
+  ],
+  // 翻牌记忆：两张错开的卡片（翻牌配对）
+  memory: [
+    "M9 3h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2",
+    "M4 9h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z",
+  ],
+  // 拼句子：铅笔 + 底线（把词排成句）
+  order: [
+    "M12 20h9",
+    "M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z",
   ],
   // 连一连：两个链环相连（Link2 语义，直观表达"连接/匹配"；缩小时仍清晰可辨）
   match: [

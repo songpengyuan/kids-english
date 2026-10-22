@@ -354,6 +354,10 @@ export interface paths {
          *     直接 422，契约里可见。
          *     payload 超 1KB 时截断（保留 ``_truncated`` 标记），避免客户端把大对象塞进事件表
          *     把单 worker 的写入路径拖慢。
+         *
+         *     ``client_ts`` 写入前归一成与 ``server_ts`` 相同的 UTC 格式
+         *     （见 ``app/timeutil.py``）—— 两种格式并存会让按时间的范围查询静默算错。
+         *     归一失败不拒收，落 ``NULL`` 由 ``COALESCE`` 退回 ``server_ts``。
          */
         post: operations["create_events_api_v1_events_post"];
         delete?: never;
@@ -530,6 +534,16 @@ export interface components {
             children: components["schemas"]["ChildOut"][];
         };
         /**
+         * ColorPairOut
+         * @description 颜色配对（l11 连一连）：左列颜色 ↔ 右列动物词
+         */
+        ColorPairOut: {
+            /** Color */
+            color: string;
+            /** Wordid */
+            wordId: string;
+        };
+        /**
          * EventIn
          * @description 单条客户端事件。client_event_id 由客户端生成，服务端据此幂等去重。
          */
@@ -654,6 +668,10 @@ export interface components {
              * @default []
              */
             phrases: components["schemas"]["PhraseOut"][];
+            /** Colorpairs */
+            colorPairs?: components["schemas"]["ColorPairOut"][] | null;
+            /** Wordgroups */
+            wordGroups?: components["schemas"]["WordGroupOut"][] | null;
         };
         /** LessonSummaryOut */
         LessonSummaryOut: {
@@ -956,6 +974,13 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /** WordGroupOut */
+        WordGroupOut: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+        };
         /** WordOut */
         WordOut: {
             /** Id */
@@ -973,6 +998,8 @@ export interface components {
             image?: string | null;
             /** Audio */
             audio?: string | null;
+            /** Group */
+            group?: string | null;
         };
     };
     responses: never;

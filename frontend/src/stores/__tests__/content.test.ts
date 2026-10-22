@@ -48,9 +48,11 @@ const DETAIL: LessonDetailOut = {
       timings: { bpm: 120, beatsPerBar: 4, duration: 10, timeline: [0, 1, 2] },
     },
     words: [
-      { id: "seahorse", en: "seahorse", zh: "海马", emoji: "🐴", image: "/lessons/l4/words/seahorse.png", audio: "/lessons/l4/audio/seahorse.mp3" },
+      { id: "seahorse", en: "seahorse", zh: "海马", emoji: "🐴", image: "/lessons/l4/words/seahorse.png", audio: "/lessons/l4/audio/seahorse.mp3", group: "animals" },
     ],
     phrases: [{ en: "What do you see?", zh: "你看见什么啦？", audio: "/lessons/l4/audio/ph-1.mp3" }],
+    colorPairs: [{ color: "blue", wordId: "seahorse" }],
+    wordGroups: [{ key: "animals", name: "动物" }],
   },
 };
 
@@ -103,6 +105,10 @@ describe("content store · 契约", () => {
     expect(lesson!.words[0]).toMatchObject({ en: "seahorse", lessonId: "l4", image: "/lessons/l4/words/seahorse.png" });
     expect(lesson!.song.timings).toEqual({ bpm: 120, beatsPerBar: 4, duration: 10, timeline: [0, 1, 2] });
     expect(lesson!.phrases[0].audio).toBe("/lessons/l4/audio/ph-1.mp3");
+    // 新增契约字段必须一起映射：词群（分组展示）与颜色配对（l11 连一连）
+    expect(lesson!.words[0].group).toBe("animals");
+    expect(lesson!.wordGroups).toEqual([{ key: "animals", name: "动物" }]);
+    expect(lesson!.colorPairs).toEqual([{ color: "blue", wordId: "seahorse" }]);
   });
 
   it("后端不可用：降级本地静态数据（功能不受影响）", async () => {

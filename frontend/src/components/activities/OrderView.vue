@@ -27,6 +27,15 @@ const total = computed(() => phrases.length);
 watch(total, () => emit("total", total.value), { immediate: true });
 watch(() => phrases.length, buildSentence, { immediate: true });
 
+/** 还空着的槽位数 = 目标句单词数 − 已放入数（每个词位画一条横线） */
+const emptyCount = computed(() => Math.max(0, targetWords.value.length - slots.value.length));
+
+/** 横线宽度跟着词长走：孩子能看出这里是一个多长的词（"I" 短、"seahorse" 长） */
+function blankWidth(i: number): string {
+  const len = targetWords.value[slots.value.length + i]?.length ?? 2;
+  return `${Math.max(2, Math.min(9, len))}ch`;
+}
+
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -117,7 +126,14 @@ onBeforeUnmount(() => {
         <span v-for="(w, i) in slots" :key="i" class="slot-word" @click="takeBack(i)">
           {{ w }}
         </span>
-        <span v-if="slots.length < targetWords.length" class="slot-empty">？</span>
+        <!-- 空槽位：每个待填单词画一条横线（以前只画一个"？"，看不出要拼几个词） -->
+        <span
+          v-for="n in emptyCount"
+          :key="'blank-' + n"
+          class="slot-empty"
+          :style="{ width: blankWidth(n - 1) }"
+          aria-hidden="true"
+        ></span>
       </div>
 
       <!-- 待选单词块 -->
@@ -191,10 +207,15 @@ onBeforeUnmount(() => {
   font-size: var(--fs-body);
   cursor: pointer;
 }
+/* 空槽位横线：宽度随目标词长度变化（模板内联 --width），与词块垂直居中对齐 */
 .slot-empty {
-  color: var(--ink-faint);
-  font-size: var(--fs-title);
+  display: inline-block;
+  height: 1.5em;
+  min-width: 28px;
   align-self: center;
+  border-bottom: 3px solid var(--ink-faint);
+  border-radius: 2px;
+  opacity: 0.55;
 }
 .bank {
   display: flex;

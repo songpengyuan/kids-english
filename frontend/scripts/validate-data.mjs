@@ -77,6 +77,24 @@ try {
     for (const p of l.phrases || []) {
       if (p.word) check(wordIds.has(p.word), `课时 ${l.id} 口语句引用不存在的单词：${p.word}`);
     }
+    // 词群（l11 颜色/动物）：分组必须合法且覆盖全部词，否则分组玩法里会静默丢词
+    if (l.wordGroups?.length) {
+      const groupKeys = new Set(l.wordGroups.map((g) => g.key));
+      check(groupKeys.size === l.wordGroups.length, `课时 ${l.id} wordGroups key 重复`);
+      for (const g of l.wordGroups) {
+        check(g.name?.trim(), `课时 ${l.id} 词群 ${g.key} 缺 name`);
+        check((l.words || []).some((w) => w.group === g.key), `课时 ${l.id} 词群 ${g.key} 没有任何词`);
+      }
+      for (const w of l.words || []) {
+        check(!!w.group && groupKeys.has(w.group), `课时 ${l.id} 单词 ${w.id} 的 group 非法：${w.group ?? "缺失"}`);
+      }
+    } else {
+      check(!(l.words || []).some((w) => w.group), `课时 ${l.id} 有单词配了 group 但没声明 wordGroups`);
+    }
+    // 颜色配对引用必须存在（连一连 colorMode 静默失效的护栏）
+    for (const p of l.colorPairs || []) {
+      check(wordIds.has(p.wordId), `课时 ${l.id} colorPairs 引用不存在的单词：${p.wordId}`);
+    }
     // 资源硬校验：童谣音频缺失 = 上课白屏
     const songMp3 = `public/lessons/${l.id}/song.mp3`;
     check(existsSync(join(root, songMp3)), `课时 ${l.id} 缺童谣音频：${songMp3}`);

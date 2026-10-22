@@ -48,12 +48,16 @@ function toLesson(raw: LessonOut): Lesson {
       image: w.image ?? null,
       audio: w.audio ?? null,
       lessonId: raw.id,
+      group: w.group ?? undefined,
     })),
     phrases: (raw.phrases ?? []).map((p) => ({
       en: p.en,
       zh: p.zh,
       audio: p.audio ?? "",
     })),
+    // 契约里可能为 null（其他课不配）；转成前端可选字段
+    colorPairs: raw.colorPairs ?? undefined,
+    wordGroups: raw.wordGroups ?? undefined,
   };
 }
 

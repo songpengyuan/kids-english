@@ -1179,12 +1179,85 @@
     },
     "words": [
       {
+        "id": "brown",
+        "en": "brown",
+        "zh": "棕色",
+        "emoji": "🟤",
+        "image": "/lessons/l11/words/brown.svg",
+        "audio": "/lessons/l11/audio/brown.mp3",
+        "group": "colors"
+      },
+      {
+        "id": "red",
+        "en": "red",
+        "zh": "红色",
+        "emoji": "🔴",
+        "image": "/lessons/l11/words/red.svg",
+        "audio": "/lessons/l11/audio/red.mp3",
+        "group": "colors"
+      },
+      {
+        "id": "yellow",
+        "en": "yellow",
+        "zh": "黄色",
+        "emoji": "🟡",
+        "image": "/lessons/l11/words/yellow.svg",
+        "audio": "/lessons/l11/audio/yellow.mp3",
+        "group": "colors"
+      },
+      {
+        "id": "blue",
+        "en": "blue",
+        "zh": "蓝色",
+        "emoji": "🔵",
+        "image": "/lessons/l11/words/blue.svg",
+        "audio": "/lessons/l11/audio/blue.mp3",
+        "group": "colors"
+      },
+      {
+        "id": "green",
+        "en": "green",
+        "zh": "绿色",
+        "emoji": "🟢",
+        "image": "/lessons/l11/words/green.svg",
+        "audio": "/lessons/l11/audio/green.mp3",
+        "group": "colors"
+      },
+      {
+        "id": "purple",
+        "en": "purple",
+        "zh": "紫色",
+        "emoji": "🟣",
+        "image": "/lessons/l11/words/purple.svg",
+        "audio": "/lessons/l11/audio/purple.mp3",
+        "group": "colors"
+      },
+      {
+        "id": "white",
+        "en": "white",
+        "zh": "白色",
+        "emoji": "⚪",
+        "image": "/lessons/l11/words/white.svg",
+        "audio": "/lessons/l11/audio/white.mp3",
+        "group": "colors"
+      },
+      {
+        "id": "black",
+        "en": "black",
+        "zh": "黑色",
+        "emoji": "⚫",
+        "image": "/lessons/l11/words/black.svg",
+        "audio": "/lessons/l11/audio/black.mp3",
+        "group": "colors"
+      },
+      {
         "id": "bear",
         "en": "bear",
         "zh": "棕熊",
         "emoji": "🐻",
         "image": "/lessons/l11/words/bear.png",
-        "audio": "/lessons/l11/audio/bear.mp3"
+        "audio": "/lessons/l11/audio/bear.mp3",
+        "group": "animals"
       },
       {
         "id": "bird",
@@ -1192,7 +1265,8 @@
         "zh": "小鸟",
         "emoji": "🐦",
         "image": "/lessons/l11/words/bird.png",
-        "audio": "/lessons/l11/audio/bird.mp3"
+        "audio": "/lessons/l11/audio/bird.mp3",
+        "group": "animals"
       },
       {
         "id": "duck",
@@ -1200,7 +1274,8 @@
         "zh": "鸭子",
         "emoji": "🦆",
         "image": "/lessons/l11/words/duck.png",
-        "audio": "/lessons/l11/audio/duck.mp3"
+        "audio": "/lessons/l11/audio/duck.mp3",
+        "group": "animals"
       },
       {
         "id": "horse",
@@ -1208,7 +1283,8 @@
         "zh": "小马",
         "emoji": "🐎",
         "image": "/lessons/l11/words/horse.png",
-        "audio": "/lessons/l11/audio/horse.mp3"
+        "audio": "/lessons/l11/audio/horse.mp3",
+        "group": "animals"
       },
       {
         "id": "frog",
@@ -1216,7 +1292,8 @@
         "zh": "青蛙",
         "emoji": "🐸",
         "image": "/lessons/l11/words/frog.png",
-        "audio": "/lessons/l11/audio/frog.mp3"
+        "audio": "/lessons/l11/audio/frog.mp3",
+        "group": "animals"
       },
       {
         "id": "cat",
@@ -1224,7 +1301,8 @@
         "zh": "小猫",
         "emoji": "🐱",
         "image": "/lessons/l11/words/cat.png",
-        "audio": "/lessons/l11/audio/cat.mp3"
+        "audio": "/lessons/l11/audio/cat.mp3",
+        "group": "animals"
       },
       {
         "id": "dog",
@@ -1232,7 +1310,8 @@
         "zh": "小狗",
         "emoji": "🐶",
         "image": "/lessons/l11/words/dog.png",
-        "audio": "/lessons/l11/audio/dog.mp3"
+        "audio": "/lessons/l11/audio/dog.mp3",
+        "group": "animals"
       },
       {
         "id": "sheep",
@@ -1240,7 +1319,8 @@
         "zh": "绵羊",
         "emoji": "🐑",
         "image": "/lessons/l11/words/sheep.png",
-        "audio": "/lessons/l11/audio/sheep.mp3"
+        "audio": "/lessons/l11/audio/sheep.mp3",
+        "group": "animals"
       },
       {
         "id": "goldfish",
@@ -1248,15 +1328,8 @@
         "zh": "金鱼",
         "emoji": "🐟",
         "image": "/lessons/l11/words/goldfish.png",
-        "audio": "/lessons/l11/audio/goldfish.mp3"
-      },
-      {
-        "id": "brown",
-        "en": "brown",
-        "zh": "棕色",
-        "emoji": "🟤",
-        "image": "/lessons/l11/words/brown.png",
-        "audio": "/lessons/l11/audio/brown.mp3"
+        "audio": "/lessons/l11/audio/goldfish.mp3",
+        "group": "animals"
       }
     ],
     "phrases": [
@@ -1279,6 +1352,46 @@
         "en": "It's a bear.",
         "zh": "是一只棕熊。",
         "audio": "/lessons/l11/audio/ph-4.mp3"
+      }
+    ],
+    "colorPairs": [
+      {
+        "color": "red",
+        "wordId": "bird"
+      },
+      {
+        "color": "yellow",
+        "wordId": "duck"
+      },
+      {
+        "color": "blue",
+        "wordId": "horse"
+      },
+      {
+        "color": "green",
+        "wordId": "frog"
+      },
+      {
+        "color": "purple",
+        "wordId": "cat"
+      },
+      {
+        "color": "white",
+        "wordId": "dog"
+      },
+      {
+        "color": "black",
+        "wordId": "sheep"
+      }
+    ],
+    "wordGroups": [
+      {
+        "key": "colors",
+        "name": "颜色"
+      },
+      {
+        "key": "animals",
+        "name": "动物"
       }
     ]
   }

@@ -2,7 +2,7 @@
  * 课程流程（阶段 2-3：从 LessonView 抽取）。
  *
  * 一门课的完整状态机：
- *   menu（玩法菜单）→ song/learn/quiz/match/speak/talk（玩法）
+ *   menu（玩法菜单）→ song/learn/quiz/memory/match/speak/order/talk（玩法）
  *   → result（结算：闯关大画面 / 自由结算）
  *
  * 职责：
@@ -30,8 +30,12 @@ import { track } from "../services/telemetry";
  */
 export type LessonStage = "menu" | "learn" | "quiz" | "memory" | "match" | "speak" | "order" | "song" | "talk" | "result";
 
-/** 调试/兼容深链：?lesson=l4&stage=learn 直接进入玩法页 */
-const STAGES = ["learn", "quiz", "match", "speak", "song", "talk"];
+/**
+ * 允许直达的 stage 一律以 activities 为准，**不要再手写一份 key 列表**：
+ * 手写列表在新增玩法（memory / order）时会漏项，表现为"点一次没进去（路由已变、
+ * boot 把它判成未知 stage 又回菜单），点第二次才进"——因为第二次 replace 同一 URL
+ * 不再触发路由 watch。2026-10-22 拼句子首点不进就是踩的这个坑。
+ */
 
 export interface UseLessonFlowOptions {
   /** 当前课时（本地兜底 + 远端异步覆盖；Ref 兼容 computed 与可变引用） */
@@ -104,7 +108,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
       } else {
         stage.value = "menu";
       }
-    } else if (STAGES.includes(s)) {
+    } else if (activities.value.some((a) => a.key === s)) {
       stage.value = s as LessonStage;
       actStart = Date.now();
       actKey = stage.value;

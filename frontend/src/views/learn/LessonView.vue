@@ -20,7 +20,8 @@ import HeaderBar from "../../components/layout/HeaderBar.vue";
 import LessonResult from "../../components/lesson/LessonResult.vue";
 import LessonMenu from "../../components/lesson/LessonMenu.vue";
 import LessonProgressHeader from "../../components/lesson/LessonProgressHeader.vue";
-import { activityKeys, getLesson as getLocalLesson, type Lesson } from "../../data/lessons";
+import SegmentedTabs from "../../components/ui/SegmentedTabs.vue";
+import { activityKeys, getLesson as getLocalLesson, wordGroupsOf, type Lesson } from "../../data/lessons";
 import { useContentStore } from "../../stores/content";
 import { speak, speakZh } from "../../services/speech";
 import { useProgressStore } from "../../stores/progress";
@@ -165,14 +166,48 @@ function openGame() {
   void router.push({ name: "course-game", params: { id: lessonId.value } });
 }
 const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
-/** 玩法页（答题中）：顶部按钮用"关闭"（✕）而非返回箭头（多邻国式） */
-const isPlay = computed(() =>
-  ["learn", "quiz", "match", "speak", "song", "talk"].includes(stage.value)
-);
+/** 玩法页（答题中）：顶部按钮用"关闭"（✕）而非返回箭头（多邻国式）。
+ *  除 menu/result 外都是玩法页——别再手写玩法 key 列表（新增 memory/order 时漏项，
+ *  会把它们误当菜单页：顶栏没有进度、左上角还是返回箭头）。 */
+const isPlay = computed(() => stage.value !== "menu" && stage.value !== "result");
 /** 玩法进度（0-100），由 Learn/Quiz/Match/Speak 上报到顶栏进度条（多邻国式） */
 const playPct = ref(0);
 /** 本局总量（题数/页数/对数/词数/轮数）与已完成量 → 顶栏显示 x/y，孩子知道一共要做多少 */
 const playTotal = ref(0);
+
+/* ---------- 词群切换（l11 颜色 / 动物） ----------
+ * lesson.wordGroups 声明分组（如 l11：颜色 / 动物），词表按 word.group 归组。
+ * 只有词类玩法（学单词/听音选图/翻牌记忆/跟我读）显示切换；
+ * 连一连按 colorPairs 玩颜色-动物配对、唱童谣/拼句子/亲子对话用不到词表，不显示。 */
+const GROUPED_STAGES = new Set(["learn", "quiz", "memory", "speak"]);
+/** 分组后的词表（[{key,name,words}]）；无 wordGroups 的课是空数组 */
+const wordGroups = computed(() => (lesson.value ? wordGroupsOf(lesson.value) : []));
+/** 当前选中的词群 key（空串 = 该课没有分组） */
+const activeGroup = ref("");
+const groupTabs = computed(() => wordGroups.value.map((g) => ({ value: g.key, label: g.name })));
+const showGroupSwitch = computed(
+  () => wordGroups.value.length > 1 && GROUPED_STAGES.has(stage.value)
+);
+/** 当前玩法该用哪些词：分组课只取当前组，其他课/玩法用全部词 */
+const playWords = computed(() => {
+  if (!showGroupSwitch.value) return lesson.value?.words ?? [];
+  return wordGroups.value.find((g) => g.key === activeGroup.value)?.words ?? [];
+});
+// 换课/远端详情回来导致分组变化时，把选中项挪到第一个有效组
+watch(
+  wordGroups,
+  (groups) => {
+    if (!groups.some((g) => g.key === activeGroup.value)) {
+      activeGroup.value = groups[0]?.key ?? "";
+    }
+  },
+  { immediate: true }
+);
+// 切组 = 换一套词，顶部单局进度清零（子玩法会重新上报）
+watch(activeGroup, () => {
+  playPct.value = 0;
+  playTotal.value = 0;
+});
 </script>
 
 
@@ -216,6 +251,11 @@ const playTotal = ref(0);
       </template>
     </HeaderBar>
 
+    <!-- 词群切换（l11：颜色 / 动物）：进玩法后按两部分分别练 -->
+    <div v-if="showGroupSwitch" class="word-groups anim-fade-up">
+      <SegmentedTabs v-model="activeGroup" :items="groupTabs" />
+    </div>
+
     <!-- 课时菜单：玩法瓷片（家长陪练视角；闯关地图是默认落地页，这里不再放闯关入口） -->
     <LessonMenu
       v-if="stage === 'menu' && !questMode"
@@ -229,7 +269,8 @@ const playTotal = ref(0);
     <!-- 各玩法 -->
     <LearnStage
       v-else-if="stage === 'learn'"
-      :words="lesson.words"
+      :key="'learn:' + activeGroup"
+      :words="playWords"
       :dialog="lesson.stageStyle === 'dialog'"
       :phrases="lesson.phrases"
       @done="afterGame"
@@ -238,7 +279,8 @@ const playTotal = ref(0);
     />
     <MemoryView
       v-else-if="stage === 'memory'"
-      :words="lesson.words"
+      :key="'memory:' + activeGroup"
+      :words="playWords"
       @done="afterGame"
       @progress="playPct = $event"
       @total="playTotal = $event"
@@ -246,7 +288,8 @@ const playTotal = ref(0);
     <component
       v-else-if="stage === 'quiz' || stage === 'match' || stage === 'speak'"
       :is="stage === 'quiz' ? QuizView : stage === 'match' ? MatchView : SpeakView"
-      :words="lesson.words"
+      :key="stage + ':' + activeGroup"
+      :words="playWords"
       :color-pairs="lesson.colorPairs"
       @done="afterGame"
       @progress="playPct = $event"
@@ -283,6 +326,10 @@ const playTotal = ref(0);
 </template>
 
 <style scoped>
+.word-groups {
+  flex: none;
+}
+
 .hdr-title-tap {
   cursor: pointer;
   border-radius: var(--radius-s);

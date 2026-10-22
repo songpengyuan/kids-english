@@ -67,6 +67,8 @@ export interface RawLessonWord {
   emoji: string;
   image?: string;
   audio?: string;
+  /** 所属词群（如 l11 的 colors/animals）；配合 lesson.wordGroups 分组展示 */
+  group?: string;
 }
 export interface RawLesson {
   id: string;
@@ -82,6 +84,8 @@ export interface RawLesson {
   phrases?: { en: string; zh: string }[];
   /** 颜色配对（l11 Brown Bear）：左列颜色圆 ↔ 右列动物图，练"什么颜色配什么动物" */
   colorPairs?: { color: string; wordId: string }[];
+  /** 词群（如 l11：颜色 / 动物）：词表按这两个部分分组展示与练习 */
+  wordGroups?: { key: string; name: string }[];
 }
 
 /** 单词（映射后：补课时归属 + 资源路径化） */
@@ -94,6 +98,8 @@ export interface Word {
   audio?: string | null;
   /** 词归属的课时 id：发音注册表按 (lessonId, wordId) 精确定位 */
   lessonId: string;
+  /** 所属词群（如 l11 的 colors/animals）；配合 lesson.wordGroups 分组展示 */
+  group?: string;
 }
 export interface Phrase {
   en: string;
@@ -128,6 +134,8 @@ export interface Lesson {
   phrases: Phrase[];
   /** 颜色配对（l11）：左列颜色圆 ↔ 右列动物图 */
   colorPairs?: { color: string; wordId: string }[];
+  /** 词群（如 l11：颜色 / 动物）：词表按这两个部分分组展示与练习 */
+  wordGroups?: { key: string; name: string }[];
 }
 
 
@@ -539,18 +547,30 @@ const rawLessons: RawLesson[] = [
       ]
     },
     words: [
-      /* 老师词表（2026-10-21）：绘本核心 8 动物 + 新词色 brown；
-       * 图片老师未提供，缺失自动回退 emoji */
-      { id: "bear", en: "bear", zh: "棕熊", emoji: "🐻", image: "/lessons/l11/words/bear.png" },
-      { id: "bird", en: "bird", zh: "小鸟", emoji: "🐦", image: "/lessons/l11/words/bird.png" },
-      { id: "duck", en: "duck", zh: "鸭子", emoji: "🦆", image: "/lessons/l11/words/duck.png" },
-      { id: "horse", en: "horse", zh: "小马", emoji: "🐎", image: "/lessons/l11/words/horse.png" },
-      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l11/words/frog.png" },
-      { id: "cat", en: "cat", zh: "小猫", emoji: "🐱", image: "/lessons/l11/words/cat.png" },
-      { id: "dog", en: "dog", zh: "小狗", emoji: "🐶", image: "/lessons/l11/words/dog.png" },
-      { id: "sheep", en: "sheep", zh: "绵羊", emoji: "🐑", image: "/lessons/l11/words/sheep.png" },
-      { id: "goldfish", en: "goldfish", zh: "金鱼", emoji: "🐟", image: "/lessons/l11/words/goldfish.png" },
-      { id: "brown", en: "brown", zh: "棕色", emoji: "🟤", image: "/lessons/l11/words/brown.png" }
+      /* 词表按绘本分两部分：颜色（colors）→ 动物（animals）。
+       * 颜色图复用 l6 的彩色小熊（同一批颜色词），发音也是同一批 mp3；
+       * 动物图是老师提供的绘本扫描件。 */
+      { id: "brown", en: "brown", zh: "棕色", emoji: "🟤", image: "/lessons/l11/words/brown.svg", group: "colors" },
+      { id: "red", en: "red", zh: "红色", emoji: "🔴", image: "/lessons/l11/words/red.svg", group: "colors" },
+      { id: "yellow", en: "yellow", zh: "黄色", emoji: "🟡", image: "/lessons/l11/words/yellow.svg", group: "colors" },
+      { id: "blue", en: "blue", zh: "蓝色", emoji: "🔵", image: "/lessons/l11/words/blue.svg", group: "colors" },
+      { id: "green", en: "green", zh: "绿色", emoji: "🟢", image: "/lessons/l11/words/green.svg", group: "colors" },
+      { id: "purple", en: "purple", zh: "紫色", emoji: "🟣", image: "/lessons/l11/words/purple.svg", group: "colors" },
+      { id: "white", en: "white", zh: "白色", emoji: "⚪", image: "/lessons/l11/words/white.svg", group: "colors" },
+      { id: "black", en: "black", zh: "黑色", emoji: "⚫", image: "/lessons/l11/words/black.svg", group: "colors" },
+      { id: "bear", en: "bear", zh: "棕熊", emoji: "🐻", image: "/lessons/l11/words/bear.png", group: "animals" },
+      { id: "bird", en: "bird", zh: "小鸟", emoji: "🐦", image: "/lessons/l11/words/bird.png", group: "animals" },
+      { id: "duck", en: "duck", zh: "鸭子", emoji: "🦆", image: "/lessons/l11/words/duck.png", group: "animals" },
+      { id: "horse", en: "horse", zh: "小马", emoji: "🐎", image: "/lessons/l11/words/horse.png", group: "animals" },
+      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l11/words/frog.png", group: "animals" },
+      { id: "cat", en: "cat", zh: "小猫", emoji: "🐱", image: "/lessons/l11/words/cat.png", group: "animals" },
+      { id: "dog", en: "dog", zh: "小狗", emoji: "🐶", image: "/lessons/l11/words/dog.png", group: "animals" },
+      { id: "sheep", en: "sheep", zh: "绵羊", emoji: "🐑", image: "/lessons/l11/words/sheep.png", group: "animals" },
+      { id: "goldfish", en: "goldfish", zh: "金鱼", emoji: "🐟", image: "/lessons/l11/words/goldfish.png", group: "animals" }
+    ],
+    wordGroups: [
+      { key: "colors", name: "颜色" },
+      { key: "animals", name: "动物" }
     ],
     phrases: [
       /* 老师亲子口语模板：问颜色 / 问动物 */
@@ -783,6 +803,20 @@ export function activityKeys(lesson: Pick<Lesson, "phrases">): string[] {
   const base = ["song", "learn", "quiz", "memory", "match", "speak"];
   if (lesson.phrases?.length) base.push("order", "talk");
   return base;
+}
+
+/**
+ * 按 lesson.wordGroups 把词表拆成若干组（颜色 / 动物…）。
+ * 没配 wordGroups 的课返回空数组（调用方按原来的平铺词表走）。
+ * 词在两个组都没登记时会被漏掉，所以配套测试要求"分组并集 = 全部词"。
+ */
+export function wordGroupsOf(lesson: Lesson): { key: string; name: string; words: Word[] }[] {
+  const groups = lesson.wordGroups ?? [];
+  return groups.map((g) => ({
+    key: g.key,
+    name: g.name,
+    words: lesson.words.filter((w) => w.group === g.key),
+  }));
 }
 
 export function getLesson(id: string): Lesson | null {

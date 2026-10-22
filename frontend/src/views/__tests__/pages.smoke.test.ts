@@ -8,7 +8,7 @@
  * 组件测试又只测了单个组件。这层"每页都挂一次"的护栏就是为了堵住这一类事故。
  */
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
 import { createMemoryHistory, createRouter, type Router } from "vue-router";
 
@@ -231,6 +231,24 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(tiles[1]).toContain("学单词");
     expect(tiles[2]).toContain("听音选图");
     expect(w.text()).not.toContain("闯关挑战");
+  });
+
+  it("l11 学单词按词群分「颜色 / 动物」两部分（切 tab 换词表）", async () => {
+    const w = await mountPage(LessonView, "/learn/l11/learn");
+    await flushPromises();
+    // 两个分组 tab
+    const tabTexts = w.findAll(".seg-btn").map((b) => b.text());
+    expect(tabTexts.some((t) => t.includes("颜色"))).toBe(true);
+    expect(tabTexts.some((t) => t.includes("动物"))).toBe(true);
+    // 默认颜色组：只有颜色词（brown 是颜色组的第一个），不出现动物
+    const words = () => w.findAll(".word-card .word").map((e) => e.text());
+    expect(words()).toContain("brown");
+    expect(words()).not.toContain("bear");
+    // 切到动物：出现动物词、不再有颜色词
+    await w.findAll(".seg-btn").find((b) => b.text().includes("动物"))!.trigger("click");
+    await flushPromises();
+    expect(words()).toContain("bear");
+    expect(words()).not.toContain("brown");
   });
 
   it("玩法直达子路径 /learn/:id/:stage 能渲染（#/learn/l4/learn）", async () => {

@@ -185,3 +185,21 @@ describe("progress store · 掌握度与每日快照", () => {
     expect(days[0].listenSec).toBe(300);
   });
 });
+
+describe("progress store · 星数统计（新增玩法）", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-22T09:00:00"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("memory / order 的星数也计入 lessonStars 与 totalStars（不再手写玩法 key 列表）", () => {
+    const p = useProgressStore();
+    p.setGameStars("l10", "memory", 2);
+    p.setGameStars("l10", "order", 3);
+    expect(p.lessonStars("l10")).toBe(5);
+    expect(p.totalStars).toBe(5);
+  });
+});

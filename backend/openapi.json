@@ -1515,6 +1515,25 @@
         "type": "object",
         "title": "ChildrenOut"
       },
+      "ColorPairOut": {
+        "properties": {
+          "color": {
+            "type": "string",
+            "title": "Color"
+          },
+          "wordId": {
+            "type": "string",
+            "title": "Wordid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "color",
+          "wordId"
+        ],
+        "title": "ColorPairOut",
+        "description": "颜色配对（l11 连一连）：左列颜色 ↔ 右列动物词"
+      },
       "EventIn": {
         "properties": {
           "client_event_id": {
@@ -1801,6 +1820,34 @@
             "type": "array",
             "title": "Phrases",
             "default": []
+          },
+          "colorPairs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ColorPairOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Colorpairs"
+          },
+          "wordGroups": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WordGroupOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wordgroups"
           }
         },
         "type": "object",
@@ -2455,6 +2502,24 @@
         ],
         "title": "ValidationError"
       },
+      "WordGroupOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name"
+        ],
+        "title": "WordGroupOut"
+      },
       "WordOut": {
         "properties": {
           "id": {
@@ -2495,6 +2560,17 @@
               }
             ],
             "title": "Audio"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
           }
         },
         "type": "object",

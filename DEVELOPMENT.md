@@ -1759,6 +1759,43 @@ data/         数据唯一入口（课时/英雄/关卡/歌词）
 - 本课地图只有一门课，课程横幅的整条分隔线会横穿背景的太阳/月亮 —— 单课模式改用
   标题下一小段下划线（`.game-path-scroll.is-single .gp-unit::after`），多课总地图保留整条线。
 
+#### 14.9.14 新增玩法要同步所有"手写玩法 key 列表"（2026-10-22）
+
+新增 memory/order 两个玩法后暴露的一组同源静默失效（都源于"少登记一处 key 列表"）：
+
+- **首点不进、要点两次**：`useLessonFlow.boot()` 里有一份手写 `STAGES`（learn/quiz/…），
+  点「拼句子」时 `open()` 先切 stage + `router.replace('/course/l10/order')`，
+  路由 watch 触发 `boot()` 却把 order 判成未知 stage → 回菜单；第二次点击 URL 已相同、
+  不再触发 watch，于是"进去"了。→ 可直达 stage 改为**以 activities 为准**，删掉手写列表。
+- **玩法页顶栏没进度/还是返回箭头**：`LessonView.isPlay` 也是手写 key 列表；改为
+  `stage !== "menu" && stage !== "result"`，以后新增玩法自动算玩法页。
+- **地图节点空白圆**：`pathIcons` 缺 memory/order 图标（`PathIcon` 找不到就渲染空）。
+  补图标，并加 `pathIcons.test.ts` 遍历 `ACT_NAMES` 保证每个玩法都有图标。
+- **顶栏/我的页总星数不涨**：`progress.totalStars` / `lessonStars` 手写累加 6 个玩法字段；
+  改为遍历 `LessonProgress` 的数值字段求和（排除 completed/words），新玩法自动计入。
+- 结论：玩法 key 的"真身"只有 `activityKeys` + `LessonView.ACT_META` 两处；
+  任何 `["learn","quiz",...]` 字面量都应在新增玩法时检查/删掉。守卫顺序：
+  路由/模板分支 → 可直达 stage → isPlay → 地图图标 → 星数统计。
+
+#### 14.9.15 一课多组词：wordGroups（l11 颜色 / 动物，2026-10-22）
+
+l11 Brown Bear 的词表同时包含颜色和动物，学单词/听音选图等玩法里要分成两个部分练：
+
+- **数据**：`Word.group`（colors/animals）+ `Lesson.wordGroups[{key,name}]`；派生函数
+  `wordGroupsOf(lesson)`（分组并集必须 = 全部词，漏一个词该词就在分组玩法里静默消失）。
+- **契约**：这是内容字段，**必须同时改三处**，否则线上（后端详情覆盖本地）会静默丢分组：
+  `backend/app/schemas.py`（WordOut.group / LessonOut.wordGroups / colorPairs）
+  → 重导 `backend/openapi.json` → 重生成 `frontend/src/types/api.ts`；
+  同时 `frontend/scripts/export-lessons.mjs` 导出新字段 + `stores/content.ts` 的
+  `toLesson` 映射新字段（`colorPairs` 之前就漏了，本次一并补上）。
+- **UI**：`LessonView` 在词类玩法（learn/quiz/memory/speak）顶部显示 `SegmentedTabs`
+  颜色/动物；只把当前组的词传给玩法，并用 `:key="stage:group"` 强制重挂载（换组 = 换一套题，
+  不重挂载会带着上一组的会话状态）；切组时顶栏单局进度清零。
+  连一连按 `colorPairs` 自己玩颜色-动物配对，拼句子/亲子对话用 phrases，都不显示分组。
+- **护栏**：`validate-data.mjs` 校验分组 key/name/覆盖性 + colorPairs 引用；
+  `data/__tests__/lessons.test.ts` 锁 l11 分组数量与并集；`pages.smoke.test.ts` 锁
+  「默认颜色组只有颜色词、切动物后出现动物词」。内容图/发音复用 l6 的彩色小熊一组资源。
+
 ### 14.10 本课闯关地图：不能把"总地图裁一刀"（2026-10-17）
 
 **背景**：闯关入口从"全站总地图 #/game"挪进课时菜单后，实现方式只是给 `GamePath`

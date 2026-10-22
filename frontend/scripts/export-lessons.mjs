@@ -45,8 +45,13 @@ try {
       emoji: w.emoji,
       image: w.image,
       audio: w.audio,
+      // 词群（l11 colors/animals）；无分组的课不写该字段，避免整份种子的噪声 diff
+      ...(w.group ? { group: w.group } : {}),
     })),
     phrases: l.phrases.map((p) => ({ en: p.en, zh: p.zh, audio: p.audio })),
+    // 契约字段：颜色配对 / 词群（l11）；undefined 时 JSON.stringify 会自动省略
+    colorPairs: l.colorPairs,
+    wordGroups: l.wordGroups,
   }))
     // 按 order 稳定输出：数组顺序在 seed 里**不该有意义**（课程顺序由每条的 order 字段表达，
     // 后端 seed_lessons 也只用 order_no）。若沿用 lessons.ts 的数组顺序，

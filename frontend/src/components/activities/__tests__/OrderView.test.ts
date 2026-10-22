@@ -50,6 +50,17 @@ describe("OrderView", () => {
     expect(chips.length).toBe(4);
   });
 
+  it("句子槽按目标词数显示横线占位（不再只有一个问号），拼一个少一条", async () => {
+    const w = mountView();
+    // 第一句 "I see a cat" = 4 个词 → 4 条横线
+    expect(w.findAll(".slot-empty")).toHaveLength(4);
+    expect(w.text()).not.toContain("？");
+    // 放一个词进槽：横线 −1，实词 +1
+    await w.findAll(".word-chip")[0].trigger("click");
+    expect(w.findAll(".slot-empty")).toHaveLength(3);
+    expect(w.findAll(".slot-word")).toHaveLength(1);
+  });
+
   it("按顺序拼完第一句后自动切换到第二句", async () => {
     const w = mountView();
     await flushPromises();
