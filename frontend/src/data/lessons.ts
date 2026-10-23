@@ -75,6 +75,8 @@ export interface RawLessonWord {
   audio?: string;
   /** 所属词群（如 l11 的 colors/animals）；配合 lesson.wordGroups 分组展示 */
   group?: string;
+  /** 颜色词：十六进制色值 */
+  color?: string;
 }
 export interface RawLesson {
   id: string;
@@ -106,6 +108,8 @@ export interface Word {
   lessonId: string;
   /** 所属词群（如 l11 的 colors/animals）；配合 lesson.wordGroups 分组展示 */
   group?: string;
+  /** 颜色词：十六进制色值，WordCard 显示小色点而非大图 */
+  color?: string;
 }
 export interface Phrase {
   en: string;
@@ -565,16 +569,16 @@ const rawLessons: RawLesson[] = [
       /* 词表按绘本分两部分：颜色（colors）→ 动物（animals）。
        * 颜色图复用 l6 的彩色小熊（同一批颜色词），发音也是同一批 mp3；
        * 动物图是老师提供的绘本扫描件。 */
-      { id: "brown", en: "brown", zh: "棕色", emoji: "🟤", image: "/lessons/l11/words/brown.svg", group: "colors" },
-      { id: "red", en: "red", zh: "红色", emoji: "🔴", image: "/lessons/l11/words/red.svg", group: "colors" },
-      { id: "yellow", en: "yellow", zh: "黄色", emoji: "🟡", image: "/lessons/l11/words/yellow.svg", group: "colors" },
-      { id: "blue", en: "blue", zh: "蓝色", emoji: "🔵", image: "/lessons/l11/words/blue.svg", group: "colors" },
-      { id: "green", en: "green", zh: "绿色", emoji: "🟢", image: "/lessons/l11/words/green.svg", group: "colors" },
-      { id: "orange", en: "orange", zh: "橙色", emoji: "🍊", image: "/lessons/l11/words/orange.svg", group: "colors" },
-      { id: "pink", en: "pink", zh: "粉色", emoji: "🌸", image: "/lessons/l11/words/pink.svg", group: "colors" },
-      { id: "purple", en: "purple", zh: "紫色", emoji: "🟣", image: "/lessons/l11/words/purple.svg", group: "colors" },
-      { id: "white", en: "white", zh: "白色", emoji: "⚪", image: "/lessons/l11/words/white.svg", group: "colors" },
-      { id: "black", en: "black", zh: "黑色", emoji: "⚫", image: "/lessons/l11/words/black.svg", group: "colors" },
+      { id: "brown", en: "brown", zh: "棕色", emoji: "🟤", image: "/lessons/l11/words/brown.svg", group: "colors", color: "#8B4513" },
+      { id: "red", en: "red", zh: "红色", emoji: "🔴", image: "/lessons/l11/words/red.svg", group: "colors", color: "#E53935" },
+      { id: "yellow", en: "yellow", zh: "黄色", emoji: "🟡", image: "/lessons/l11/words/yellow.svg", group: "colors", color: "#FDD835" },
+      { id: "blue", en: "blue", zh: "蓝色", emoji: "🔵", image: "/lessons/l11/words/blue.svg", group: "colors", color: "#1E88E5" },
+      { id: "green", en: "green", zh: "绿色", emoji: "🟢", image: "/lessons/l11/words/green.svg", group: "colors", color: "#43A047" },
+      { id: "orange", en: "orange", zh: "橙色", emoji: "🍊", image: "/lessons/l11/words/orange.svg", group: "colors", color: "#FB8C00" },
+      { id: "pink", en: "pink", zh: "粉色", emoji: "🌸", image: "/lessons/l11/words/pink.svg", group: "colors", color: "#EC407A" },
+      { id: "purple", en: "purple", zh: "紫色", emoji: "🟣", image: "/lessons/l11/words/purple.svg", group: "colors", color: "#8E24AA" },
+      { id: "white", en: "white", zh: "白色", emoji: "⚪", image: "/lessons/l11/words/white.svg", group: "colors", color: "#FFFFFF" },
+      { id: "black", en: "black", zh: "黑色", emoji: "⚫", image: "/lessons/l11/words/black.svg", group: "colors", color: "#212121" },
       { id: "bear", en: "bear", zh: "棕熊", emoji: "🐻", image: "/lessons/l11/words/bear.png", group: "animals" },
       { id: "bird", en: "bird", zh: "小鸟", emoji: "🐦", image: "/lessons/l11/words/bird.png", group: "animals" },
       { id: "duck", en: "duck", zh: "鸭子", emoji: "🦆", image: "/lessons/l11/words/duck.png", group: "animals" },

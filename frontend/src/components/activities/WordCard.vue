@@ -80,14 +80,22 @@ function onWord() {
     @animationend.self="popping = false"
   >
     <div class="pic" data-haptic @click="onImage" :title="'点击听发音：' + word.en">
-      <img
-        v-if="!imgFailed && word.image"
-        :src="word.image || undefined"
-        :alt="word.en"
-        @error="imgFailed = true"
-      />
-      <!-- 图片缺失时的 emoji 占位 -->
-      <span v-else class="placeholder">{{ word.emoji }}</span>
+      <!-- 颜色词：只显示一个小色点，不要大图 -->
+      <span
+        v-if="word.color"
+        class="color-dot"
+        :style="{ background: word.color }"
+      ></span>
+      <template v-else>
+        <img
+          v-if="!imgFailed && word.image"
+          :src="word.image || undefined"
+          :alt="word.en"
+          @error="imgFailed = true"
+        />
+        <!-- 图片缺失时的 emoji 占位 -->
+        <span v-else class="placeholder">{{ word.emoji }}</span>
+      </template>
       <span class="speaker"><Volume2 class="k-ico" /></span>
       <!-- 已点过发音：小角标（不挡点读，孩子还能再点听一遍） -->
       <span v-if="marked" class="marked" aria-label="已听过"><Check class="k-ico" /></span>
@@ -129,6 +137,14 @@ function onWord() {
   width: 94%;
   height: 94%;
   object-fit: contain;
+  pointer-events: none;
+}
+.color-dot {
+  width: clamp(40px, 8vh, 72px);
+  height: clamp(40px, 8vh, 72px);
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  box-shadow: inset 0 -4px 8px rgba(0,0,0,0.15);
   pointer-events: none;
 }
 .placeholder {
