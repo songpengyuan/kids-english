@@ -5,6 +5,7 @@ import { sfxCorrect, sfxTap, sfxWrong } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import { shuffleWith } from "../../utils/quizSession";
 import type { Word } from "../../data/lessons";
+import StageHead from "./StageHead.vue";
 import { Volume2 } from "@lucide/vue";
 
 const props = defineProps<{ words: Word[] }>();
@@ -60,6 +61,12 @@ const donePairs = computed(() => matchedUids.value.size / 2);
 const curPairs = computed(() => curGroup.value.cards.length / 2);
 /** 全局累计已配对数（换组不清零：顶栏进度/计数跨组单调递增，不回退） */
 const solvedPairs = ref(0);
+/** 头部计数：多组显示组号 + 总进度，单组只显示进度（StageHead 的 rightText） */
+const counterText = computed(() =>
+  groupCount.value > 1
+    ? `第 ${groupIdx.value + 1} / ${groupCount.value} 组 · ${solvedPairs.value}/${totalPairs.value}`
+    : `${solvedPairs.value} / ${totalPairs.value}`
+);
 
 watch(groupIdx, async () => {
   flipped.value = [];
@@ -75,8 +82,7 @@ const stars = computed(() => {
   return 1;
 });
 
-watch(donePairs, async (n) => {
-  // 顶栏进度条口径是 0-100（LessonProgressHeader.playPct），跨组用累计值
+watch(donePairs, async (n) => {  // 顶栏进度条口径是 0-100（LessonProgressHeader.playPct），跨组用累计值
   emit("progress", Math.round((solvedPairs.value / totalPairs.value) * 100));
   // 完成判定按"当前组实际对数"（曾经误用固定的 groupSize：
   // 10 词课最后一组只有 2 对，2 < 4 永远不结算，关卡卡死在最后一组）
@@ -133,16 +139,12 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="memory view">
-    <div class="head">
-      <p class="tip">
+    <StageHead class="memory-head" :right-text="counterText">
+      <template #tip>
         <Volume2 class="k-ico tip-ico" />
         翻两张卡片，找到相同单词的图和词
-      </p>
-      <span class="counter" v-if="groupCount > 1">
-        第 {{ groupIdx + 1 }} / {{ groupCount }} 组 · {{ solvedPairs }}/{{ totalPairs }}
-      </span>
-      <span class="counter" v-else>{{ solvedPairs }} / {{ totalPairs }}</span>
-    </div>
+      </template>
+    </StageHead>
 
     <div class="board view-body">
       <div class="grid">
@@ -180,24 +182,10 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--gap-s);
-  flex-wrap: wrap;
+.memory-head {
   margin-bottom: var(--gap-s);
 }
-.tip {
-  margin: 0;
-  font-weight: var(--fw-mid);
-  color: var(--ink-soft);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 .tip-ico { color: var(--purple); }
-.counter { font-weight: var(--fw-mid); color: var(--ink-soft); }
 
 .board {
   flex: 1;

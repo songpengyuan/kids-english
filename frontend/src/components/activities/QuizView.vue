@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from "vue";
+import { onBeforeUnmount, computed, ref, watch } from "vue";
 import { speak } from "../../services/speech";
 import { sfxCorrect, sfxTap, sfxWrong } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import { useQuizSession } from "../../composables/useQuizSession";
 import type { Word } from "../../data/lessons";
-import { Volume2 } from "@lucide/vue";
+import { Headphones, Volume2 } from "@lucide/vue";
 import SpeakWave from "../ui/SpeakWave.vue";
 import LessonFooter from "./LessonFooter.vue";
+import StageHead from "./StageHead.vue";
 
 const props = defineProps<{ words: Word[] }>();
 const emit = defineEmits(["done", "progress", "total"]);
@@ -43,6 +44,9 @@ const { q, total, picked, wrongPicks, locked, stars, pick, next: gotoNext, clean
 watch(total, () => emit("total", total.value), { immediate: true });
 
 const selectedKey = ref<string | null>(null);
+
+/** 头部行进度文本：与其它玩法的 StageHead 同构（左「N / M」右玩法标签） */
+const progressText = computed(() => `${Math.min(session.idx.value + 1, total.value)} / ${total.value}`);
 
 /** 顶部大喇叭正在发音：朗读期间显示声波动效（样式参考宝藏详情页） */
 const speaking = ref(false);
@@ -93,6 +97,7 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
 
 <template>
   <div class="quiz view">
+    <StageHead class="quiz-head" :text="progressText" tag="听音选图" :icon="Headphones" />
     <button class="big-speaker anim-float" @click="replay" aria-label="再听一遍" title="再听一遍">
       <Volume2 class="k-ico" />
       <SpeakWave v-if="speaking" size="lg" />
@@ -137,6 +142,9 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
 <style scoped>
 .quiz {
   align-items: center;
+}
+.quiz-head {
+  margin-bottom: var(--gap-s);
 }
 .big-speaker {
   width: clamp(64px, min(15vh, 12vw), 120px);

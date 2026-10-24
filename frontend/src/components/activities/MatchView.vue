@@ -8,6 +8,7 @@ import { buildMatchGroups, matchGroupRange, matchStars } from "../../utils/match
 import { shuffleWith } from "../../utils/quizSession";
 import { BookOpenText, Link2, Volume2 } from "@lucide/vue";
 import SpeakWave from "../ui/SpeakWave.vue";
+import StageHead from "./StageHead.vue";
 
 const props = defineProps({
   words: { type: Array, required: true },
@@ -211,6 +212,12 @@ let pendingSide = null; // pendingWord 所在侧，供连错时精确定位要�
 const totalPairs = computed(() => curGroup.value.length);
 const doneCount = computed(() => matched.size);
 const groupDone = computed(() => totalPairs.value > 0 && doneCount.value >= totalPairs.value);
+/** 头部计数（StageHead 的 rightText）：多组带组号，单组只显示配对进度 */
+const counterText = computed(() =>
+  groupCount.value > 1
+    ? `第 ${groupIdx.value + 1} / ${groupCount.value} 组 · ${doneCount.value}/${totalPairs.value}`
+    : `${doneCount.value} / ${totalPairs.value}`
+);
 
 /** 组内配对进度 → 顶栏进度条（多邻国式：连线逐对推进）；对数同步上报显示 x/y */
 watch(
@@ -511,39 +518,38 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="match view">
-    <div class="head">
-      <p class="tip">
+    <StageHead class="match-head" :right-text="counterText">
+      <template #tip>
         <Link2 class="k-ico tip-ico" />
-        <template v-if="colorMode">把颜色和对应的小动物连起来</template>
-        <template v-else-if="mode === 'word'">图片和单词连起来，从哪边开始都行</template>
-        <template v-else>点声音听一听，再连到对应的图片</template>
-      </p>
+        <!-- 提示语刻意短（右侧还有"看词/听音"切换 + 计数）：390 宽下长提示会被挤成窄条 -->
+        <template v-if="colorMode">把颜色和小动物连起来</template>
+        <template v-else-if="mode === 'word'">把图片和单词连起来</template>
+        <template v-else>听发音，连到对应的图</template>
+      </template>
       <!-- 练习方式切换：认字（显示单词）/ 听力（只显示声音）；颜色配对模式隐藏 -->
-      <div v-if="!colorMode" class="mode-switch" role="group" aria-label="练习方式">
-        <button
-          class="mode-btn"
-          :class="{ on: mode === 'word' }"
-          :aria-pressed="mode === 'word'"
-          aria-label="看图连线（显示单词）"
-          @click="setMode('word')"
-        >
-          <BookOpenText class="k-ico" />看词
-        </button>
-        <button
-          class="mode-btn"
-          :class="{ on: mode === 'sound' }"
-          :aria-pressed="mode === 'sound'"
-          aria-label="听音连线（只显示声音图标）"
-          @click="setMode('sound')"
-        >
-          <Volume2 class="k-ico" />听音
-        </button>
-      </div>
-      <span class="counter" v-if="groupCount > 1">
-        第 {{ groupIdx + 1 }} / {{ groupCount }} 组 · {{ doneCount }}/{{ totalPairs }}
-      </span>
-      <span class="counter" v-else>{{ doneCount }} / {{ totalPairs }}</span>
-    </div>
+      <template v-if="!colorMode" #extra>
+        <div class="mode-switch" role="group" aria-label="练习方式">
+          <button
+            class="mode-btn"
+            :class="{ on: mode === 'word' }"
+            :aria-pressed="mode === 'word'"
+            aria-label="看图连线（显示单词）"
+            @click="setMode('word')"
+          >
+            <BookOpenText class="k-ico" />看词
+          </button>
+          <button
+            class="mode-btn"
+            :class="{ on: mode === 'sound' }"
+            :aria-pressed="mode === 'sound'"
+            aria-label="听音连线（只显示声音图标）"
+            @click="setMode('sound')"
+          >
+            <Volume2 class="k-ico" />听音
+          </button>
+        </div>
+      </template>
+    </StageHead>
 
     <div class="board view-body" ref="board">
       <svg class="lines" v-if="ready">
@@ -670,37 +676,13 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--gap-s);
-  flex: none;
-  flex-wrap: wrap; /* 窄屏时"练习方式"换行，不挤掉提示语 */
-}
-.tip {
-  margin: 0;
-  font-weight: var(--fw-mid);
-  color: var(--ink-soft);
-  font-size: var(--fs-small);
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.4em;
+.match-head {
+  margin-bottom: var(--gap-s);
 }
 .tip-ico {
   color: var(--purple);
 }
-.counter {
-  background: var(--card-bg);
-  border-radius: var(--radius-s);
-  padding: clamp(4px, 1vh, 6px) clamp(8px, 1.4vw, 14px);
-  font-weight: var(--fw-strong);
-  font-size: var(--fs-small);
-  box-shadow: var(--shadow-hard);
-  white-space: nowrap;
-  flex: none;
-}
+/* 计数改走 StageHead 的 .prog（card-bg 胶囊曾让"第 X 组"黑底浮出全站风格外） */
 
 .board {
   position: relative;

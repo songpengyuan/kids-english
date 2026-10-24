@@ -228,7 +228,7 @@
 |------|------|------|
 | `BottomNav` | `components/layout/BottomNav.vue` | 底部三 tab（学习 / 磨耳朵 / 我的），三个都是 `<button>`。中间位**恒为磨耳朵入口**（全站唯一入口），整格只有一种行为 = 进/留在 `/listen`；**只有图标随播放状态变**：没在播 → 🎧，正在播 → 三根跳动的声波条（`--brand` 色，`prefers-reduced-motion` 下退化为静态高矮波）。**中间位不放播放/暂停键** |
 | `SafeBottom` | `components/layout/SafeBottom.vue` | 底部安全距离共用容器 |
-| `HeaderBar` | `components/layout/HeaderBar.vue` | **全站唯一子页面顶栏**；返回钮 `--tap-min` 正圆 + 标题绝对居中 + 右侧 `showBadges` 徽章或 `#right` 插槽 |
+| `HeaderBar` | `components/layout/HeaderBar.vue` | **全站唯一子页面顶栏**；返回钮 `--tap-min` 正圆 + 标题占中列（flex 分配，装不下省略号）+ 右侧 `showBadges` 徽章或 `#right` 插槽。标题**不再绝对居中**：右侧簇宽的页面（课程详情 3 徽章+切换 ≈192px）在 390px 下绝对居中必然重叠，flex 中列让重叠在结构上不可能发生 |
 
 ### 9.2 通用 UI（③ 层）
 

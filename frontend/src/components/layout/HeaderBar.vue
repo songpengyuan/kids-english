@@ -3,7 +3,7 @@
  * 统一子页面顶栏（全站唯一子页面顶栏组件，组件库契约：子页面一律用 HeaderBar）。
  *
  * - 返回按钮（可选）：统一圆钮 + PathIcon back，点击 emit('back')，由父组件决定去向；
- * - 标题：走 #title 插槽（可带图标），绝对居中、超长省略号；
+ * - 标题：走 #title 插槽（可带图标），占返回键与右侧之间的中列，超长省略号；
  * - 右侧：showBadges 时内置星/贝壳/连击三徽章（全局状态、点击跳转）；
  *         也可走 #right 插槽放自定义内容（日期、数量等）；
  * 面向儿童：大点击区、圆角、柔和阴影。
@@ -111,7 +111,6 @@ function goStreak() {
 .hdr-back {
   flex: none;
   position: relative;
-  z-index: 2; /* 盖住绝对定位的标题，保证返回按钮始终可点 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -137,11 +136,12 @@ function goStreak() {
   color: var(--ink-soft);
 }
 .hdr-title {
-  /* 标题绝对居中：不管右侧有没有徽章，所有子页面标题位置一致 */
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  max-width: 62%;
+  /* 标题占「返回键与右侧之间」的中列：宽度由 flex 分配，装不下就省略号。
+   * 曾经绝对居中（left:50% + max-width:62%）——右侧徽章/切换簇宽的页面
+   * （课程详情 192px 簇）在 390px 下必然侵入标题带，星徽章盖住"…什么"。
+   * 改 flex 中列后重叠在结构上不可能发生；两侧宽度相近时视觉上仍是居中。 */
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -159,9 +159,17 @@ function goStreak() {
 }
 .hdr-right {
   flex: none;
+  position: relative;
+  z-index: 2; /* 与标题中列互斥的最后一道保险：右侧簇永远画在标题之上、永远可点 */
   display: flex;
   align-items: center;
-  gap: var(--gap-s);
+  /* 窄屏徽章簇收紧一档：390 下 3 徽章 + 切换按钮的页面（课程详情）给标题多让 12px */
+  gap: var(--gap-xs);
   margin-left: auto;
+}
+@media (min-width: 600px) {
+  .hdr-right {
+    gap: var(--gap-s);
+  }
 }
 </style>

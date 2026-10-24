@@ -4,6 +4,7 @@ import { speak } from "../../services/speech";
 import { sfxCorrect, sfxTap, sfxWrong } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import type { Lesson } from "../../data/lessons";
+import StageHead from "./StageHead.vue";
 
 const props = defineProps<{ lesson: Lesson }>();
 const emit = defineEmits(["done", "progress", "total"]);
@@ -120,13 +121,12 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="order view">
-    <div class="head">
-      <p class="tip">
+    <StageHead class="order-head" :right-text="`${sentenceIdx + 1} / ${total}`">
+      <template #tip>
         <span class="tip-ico">✏️</span>
         按顺序点下面的词，拼出完整的句子
-      </p>
-      <span class="counter">{{ sentenceIdx + 1 }} / {{ total }}</span>
-    </div>
+      </template>
+    </StageHead>
 
     <div v-if="cur" class="board view-body">
       <!-- 听句子：喇叭按钮，孩子点了听英文句子 -->
@@ -172,23 +172,10 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--gap-s);
+.order-head {
   margin-bottom: var(--gap-s);
 }
-.tip {
-  margin: 0;
-  font-weight: var(--fw-mid);
-  color: var(--ink-soft);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 .tip-ico { font-size: var(--fs-title); }
-.counter { font-weight: var(--fw-mid); color: var(--ink-soft); }
 
 .board {
   flex: 1;
