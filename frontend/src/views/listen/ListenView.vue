@@ -38,6 +38,7 @@ import { ref, computed, watch, nextTick, onBeforeUnmount, onMounted } from "vue"
 import { lessons, asset } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
+import { useLrc, activeLrcIndex, mapLrcToLyrics } from "../../composables/useLrc";
 import {
   Play, Pause, X, ChevronDown, ListMusic, Music, Film, SkipBack, SkipForward,
   Repeat, Repeat1, Shuffle,
@@ -63,8 +64,23 @@ const modeLabel = computed(() => {
 
 /* ---------- 播放页的歌词（卡拉 OK，整篇可滚动） ---------- */
 
-/** 当前唱到第几行（0 起；-1 = 这首没有歌词） */
+/* LRC 时间轴（public/lessons/<id>/<音频同名>.lrc，gen-lrc.py 产出）：
+ * 拉得到就按时间精确高亮（2026-10-25 接入，此前是 progress×行数 的比例映射，
+ * 前奏/间奏会"空唱"）；拉不到或与当前歌词对不上（LRC 过期）→ 回退比例映射。 */
+const lrcLines = useLrc(computed(() => player.currentSong?.src ?? null));
+const lrcMap = computed(() => {
+  const lrc = lrcLines.value;
+  if (!lrc) return null;
+  return mapLrcToLyrics(lrc, player.currentLyrics);
+});
+
+/** 当前唱到第几行（0 起；-1 = 这首没有歌词 / 还没开唱） */
 const activeLine = computed(() => {
+  const map = lrcMap.value;
+  if (map && player.duration > 0) {
+    const k = activeLrcIndex(lrcLines.value ?? [], player.progress * player.duration);
+    return k < 0 ? -1 : map[k];
+  }
   const n = player.currentLyrics.length;
   if (!n) return -1;
   return Math.min(n - 1, Math.max(0, Math.round(player.progress * n)));
