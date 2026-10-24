@@ -63,48 +63,48 @@
         "beatsPerBar": 4,
         "duration": 200.9,
         "timeline": [
-          2,
-          7.25,
-          12.5,
-          17.76,
-          24.32,
-          24.32,
-          29.57,
-          34.83,
-          40.08,
-          46.64,
-          46.64,
-          51.9,
-          57.15,
-          62.4,
-          68.97,
-          74.22,
-          79.47,
-          84.72,
-          91.29,
-          91.29,
-          96.54,
-          101.79,
+          12.8,
+          16.14,
+          19.18,
+          22.08,
+          31.44,
+          31.44,
+          37.14,
+          40.2,
+          43.08,
+          53.12,
+          53.12,
+          58.18,
+          61.2,
+          64.08,
+          75.44,
+          80.68,
+          83.66,
+          86.56,
+          100.74,
+          100.74,
+          104.64,
+          107.68,
           107.05,
-          113.61,
-          113.61,
-          118.86,
-          124.12,
+          124.24,
+          124.24,
+          130.18,
+          133.18,
           129.37,
-          135.93,
+          140.7,
           141.19,
           146.44,
           151.69,
-          158.26,
-          158.26,
-          163.51,
-          168.76,
-          174.01,
-          180.58,
-          180.58,
-          185.83,
+          154.24,
+          154.24,
+          156.88,
+          160.38,
+          163.06,
+          169.2,
+          169.2,
+          180.38,
           191.08,
-          196.33
+          190.76
         ],
         "estimated": true
       },
@@ -116,7 +116,7 @@
         "en": "seahorse",
         "zh": "海马",
         "emoji": "🐴",
-        "image": "/lessons/l4/words/seahorse.png",
+        "image": "/lessons/l4/words/seahorse.webp",
         "audio": "/lessons/l4/audio/seahorse.mp3"
       },
       {
@@ -124,7 +124,7 @@
         "en": "jellyfish",
         "zh": "水母",
         "emoji": "🪼",
-        "image": "/lessons/l4/words/jellyfish.png",
+        "image": "/lessons/l4/words/jellyfish.webp",
         "audio": "/lessons/l4/audio/jellyfish.mp3"
       },
       {
@@ -132,7 +132,7 @@
         "en": "turtle",
         "zh": "海龟",
         "emoji": "🐢",
-        "image": "/lessons/l4/words/turtle.png",
+        "image": "/lessons/l4/words/turtle.webp",
         "audio": "/lessons/l4/audio/turtle.mp3"
       },
       {
@@ -140,7 +140,7 @@
         "en": "octopus",
         "zh": "章鱼",
         "emoji": "🐙",
-        "image": "/lessons/l4/words/octopus.png",
+        "image": "/lessons/l4/words/octopus.webp",
         "audio": "/lessons/l4/audio/octopus.mp3"
       },
       {
@@ -148,7 +148,7 @@
         "en": "shark",
         "zh": "鲨鱼",
         "emoji": "🦈",
-        "image": "/lessons/l4/words/shark.png",
+        "image": "/lessons/l4/words/shark.webp",
         "audio": "/lessons/l4/audio/shark.mp3"
       },
       {
@@ -156,7 +156,7 @@
         "en": "whale",
         "zh": "鲸鱼",
         "emoji": "🐳",
-        "image": "/lessons/l4/words/whale.png",
+        "image": "/lessons/l4/words/whale.webp",
         "audio": "/lessons/l4/audio/whale.mp3"
       },
       {
@@ -164,7 +164,7 @@
         "en": "sailor",
         "zh": "水手",
         "emoji": "⛵",
-        "image": "/lessons/l4/words/sailor.png",
+        "image": "/lessons/l4/words/sailor.webp",
         "audio": "/lessons/l4/audio/sailor.mp3"
       },
       {
@@ -172,7 +172,7 @@
         "en": "sea",
         "zh": "大海",
         "emoji": "🌊",
-        "image": "/lessons/l4/words/sea.png",
+        "image": "/lessons/l4/words/sea.webp",
         "audio": "/lessons/l4/audio/sea.mp3"
       },
       {
@@ -180,7 +180,7 @@
         "en": "blue",
         "zh": "蓝色",
         "emoji": "🔵",
-        "image": "/lessons/l4/words/blue.png",
+        "image": "/lessons/l4/words/blue.webp",
         "audio": "/lessons/l4/audio/blue.mp3"
       }
     ],
@@ -214,7 +214,7 @@
       "group": null,
       "lyrics": [
         "I am the Music Man,",
-        "I come from down your way,",
+        "I come from far away,",
         "And I can play!",
         "What can you play?",
         "I play the piano!",
@@ -222,49 +222,49 @@
         "Pia, pia, piano, pia, piano!",
         "",
         "I am the Music Man,",
-        "I come from down your way,",
-        "And I can play!",
-        "What can you play?",
-        "I play the violin!",
-        "Vio, vio, violin, violin, violin,",
-        "Vio, vio, violin, vio, violin!",
-        "",
-        "I am the Music Man,",
-        "I come from down your way,",
+        "I come from far away,",
         "And I can play!",
         "What can you play?",
         "I play the trombone!",
         "Trom, trom, trombone, trombone, trombone,",
-        "Trom, trom, trombone, trom, trombone!"
+        "Trom, trom, trombone, trom, trombone!",
+        "",
+        "I am the Music Man,",
+        "I come from far away,",
+        "And I can play!",
+        "What can you play?",
+        "I play the violin!",
+        "Vio, vio, violin, violin, violin,",
+        "Vio, vio, violin, vio, violin!"
       ],
       "timings": {
         "bpm": 96,
         "beatsPerBar": 4,
         "duration": 110.5,
         "timeline": [
-          1,
-          5.16,
-          9.32,
-          12.09,
-          14.86,
-          18.33,
-          25.26,
-          31.5,
-          31.5,
-          35.09,
-          38.68,
-          41.07,
-          43.46,
+          11.8,
+          14.36,
+          15.68,
+          17.68,
+          20.28,
+          22.1,
+          26.18,
+          33.76,
+          33.76,
+          36.14,
+          37.64,
+          39.1,
+          42.16,
           47.05,
           54.82,
-          62,
-          62,
-          68.44,
-          74.88,
-          79.17,
-          83.46,
-          89.9,
-          98.49
+          63.94,
+          63.94,
+          65.9,
+          67.66,
+          69.1,
+          71.14,
+          74.76,
+          79.3
         ],
         "estimated": true
       },
@@ -276,7 +276,7 @@
         "en": "violin",
         "zh": "小提琴",
         "emoji": "🎻",
-        "image": "/lessons/l5/words/violin.png",
+        "image": "/lessons/l5/words/violin.webp",
         "audio": "/lessons/l5/audio/violin.mp3"
       },
       {
@@ -284,7 +284,7 @@
         "en": "piano",
         "zh": "钢琴",
         "emoji": "🎹",
-        "image": "/lessons/l5/words/piano.png",
+        "image": "/lessons/l5/words/piano.webp",
         "audio": "/lessons/l5/audio/piano.mp3"
       },
       {
@@ -292,7 +292,7 @@
         "en": "Music Man",
         "zh": "音乐人",
         "emoji": "🎹",
-        "image": "/lessons/l5/words/musicman.png",
+        "image": "/lessons/l5/words/musicman.webp",
         "audio": "/lessons/l5/audio/musicman.mp3"
       },
       {
@@ -300,7 +300,7 @@
         "en": "trombone",
         "zh": "长号",
         "emoji": "🎺",
-        "image": "/lessons/l5/words/trombone.png",
+        "image": "/lessons/l5/words/trombone.webp",
         "audio": "/lessons/l5/audio/trombone.mp3"
       },
       {
@@ -308,7 +308,7 @@
         "en": "mantis",
         "zh": "螳螂",
         "emoji": "🦗",
-        "image": "/lessons/l5/words/mantis.png",
+        "image": "/lessons/l5/words/mantis.webp",
         "audio": "/lessons/l5/audio/mantis.mp3"
       },
       {
@@ -316,7 +316,7 @@
         "en": "squirrel",
         "zh": "松鼠",
         "emoji": "🐿️",
-        "image": "/lessons/l5/words/squirrel.png",
+        "image": "/lessons/l5/words/squirrel.webp",
         "audio": "/lessons/l5/audio/squirrel.mp3"
       },
       {
@@ -324,7 +324,7 @@
         "en": "frog",
         "zh": "青蛙",
         "emoji": "🐸",
-        "image": "/lessons/l5/words/frog.png",
+        "image": "/lessons/l5/words/frog.webp",
         "audio": "/lessons/l5/audio/frog.mp3"
       }
     ],
@@ -888,7 +888,7 @@
         "en": "nose",
         "zh": "鼻子",
         "emoji": "👃",
-        "image": "/lessons/l9/words/nose.png",
+        "image": "/lessons/l9/words/nose.webp",
         "audio": "/lessons/l9/audio/nose.mp3"
       },
       {
@@ -896,7 +896,7 @@
         "en": "arm",
         "zh": "手臂",
         "emoji": "💪",
-        "image": "/lessons/l9/words/arm.png",
+        "image": "/lessons/l9/words/arm.webp",
         "audio": "/lessons/l9/audio/arm.mp3"
       },
       {
@@ -904,7 +904,7 @@
         "en": "leg",
         "zh": "腿",
         "emoji": "🦵",
-        "image": "/lessons/l9/words/leg.png",
+        "image": "/lessons/l9/words/leg.webp",
         "audio": "/lessons/l9/audio/leg.mp3"
       },
       {
@@ -912,7 +912,7 @@
         "en": "foot",
         "zh": "脚",
         "emoji": "🦶",
-        "image": "/lessons/l9/words/foot.png",
+        "image": "/lessons/l9/words/foot.webp",
         "audio": "/lessons/l9/audio/foot.mp3"
       },
       {
@@ -920,7 +920,7 @@
         "en": "chin",
         "zh": "下巴",
         "emoji": "😊",
-        "image": "/lessons/l9/words/chin.png",
+        "image": "/lessons/l9/words/chin.webp",
         "audio": "/lessons/l9/audio/chin.mp3"
       },
       {
@@ -928,7 +928,7 @@
         "en": "finger",
         "zh": "手指",
         "emoji": "👆",
-        "image": "/lessons/l9/words/finger.png",
+        "image": "/lessons/l9/words/finger.webp",
         "audio": "/lessons/l9/audio/finger.mp3"
       },
       {
@@ -936,7 +936,7 @@
         "en": "head",
         "zh": "头",
         "emoji": "🧑",
-        "image": "/lessons/l9/words/head.png",
+        "image": "/lessons/l9/words/head.webp",
         "audio": "/lessons/l9/audio/head.mp3"
       }
     ],
@@ -987,44 +987,6 @@
         "Let's take a walk in the jungle.",
         "Walking in the jungle. Walking in the jungle.",
         "We're not afraid. We're not afraid.",
-        "One step. Two steps. Three steps forward.",
-        "One step. Two steps. Three steps back.",
-        "Stop. Listen. What's that?",
-        "It's a frog! We're not afraid!",
-        "",
-        "Let's stomp.",
-        "Stomping in the jungle. Stomping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "Stomping in the jungle. Stomping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step, two steps, three steps forward.",
-        "One step, two steps, three steps back.",
-        "Stop! Listen! What's that?",
-        "It's a monkey!",
-        "We're not afraid!",
-        "",
-        "Let's jump!",
-        "Jumping in the jungle. Jumping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "Jumping in the jungle. Jumping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step, two steps, three steps forward.",
-        "One step, two steps, three steps back.",
-        "Stop! Listen! What's that?",
-        "It's a toucan!",
-        "We're not afraid!",
-        "",
-        "Let's skip!",
-        "Skipping in the jungle. Skipping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "Skipping in the jungle. Skipping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step, two steps, three steps forward.",
-        "One step, two steps, three steps back.",
-        "Stop! Listen! What's that?",
-        "It's a tiger!",
-        "Run!",
-        "Let's take a walk in the jungle.",
         "Walking in the jungle. Walking in the jungle.",
         "We're not afraid. We're not afraid.",
         "One step. Two steps. Three steps forward.",
@@ -1062,7 +1024,8 @@
         "One step, two steps, three steps forward.",
         "One step, two steps, three steps back.",
         "Stop! Listen! What's that?",
-        "It's a tiger!"
+        "It's a tiger!",
+        "Run!"
       ],
       "timings": null,
       "tracks": []
@@ -1073,7 +1036,7 @@
         "en": "frog",
         "zh": "青蛙",
         "emoji": "🐸",
-        "image": "/lessons/l10/words/frog.png",
+        "image": "/lessons/l10/words/frog.webp",
         "audio": "/lessons/l10/audio/frog.mp3"
       },
       {
@@ -1081,7 +1044,7 @@
         "en": "monkey",
         "zh": "猴子",
         "emoji": "🐒",
-        "image": "/lessons/l10/words/monkey.png",
+        "image": "/lessons/l10/words/monkey.webp",
         "audio": "/lessons/l10/audio/monkey.mp3"
       },
       {
@@ -1089,7 +1052,7 @@
         "en": "tiger",
         "zh": "老虎",
         "emoji": "🐯",
-        "image": "/lessons/l10/words/tiger.png",
+        "image": "/lessons/l10/words/tiger.webp",
         "audio": "/lessons/l10/audio/tiger.mp3"
       },
       {
@@ -1097,7 +1060,7 @@
         "en": "toucan",
         "zh": "巨嘴鸟",
         "emoji": "🦜",
-        "image": "/lessons/l10/words/toucan.png",
+        "image": "/lessons/l10/words/toucan.webp",
         "audio": "/lessons/l10/audio/toucan.mp3"
       },
       {
@@ -1105,7 +1068,7 @@
         "en": "afraid",
         "zh": "害怕的",
         "emoji": "😨",
-        "image": "/lessons/l10/words/afraid.png",
+        "image": "/lessons/l10/words/afraid.webp",
         "audio": "/lessons/l10/audio/afraid.mp3"
       },
       {
@@ -1113,7 +1076,7 @@
         "en": "jungle",
         "zh": "丛林",
         "emoji": "🌴",
-        "image": "/lessons/l10/words/jungle.png",
+        "image": "/lessons/l10/words/jungle.webp",
         "audio": "/lessons/l10/audio/jungle.mp3"
       },
       {
@@ -1121,7 +1084,7 @@
         "en": "listen",
         "zh": "听",
         "emoji": "👂",
-        "image": "/lessons/l10/words/listen.png",
+        "image": "/lessons/l10/words/listen.webp",
         "audio": "/lessons/l10/audio/listen.mp3"
       }
     ],
@@ -1197,7 +1160,42 @@
           "titleZh": "颜色歌",
           "audio": "/lessons/l11/song.mp3",
           "video": "/lessons/l11/song.mp4",
-          "lyrics": [],
+          "lyrics": [
+            "I see colors everywhere.",
+            "I see colors everywhere.",
+            "I see colors everywhere.",
+            "What colors do you see?",
+            "Red and blue!",
+            "Red, red, hello red!",
+            "Blue, blue, hello blue!",
+            "Red, red, goodbye red!",
+            "Blue, blue, see you later, blue!",
+            "Yellow and green!",
+            "Yellow, yellow, hello yellow!",
+            "Green, green, hello green!",
+            "Yellow, yellow, goodbye yellow!",
+            "Green, green, see you later, green!",
+            "Orange and pink!",
+            "Orange, orange, hello orange!",
+            "Pink, pink, hello pink!",
+            "Orange, orange, goodbye orange!",
+            "Pink, pink, see you later, pink!",
+            "Purple and brown!",
+            "Purple, purple, hello purple!",
+            "Brown, brown, hello brown!",
+            "Purple, purple, goodbye purple!",
+            "Brown, brown, see you later, brown!",
+            "Black and white!",
+            "Black, black, hello black!",
+            "White, white, hello white!",
+            "Black, black, goodbye black!",
+            "White, white, see you later, white!",
+            "What colors do you see?",
+            "I see colors everywhere.",
+            "I see colors everywhere.",
+            "I see colors everywhere.",
+            "What colors do you see?"
+          ],
           "group": "colors"
         }
       ]
@@ -1298,7 +1296,7 @@
         "en": "bear",
         "zh": "棕熊",
         "emoji": "🐻",
-        "image": "/lessons/l11/words/bear.png",
+        "image": "/lessons/l11/words/bear.webp",
         "audio": "/lessons/l11/audio/bear.mp3",
         "group": "animals"
       },
@@ -1307,7 +1305,7 @@
         "en": "bird",
         "zh": "小鸟",
         "emoji": "🐦",
-        "image": "/lessons/l11/words/bird.png",
+        "image": "/lessons/l11/words/bird.webp",
         "audio": "/lessons/l11/audio/bird.mp3",
         "group": "animals"
       },
@@ -1316,7 +1314,7 @@
         "en": "duck",
         "zh": "鸭子",
         "emoji": "🦆",
-        "image": "/lessons/l11/words/duck.png",
+        "image": "/lessons/l11/words/duck.webp",
         "audio": "/lessons/l11/audio/duck.mp3",
         "group": "animals"
       },
@@ -1325,7 +1323,7 @@
         "en": "horse",
         "zh": "小马",
         "emoji": "🐎",
-        "image": "/lessons/l11/words/horse.png",
+        "image": "/lessons/l11/words/horse.webp",
         "audio": "/lessons/l11/audio/horse.mp3",
         "group": "animals"
       },
@@ -1334,7 +1332,7 @@
         "en": "frog",
         "zh": "青蛙",
         "emoji": "🐸",
-        "image": "/lessons/l11/words/frog.png",
+        "image": "/lessons/l11/words/frog.webp",
         "audio": "/lessons/l11/audio/frog.mp3",
         "group": "animals"
       },
@@ -1343,7 +1341,7 @@
         "en": "cat",
         "zh": "小猫",
         "emoji": "🐱",
-        "image": "/lessons/l11/words/cat.png",
+        "image": "/lessons/l11/words/cat.webp",
         "audio": "/lessons/l11/audio/cat.mp3",
         "group": "animals"
       },
@@ -1352,7 +1350,7 @@
         "en": "dog",
         "zh": "小狗",
         "emoji": "🐶",
-        "image": "/lessons/l11/words/dog.png",
+        "image": "/lessons/l11/words/dog.webp",
         "audio": "/lessons/l11/audio/dog.mp3",
         "group": "animals"
       },
@@ -1361,7 +1359,7 @@
         "en": "sheep",
         "zh": "绵羊",
         "emoji": "🐑",
-        "image": "/lessons/l11/words/sheep.png",
+        "image": "/lessons/l11/words/sheep.webp",
         "audio": "/lessons/l11/audio/sheep.mp3",
         "group": "animals"
       },
@@ -1370,7 +1368,7 @@
         "en": "goldfish",
         "zh": "金鱼",
         "emoji": "🐟",
-        "image": "/lessons/l11/words/goldfish.png",
+        "image": "/lessons/l11/words/goldfish.webp",
         "audio": "/lessons/l11/audio/goldfish.mp3",
         "group": "animals"
       }

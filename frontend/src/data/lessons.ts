@@ -181,7 +181,7 @@ const rawLessons: RawLesson[] = [
       scene: "stage",
       lyrics: [
         "I am the Music Man,",
-        "I come from down your way,",
+        "I come from far away,",
         "And I can play!",
         "What can you play?",
         "I play the piano!",
@@ -189,20 +189,22 @@ const rawLessons: RawLesson[] = [
         "Pia, pia, piano, pia, piano!",
         "",
         "I am the Music Man,",
-        "I come from down your way,",
+        "I come from far away,",
+        "And I can play!",
+        "What can you play?",
+        /* 音频/视频里乐器顺序都是 钢琴→长号→小提琴（gen-lrc.py 识别核实），
+         * 此前歌词把 violin 段放在第 2 段导致逐行时间轴无法对齐，已对调。 */
+        "I play the trombone!",
+        "Trom, trom, trombone, trombone, trombone,",
+        "Trom, trom, trombone, trom, trombone!",
+        "",
+        "I am the Music Man,",
+        "I come from far away,",
         "And I can play!",
         "What can you play?",
         "I play the violin!",
         "Vio, vio, violin, violin, violin,",
-        "Vio, vio, violin, vio, violin!",
-        "",
-        "I am the Music Man,",
-        "I come from down your way,",
-        "And I can play!",
-        "What can you play?",
-        "I play the trombone!",
-        "Trom, trom, trombone, trombone, trombone,",
-        "Trom, trom, trombone, trom, trombone!"
+        "Vio, vio, violin, vio, violin!"
       ]
     },
     words: [
@@ -426,50 +428,14 @@ const rawLessons: RawLesson[] = [
       video: "/lessons/l10/song.mp4",
       /* 视频缺失时才用动画舞台；丛林暂无专属场景，用通用 stage */
       scene: "stage",
-      /* 歌词：老师版 TPR 儿歌，4 轮（walk→frog / stomp→monkey / jump→toucan / skip→tiger→Run）。
-       * 音频 204s ≈ 唱 2 遍，歌词重复 2 遍与全程对应。 */
+      /* 歌词：老师版 TPR 儿歌，一轮 4 段（walk→frog / stomp→monkey / jump→toucan / skip→tiger→Run）。
+       * 音频实测只唱一轮（gen-lrc.py 识别核实：四个动物各出现一次，204s 含前后奏），
+       * 此前按「唱 2 遍」重复了两轮，后半段在音频里不存在，已裁掉；
+       * walk 段的 walking/afraid 音频里各唱两遍，歌词保留两遍。 */
       lyrics: [
         "Let's take a walk in the jungle.",
         "Walking in the jungle. Walking in the jungle.",
         "We're not afraid. We're not afraid.",
-        "One step. Two steps. Three steps forward.",
-        "One step. Two steps. Three steps back.",
-        "Stop. Listen. What's that?",
-        "It's a frog! We're not afraid!",
-        "",
-        "Let's stomp.",
-        "Stomping in the jungle. Stomping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "Stomping in the jungle. Stomping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step, two steps, three steps forward.",
-        "One step, two steps, three steps back.",
-        "Stop! Listen! What's that?",
-        "It's a monkey!",
-        "We're not afraid!",
-        "",
-        "Let's jump!",
-        "Jumping in the jungle. Jumping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "Jumping in the jungle. Jumping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step, two steps, three steps forward.",
-        "One step, two steps, three steps back.",
-        "Stop! Listen! What's that?",
-        "It's a toucan!",
-        "We're not afraid!",
-        "",
-        "Let's skip!",
-        "Skipping in the jungle. Skipping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "Skipping in the jungle. Skipping in the jungle.",
-        "We're not afraid. We're not afraid.",
-        "One step, two steps, three steps forward.",
-        "One step, two steps, three steps back.",
-        "Stop! Listen! What's that?",
-        "It's a tiger!",
-        "Run!",
-        "Let's take a walk in the jungle.",
         "Walking in the jungle. Walking in the jungle.",
         "We're not afraid. We're not afraid.",
         "One step. Two steps. Three steps forward.",
@@ -508,6 +474,7 @@ const rawLessons: RawLesson[] = [
         "One step, two steps, three steps back.",
         "Stop! Listen! What's that?",
         "It's a tiger!",
+        "Run!"
       ]
     },
     words: [
@@ -575,6 +542,44 @@ const rawLessons: RawLesson[] = [
           titleZh: "颜色歌",
           audio: "/lessons/l11/song.mp3",
           video: "/lessons/l11/song.mp4",
+          /* 歌词：whisper 识别草稿（gen-lrc.py 2026-10-25 转写），
+           * 老师未提供歌词文本，上线前请对照音频人工校对一遍。 */
+          lyrics: [
+            "I see colors everywhere.",
+            "I see colors everywhere.",
+            "I see colors everywhere.",
+            "What colors do you see?",
+            "Red and blue!",
+            "Red, red, hello red!",
+            "Blue, blue, hello blue!",
+            "Red, red, goodbye red!",
+            "Blue, blue, see you later, blue!",
+            "Yellow and green!",
+            "Yellow, yellow, hello yellow!",
+            "Green, green, hello green!",
+            "Yellow, yellow, goodbye yellow!",
+            "Green, green, see you later, green!",
+            "Orange and pink!",
+            "Orange, orange, hello orange!",
+            "Pink, pink, hello pink!",
+            "Orange, orange, goodbye orange!",
+            "Pink, pink, see you later, pink!",
+            "Purple and brown!",
+            "Purple, purple, hello purple!",
+            "Brown, brown, hello brown!",
+            "Purple, purple, goodbye purple!",
+            "Brown, brown, see you later, brown!",
+            "Black and white!",
+            "Black, black, hello black!",
+            "White, white, hello white!",
+            "Black, black, goodbye black!",
+            "White, white, see you later, white!",
+            "What colors do you see?",
+            "I see colors everywhere.",
+            "I see colors everywhere.",
+            "I see colors everywhere.",
+            "What colors do you see?"
+          ],
           group: "colors"
         }
       ]
