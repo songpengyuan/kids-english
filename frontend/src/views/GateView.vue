@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 应用入口口令页（#/gate）—— 备案域名下的家长口令门禁。
  *

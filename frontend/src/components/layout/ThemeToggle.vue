@@ -1,10 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { initTheme, toggleTheme, currentTheme } from "../../services/theme";
 import { hapticTap } from "../../services/haptics";
 import { Moon, Sun } from "@lucide/vue";
 
-const mode = ref("light");
+const mode = ref<"light" | "dark">(currentTheme());
 onMounted(() => {
   mode.value = initTheme();
 });

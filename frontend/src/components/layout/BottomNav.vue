@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 底部导航（App 风格常驻）：📖 学习 / 🎧 磨耳朵 / 👤 我的
  *
