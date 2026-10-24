@@ -22,10 +22,15 @@ const { sizeTier, isNarrow } = useViewport();
 
 /** 颜色配对模式：左列颜色圆 ↔ 右列动物图（l11 Brown Bear） */
 const colorMode = computed(() => Array.isArray(props.colorPairs) && props.colorPairs.length > 0);
-const COLOR_HEX = {
-  red: "#e53935", yellow: "#fdd835", blue: "#1e88e5", green: "#43a047",
-  purple: "#8e24aa", white: "#f5f5f5", black: "#212121", brown: "#8d6e63"
-};
+/** 颜色词 id → 色值：以课时数据为单源（颜色词的 word.color 十六进制）。
+ *  曾在这里维护过一份组件本地色表，与数据漂移过两处（white/brown 色值不一致），
+ *  数据新增颜色而本地表没登记时，左列色圆还会静默回退成 #ccc。
+ *  引用完整性由 validate-data.mjs 把关：colorPairs.color 必须是带 color 的本课单词。 */
+const hexById = computed(() => {
+  const m = {};
+  for (const w of props.words) if (w.color) m[w.id] = w.color;
+  return m;
+});
 
 /**
  * 两种练习方式（用户要求：不显示单词的形式也要有，两种切换着来）：
@@ -609,7 +614,7 @@ onBeforeUnmount(() => {
           <span
             v-if="w.color"
             class="color-dot"
-            :style="{ background: COLOR_HEX[w.color] || '#ccc' }"
+            :style="{ background: hexById[w.color] || '#ccc' }"
             :aria-label="w.en"
           />
           <template v-else>

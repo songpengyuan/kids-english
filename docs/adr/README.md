@@ -20,11 +20,13 @@
 
 | 编号 | 标题 | 状态 | 决策域 | 落地时机 |
 |---|---|---|---|---|
-| [ADR-001](./ADR-001-content-single-source.md) | 课程内容的单一事实源与防漂移闸门 | Proposed | 内容/交付 | 现在（约 30 分钟） |
-| [ADR-002](./ADR-002-versioned-db-migrations.md) | 数据库迁移版本化 | Proposed | 数据/交付 | 下一次改表之前 |
-| [ADR-003](./ADR-003-backend-deploy-pipeline.md) | 后端纳入 CI 部署流水线 | Proposed | 交付/运维 | P1 内 |
-| [ADR-004](./ADR-004-events-and-observability.md) | 埋点事件表与前端错误上报 | Proposed | 数据/可观测 | P1 内 |
-| [ADR-005](./ADR-005-media-lifecycle-and-child-privacy.md) | 录音资产生命周期与儿童隐私边界 | Proposed | 数据/合规 | 第 1 条真实录音入库前 |
+| [ADR-001](./ADR-001-content-single-source.md) | 课程内容的单一事实源与防漂移闸门 | Accepted（2026-10-17 落地，CI 闸门已验证） | 内容/交付 | 现在（约 30 分钟） |
+| [ADR-002](./ADR-002-versioned-db-migrations.md) | 数据库迁移版本化 | Accepted（2026-10-17 落地，schema_version=3） | 数据/交付 | 下一次改表之前 |
+| [ADR-003](./ADR-003-backend-deploy-pipeline.md) | 后端纳入 CI 部署流水线 | Accepted（2026-10-17 落地，deploy.yml 双线部署） | 交付/运维 | P1 内 |
+| [ADR-004](./ADR-004-events-and-observability.md) | 埋点事件表与前端错误上报 | Accepted（2026-10-17 落地；课时级埋点已接，覆盖面持续补） | 数据/可观测 | P1 内 |
+| [ADR-005](./ADR-005-media-lifecycle-and-child-privacy.md) | 录音资产生命周期与儿童隐私边界 | Accepted（2026-10-17 落地；2026-10-24 补录音出仓处置） | 数据/合规 | 第 1 条真实录音入库前 |
+| [ADR-006](./ADR-006-listen-player-page-visibility.md) | 磨耳朵播放页「浮层让位」而非「藏掉底栏」 | Accepted（2026-10-17 落地） | 前端/导航 | 已完成 |
+| [ADR-007](./ADR-007-capability-fields-flat-with-gates.md) | 课时能力字段：扁平可缺省 + 校验闸门 | Accepted（2026-10-24 落地） | 内容/契约 | 已完成 |
 
 状态取值：`Proposed`（提案，待拍板）/ `Accepted`（已拍板）/ `Deprecated` / `Superseded by ADR-NNN`。
 

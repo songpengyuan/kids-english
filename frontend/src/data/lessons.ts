@@ -59,7 +59,7 @@ export interface RawLessonSong {
   audio?: string | null;
   video?: string | null;
   scene?: string;
-  /** 第一轨所属词群（配合 tracks[].group；l11 用） */
+  /** 所属词群：多词域课时（首例 l11：colors/animals）把这条轨道分给对应词群 */
   group?: string;
   lyrics?: string[];
   /** 多段音视频播放列表（一课多首童谣/课堂视频）。
@@ -78,6 +78,16 @@ export interface RawLessonWord {
   /** 颜色词：十六进制色值 */
   color?: string;
 }
+/* ===== 课时能力字段（capability fields）的扩展约定（ADR-007） =====
+ * stageStyle / wordGroups / colorPairs / song.tracks / word.group / word.color
+ * 都是"课时能力"的可缺省字段：不配 → 自动回退默认玩法；配了 → 启用对应变体
+ * （首例 l11：颜色配对 / 词群分轨）。新增第 N 个能力时守住四条：
+ *   1. 按能力命名（"词群""颜色配对"），不按课命名——注释里的 l11 只是首例，不是定义；
+ *   2. 可缺省 + 缺省回退：老课数据一个字不改也必须照常可玩；
+ *   3. 组合一致性必须能被 scripts/validate-data.mjs 校验（引用存在 / 闭包 / 枚举）；
+ *   4. 同步进后端契约：backend/app/schemas.py 的 LessonOut 族 + pnpm export:lessons 重导种子。
+ * 刻意**不做**嵌套 features 对象重排：这些字段已在生产 wire 格式（content API）上，
+ * 观感收益抵不过破坏性改动——决策记录见 docs/adr/ADR-007。 */
 export interface RawLesson {
   id: string;
   title: string;
@@ -90,9 +100,10 @@ export interface RawLesson {
   song: RawLessonSong;
   words: RawLessonWord[];
   phrases?: { en: string; zh: string }[];
-  /** 颜色配对（l11 Brown Bear）：左列颜色圆 ↔ 右列动物图，练"什么颜色配什么动物" */
+  /** 颜色配对玩法：左列颜色圆 ↔ 右列图（练"什么颜色配什么"）。
+   *  color 指向本课颜色词 id（非色值），色值取该词的 word.color。首例 l11 Brown Bear */
   colorPairs?: { color: string; wordId: string }[];
-  /** 词群（如 l11：颜色 / 动物）：词表按这两个部分分组展示与练习 */
+  /** 词群（如 颜色 / 动物）：词表按群分组展示与练习，歌曲轨道也可按群分轨 */
   wordGroups?: { key: string; name: string }[];
 }
 

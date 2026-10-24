@@ -1,7 +1,7 @@
 # ADR-004: 埋点事件表与前端错误上报
 
 ## Status
-Proposed
+Accepted（2026-10-17 落地：events 表 + client_error 上报；时间戳/学习日两处口径失真已修，课时级埋点覆盖持续补）
 
 ## Context
 

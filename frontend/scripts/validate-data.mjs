@@ -7,7 +7,11 @@
  *
  * 校验项：
  *  1. lessons：id 唯一、tone 在 6 色调板、words 非空且 word.id 唯一、
- *     phrases 引用的单词存在、song.mp3 资源真实存在（硬性）；
+ *     phrases 引用的单词存在、stageStyle 枚举、word.color 色值格式、
+ *     词群闭包（word/song/track 的 group 须在 wordGroups 登记）、
+ *     colorPairs 引用完整（wordId/color 均须指向本课单词且颜色词带色值）、
+ *     歌曲轨道可播放（title + audio/video 至少其一）、
+ *     音视频资源真实存在（硬性：第一轨 + 多轨逐个查盘）；
  *  2. heroes：角色 id 唯一、formId 全局唯一；
  *  3. heroDetails：每个角色都有详情、形态引用存在；
  *  4. pathLevels：关卡 id 唯一、<lessonId>-<actKey> 引用的课与玩法存在；
@@ -99,13 +103,40 @@ try {
         check(groupKeys.has(g), `课时 ${l.id} 歌曲 group 非法：${g}（须在 wordGroups 中声明）`);
       }
     }
-    // 颜色配对引用必须存在（连一连 colorMode 静默失效的护栏）
+    // 学单词玩法样式枚举：写错值会静默回退默认样式，孩子看到的是错的玩法
+    check(l.stageStyle === "cards" || l.stageStyle === "dialog", `课时 ${l.id} stageStyle 非法：${l.stageStyle}（cards | dialog）`);
+    // 颜色词的色值格式（WordCard 色点 / 连一连色圆都靠它渲染，错值静默变 #ccc）
+    for (const w of l.words || []) {
+      if (w.color) check(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(w.color), `课时 ${l.id} 单词 ${w.id} 的 color 不是合法色值：${w.color}（须 #rgb / #rrggbb）`);
+    }
+    // 颜色配对引用必须存在（连一连 colorMode 静默失效的护栏）。
+    // p.color 指向本课颜色词 id（不是色值），该词必须带 color 色值
+    const paired = new Set();
+    check(!l.colorPairs || l.colorPairs.length >= 2, `课时 ${l.id} colorPairs 至少 2 对才能成局`);
     for (const p of l.colorPairs || []) {
       check(wordIds.has(p.wordId), `课时 ${l.id} colorPairs 引用不存在的单词：${p.wordId}`);
+      check(!paired.has(p.wordId), `课时 ${l.id} colorPairs 单词被配对两次：${p.wordId}（一个动物只能配一种颜色）`);
+      paired.add(p.wordId);
+      const colorWord = (l.words || []).find((w) => w.id === p.color);
+      check(Boolean(colorWord), `课时 ${l.id} colorPairs 颜色 ${p.color} 不是本课单词 id`);
+      check(Boolean(colorWord?.color), `课时 ${l.id} colorPairs 颜色词 ${p.color} 缺 color 色值（色圆渲染不出）`);
     }
-    // 资源硬校验：童谣音频缺失 = 上课白屏
-    const songMp3 = `public/lessons/${l.id}/song.mp3`;
-    check(existsSync(join(root, songMp3)), `课时 ${l.id} 缺童谣音频：${songMp3}`);
+    // 多轨播放列表：title 必填、audio/video 至少其一，否则轨道在磨耳朵/唱童谣里点不动
+    for (const t of l.song?.tracks || []) {
+      check(t.title?.trim(), `课时 ${l.id} 有歌曲轨道缺 title`);
+      check(Boolean(t.audio || t.video), `课时 ${l.id} 歌曲轨道「${t.title}」缺 audio/video（至少其一）`);
+    }
+    // 资源硬校验：声明了就要真实存在（缺失 = 上课白屏/轨道点不动）。
+    // 逐个查第一轨 + 多轨的 audio/video 实际路径——比旧版"按约定查 song.mp3"
+    // 更准：l11 第一轨是 brown-bear.mp3，按约定查会查错文件
+    check(Boolean(l.song?.audio || l.song?.video), `课时 ${l.id} 第一轨缺 audio/video`);
+    for (const t of [l.song, ...(l.song?.tracks || [])]) {
+      for (const src of [t?.audio, t?.video]) {
+        if (typeof src === "string" && src.startsWith("/lessons/")) {
+          check(existsSync(join(root, "public", src)), `课时 ${l.id} 音视频文件缺失：${src}`);
+        }
+      }
+    }
     // 单词图软校验（缺失可降级 emoji，只告警）
     for (const w of l.words || []) {
       const img = w.image;

@@ -1,7 +1,7 @@
 # ADR-001: 课程内容的单一事实源与防漂移闸门
 
 ## Status
-Proposed（建议立即接受，落地成本约 30 分钟）
+Accepted（2026-10-17 落地：deploy.yml + ci-local.sh 均有种子漂移闸门）
 
 ## Context
 

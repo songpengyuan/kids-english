@@ -1,7 +1,7 @@
 # ADR-003: 后端纳入 CI 部署流水线
 
 ## Status
-Proposed
+Accepted（2026-10-17 落地：deploy.yml 单 workflow 双线部署 + 健康探测）
 
 ## Context
 

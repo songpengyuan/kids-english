@@ -1,7 +1,7 @@
 # ADR-002: 数据库迁移版本化
 
 ## Status
-Proposed
+Accepted（2026-10-17 落地：schema_version=3 已在生产回显）
 
 ## Context
 
