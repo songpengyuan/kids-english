@@ -31,10 +31,11 @@ const emit = defineEmits<{ pick: [f: FlatForm] }>();
 const rewards = useRewardsStore();
 
 /** 家长放的 png 可能缺，缺了就回退内置原创占位图（失败状态收在本组件内，
- *  主图区有自己的失败记录——两处图片互不牵连） */
+ *  主图区有自己的失败记录——两处图片互不牵连）。缩略条用 256px 小图，
+ *  不拉 500KB 级原图（那是姿势舞台的事）。 */
 const failed = ref<Record<string, boolean>>({});
 function srcOf(f: FlatForm) {
-  return failed.value[f.image] ? f.fallback : f.image;
+  return failed.value[f.thumb] ? f.fallback : f.thumb;
 }
 </script>
 
@@ -56,7 +57,7 @@ function srcOf(f: FlatForm) {
       :aria-label="f.name"
       @click="emit('pick', f)"
     >
-      <img :src="srcOf(f)" :alt="f.name" @error="failed[f.image] = true" />
+      <img :src="srcOf(f)" :alt="f.name" loading="lazy" decoding="async" @error="failed[f.thumb] = true" />
     </button>
   </div>
 </template>

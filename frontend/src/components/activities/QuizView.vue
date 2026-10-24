@@ -119,6 +119,8 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
         <div class="pic">
           <img
             v-if="!imgFail[opt.id] && opt.image"
+            loading="lazy"
+            decoding="async"
             :src="opt.image || undefined"
             :alt="opt.en"
             @error="imgFail[opt.id] = true"

@@ -23,6 +23,7 @@ export interface AlbumForm {
   rarityLabel: string;
   color: string;
   price: number;
+  /** 网格小图（256px WebP）：图鉴一屏 81 张，原图只留给详情页姿势舞台 */
   image: string;
   fallback: string;
   owned: boolean;
@@ -66,6 +67,8 @@ function onTap() {
         :class="{ sil: !form.owned }"
         :src="src"
         :alt="`${heroName}${form.name}`"
+        loading="lazy"
+        decoding="async"
         @error="imgFailed = true"
       />
       <!-- 未收集不显示星级（灰星堆在剪影下显得像"已经拿到"） -->

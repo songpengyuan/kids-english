@@ -70,7 +70,8 @@ function toCard(f: (typeof ALL_FORMS)[number]): AlbumForm {
     rarityLabel: RARITY_INFO[f.rarity].label,
     color: f.color,
     price,
-    image: f.image,
+    // 网格卡用 256px 缩略图：81 张原图一次 20-30MB，缩略图 9KB/张
+    image: f.thumb,
     fallback: f.fallback,
     owned: rewards.isOwned(f.id),
     stars: rewards.starsOf(f.id),

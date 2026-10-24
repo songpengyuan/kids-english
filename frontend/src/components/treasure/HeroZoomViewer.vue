@@ -73,6 +73,7 @@ function stepPose(d: number) {
             :class="{ sil: silhouette }"
             :src="poses[index]"
             :alt="`${heroName}${formName}放大图${poses.length > 1 ? ' 姿势' + (index + 1) : ''}`"
+            decoding="async"
             @error="emit('imageError', poses[index] ?? '')"
           />
         </Transition>

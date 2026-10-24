@@ -94,6 +94,8 @@ watch(
           <img
             :src="src"
             :alt="`${heroName}${formName}${poses.length > 1 ? ' 姿势' + (i + 1) : ''}`"
+            :loading="i === 0 ? 'eager' : 'lazy'"
+            decoding="async"
             @error="emit('imageError', src)"
           />
         </figure>

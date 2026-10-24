@@ -89,6 +89,8 @@ function onWord() {
       <template v-else>
         <img
           v-if="!imgFailed && word.image"
+          loading="lazy"
+          decoding="async"
           :src="word.image || undefined"
           :alt="word.en"
           @error="imgFailed = true"

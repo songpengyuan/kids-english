@@ -625,6 +625,8 @@ onBeforeUnmount(() => {
           />
           <template v-else>
             <img
+              loading="lazy"
+              decoding="async"
               :src="w.image"
               :alt="w.en"
               @error="
@@ -656,6 +658,8 @@ onBeforeUnmount(() => {
           @pointerdown="onCardDown(w, 'img', $event)"
         >
           <img
+            loading="lazy"
+            decoding="async"
             :src="w.image"
             :alt="w.en"
             @error="

@@ -858,6 +858,9 @@ export interface FlatForm extends HeroForm {
   price: number;
   /** 主图（png 优先；加载失败回退 fallback） */
   image: string;
+  /** 网格/缩略条用的小图（thumbs/<id>.webp 256px，gen-hero-thumbs.py 生成）。
+   *  图鉴一屏 81 张，原图 500KB 级一次 20-30MB；原图只留给姿势舞台/全屏查看。 */
+  thumb: string;
   /** 多姿势图（轮播用）：约定 <id>.png 主图 + <id>-2.png … <id>-N.png；
    *  缺失的文件由组件加载失败时跳过（运行时探测，无需改数据）。 */
   images: string[];
@@ -876,6 +879,7 @@ export const ALL_FORMS: FlatForm[] = HEROES.flatMap((h) =>
       era: h.era,
       price: RARITY_INFO[f.rarity].price,
       image,
+      thumb: asset(`/heroes/thumbs/${f.id}.webp`) as string,
       images: [
         image,
         asset(`/heroes/${f.id}-2.png`),
