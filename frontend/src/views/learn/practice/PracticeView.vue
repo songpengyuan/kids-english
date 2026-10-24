@@ -26,13 +26,12 @@ const content = useContentStore();
 const progress = useProgressStore();
 /** 课程数据源：后端内容 API 优先（远端详情为准、本地补缺口），离线自动回退本地静态 */
 const lessons = content.lessons;
-/** 显示顺序：音乐 → 水手 → 手指（培训班实际上课顺序）；新课排后面 */
-const OFFICIAL_ORDER = ["l5", "l4", "l9", "l11"];
+/** 显示顺序：按 date 升序 = 培训班实际上课顺序（无日期的排最后）。
+ *  排序事实归数据层——曾经手写 OFFICIAL_ORDER 课时 id 列表，l10 上线时漏改
+ *  被排到末尾，新课也会继续漏；改由 date 派生后加课零改动。
+ *  注意与 content store 的 id 数值序是两个口径：那个服务"下一课"推进语义。 */
 const filteredLessons = computed(() =>
-  [...lessons].sort(
-    (a, b) => (OFFICIAL_ORDER.indexOf(a.id) === -1 ? 999 : OFFICIAL_ORDER.indexOf(a.id)) -
-              (OFFICIAL_ORDER.indexOf(b.id) === -1 ? 999 : OFFICIAL_ORDER.indexOf(b.id))
-  )
+  [...lessons].sort((a, b) => (a.date ?? "9999-12-31").localeCompare(b.date ?? "9999-12-31"))
 );
 const router = useRouter();
 
