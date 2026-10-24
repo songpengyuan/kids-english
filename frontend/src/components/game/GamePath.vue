@@ -4,10 +4,10 @@
  * script setup 内局部变量每次挂载重置，故存模块作用域，跨实例/跨 KeepAlive 保留。
  *
  * ⚠️ **必须按地图作用域分开记**（2026-10-17）：本课地图（课程详情页 game 视图）与
- * 多课总地图（#/game）共用同一个 GamePath 实现，曾经本课地图是 KeepAlive 缓存、
- * 换课不重建实例的独立页面（GameLessonView，2026-10-24 已删）。原来只有一份
- * `savedGameTop`，l4 地图的滚动位置会串到 l5 地图（打开就停在别人的半山腰）。
- * key = ""（总地图）或课时 id。
+ * 多课总地图（#/game）共用同一个 GamePath 实现，且课程详情页是 KeepAlive 缓存、
+ * 换课时不重建实例（曾经是独立的 GameLessonView，2026-10-24 并入 CourseDetailView）。
+ * 原来只有一份 `savedGameTop`，l4 地图的滚动位置会串到 l5 地图（打开就停在别人的
+ * 半山腰）。key = ""（总地图）或课时 id。
  */
 const savedTopByScope = new Map<string, number>();
 /** 上次定位/看到过的"当前关"（按作用域）：当前关变了（通关推进）→ 进地图时自动跟过去 */

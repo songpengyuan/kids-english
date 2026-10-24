@@ -232,7 +232,7 @@ function finish() {
               <!-- 家长发题：文字在上、图片在下（孩子看图回答，不显示英文答案） -->
               <span class="msg-text">{{ m.text }}</span>
               <div v-if="m.word" class="msg-pic parent-pic">
-                <img v-if="m.word.image" :src="m.word.image" :alt="m.word.en" class="msg-pic-img" />
+                <img v-if="m.word.image" :src="m.word.image" :alt="m.word.en" loading="lazy" decoding="async" class="msg-pic-img" />
                 <span v-else class="msg-pic-emoji">{{ m.word.emoji }}</span>
               </div>
             </template>
@@ -241,7 +241,7 @@ function finish() {
               <span class="msg-text">{{ m.text }}</span>
               <span v-if="m.heard" class="msg-heard">🎤 {{ m.heard }}</span>
               <div v-if="m.word" class="msg-pic">
-                <img v-if="m.word.image" :src="m.word.image" :alt="m.word.en" class="msg-pic-img" />
+                <img v-if="m.word.image" :src="m.word.image" :alt="m.word.en" loading="lazy" decoding="async" class="msg-pic-img" />
                 <span v-else class="msg-pic-emoji">{{ m.word.emoji }}</span>
                 <span class="msg-pic-en">{{ m.word.en }}</span>
               </div>
@@ -307,6 +307,10 @@ function finish() {
           <div class="ci-judge">
             <BaseButton v-if="grade === 'retry'" variant="green" @click="retry()">
               再试一次
+            </BaseButton>
+            <!-- ASR 识别不出时家长兜底（曾经只有"再试"，孩子不说话就一直卡在这轮） -->
+            <BaseButton v-if="grade === 'retry'" variant="gray" :disabled="advancing" @click="parentJudge(true)">
+              读对了 ✓
             </BaseButton>
             <span v-else class="ci-auto">✓ 读对了</span>
           </div>

@@ -238,6 +238,10 @@ const listening = computed(() => status.value === "listening");
                 <BaseButton v-if="grade === 'retry'" variant="green" @click="retry()">
                   再试一次
                 </BaseButton>
+                <!-- ASR 识别不出时家长兜底（曾经只有"再试"，孩子不说话就一直卡在这轮） -->
+                <BaseButton v-if="grade === 'retry'" variant="gray" @click="parentJudge(true)">
+                  读对了 ✓
+                </BaseButton>
                 <span v-else class="dlg-auto">太棒了，下一轮！</span>
               </div>
             </template>

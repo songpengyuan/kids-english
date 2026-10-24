@@ -194,6 +194,10 @@ function next() {
           <BaseButton v-else @click="next">
             继续<ChevronRight class="k-ico" />
           </BaseButton>
+          <!-- ASR 识别不出时家长兜底（曾经只有"再试"，孩子认生不说话就一直卡关） -->
+          <BaseButton v-if="grade === 'retry'" variant="gray" @click="parentJudge(true)">
+            <ThumbsUp class="k-ico" />读对了 ✓
+          </BaseButton>
         </div>
       </template>
     </SafeBottom>

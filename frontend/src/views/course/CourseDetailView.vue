@@ -25,6 +25,9 @@ const router = useRouter();
 const content = useContentStore();
 const progress = useProgressStore();
 
+// KeepAlive include 需要稳定组件名（缓存后回地图才有解锁闪光动画）
+defineOptions({ name: "CourseDetailView" });
+
 const lessonId = computed(() => route.params.id as string);
 const lesson = ref<Lesson | null>(getLocalLesson(lessonId.value));
 
@@ -45,6 +48,14 @@ const view = ref<"game" | "menu">(
 watch(view, (v) => {
   router.replace({ query: { ...route.query, view: v } });
 });
+// 本页被 KeepAlive 缓存：从玩法回跳（?view=game 重定向进来）时组件不重建，
+// 必须跟着路由 query 同步视图，否则停留在上次离开时的视图上
+watch(
+  () => route.query.view,
+  (v) => {
+    if (v === "menu" || v === "game") view.value = v;
+  }
+);
 
 function goBack() {
   void router.push("/course");

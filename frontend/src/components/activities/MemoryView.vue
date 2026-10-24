@@ -37,11 +37,18 @@ const imgFail = ref<Record<string, boolean>>({});
 
 const buildGroups = (): Group[] => {
   const picked = shuffleWith(props.words);
+  const n = picked.length;
+  if (!n) return [];
+  // 均衡分组：组数 = ceil(词数/组容量)，余数逐组摊一个（9 词 → 3/3/3，
+  // 10 词 → 4/3/3）。曾经"整除切片 + 丢弃余数"：9 词的组永远少练最后一个词；
+  // 只保留余数又会出现"最后一组只有 1 对"的单薄局——摊开最稳。
+  const g = Math.ceil(n / groupSize.value);
   const out: Group[] = [];
-  for (let i = 0; i < picked.length; i += groupSize.value) {
-    const slice = picked.slice(i, i + groupSize.value);
-    // 剩 1 个词也要练（1 对 = 2 张卡）：曾经 < 2 直接丢弃，9 词的组永远少练最后一个词
-    if (slice.length < 1) break;
+  let i = 0;
+  for (let gi = 0; gi < g; gi++) {
+    const size = Math.floor(n / g) + (gi < n % g ? 1 : 0);
+    const slice = picked.slice(i, i + size);
+    i += size;
     const cards: Card[] = slice.flatMap((w) => [
       { uid: `${w.id}-img`, wordId: w.id, kind: "img" as const, word: w },
       { uid: `${w.id}-word`, wordId: w.id, kind: "word" as const, word: w }
@@ -57,7 +64,7 @@ const groupCount = computed(() => groups.value.length);
 const curGroup = computed(() => groups.value[groupIdx.value] || { cards: [] });
 const totalPairs = computed(() => props.words.length);
 const donePairs = computed(() => matchedUids.value.size / 2);
-/** 当前组的对数：词数不整除时最后一组比 groupSize 小（10 词 → 4/4/2） */
+/** 当前组的对数：均衡分组下组间最多差 1 对，判定永远用当前组实际对数 */
 const curPairs = computed(() => curGroup.value.cards.length / 2);
 /** 全局累计已配对数（换组不清零：顶栏进度/计数跨组单调递增，不回退） */
 const solvedPairs = ref(0);
@@ -166,6 +173,8 @@ onBeforeUnmount(() => {
               <template v-if="card.kind === 'img'">
                 <img
                   v-if="!imgFail[card.word.id] && card.word.image"
+                  loading="lazy"
+                  decoding="async"
                   :src="card.word.image"
                   :alt="card.word.en"
                   @error="imgFail[card.word.id] = true"

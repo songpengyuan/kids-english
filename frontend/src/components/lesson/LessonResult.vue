@@ -75,7 +75,7 @@ function nav(fn: () => void) {
       <div class="quest-done-badge anim-pop">第 {{ questLevel }} 关完成！</div>
       <div class="stars">
         <span
-          v-for="n in 3"
+          v-for="n in maxStars || 3"
           :key="n"
           class="star"
           :class="{ dim: n > stars }"
@@ -113,7 +113,7 @@ function nav(fn: () => void) {
     <template v-else>
       <div class="stars">
         <span
-          v-for="n in 3"
+          v-for="n in maxStars || 3"
           :key="n"
           class="star"
           :class="{ dim: n > stars }"
