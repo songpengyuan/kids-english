@@ -1,0 +1,10 @@
+# pnpm 11+ 构建脚本白名单（允许跑 install 脚本的依赖）。
+# @ffmpeg-installer/*：装包时分发 ffmpeg 二进制（scripts/optimize-videos.mjs 用），只进 devDependencies 不进产物。
+# 五个平台都登记：本机是 darwin-arm64，CI（ubuntu）需要 linux-x64，其余防换机踩坑。
+allowBuilds:
+  "@ffmpeg-installer/ffmpeg": true
+  "@ffmpeg-installer/darwin-arm64": true
+  "@ffmpeg-installer/darwin-x64": true
+  "@ffmpeg-installer/linux-arm64": true
+  "@ffmpeg-installer/linux-x64": true
+  "@ffmpeg-installer/win32-x64": true

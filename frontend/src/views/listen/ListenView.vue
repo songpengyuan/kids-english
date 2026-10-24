@@ -150,6 +150,10 @@ const videoList = computed(() =>
 
 /* ---------- 视频播放（局部全屏；计时独立，不影响歌曲全局计时） ---------- */
 const playingVideo = ref<{ src: string; titleZh: string; title: string } | null>(null);
+/** 视频封面：optimize-videos.mjs 与 mp4 成对产出的同名 jpg（缺失时无封面，无害） */
+function posterOf(src: string) {
+  return src.replace(/\.mp4$/, ".jpg");
+}
 let videoTimer: number | null = null;
 let videoTick = 0;
 /** 结算式视频计时：后台标签页 setInterval 被节流也不丢时长（与音频一致） */
@@ -328,7 +332,7 @@ onMounted(() => {
       <button class="video-close round" aria-label="关闭视频" @click="playingVideo = null">
         <X class="k-ico" />
       </button>
-      <video :src="playingVideo.src" controls autoplay playsinline preload="auto" class="video-player" />
+      <video :src="playingVideo.src" :poster="posterOf(playingVideo.src)" controls autoplay playsinline preload="metadata" class="video-player" />
       <p class="video-caption">{{ playingVideo.titleZh }} · {{ playingVideo.title }}</p>
     </div>
   </div>

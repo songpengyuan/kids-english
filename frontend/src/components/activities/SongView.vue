@@ -69,6 +69,10 @@ watch(
 const hasVideo = computed(() => !!curTrack.value.video);
 const firstTab = computed(() => (hasVideo.value ? "video" : "stage"));
 const mode = ref(firstTab.value);
+/** 视频封面：optimize-videos.mjs 与 mp4 成对产出的同名 jpg（缺失时浏览器无封面，无害） */
+function posterOf(src) {
+  return src ? src.replace(/\.mp4$/, ".jpg") : undefined;
+}
 
 /** 离开本页（回菜单 / 换课）必须停播：脱离 DOM 的媒体元素在部分浏览器会继续出声 */
 onBeforeUnmount(() => {
@@ -302,8 +306,10 @@ function onTimeUpdate() {
       <video
         ref="videoEl"
         :src="curTrack.video"
+        :poster="posterOf(curTrack.video)"
         controls
         playsinline
+        preload="metadata"
         class="video"
         @error="onVideoError"
         @ended="onVideoEnded"
