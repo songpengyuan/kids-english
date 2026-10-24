@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 课程详情页（#/course/:id/detail）——游戏地图 + 卡片目录统一入口。
+ * 课程详情页（#/course/:id 课时本位，?view=game|menu 切地图/卡片）——统一入口。
  *
  * 两个视图共用同一个 header（标题/返回/资源 badges），右上角切换：
  *  - game：本课闯关地图（孩子主入口，默认）

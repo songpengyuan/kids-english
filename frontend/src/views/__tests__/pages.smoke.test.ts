@@ -90,7 +90,7 @@ const routes = [
           { path: "talk", name: "lesson-talk", component: LessonView },
         ],
       },
-      { path: ":id/detail", name: "course-detail", component: CourseDetailView },
+      { path: ":id", name: "course-detail", component: CourseDetailView },
       { path: "review", name: "review", component: ReviewView },
     ],
   },
@@ -154,7 +154,7 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   });
 
   it("当前课游戏地图（课程详情页 game 视图，只服务本课关卡）", async () => {
-    const w = await mountPage(CourseDetailView, "/learn/l10/detail", { view: "game" });
+    const w = await mountPage(CourseDetailView, "/learn/l10", { view: "game" });
     // 标题显示本课课程名 + 关卡列表（唱童谣/学单词…）
     expect(w.text()).toContain("丛林里散步");
     expect(w.text()).toContain("学单词");

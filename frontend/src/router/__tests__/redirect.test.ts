@@ -66,10 +66,14 @@ describe("关键路径能落到正确路由", () => {
     expect(router.currentRoute.value.path).toBe("/course");
   });
 
-  it("#/course/l4 课程详情默认 redirect 到本课详情页（地图视图）", async () => {
+  it("#/course/l4 课时本位：课程详情直接落在 /course/:id", async () => {
     await router.push("/course/l4");
     expect(router.currentRoute.value.name).toBe("course-detail");
     expect(router.currentRoute.value.params.id).toBe("l4");
+    // 旧书签：/course/l4/detail 重定向到本位（保留 ?view= 等查询）
+    await router.push("/course/l4/detail?view=menu");
+    expect(router.currentRoute.value.path).toBe("/course/l4");
+    expect(router.currentRoute.value.query.view).toBe("menu");
   });
 
   it("#/course/l4/menu 卡片目录重定向到详情页 menu 视图", async () => {

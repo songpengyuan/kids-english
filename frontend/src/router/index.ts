@@ -7,13 +7,14 @@
  * - **路由分层（子路由承载）**：三个主入口（学习 / 游戏 / 我的）为顶层父路由，
  *   各自的子页面作为**子路由**挂在父级下，不在根路径平铺新 path：
  *
- *   #/course（课程域；历史旧路径 #/learn 已不再兼容，见文件底部说明）
+ *   #/course（学习域；历史旧路径 #/learn 已不再兼容，见文件底部说明）
  *     ├─ /course                         课程主页（父容器空 path 子路由，顶层渲染）
- *     ├─ /course/:id                     课程菜单（父路由带组件）
+ *     ├─ /course/:id                     课时本位：课程详情（地图 + 卡片目录，?view= 切换）
  *     │   ├─ /course/:id/learn|hear|...  题型子路由（二级，继承父组件，仅声明 name/meta）
- *     │   ├─ /course/:id/game            旧本课地图路径 → 重定向到 detail?view=game
- *     │   └─ /course/:id/game/quest      本课闯关玩法（URL 归属课程域：课时是主资源）
- *     └─ /course/review                  错词复习（学习闭环：学 → 错 → 复习）
+ *     │   ├─ /course/:id/game            旧本课地图路径 → 重定向到本位 ?view=game
+ *     │   ├─ /course/:id/game/quest      本课闯关玩法（URL 归属课程域：课时是主资源）
+ *     │   └─ /course/:id/detail          旧详情路径 → 重定向到本位
+ *     └─ /course/review                  错词复习（跨课学习闭环：学 → 错 → 复习）
  *   #/game（游戏域）
  *     ├─ /game                          多课总地图（入口已收起）
  *     └─ /game/quest/:id/:stage?        旧闯关路径 → 重定向到 /course/:id/game/quest
@@ -67,17 +68,18 @@ export const router = createRouter({
         { path: "", name: "learn", component: LearnView, meta: { title: "丞丞ABC" } },
         {
           path: ":id",
-          // 点进课程默认落本课详情页（地图视图）
-          redirect: (to) => ({ name: "course-detail", params: { id: to.params.id } }),
-        },
-        // 课程详情页：游戏地图 + 卡片目录共用 header，右上角切换
-        {
-          path: ":id/detail",
+          // 课程详情页 = 课时本位（游戏地图 + 卡片目录共用 header，右上角切换；
+          // ?view=game|menu 决定默认视图）。旧 /course/:id/detail 重定向到本位。
           name: "course-detail",
           component: () => import("../views/course/CourseDetailView.vue"),
           meta: { title: "课程", sky: true },
         },
-        // 旧路径兼容：game/menu 重定向到 detail 并带 view 参数
+        // 旧路径兼容：详情页已提升到 /course/:id 本位
+        {
+          path: ":id/detail",
+          redirect: (to) => ({ name: "course-detail", params: { id: to.params.id }, query: to.query }),
+        },
+        // 旧路径兼容：game/menu 重定向到本位并带 view 参数
         {
           path: ":id/game",
           redirect: (to) => ({ name: "course-detail", params: { id: to.params.id }, query: { view: "game" } }),
