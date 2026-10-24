@@ -6,7 +6,7 @@
  *   → result（结算：闯关大画面 / 自由结算）
  *
  * 职责：
- *  - stage 迁移与深链解析（/course/:id/:stage / /quest/:id?step=）；
+ *  - stage 迁移与深链解析（/course/:id/:stage / /course/:id/game/quest?step=）；
  *  - 结算（星数、今日学情、连击横幅、庆祝）。
  * 玩法菜单的测量/排布已内聚到 lesson/LessonMenu.vue（pickColumns 由菜单组件持有）。
  *
@@ -125,7 +125,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   }
 
   /** 进入玩法：同步 stage 并把 URL 更新为独立子路径（题目详情标记：课 id + 题型）。
-   *  · 自由：#/course/l4/quiz；闯关：#/quest/l4?step=quiz
+   *  · 自由：#/course/l4/quiz；闯关：#/course/l4/game/quest?step=quiz
    *  · replace 不堆历史（孩子误触返回键不至于层层回退） */
   function open(a: QuestAct) {
     hapticTap();
@@ -135,7 +135,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     stage.value = key;
     const lid = lesson.value?.id;
     if (!lid) return;
-    router.replace(quest.questMode.value ? `/game/quest/${lid}?step=${a.key}` : `/course/${lid}/${key === "quiz" ? "hear" : key}`);
+    router.replace(quest.questMode.value ? `/course/${lid}/game/quest?step=${a.key}` : `/course/${lid}/${key === "quiz" ? "hear" : key}`);
   }
 
   /** 菜单卡片右上角的星星徽章：该玩法已获得的星数 */
@@ -164,7 +164,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   function goNextLevel() {
     if (!quest.nextLevel.value) return;
     hapticTap();
-    router.push(`/game/quest/${quest.nextLevel.value.lessonId}?step=${quest.nextLevel.value.actKey}`);
+    router.push(`/course/${quest.nextLevel.value.lessonId}/game/quest?step=${quest.nextLevel.value.actKey}`);
   }
 
   /** 结算一次玩法会话：累计今日时长与玩法数（家长报告数据源），并上报埋点 */

@@ -18,7 +18,7 @@ const ROUTES: { path: string; sky?: boolean }[] = [
   { path: "/me" },
   { path: "/game", sky: true },
   { path: "/course/:id/game", sky: true },
-  { path: "/game/quest/:id" },
+  { path: "/course/:id/game/quest" },
 ];
 
 async function mountAt(path: string) {
@@ -41,8 +41,8 @@ describe("CuteBackdrop 主题判定", () => {
     expect((await mountAt("/course/l10/game")).find(".backdrop").classes()).toContain("sky");
   });
 
-  it("答题页（/game/quest/…）保持默认背景（曾经被误判成天空）", async () => {
-    expect((await mountAt("/game/quest/l4")).find(".backdrop").classes()).not.toContain("sky");
+  it("答题页（/course/:id/game/quest）保持默认背景（曾经被误判成天空）", async () => {
+    expect((await mountAt("/course/l4/game/quest")).find(".backdrop").classes()).not.toContain("sky");
   });
 
   it("学习/磨耳朵/我的保持默认背景", async () => {

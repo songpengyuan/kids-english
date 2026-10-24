@@ -97,9 +97,17 @@ describe("关键路径能落到正确路由", () => {
     expect(router.currentRoute.value.name).toBe("course-detail");
   });
 
-  it("#/game/quest/... 仍是单关玩法（不落在课程域）", async () => {
-    await router.push("/game/quest/l4?step=learn");
+  it("闯关玩法已并入课程域：/course/l4/game/quest?step=… 直达，旧 /game/quest 重定向", async () => {
+    await router.push("/course/l4/game/quest?step=learn");
     expect(router.currentRoute.value.name).toBe("quest");
+    expect(router.currentRoute.value.path).toBe("/course/l4/game/quest");
+    // 旧书签：?step= 查询与旧 :stage 路径参数都转到新地址
+    await router.push("/game/quest/l4?step=song");
+    expect(router.currentRoute.value.path).toBe("/course/l4/game/quest");
+    expect(router.currentRoute.value.query.step).toBe("song");
+    await router.push("/game/quest/l4/talk");
+    expect(router.currentRoute.value.path).toBe("/course/l4/game/quest");
+    expect(router.currentRoute.value.query.step).toBe("talk");
   });
 
   it("#/gate 放行后落到课程主页，不卡死（本次事故的直接现场）", async () => {

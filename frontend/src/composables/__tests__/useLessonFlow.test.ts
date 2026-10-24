@@ -59,7 +59,7 @@ async function bootHost(url: string, activityList: QuestAct[] = acts): Promise<H
       { path: "/course/:id/memory", name: "lesson-memory", component: { template: "<div />" } },
       { path: "/course/:id/order", name: "lesson-order", component: { template: "<div />" } },
       { path: "/course/:id/:stage?", name: "lesson", component: { template: "<div />" } },
-      { path: "/game/quest/:id/:stage?", name: "quest", component: { template: "<div />" } },
+      { path: "/course/:id/game/quest", name: "quest", component: { template: "<div />" } },
       { path: "/", name: "home", component: { template: "<div />" } }
     ]
   });
@@ -151,7 +151,7 @@ describe("useLessonFlow 引导（深链解析）", () => {
   });
 
   it("闯关模式（#/quest/l4?step=quiz 独立路由）：跳过菜单直接进对应玩法", async () => {
-    const { flow } = await bootHost("/game/quest/l4?step=quiz");
+    const { flow } = await bootHost("/course/l4/game/quest?step=quiz");
     flow.boot();
     expect(flow.stage.value).toBe("quiz");
   });
@@ -240,7 +240,7 @@ describe("useLessonFlow 结算", () => {
   });
 
   it("闯关模式结算：触发 quest.finish 并进大画面", async () => {
-    const { flow, wrapper } = await bootHost("/game/quest/l4?step=0");
+    const { flow, wrapper } = await bootHost("/course/l4/game/quest?step=0");
     flow.boot();
     flow.open(acts[0]);
     flow.afterGame(3);
@@ -264,7 +264,7 @@ describe("useLessonFlow 结算", () => {
   it("闯关收尾跳转：左上角返回（结算页唯一的回地图出口）→ 当前课地图", async () => {
     // 2026-10-19：结算页底部「返回闯关地图」按钮已下线（闯关完成不再开宝箱），
     // 回地图只剩左上角 ← 这一条路 —— 这条用例锁的就是这个出口不失效。
-    const { flow, router } = await bootHost("/game/quest/l4?step=quiz");
+    const { flow, router } = await bootHost("/course/l4/game/quest?step=quiz");
     flow.boot();
     const push = vi.spyOn(router, "push");
     flow.back();
@@ -326,7 +326,7 @@ describe("useLessonFlow 埋点（ADR-004）", () => {
   });
 
   it("闯关模式过关 → 上报 level_pass（本课内关卡序号，不是全站累计）", async () => {
-    const { flow } = await bootHost("/game/quest/l4?step=quiz");
+    const { flow } = await bootHost("/course/l4/game/quest?step=quiz");
     flow.boot();
     flow.open(acts[1]);
     flow.afterGame(3);

@@ -32,7 +32,7 @@ async function boot(url: string): Promise<UseQuest> {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: "/game/quest/:id/:stage?", name: "quest", component: { template: "<div />" } },
+      { path: "/course/:id/game/quest", name: "quest", component: { template: "<div />" } },
       { path: "/course/:id/:stage?", name: "lesson", component: { template: "<div />" } },
       { path: "/", component: { template: "<div />" } },
     ],
@@ -55,27 +55,27 @@ async function boot(url: string): Promise<UseQuest> {
 }
 
 describe("useQuest 作用域", () => {
-  it("仅 /game/quest 路由是闯关模式（/course 不是）", async () => {
-    expect((await boot("/game/quest/l4?step=song")).questMode.value).toBe(true);
+  it("quest 路由是闯关模式（其他路由不是）", async () => {
+    expect((await boot("/course/l4/game/quest?step=song")).questMode.value).toBe(true);
     expect((await boot("/course/l4")).questMode.value).toBe(false);
   });
 
   it("本课序号从 1 起：song=第 1 关、learn=第 2 关、quiz=第 3 关", async () => {
-    const song = await boot("/game/quest/l4?step=song");
+    const song = await boot("/course/l4/game/quest?step=song");
     expect(song.bootFromQuery()).toBe(0);
     expect(song.questLevel.value).toBe(1);
 
-    const learn = await boot("/game/quest/l4?step=learn");
+    const learn = await boot("/course/l4/game/quest?step=learn");
     expect(learn.bootFromQuery()).toBe(1);
     expect(learn.questLevel.value).toBe(2);
 
-    const quiz = await boot("/game/quest/l4?step=quiz");
+    const quiz = await boot("/course/l4/game/quest?step=quiz");
     expect(quiz.bootFromQuery()).toBe(2);
     expect(quiz.questLevel.value).toBe(3);
   });
 
   it("下一关在本课内推进：song → learn，speak → talk", async () => {
-    const song = await boot("/game/quest/l4?step=song");
+    const song = await boot("/course/l4/game/quest?step=song");
     song.bootFromQuery();
     expect(song.nextLevel.value).toMatchObject({ lessonId: "l4", actKey: "learn", name: "学单词" });
 

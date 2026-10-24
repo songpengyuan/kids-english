@@ -98,7 +98,7 @@ const routes = [
     path: "/game",
     name: "game",
     component: GameView,
-    children: [{ path: "quest/:id/:stage?", name: "quest", component: LessonView }],
+    children: [{ path: "quest", name: "quest", component: LessonView }],
   },
   {
     path: "/me",

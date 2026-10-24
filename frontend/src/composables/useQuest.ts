@@ -1,7 +1,7 @@
 /**
  * 闯关（Quest）状态（阶段 2-3：从 LessonView 抽取）。
  *
- * 游戏模式的"一课一关"玩法：独立路由 #/game/quest/:id?step=<玩法>，
+ * 游戏模式的"一课一关"玩法：课程域路由 #/course/:id/game/quest?step=<玩法>，
  * 玩完直接进关卡完成画面，再走「下一关 / 返回地图」。
  *
  * **作用域 = 当前课**（2026-10-17 收口）：关卡序号取本课内序号（第 1…N 关），
@@ -53,7 +53,7 @@ export interface UseQuest {
 export function useQuest(options: UseQuestOptions): UseQuest {
   const { lesson, activities, route } = options;
 
-  /** 闯关身份：独立路由 #/game/quest/...（不再 ?mode=quest 参数）；按路由名判定而非 path 前缀 */
+  /** 闯关身份：课程域路由 #/course/:id/game/quest（不再 ?mode=quest 参数）；按路由名判定而非 path 前缀 */
   const questMode = computed(() => route.name === "quest");
   const questSeq = computed(() => activities.value);
   const questIdx = ref(0);

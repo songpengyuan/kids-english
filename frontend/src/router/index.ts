@@ -11,12 +11,12 @@
  *     ├─ /course                         课程主页（父容器空 path 子路由，顶层渲染）
  *     ├─ /course/:id                     课程菜单（父路由带组件）
  *     │   ├─ /course/:id/learn|hear|...  题型子路由（二级，继承父组件，仅声明 name/meta）
- *     │   └─ /course/:id/game            本课闯关地图（URL 归属课程域；天空场景）
+ *     │   ├─ /course/:id/game            旧本课地图路径 → 重定向到 detail?view=game
+ *     │   └─ /course/:id/game/quest      本课闯关玩法（URL 归属课程域：课时是主资源）
  *     └─ /course/review                  错词复习（学习闭环：学 → 错 → 复习）
  *   #/game（游戏域）
  *     ├─ /game                          多课总地图（入口已收起）
- *     ├─ /game/quest/:id/:stage?        闯关玩法（地图点关卡直达）
- *     └─ /game/lesson/:id               旧本课地图路径 → 重定向到 /course/:id/game
+ *     └─ /game/quest/:id/:stage?        旧闯关路径 → 重定向到 /course/:id/game/quest
  *   #/me（我的域）
  *     ├─ /me                            我的
  *     ├─ /me/calendar                   学习日历（**已合并原连击日历**，/me/streak 重定向至此）
@@ -95,6 +95,14 @@ export const router = createRouter({
         { path: "/course/:id/order", name: "lesson-order", component: LessonView, meta: { title: "拼句子", stage: "order" } },
         { path: "/course/:id/song", name: "lesson-song", component: LessonView, meta: { title: "唱童谣", stage: "song" } },
         { path: "/course/:id/talk", name: "lesson-talk", component: LessonView, meta: { title: "亲子对话", stage: "talk" } },
+        // 本课闯关玩法（地图点关卡直达）：URL 归属课程域——课时是主资源，
+        // 玩法是课时内的行为（2026-10-25 从 /game/quest/:id 迁入，旧路径见游戏域重定向）
+        {
+          path: ":id/game/quest",
+          name: "quest",
+          component: () => import("../views/game/QuestView.vue"),
+          meta: { title: "闯关" },
+        },
         { path: "review", name: "review", component: () => import("../views/learn/ReviewView.vue"), meta: { title: "错词复习" } },
       ],
     },
@@ -105,9 +113,20 @@ export const router = createRouter({
       children: [
         // 多课总地图（入口已收起，路由保留；天空场景由 meta.sky 决定）
         { path: "", name: "game", component: GameView, meta: { title: "游戏闯关", sky: true } },
-        // 闯关玩法（地图点关卡 → /game/quest/:id?step=玩法）
-        { path: "quest/:id/:stage?", name: "quest", component: () => import("../views/game/QuestView.vue"), meta: { title: "闯关" } },
-        // 旧路径兼容：本课地图已挪到课程域 /course/:id/game（只留一个 redirect，不留两份页面）
+        // 旧路径兼容：闯关玩法已并入课程域 /course/:id/game/quest
+        // （旧 :stage 路径参数转成 ?step= 查询，与现行为一致）
+        {
+          path: "quest/:id/:stage?",
+          redirect: (to) => ({
+            name: "quest",
+            params: { id: to.params.id },
+            query:
+              typeof to.params.stage === "string" && to.params.stage
+                ? { step: to.params.stage, ...to.query }
+                : to.query,
+          }),
+        },
+        // 旧路径兼容：本课地图已挪到课程域（只留一个 redirect，不留两份页面）
         { path: "lesson/:id", redirect: (to) => ({ name: "course-detail", params: { id: to.params.id }, query: { view: "game" } }) },
       ],
     },
