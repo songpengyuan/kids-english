@@ -12,14 +12,14 @@
  * dev 的 SW 不缓存 /src/*，只有壳和 lessons 媒体，安全。
  */
 
-let isIdle = () => true; // App.vue 注入：是否处于可安全刷新的状态（首页、无进行中玩法）
+let isIdle: () => boolean = () => true; // App.vue 注入：是否处于可安全刷新的状态（首页、无进行中玩法）
 let pendingUpdate = false;
 let hadController =
   typeof navigator !== "undefined" && "serviceWorker" in navigator
     ? !!navigator.serviceWorker.controller
     : false;
 
-export function initPWA(idleCheck = () => true) {
+export function initPWA(idleCheck: () => boolean = () => true) {
   isIdle = idleCheck;
   if (!("serviceWorker" in navigator)) return;
   const isDevTest = new URLSearchParams(location.search).has("sw");

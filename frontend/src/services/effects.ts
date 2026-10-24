@@ -14,7 +14,7 @@ import { soundEnabled } from "./sound";
  * 礼花配色：直接读 CSS 变量，跟着主题走。
  * 之前把亮色主题的高饱和色写死，暗色模式下礼花会亮得突兀（和降过亮的界面不在一个调上）。
  */
-function tokenColor(name, fallback) {
+function tokenColor(name: string, fallback: string): string {
   if (typeof document === "undefined") return fallback;
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return v || fallback;
@@ -41,22 +41,24 @@ export function bigCelebrate() {
   const blue = tokenColor("--blue", "#1cb0f6");
   const end = Date.now() + 900;
   (function frame() {
-    confetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0 }, color: gold });
-    confetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1 }, color: blue });
+    // 曾写成单数 color —— 被静默忽略，双侧礼花其实一直在用默认随机色
+    confetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0 }, colors: [gold] });
+    confetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1 }, colors: [blue] });
     if (Date.now() < end) requestAnimationFrame(frame);
   })();
 }
 
-let ctx;
-function audioCtx() {
+let ctx: AudioContext | null = null;
+function audioCtx(): AudioContext | null {
   if (!ctx) {
-    const AC = window.AudioContext || window.webkitAudioContext;
+    // Safari 老版本的 WebKit 前缀实现
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (AC) ctx = new AC();
   }
   return ctx;
 }
 
-function tone(freq, start, dur, type = "sine", gain = 0.15) {
+function tone(freq: number, start: number, dur: number, type: OscillatorType = "sine", gain = 0.15) {
   // 静音开关只关"音效"：单词/童谣等教学内容发音不受影响（见 services/sound.ts）
   if (!soundEnabled()) return;
   const c = audioCtx();
@@ -114,7 +116,7 @@ export function sfxMatch() {
  * 所以这里给：低频木箱体（triangle，够厚）+ 高频敲击点（square，够脆），
  * 并且**每一下升高一个小三度**，让三下敲击有"越来越近"的期待感。
  *
- * @param {number} step 第几下（1-based，>3 按第 3 下处理）
+ * @param step 第几下（1-based，>3 按第 3 下处理）
  */
 export function sfxChestTap(step = 1) {
   hapticTap();

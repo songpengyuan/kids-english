@@ -11,7 +11,14 @@ import { track } from "../services/telemetry";
 const KEY = "kids-english-errors-v1";
 const LIMIT = 20;
 
-function read() {
+interface ErrorEntry {
+  t: number;
+  kind: string;
+  msg: string;
+  stack: string;
+}
+
+function read(): ErrorEntry[] {
   try {
     const list = JSON.parse(localStorage.getItem(KEY) || "[]");
     return Array.isArray(list) ? list : [];
@@ -20,9 +27,9 @@ function read() {
   }
 }
 
-function push(kind, msg, stack) {
+function push(kind: string, msg: unknown, stack: unknown) {
   try {
-    const entry = {
+    const entry: ErrorEntry = {
       t: Date.now(),
       kind,
       msg: String(msg).slice(0, 300),

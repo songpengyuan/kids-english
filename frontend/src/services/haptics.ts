@@ -37,17 +37,20 @@
 
 const NAV = typeof navigator !== "undefined" ? navigator : null;
 const DOC = typeof document !== "undefined" ? document : null;
+/** TS DOM 库没有 Vibration API：安卓系浏览器私有扩展 */
+type VibrateNavigator = Navigator & { vibrate?: (pattern: number | number[]) => boolean };
 
 /* ---------- 环境判断 ---------- */
 
 /** 原生 Vibration API 是否可用（安卓系） */
-export const hasNativeVibrate = !!NAV && typeof NAV.vibrate === "function";
+export const hasNativeVibrate =
+  !!NAV && typeof (NAV as VibrateNavigator).vibrate === "function";
 
 /**
  * 是否支持 WebKit 的 switch 触感（iOS/iPadOS 17.4+、macOS Safari 17.4+）。
  * 用 UA 判断：Safari 没有暴露任何可直接探测该能力的 API。
  */
-export function supportsSwitchHaptics() {
+export function supportsSwitchHaptics(): boolean {
   if (hasNativeVibrate || !NAV) return false;
   const ua = NAV.userAgent || "";
   if (!/AppleWebKit/.test(ua)) return false; // 非 WebKit 内核
@@ -63,9 +66,9 @@ const switchHaptics = supportsSwitchHaptics();
 
 /* ---------- 原生通路 ---------- */
 
-function vibrate(pattern) {
+function vibrate(pattern: number | number[]) {
   try {
-    NAV.vibrate(pattern);
+    (NAV as VibrateNavigator | null)?.vibrate?.(pattern);
   } catch {
     /* 非用户手势里调用部分浏览器会抛错，静默即可 */
   }
@@ -84,7 +87,7 @@ const OVERLAY_ICON = "input[" + OVERLAY_ATTR + "]";
 const EXCLUDE_SELECTOR = ".back, .bottom-nav button, .lesson-card, .treasure-badge";
 
 let styleReady = false;
-let observer = null;
+let observer: MutationObserver | null = null;
 let scanRaf = 0;
 
 function injectStyle() {
@@ -117,8 +120,8 @@ ${OVERLAY_ICON} {
 }
 
 /** 给单个元素挂上透明开关（幂等） */
-function attach(el) {
-  if (!el || !el.querySelectorAll) return;
+function attach(el: Element) {
+  if (!el || !("querySelectorAll" in el)) return;
   // 排除的关键导航（返回按钮等）：不叠开关，并清掉之前版本已叠的，保证点击直达
   if (el.matches && el.matches(EXCLUDE_SELECTOR)) {
     el.querySelectorAll(":scope > " + OVERLAY_ICON).forEach((i) => i.remove());
@@ -126,7 +129,7 @@ function attach(el) {
   }
   if (el.querySelector(":scope > " + OVERLAY_ICON)) return;
   // 已经挂过但被框架重渲染吞掉的，重新挂
-  const input = DOC.createElement("input");
+  const input = DOC!.createElement("input");
   input.type = "checkbox";
   input.setAttribute("switch", "");
   input.setAttribute(OVERLAY_ATTR, "");
@@ -178,11 +181,8 @@ export function initHaptics() {
 
 /* ---------- 对外 API ---------- */
 
-/**
- * 触发一次触觉反馈。
- * @param {number|number[]} pattern 原生通路的震动模式（毫秒）
- */
-export function haptic(pattern) {
+/** 触发一次触觉反馈（pattern：原生通路的震动模式，毫秒） */
+export function haptic(pattern: number | number[]) {
   if (hasNativeVibrate) {
     vibrate(pattern);
     return;

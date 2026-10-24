@@ -8,10 +8,12 @@
  * 系统偏好变化时（如傍晚 iOS 自动切深色），未手动选择过则自动跟随。
  */
 
+type ThemeMode = "light" | "dark";
+
 const KEY = "kids-english-theme"; // "light" | "dark"
 const media = window.matchMedia("(prefers-color-scheme: dark)");
 
-function stored() {
+function stored(): ThemeMode | null {
   try {
     const v = localStorage.getItem(KEY);
     return v === "light" || v === "dark" ? v : null;
@@ -20,10 +22,10 @@ function stored() {
   }
 }
 
-function apply(mode) {
+function apply(mode: ThemeMode) {
   document.documentElement.dataset.theme = mode;
   // 同步状态栏 / Safari 工具栏颜色
-  let meta = document.querySelector('meta[name="theme-color"]');
+  let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
   if (!meta) {
     meta = document.createElement("meta");
     meta.name = "theme-color";
@@ -33,7 +35,7 @@ function apply(mode) {
 }
 
 /** 当前主题（模块加载时立即应用，避免刷新闪白） */
-export function initTheme() {
+export function initTheme(): ThemeMode {
   const mode = stored() || (media.matches ? "dark" : "light");
   apply(mode);
   // 未手动选择时跟随系统切换
@@ -43,13 +45,13 @@ export function initTheme() {
   return mode;
 }
 
-export function currentTheme() {
+export function currentTheme(): ThemeMode {
   return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
 /** 切换明暗并持久化 */
-export function toggleTheme() {
-  const next = currentTheme() === "dark" ? "light" : "dark";
+export function toggleTheme(): ThemeMode {
+  const next: ThemeMode = currentTheme() === "dark" ? "light" : "dark";
   apply(next);
   try {
     localStorage.setItem(KEY, next);

@@ -15,6 +15,8 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
+export type ViewportSizeTier = "tiny" | "compact" | "regular" | "roomy";
+
 const hasWindow = typeof window !== "undefined";
 
 /** 有窗口时同步初始化，保证首帧渲染就能拿到正确档位（不会先按默认值闪一下） */
@@ -22,7 +24,7 @@ const width = ref(hasWindow ? window.innerWidth : 1024);
 const height = ref(hasWindow ? window.innerHeight : 768);
 
 let subscribers = 0;
-let raf = null;
+let raf: number | null = null;
 
 function read() {
   width.value = window.innerWidth;
@@ -68,7 +70,7 @@ export function useViewport() {
   onBeforeUnmount(unsubscribe);
 
   /** tiny: 手机横屏；compact: 手机竖屏；regular: 平板横屏；roomy: 平板竖屏 */
-  const sizeTier = computed(() => {
+  const sizeTier = computed<ViewportSizeTier>(() => {
     const h = height.value;
     if (h < 480) return "tiny";
     if (h < 640) return "compact";
