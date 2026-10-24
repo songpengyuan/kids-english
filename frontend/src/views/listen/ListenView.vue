@@ -142,7 +142,7 @@ const showPlaylist = ref(false);
 
 const videoList = computed(() =>
   lessons
-    .filter((l) => !["l6", "l7", "l8"].includes(l.id))
+
     .flatMap((l) => {
       // l.song.video / t.video 在 normalize 时已 asset 补 BASE，直接用，不要再 asset
       const first = l.song.video
@@ -285,7 +285,7 @@ onMounted(() => {
     <!-- ===== 列表页（无顶部 header）；非播放态显示 ===== -->
     <template v-if="!player.nowPlaying || !player.currentSong">
       <div class="today-chip">今天磨了 <b>{{ Math.floor((progStore.todayStats.listenSec ?? 0) / 60) }}</b> 分钟</div>
-      <!-- 顶部 tab：与学习页「正式课/加餐」同款 SegmentedTabs -->
+      <!-- 顶部 tab：与学习页同款 SegmentedTabs -->
       <div class="type-tabs">
         <SegmentedTabs
           :model-value="subTab"
@@ -373,7 +373,7 @@ onMounted(() => {
   color: var(--brand);
   font-size: var(--fs-body);
 }
-/* 顶部 tab 容器：与学习页「正式课/加餐」一致 */
+/* 顶部 tab 容器：与学习页一致 */
 .type-tabs {
   margin: var(--gap-s) 0 var(--gap-m);
 }

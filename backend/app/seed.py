@@ -43,6 +43,20 @@ def seed_lessons(force: bool = False) -> int:
                 ),
             )
             n += 1
+        # 清理已从种子移除的课时（如 2026-10-25 下线的加餐 l6/l7/l8）：
+        # upsert 只会新增/更新，被下线的课会残留在表里继续被 /content/lessons 吐出。
+        seed_ids = [l["id"] for l in data]
+        placeholders = ",".join("?" for _ in seed_ids)
+        stale = [
+            r["id"]
+            for r in conn.execute(
+                f"SELECT id FROM lessons WHERE id NOT IN ({placeholders})", seed_ids
+            ).fetchall()
+        ]
+        for lid in stale:
+            conn.execute("DELETE FROM lessons WHERE id=?", (lid,))
+        if stale:
+            print(f"已清理种子外的陈旧课时: {', '.join(stale)}")
         conn.commit()
     finally:
         conn.close()

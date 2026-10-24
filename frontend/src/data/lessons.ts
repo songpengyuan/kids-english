@@ -11,7 +11,6 @@
  *   脚本不会覆盖这些文件；歌词高亮因为没有逐行时间轴，按比例映射。
  *
  * 【自研合成的课】l6 颜色 / l7 数字 / l8 字母：
- *   song.mp3 由 scripts/gen-songs.py 合成（自编曲，无版权风险，含逐行时间轴）
  *   words/*.svg 由 scripts/gen-word-art.py 生成（贴纸风简笔画）
  *   audio/*.mp3 由 scripts/gen-word-audio.py 生成（神经网络童声发音）
  *   资源找不到时 App 会自动降级为 emoji 占位图 / 浏览器语音朗读。
@@ -39,7 +38,7 @@ export function asset(path: string | null | undefined): string | null {
   return BASE + (path.startsWith("/") ? path : `/${path}`);
 }
 
-/* 逐行歌词的时间轴（scripts/gen-songs.py 生成），用于 KTV 式精确高亮 */
+/* 逐行歌词的时间轴（真人演唱课由 gen-lrc.py 对齐产出；合成曲课已下线），用于 KTV 式精确高亮 */
 import songTimings from "./song-timings.json";
 import lessonsData from "./lessons.json";
 
@@ -139,13 +138,15 @@ export interface LessonSong {
   /** 第一轨所属词群（l11：animals） */
   group?: string;
   lyrics: string[];
-  /** 该课节奏（gen-songs.py 生成；手工换过 mp3 时自动没有 → 回退比例映射） */
+  /** 该课节奏（song-timings.json；缺失时回退比例映射） */
   timings: SongTiming | null;
   /** 多段音视频轨道（一课多首）。第一轨用顶层 audio/video/lyrics，后续在这里追加。 */
   tracks: SongTrack[];
 }
 /** 课时（映射后：tone 兜底 + 资源路径化 + 词/句补全） */
-export type LessonType = "official" | "bonus";
+/** 课时类型：加餐课（l6/l7/l8 自研合成曲）已于 2026-10-25 下线删除，
+ *  现在只剩培训班教材课。字段保留是内容契约（后端 schema/export）的一部分。 */
+export type LessonType = "official";
 
 export interface Lesson {
   id: string;
@@ -169,14 +170,14 @@ export interface Lesson {
 
 /**
  * 课时数据本体在 lessons.json（本文件只留类型、normalize 与查询函数）。
- * 加课/改词/改歌词只动 JSON；生成脚本（gen-songs.py / gen-word-art.py /
+ * 加课/改词/改歌词只动 JSON；生成脚本（gen-word-art.py /
  * gen-word-audio.py）与后端种子导出（export-lessons.mjs）同读这一份。
  * （2026-10-25：此前 608 行数据字面量占着本文件 72%，review diff 一直被淹没。）
  */
 const rawLessons = lessonsData as RawLesson[];
 
 // 逐行时间轴索引化（json 字面量类型无 index signature，转 Record 再取）
-/** song-timings.json 的课时节奏结构（gen-songs.py 生成） */
+/** song-timings.json 的课时节奏结构 */
 export interface SongTiming {
   bpm: number;
   beatsPerBar: number;
@@ -185,12 +186,9 @@ export interface SongTiming {
 }
 const songTimingsMap = songTimings as unknown as Record<string, SongTiming | null>;
 
-/** 自定义课（非培训班教材）：颜色/数字/字母 */
-const BONUS_IDS = new Set(["l6", "l7", "l8"]);
-
 export const lessons: Lesson[] = rawLessons.map((lesson) => ({
   ...lesson,
-  type: BONUS_IDS.has(lesson.id) ? "bonus" : "official",
+  type: "official" as const,
   stageStyle: lesson.stageStyle ?? "cards",
   // 缺失时兜底成蓝色，避免 class 变成 tone-undefined 导致卡片没有底色
   tone: lesson.tone || "blue",
@@ -201,7 +199,7 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
     scene: lesson.song.scene || "stage",
     group: lesson.song.group,
     lyrics: lesson.song.lyrics || [],
-    // 该课的节奏与逐行时间轴（gen-songs.py 生成；手工换过 mp3 时会自动没有 → 回退比例映射）
+    // 该课的节奏与逐行时间轴（缺失时回退比例映射）
     timings: songTimingsMap[lesson.id] || null,
     // 多段音视频轨道：第一轨用顶层 audio/video/lyrics，后续在 tracks 里追加
     tracks: (lesson.song.tracks || []).map((t) => ({

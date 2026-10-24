@@ -26,15 +26,14 @@ const content = useContentStore();
 const progress = useProgressStore();
 /** 课程数据源：后端内容 API 优先（远端详情为准、本地补缺口），离线自动回退本地静态 */
 const lessons = content.lessons;
-/** 正式课显示顺序：音乐 → 水手 → 手指（培训班实际上课顺序） */
+/** 显示顺序：音乐 → 水手 → 手指（培训班实际上课顺序）；新课排后面 */
 const OFFICIAL_ORDER = ["l5", "l4", "l9", "l11"];
-const filteredLessons = computed(() => {
-  const list = lessons.filter((l) => l.type === "official" || !l.type);
-  return [...list].sort(
+const filteredLessons = computed(() =>
+  [...lessons].sort(
     (a, b) => (OFFICIAL_ORDER.indexOf(a.id) === -1 ? 999 : OFFICIAL_ORDER.indexOf(a.id)) -
               (OFFICIAL_ORDER.indexOf(b.id) === -1 ? 999 : OFFICIAL_ORDER.indexOf(b.id))
-  );
-});
+  )
+);
 const router = useRouter();
 
 function enter(l: Lesson) {

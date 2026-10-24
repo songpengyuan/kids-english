@@ -4,7 +4,6 @@
 从真实录音的歌曲里提取**逐行时间轴**，产出标准 LRC 歌词文件 + 核查 song-timings.json。
 
 为什么需要它：
-  · gen-songs.py 合成的 l6/l7/l8 是纯器乐、时间轴由生成器精确给出，不需要它；
   · l4/l5/l9/l10/l11 用的是老师/家长提供的真人演唱 mp3，时间轴要么是按比例
     估算的（estimated: true，核查发现偏差可达十几秒），要么根本没有。
   · 本脚本用 faster-whisper 识别（词级时间戳），再做 Needleman-Wunsch 全局
@@ -45,7 +44,6 @@ LESSONS_JSON = os.path.join(ROOT, "src", "data", "lessons.json")
 TIMINGS_JSON = os.path.join(ROOT, "src", "data", "song-timings.json")
 
 # 需要音频对齐的课：(课时id, 音频相对路径, 只取前 N 行歌词或 None, LRC 标题或 None)。
-# l6/l7/l8 是合成曲、时间轴精确，不在此列。
 # l11 Brown Bear 用顶层歌词；颜色轨用 tracks[].lyrics，键为 "<id>#<track 标题>"。
 # l10 音频只唱一轮（4 个动物各出现一次，见 lessons.json 注释），歌词已裁成一轮。
 ALIGN_LESSONS = [
@@ -60,8 +58,6 @@ ALIGN_LESSONS = [
 # 仅核查/修正 song-timings.json 的课（其余只产 LRC）
 TIMINGS_LESSONS = {"l4", "l5"}
 
-# 合成曲（gen-songs.py 产出，时间轴精确到行，无需对齐）
-SYNTH_LESSONS = ["l6", "l7", "l8"]
 
 
 # ---------------------------------------------------------------- 读歌词
@@ -356,41 +352,10 @@ def process(asr, lid, audio_rel, lyrics, lrc_title=None):
     }
 
 
-def export_synth_lrc(lyrics_all, timings):
-    """l6/l7/l8：直接从 song-timings.json 的精确时间轴导出 LRC。"""
-    for lid in SYNTH_LESSONS:
-        lyrics = lyrics_all.get(lid)
-        timing = timings.get(lid)
-        if not lyrics or not timing:
-            print(f"!! {lid}: 缺歌词或时间轴，跳过")
-            continue
-        timeline = timing["timeline"]
-        if len(timeline) != len(lyrics):
-            print(f"!! {lid}: 时间轴 {len(timeline)} 条 ≠ 歌词 {len(lyrics)} 行，跳过")
-            continue
-        out_lines = [
-            f"[ti:{lesson_title_of(lid)}]",
-            f"[al:lesson {lid}]",
-            "[offset:0]",
-        ]
-        for ln, t in zip(lyrics, timeline):
-            if ln.strip():
-                out_lines.append(f"{fmt_lrc(t)}{ln}")
-        path = os.path.join(ROOT, "public", "lessons", lid, "song.lrc")
-        with open(path, "w", encoding="utf-8") as fh:
-            fh.write("\n".join(out_lines) + "\n")
-        print(f"   {lid}: {sum(1 for ln in lyrics if ln.strip())} 行 → {os.path.relpath(path, ROOT)}")
-
-
 def main():
-    synth_only = "--synth" in sys.argv[1:]
     args = [a for a in sys.argv[1:] if not a.startswith("-")]
     lyrics_all = read_lessons_data()
     timings = json.load(open(TIMINGS_JSON, encoding="utf-8")) if os.path.exists(TIMINGS_JSON) else {}
-
-    if synth_only:
-        export_synth_lrc(lyrics_all, timings)
-        return 0
 
     targets = args or [lid for lid, _, _, _ in ALIGN_LESSONS]
     new_timings = dict(timings)
@@ -456,7 +421,6 @@ def main():
         json.dump(new_timings, fh, ensure_ascii=False, indent=2)
         fh.write("\n")
     print(f"时间轴核查完毕 → {os.path.relpath(TIMINGS_JSON, ROOT)}")
-    export_synth_lrc(lyrics_all, new_timings)
     return 0
 
 

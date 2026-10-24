@@ -25,12 +25,12 @@ export interface PlayableSong {
   lyrics?: string[];
 }
 
-/** 歌曲播放列表（有 audio 的课，排除 l6-l8 素材缺失课）。
+/** 歌曲播放列表（有 audio 的课）。
  *  一课多轨时，每轨展开成独立歌曲条目（第一轨用顶层 audio，后续从 tracks 取）。
  *  注意：lessons.ts normalize 时已对 audio/video 调过 asset() 补 BASE，
  *  这里直接用，不要再 asset，否则子路径部署会拼成 /app/app/...。 */
 export const SONG_LIST: PlayableSong[] = lessons
-  .filter((l) => l.song.audio && !["l6", "l7", "l8"].includes(l.id))
+  .filter((l) => l.song.audio)
   .flatMap((l) => {
     const first = {
       id: l.id,

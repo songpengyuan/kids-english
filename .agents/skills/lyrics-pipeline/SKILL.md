@@ -1,6 +1,6 @@
 ---
 name: lyrics-pipeline
-description: 为 kids-english 项目的课时歌曲生成/核查逐行时间轴与标准 LRC 歌词文件，并接入前端逐行高亮。凡是：新课配歌、老师给了 song.mp3 要配歌词、"歌词和音频对不上"、KTV 高亮不准、改了歌词要重新出时间轴、用到 gen-lrc.py / gen-songs.py / song-timings.json / useLrc / LRC 文件——即使没说"歌词"两个字也应触发。
+description: 为 kids-english 项目的课时歌曲生成/核查逐行时间轴与标准 LRC 歌词文件，并接入前端逐行高亮。凡是：新课配歌、老师给了 song.mp3 要配歌词、"歌词和音频对不上"、KTV 高亮不准、改了歌词要重新出时间轴、用到 gen-lrc.py / song-timings.json / useLrc / LRC 文件——即使没说"歌词"两个字也应触发。
 ---
 
 # 歌词时间轴流水线（lyrics-pipeline）
@@ -13,7 +13,6 @@ description: 为 kids-english 项目的课时歌曲生成/核查逐行时间轴�
 |---|---|
 | `frontend/src/data/lessons.json` | 歌词文本唯一数据源（2212736 起数据本体 JSON 化：`song.lyrics` / 多轨 `tracks[n].lyrics`；lessons.ts 只留类型与 normalize） |
 | `frontend/scripts/gen-lrc.py` | 语音对齐工具：真人演唱 mp3 → 逐行时间 → LRC + 核查报告 |
-| `frontend/scripts/gen-songs.py` | 自研合成曲（l6-l8）生成器，时间轴由它精确给出 |
 | `frontend/src/data/song-timings.json` | 只服务 SongStage 的 bpm 节拍动画；l4/l5 的历史估算时间轴 |
 | `frontend/public/lessons/<id>/*.lrc` | 运行时被前端拉取的成品（音频同名配对） |
 | `frontend/src/composables/useLrc.ts` | 前端消费：解析/缓存/行索引/歌词映射 |
@@ -55,7 +54,6 @@ HF_ENDPOINT=https://hf-mirror.com HF_HUB_DISABLE_XET=1 \
 产出 `public/lessons/l12/song.lrc` + 控制台逐行报告。然后：
 
 - `~ 插值` 行（whisper 没听清、结构推算的行）逐条听音频确认；
-- 合成曲课（gen-songs.py 管的 l6-l8）时间轴精确，直接 `scripts/gen-lrc.py --synth` 导出 LRC 即可，不要跑对齐。
 
 ## 第 4 步：同步与验收
 

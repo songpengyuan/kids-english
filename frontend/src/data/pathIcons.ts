@@ -2,8 +2,7 @@
  * 游戏模式矢量图标（lucide 风格 24×24 stroke path）。
  * 统一用矢量 icon 取代 emoji 表情：
  *  - 玩法图标：learn/quiz/memory/match/speak/order/talk/song
- *  - 课程图标：l4（波浪·水手）/ l5（号角·音乐人）/ l6（彩虹·颜色）
- * 数字课（l7）/ 字母课（l8）用文本图标（"123" / "ABC"，非 emoji）。
+ *  - 课程图标：l4（波浪·水手）/ l5（号角·音乐人）等，按课时 id 取用。
  */
 
 export const ICON_PATHS: Record<string, string[]> = {
@@ -65,17 +64,10 @@ export const ICON_PATHS: Record<string, string[]> = {
     "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z",
   ],
   // 课程：A Rainbow of Colors（彩虹）
-  "l6": [
-    "M3 17a9 9 0 0 1 18 0",
-    "M6.5 17a5.5 5.5 0 0 1 11 0",
-    "M10 17a2 2 0 0 1 4 0",
-  ],
 };
 
 /** 课程 → 文本图标（数字/字母课，非 emoji 文字） */
 export const ICON_TEXT: Record<string, string> = {
-  "l7": "123",
-  "l8": "ABC",
 };
 
 /* ---------- 应用级通用图标（底部导航 / 我的页等，替代 emoji） ---------- */

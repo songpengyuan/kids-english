@@ -46,7 +46,7 @@ node scripts/optimize-videos.mjs             # mp4 → 720p/CRF26/faststart + �
                                              # （94.5MB→31MB 的教训：视频是 PWA 缓存大头，别上原片）
 ```
 
-歌曲与歌词时间轴 → `lyrics-pipeline` skill（合成曲 gen-songs.py / 真人演唱 gen-lrc.py）。
+歌曲与歌词时间轴 → `lyrics-pipeline` skill（真人演唱 gen-lrc.py）。
 
 ## 3. 数据校验（防止内容扩展把课改白屏）
 

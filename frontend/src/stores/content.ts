@@ -29,7 +29,8 @@ function toLesson(raw: LessonOut): Lesson {
     titleZh: raw.titleZh,
     emoji: raw.emoji ?? "",
     tone: raw.tone,
-    type: raw.type,
+    // 加餐课（l6/l7/l8）已下线：契约里仍允许 "bonus"，前端一律按正式课处理
+    type: "official",
     date: raw.date ?? undefined,
     stageStyle: raw.stageStyle === "dialog" ? "dialog" : "cards",
     song: {

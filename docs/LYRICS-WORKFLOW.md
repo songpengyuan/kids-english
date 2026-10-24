@@ -10,12 +10,7 @@
 
 ```
 lessons.json 里的 lyrics[]         ← 歌词文本的唯一数据源（唯一手写的地方；2212736 起数据本体 JSON 化，lessons.ts 只留类型与 normalize）
-    │
-    ├─ l6/l7/l8（自研合成曲）
-    │     gen-songs.py 合成 mp3 时同步算出逐行时间轴
     │     → src/data/song-timings.json（精确，无 estimated 标记）
-    │     → public/lessons/<id>/song.lrc（export_synth_lrc 导出）
-    │
     └─ l4/l5/l9/l10/l11（老师提供的真人演唱 mp3）
           gen-lrc.py 语音对齐（faster-whisper 词级识别 + NW 词对齐）
           → public/lessons/<id>/<音频同名>.lrc（运行时由前端拉取）
