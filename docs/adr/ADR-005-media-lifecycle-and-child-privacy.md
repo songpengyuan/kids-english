@@ -1,7 +1,20 @@
 # ADR-005: 录音资产生命周期与儿童隐私边界
 
 ## Status
-Proposed（建议在**第一条真实录音入库之前**落地；当前生产 `recordings` 行数 = 0，改动成本最低）
+Accepted（上传上限/相对路径/保留期清理已于 2026-10-17 随第一批落地，见 `app/retention.py` 与 `scripts/maintenance.sh`）
+
+> ### 补充落地回执（2026-10-24）：儿童录音曾入 git，已解除跟踪
+>
+> 本次架构复核发现：`.gitignore` 的 `backend/app/media/*` 规则加入**之前**，
+> 已有 **21 条儿童录音（1.5MB webm/wav）被 git 跟踪**——ignore 规则对已跟踪文件不生效，
+> 形成"规则在、漏洞也在"的静默不一致，与本 ADR 的隐私边界直接冲突。
+>
+> 处置：
+> 1. `git rm -r --cached backend/app/media` 解除跟踪（本地文件保留，线上回放不受影响）；
+> 2. `scripts/ci-local.sh` 秒级快检新增第 4 步「运行期数据入库检查」，
+>    暂存区出现 `backend/app/media/*` / `backend/*.db*` 即拦截（已实测生效）；
+> 3. **残留事实**：这 21 个文件仍存在于 git 历史中（约 1.5MB）。私有仓库阶段可接受；
+>    **仓库若转为公开，必须先 `git filter-repo` 清史**——这条记在这里，防止未来被遗忘。
 
 ## Context
 

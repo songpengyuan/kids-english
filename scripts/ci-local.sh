@@ -143,7 +143,20 @@ if [ "$MODE" = "commit" ]; then
     ok "无可疑密钥"
   fi
 
-  # 4) 类型检查（仅当暂存了 TS/Vue 源文件；vue-tsc 没有单文件模式，只能整体跑，约 6s）
+  # 4) 运行期数据入库 —— 儿童录音 / SQLite 库是运行时产物，不是源码。
+  #    .gitignore 对"已跟踪文件"不生效：2026-10-24 曾发现 21 条儿童录音在
+  #    ignore 规则加入前已入库。此检查兜底"再次有人 git add -f 或规则失效"。
+  step "运行期数据入库检查"
+  runtime_hit="$(git -C "$ROOT" diff --cached --name-only --diff-filter=ACM -- 'backend/app/media/*' 'backend/*.db' 'backend/*.db-*')"
+  if [ -n "$runtime_hit" ]; then
+    bad "暂存区里有运行期数据（儿童录音 / 数据库），入 git 就是隐私事故："
+    printf '%s\n' "$runtime_hit" | sed 's/^/      /'
+    fail "运行期数据入库"
+  else
+    ok "无运行期数据（录音/数据库）入库"
+  fi
+
+  # 5) 类型检查（仅当暂存了 TS/Vue 源文件；vue-tsc 没有单文件模式，只能整体跑，约 6s）
   if printf '%s\n' "$STAGED" | grep -qE '\.(ts|tsx|vue)$'; then
     step "前端类型检查  ·  pnpm type-check（暂存区含 .ts/.vue，约 6s）"
     if (cd "$FE" && pnpm type-check); then
@@ -156,7 +169,7 @@ if [ "$MODE" = "commit" ]; then
     printf '%s  （暂存区没有 .ts/.vue，跳过类型检查）%s\n' "$D" "$N"
   fi
 
-  # 5) 设计系统守卫（秒级；改了 .vue/.css/守卫自己就值得跑一遍）
+  # 6) 设计系统守卫（秒级；改了 .vue/.css/守卫自己就值得跑一遍）
   #    查的是"引用了不存在的 CSS 变量""组件里硬编码颜色""CSS 掉在 </style> 外面"
   #    ——这三类都是**静默**失效，类型检查和单测都看不见，只有真机看一眼才发现。
   if printf '%s\n' "$STAGED" | grep -qE '\.(vue|css|js|mjs)$'; then
