@@ -26,6 +26,10 @@ BASE 前缀，别自己拼）；`words[].image` 缺失自动回退 emoji。
 
 ## 1. 数据条目（frontend/src/data/lessons.json，2212736 起数据本体 JSON 化）
 
+- **动手前先查 `docs/ACTIVITY-VARIANTS.md`（变体登记表）**：新课的目标形态若都是
+  表里已有的玩法+变体 → 纯数据接入，本 skill 全程适用，**组件文件零改动**；
+  表里没有的形态是**代码事件**（三步：字段按 ADR-007 四约定落库 / 组件首例直写 /
+  登记表+validate-data 同笔更新）——别为了塞进纯数据硬造字段。
 - 字段：`id`(lN 递增)、`title/titleZh/emoji/tone/date`、`song{audio,video,scene,lyrics,tracks?,group?,title?}`、
   `words[{id,en,zh,emoji,image,group?,color?}]`、`phrases[{en,zh}]`；
   多词群课（如 l11 颜色/动物）加 `wordGroups[]` + 词/轨上的 `group` + 配对玩法 `colorPairs[]`。
@@ -68,6 +72,9 @@ cd frontend && node scripts/export-lessons.mjs
 
 ## 5. 验收与提交
 
+- **验收线：标准新课（用既有玩法与既有变体）= 组件文件零改动。**
+  pages.smoke 已参数化为全课 × 全玩法挂载——加课后 `npm run test` 自动长出
+  该课全部玩法的用例，全绿即机器验收通过（哪课哪个玩法白屏，用例名直接点名）。
 - `npm run test` 全绿；UI 走查 → `ui-walkthrough` skill（新课时重点走：课程卡、
   学单词、磨耳朵列表、闯关入口四条路径）。
 - 单链原子提交：素材文件与 lessons.json 数据**同一个 commit**（数据和引用它的资源
