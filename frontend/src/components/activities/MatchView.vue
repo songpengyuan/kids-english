@@ -523,7 +523,9 @@ onBeforeUnmount(() => {
         />
       </svg>
 
-      <div class="col words">
+      <!-- 单词列只在普通模式渲染：颜色配对模式没有中间词列，空列会以 flex:1
+           占走左 1/3 的宽度，把色圆/动物整体挤向右（2026-10-25 走查实测） -->
+      <div v-if="!colorMode" class="col words">
         <div
           v-for="(w, i) in midWords"
           :key="w.id"
