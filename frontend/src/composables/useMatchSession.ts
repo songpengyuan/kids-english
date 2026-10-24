@@ -19,6 +19,9 @@ export interface MatchWord {
   /** 颜色配对模式下，颜色伪卡通过 matchId 指回动物 id */
   matchId?: string;
   color?: string | null;
+  /** 透传 Word 的展示字段（模板渲染图与 emoji 占位用） */
+  image?: string | null;
+  emoji?: string;
 }
 export interface MatchColorPair {
   color: string;

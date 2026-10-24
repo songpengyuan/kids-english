@@ -1,24 +1,29 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onBeforeUnmount, watch } from "vue";
 import { bigCelebrate } from "../../services/effects";
 import { hapticTap } from "../../services/haptics";
 import { useProgressStore } from "../../stores/progress";
 import { useAudioTransport, fmtDuration } from "../../composables/useAudioTransport";
+import { useLrc, activeLrcIndex, mapLrcToLyrics } from "../../composables/useLrc";
 import { Clapperboard, Headphones, Music, Pause, Play, Repeat, Sparkles, SkipBack, SkipForward } from "@lucide/vue";
 import SongStage from "./SongStage.vue";
+import type { Lesson } from "../../data/lessons";
 
 const progress = useProgressStore();
 
-const props = defineProps({
-  lesson: { type: Object, required: true },
-  /** 当前词群（l11：colors/animals）：只放该群对应的那一轨歌曲与单词 */
-  group: { type: String, default: "" }
-});
-const emit = defineEmits(["back", "song-done"]);
+const props = withDefaults(
+  defineProps<{
+    lesson: Lesson;
+    /** 当前词群（l11：colors/animals）：只放该群对应的那一轨歌曲与单词 */
+    group?: string;
+  }>(),
+  { group: "" }
+);
+const emit = defineEmits<{ back: []; "song-done": [] }>();
 
-const audioEl = ref(null);
+const audioEl = ref<HTMLAudioElement | null>(null);
 const audioMissing = ref(false);
-const videoEl = ref(null);
+const videoEl = ref<HTMLVideoElement | null>(null);
 
 /** 多段音视频轨道：顶层 audio/video/lyrics 是第一轨，tracks 追加后续轨。
  *  配了词群的课（l11）按当前群过滤：Colors 只放颜色歌、Animals 只放 Brown Bear。 */
@@ -49,8 +54,8 @@ const curTrack = computed(() => tracks.value[trackIdx.value] || tracks.value[0])
 const videoMissing = ref(!curTrack.value.video);
 
 /* ---------- 播放机芯：transport composable（进度/缓冲/循环/拖动条） ---------- */
-const lyricsEl = ref(null);
-const seekEl = ref(null);
+const lyricsEl = ref<HTMLElement | null>(null);
+const seekEl = ref<HTMLElement | null>(null);
 /** 完整听过一遍（音频或视频）→ 才有资格领星；与"是否循环"无关 */
 const watched = ref(false);
 
@@ -94,6 +99,7 @@ watch(
     audioMissing.value = false;
     videoMissing.value = !curTrack.value.video;
     transportReset();
+    resetLyricsFollow();
   }
 );
 
@@ -103,7 +109,7 @@ const hasVideo = computed(() => !!curTrack.value.video);
 const firstTab = computed(() => (hasVideo.value ? "video" : "stage"));
 const mode = ref(firstTab.value);
 /** 视频封面：optimize-videos.mjs 与 mp4 成对产出的同名 jpg（缺失时浏览器无封面，无害） */
-function posterOf(src) {
+function posterOf(src: string | null): string | undefined {
   return src ? src.replace(/\.mp4$/, ".jpg") : undefined;
 }
 
@@ -117,7 +123,7 @@ onBeforeUnmount(() => {
 const canFinish = computed(() => watched.value || (videoMissing.value && audioMissing.value));
 
 /** 切 Tab：互斥播放（切走的一路立刻暂停），避免两个声音叠在一起 */
-function setMode(m) {
+function setMode(m: "video" | "stage" | "audio") {
   if (m === mode.value) return;
   hapticTap();
   if (m !== "video" && videoEl.value) videoEl.value.pause();
@@ -126,7 +132,7 @@ function setMode(m) {
 }
 
 /** 切轨道：停播、重置进度、换素材 */
-function switchTrack(i) {
+function switchTrack(i: number) {
   if (i < 0 || i >= tracks.value.length || i === trackIdx.value) return;
   hapticTap();
   pause();
@@ -136,11 +142,60 @@ function switchTrack(i) {
   audioMissing.value = false;
   videoMissing.value = !curTrack.value.video;
   transportReset();
+  resetLyricsFollow();
 }
 
 /** 视频也计入"看过一遍"（原来视频路径没有任何 @ended，导致看完视频领不到星） */
 function onVideoEnded() {
   watched.value = true;
+}
+
+/* ---------- 卡拉OK逐行高亮（2026-10-25 接入 LRC 时间轴） ----------
+ * public/lessons/<id>/<音频同名>.lrc（gen-lrc.py 产出）拉得到就按秒精确高亮；
+ * 拉不到/与当前轨歌词对不上（LRC 过期）→ 不高亮，保持普通歌词列表。 */
+const lrcLines = useLrc(computed(() => curTrack.value?.audio || null));
+const lrcMap = computed(() => {
+  const lrc = lrcLines.value;
+  if (!lrc || !curTrack.value?.lyrics?.length) return null;
+  return mapLrcToLyrics(lrc, curTrack.value.lyrics);
+});
+const activeLine = computed(() => {
+  const lrc = lrcLines.value;
+  const map = lrcMap.value;
+  if (lrc && map) {
+    const k = activeLrcIndex(lrc, currentTime.value);
+    return k < 0 ? -1 : map[k];
+  }
+  return -1;
+});
+
+/* 当前行自动滚到歌词窗口正中（家长手动滚后 3 秒内不抢，逻辑与磨耳朵歌词页一致） */
+function followActiveLine() {
+  const box = lyricsEl.value;
+  if (!box || activeLine.value < 0) return;
+  const line = box.querySelector<HTMLElement>(`.line[data-line="${activeLine.value}"]`);
+  if (!line) return;
+  const target = line.offsetTop - box.clientHeight / 2 + line.offsetHeight / 2;
+  if (Math.abs(box.scrollTop - target) < 4) return;
+  programmaticScrolls++;
+  box.scrollTo({ top: target, behavior: "smooth" });
+  setTimeout(() => (programmaticScrolls = Math.max(0, programmaticScrolls - 1)), 700);
+}
+const userScrolling = ref(false);
+let userScrollTimer = 0;
+let programmaticScrolls = 0;
+function onLyricsScroll() {
+  if (programmaticScrolls > 0) return;
+  userScrolling.value = true;
+  clearTimeout(userScrollTimer);
+  userScrollTimer = window.setTimeout(() => (userScrolling.value = false), 3000);
+}
+watch(activeLine, () => {
+  if (!userScrolling.value) followActiveLine();
+});
+/** 切轨道/词群后跟随状态重来 */
+function resetLyricsFollow() {
+  userScrolling.value = false;
 }
 
 /** 收尾：停播、撒花、记进度、离开本页。循环模式下这是本页唯一的出口 */
@@ -160,7 +215,7 @@ function onVideoError() {
   <div class="song view">
     <audio
       ref="audioEl"
-      :src="curTrack.audio"
+      :src="curTrack.audio || undefined"
       preload="metadata"
       @error="onAudioError"
       @ended="handleEnded"
@@ -196,8 +251,8 @@ function onVideoError() {
     <div v-if="mode === 'video' && hasVideo" class="video-zone view-body">
       <video
         ref="videoEl"
-        :src="curTrack.video"
-        :poster="posterOf(curTrack.video)"
+        :src="curTrack.video || undefined"
+        :poster="posterOf(curTrack.video ?? null)"
         controls
         playsinline
         preload="metadata"
@@ -286,13 +341,15 @@ function onVideoError() {
         class="lyrics view-body"
         :class="{ empty: !curTrack.lyrics || !curTrack.lyrics.length }"
         ref="lyricsEl"
+        @scroll.passive="onLyricsScroll"
       >
         <template v-if="curTrack.lyrics && curTrack.lyrics.length">
           <p
             v-for="(line, i) in curTrack.lyrics"
             :key="i"
             class="line"
-            :class="{ blank: !line }"
+            :class="{ blank: !line, on: i === activeLine }"
+            :data-line="i"
           >
             {{ line }}
           </p>

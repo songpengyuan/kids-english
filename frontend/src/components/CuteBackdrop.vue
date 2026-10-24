@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 全站背景质感层 —— 两个主题，由路由自动切换：
  *  · 默认（暖纸底）：纯色 --bg + 纸纹颗粒 + 低打扰云朵/星星/圆点（学习/我的等）。
@@ -37,14 +37,21 @@ const route = useRoute();
  */
 const isSky = computed(() => route.meta.sky === true);
 
-const stars = [
+interface Deco {
+  top: string;
+  left: string;
+  s: number;
+  d: number;
+}
+
+const stars: Deco[] = [
   { top: "12%", left: "6%", s: 1, d: 0 },
   { top: "26%", left: "88%", s: 0.7, d: 1.2 },
   { top: "64%", left: "4%", s: 0.85, d: 2.1 },
   { top: "78%", left: "92%", s: 1.1, d: 0.6 },
   { top: "44%", left: "96%", s: 0.6, d: 1.7 }
 ];
-const skyStars = [
+const skyStars: Deco[] = [
   { top: "12%", left: "50%", s: 0.7, d: 0.3 },
   { top: "22%", left: "78%", s: 0.6, d: 1.1 },
   { top: "34%", left: "88%", s: 0.9, d: 2.0 },
@@ -52,7 +59,7 @@ const skyStars = [
   { top: "26%", left: "6%", s: 0.5, d: 1.7 },
   { top: "46%", left: "2%", s: 0.8, d: 2.6 }
 ];
-const dots = [
+const dots: Deco[] = [
   { top: "18%", left: "22%", s: 10, d: 0.4 },
   { top: "70%", left: "14%", s: 7, d: 1.5 },
   { top: "84%", left: "70%", s: 12, d: 2.4 },

@@ -1,6 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, reactive, nextTick, watch } from "vue";
 import { speak } from "../../services/speech";
+import type { Word } from "../../data/lessons";
+import type { MatchWord, MatchColorPair } from "../../composables/useMatchSession";
 import { sfxMatch, sfxWrong } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import { useViewport } from "../../composables/useViewport";
@@ -9,12 +11,8 @@ import { BookOpenText, Link2, Volume2 } from "@lucide/vue";
 import SpeakWave from "../ui/SpeakWave.vue";
 import StageHead from "./StageHead.vue";
 
-const props = defineProps({
-  words: { type: Array, required: true },
-  /** 颜色配对（l11 Brown Bear）：传了就切到"左列颜色圆 ↔ 右列动物图"模式 */
-  colorPairs: { type: Array, default: () => null }
-});
-const emit = defineEmits(["done", "progress", "total"]);
+const props = defineProps<{ words: Word[]; colorPairs?: MatchColorPair[] | null }>();
+const emit = defineEmits<{ done: [stars: number]; progress: [pct: number]; total: [n: number] }>();
 
 const progress = useProgressStore();
 
@@ -28,7 +26,7 @@ const {
   setupGroup: sessionSetupGroup, tryMatch: sessionTryMatch,
 } = useMatchSession(
   computed(() => props.words),
-  computed(() => props.colorPairs),
+  computed(() => props.colorPairs ?? null),
   isNarrow,
   sizeTier,
   {
@@ -41,10 +39,10 @@ const {
       sfxWrong();
       // 统一错误反馈（与听音选图一致）：连错只标红，不自动读答案、不揭示；
       // 两个词都记一次错误 → 进入复习池
-      const aWord = findWord(a.id) || {};
-      const bWord = findWord(b.id) || {};
-      if (aWord.lessonId) progress.recordWord(aWord.lessonId, a.id, { wrong: 1 });
-      if (bWord.lessonId) progress.recordWord(bWord.lessonId, b.id, { wrong: 1 });
+      const aWord = findWord(a.id);
+      const bWord = findWord(b.id);
+      if (aWord) progress.recordWord(aWord.lessonId, a.id, { wrong: 1 });
+      if (bWord) progress.recordWord(bWord.lessonId, b.id, { wrong: 1 });
       markWrong(a, b);
     },
   }
@@ -57,7 +55,10 @@ const {
  * 选择记在 localStorage，家长选一次就固定下来。
  */
 const MODE_KEY = "kids-english-match-mode";
-const mode = ref(readMode());
+/** 起点所在侧：'img'（两侧图片）| 'word'（中间单词/颜色圆） */
+type Side = "img" | "word";
+type MatchMode = "word" | "sound";
+const mode = ref<MatchMode>(readMode());
 function readMode() {
   try {
     return localStorage.getItem(MODE_KEY) === "sound" ? "sound" : "word";
@@ -65,7 +66,7 @@ function readMode() {
     return "word";
   }
 }
-function setMode(m) {
+function setMode(m: MatchMode) {
   mode.value = m;
   try {
     localStorage.setItem(MODE_KEY, m);
@@ -74,31 +75,32 @@ function setMode(m) {
   }
 }
 
-const board = ref(null);
+const board = ref<HTMLElement | null>(null);
 /** 卡片元素**按 id 存**（图片格 / 单词格各一张表）。
  *  ⚠️ 不能按 v-for 索引存：换组重排时 ref 数组与数据数组会错位，
  *  measure() 会把 B 卡的坐标写进 A 词名下 → 连线从别的卡片中心画出来，
  *  看起来就是"同一个图片连了两个单词"（2026-10-18 实测复现）。 */
-const picEls = {};
-const wordElsById = {};
-function setPicEl(id, el) {
-  if (el) picEls[id] = el;
+const picEls: Record<string, HTMLElement> = {};
+const wordElsById: Record<string, HTMLElement> = {};
+function setPicEl(id: string, el: unknown) {
+  if (el) picEls[id] = el as HTMLElement;
   else delete picEls[id];
 }
-function setWordEl(id, el) {
-  if (el) wordElsById[id] = el;
+function setWordEl(id: string, el: unknown) {
+  if (el) wordElsById[id] = el as HTMLElement;
   else delete wordElsById[id];
 }
-const imgPos = reactive({}); // 所有图片格中心（board 坐标）
-const wordPos = reactive({}); // 单词格中心
+interface CellBox { x: number; y: number; w: number; h: number }
+const imgPos = reactive<Record<string, CellBox>>({}); // 所有图片格中心（board 坐标）
+const wordPos = reactive<Record<string, CellBox>>({}); // 单词格中心
 const ready = ref(false);
 
-let ro = null;
-let raf = null;
+let ro: ResizeObserver | null = null;
+let raf: number | null = null;
 
 function measure() {
   if (!board.value) return;
-  const put = (list, els, map) =>
+  const put = (list: MatchWord[], els: Record<string, HTMLElement>, map: Record<string, CellBox>) =>
     list.forEach((w) => {
       const el = els[w.id];
       if (!el) return;
@@ -135,7 +137,7 @@ function scheduleMeasure() {
  * 端点顺序与操作顺序一致，连线的绘制动画（stroke-dashoffset 从起点reveal）
  * 才会从孩子出手的那张卡流向另一张，而不是反过来"倒着长"。
  */
-function matchedLine(wordId) {
+function matchedLine(wordId: string) {
   // colorMode：两端都在 picEls，通过 pairMap 互查
   if (colorMode.value) {
     const other = pairMap[wordId];
@@ -155,13 +157,13 @@ function matchedLine(wordId) {
 }
 
 const dragging = ref(false);
-const startWord = ref(null);
-const startSide = ref("img"); // 起点所在侧：'img'（两侧图片）| 'word'（中间单词）
+const startWord = ref<MatchWord | null>(null);
+const startSide = ref<Side>("img");
 const line = reactive({ x1: 0, y1: 0, x2: 0, y2: 0 });
-const imgWrong = ref(null);
-const wordWrong = ref(null);
+const imgWrong = ref<string | null>(null);
+const wordWrong = ref<string | null>(null);
 /** 听音模式：当前正在播放声波动画的卡片 id */
-const playingId = ref(null);
+const playingId = ref<string | null>(null);
 let playTimer = 0;
 let wrongTimer = 0;
 
@@ -171,7 +173,7 @@ let wrongTimer = 0;
  * 是两个没碰过的卡片在闪红。a / b 是实际按下的两张卡：{ id, side }。
  * 连错是可以连续触发的，所以用同一个 timer，避免前一次的清理把新标记提前抹掉。
  */
-function markWrong(a, b) {
+function markWrong(a: { id: string; side: Side }, b: { id: string; side: Side }) {
   if (a.side === "img") {
     imgWrong.value = a.id;
     wordWrong.value = b.id;
@@ -185,17 +187,17 @@ function markWrong(a, b) {
     wordWrong.value = null;
   }, 750);
 }
-const justMatched = ref(null);
+const justMatched = ref<string | null>(null);
 const transitioning = ref(false);
 
-let pendingWord = null;
-let pendingSide = null; // pendingWord 所在侧，供连错时精确定位要标红的卡
+let pendingWord: string | null = null;
+let pendingSide: Side | null = null; // pendingWord 所在侧，供连错时精确定位要标红的卡
 
 /** 颜色词 id → 色值：以课时数据为单源（颜色词的 word.color 十六进制）。
  *  曾在这里维护过一份组件本地色表，与数据漂移过两处（white/brown 色值不一致）；
  *  引用完整性由 validate-data.mjs 把关：colorPairs.color 必须是带 color 的本课单词。 */
-const hexById = computed(() => {
-  const m = {};
+const hexById = computed<Record<string, string>>(() => {
+  const m: Record<string, string> = {};
   for (const w of props.words) if (w.color) m[w.id] = w.color;
   return m;
 });
@@ -211,18 +213,19 @@ watch(
   { immediate: true }
 );
 
-function localPoint(e) {
-  const rect = board.value.getBoundingClientRect();
-  const p = e.touches ? e.touches[0] : e;
+function localPoint(e: PointerEvent) {
+  const rect = board.value!.getBoundingClientRect();
+  const p = (e as PointerEvent & { touches?: TouchList }).touches?.[0] ?? e;
   return { x: p.clientX - rect.left, y: p.clientY - rect.top };
 }
 
-let downInfo = null; // 主指针本次按下的意图：drag（拉线）/ pair（点选配对）/ cancel（取消选择）
-let dragPointer = null; // 正在拖拽的 pointerId（多指隔离：move/up 只认同一根手指）
-let pairIntent = null; // 第二指的配对意图 { word, side, pid }（按住一张 + 点另一张的多指玩法）
+type DownIntent = { word: MatchWord; side: Side; act: "drag" | "pair" | "cancel" };
+let downInfo: DownIntent | null = null; // 主指针本次按下的意图：drag（拉线）/ pair（点选配对）/ cancel（取消选择）
+let dragPointer: number | null = null; // 正在拖拽的 pointerId（多指隔离：move/up 只认同一根手指）
+let pairIntent: { word: MatchWord; side: Side; pid: number } | null = null; // 第二指的配对意图（按住一张 + 点另一张的多指玩法）
 
 /** 卡片中心坐标（board 坐标系），按所在侧取对应位置表 */
-function centerOf(id, side) {
+function centerOf(id: string, side: Side) {
   return (side === "img" ? imgPos[id] : wordPos[id]) || null;
 }
 
@@ -231,7 +234,7 @@ function centerOf(id, side) {
  *  ⚠️ 必须走 offsetLeft/offsetTop（布局位置）而不是 getBoundingClientRect：
  *  后者包含 transform——连错后的 shake-x 抖动进行中连线正好重渲染时，
  *  端点会被量到抖动的半途上并永久定格（偏移可达 ±9px）。 */
-function liveCenter(el) {
+function liveCenter(el: HTMLElement | null) {
   if (!el || !board.value) return null;
   if (el.offsetParent === board.value) {
     return { x: el.offsetLeft + el.offsetWidth / 2, y: el.offsetTop + el.offsetHeight / 2 };
@@ -241,12 +244,12 @@ function liveCenter(el) {
   return { x: r.left - b.left + r.width / 2, y: r.top - b.top + r.height / 2 };
 }
 
-function pidOf(e) {
+function pidOf(e: PointerEvent): number {
   return e.pointerId ?? 0;
 }
 
 /** id → 单词数据（同一 id 只出现在"一侧图片 + 中间单词"） */
-function findWord(id) {
+function findWord(id: string): MatchWord | null {
   return (
     leftImgs.value.find((w) => w.id === id) ||
     rightImgs.value.find((w) => w.id === id) ||
@@ -261,7 +264,7 @@ function findWord(id) {
  *  - 已选中的就是这张 → 抬指时取消选择
  *  - 其它 → 正常拖拽
  */
-function onCardDown(word, side, e) {
+function onCardDown(word: MatchWord, side: Side, e: PointerEvent) {
   if (matched.has(word.id) || transitioning.value) return;
   const pid = pidOf(e);
   // 多指隔离：一根手指正在拖拽时，其余手指只允许"按到另一侧 = 配对意图"，
@@ -291,7 +294,7 @@ function onCardDown(word, side, e) {
     dragPointer = pid;
     startWord.value = word;
     startSide.value = "word";
-    const c = liveCenter(e.currentTarget) || centerOf(word.id, side) || localPoint(e);
+    const c = liveCenter((e.currentTarget as HTMLElement) || null) || centerOf(word.id, side) || localPoint(e);
     line.x1 = c.x;
     line.y1 = c.y;
     const p = localPoint(e);
@@ -314,7 +317,7 @@ function onCardDown(word, side, e) {
   dragPointer = pid;
   startWord.value = word;
   startSide.value = side;
-  const c = liveCenter(e.currentTarget) || centerOf(word.id, side) || localPoint(e);
+  const c = liveCenter((e.currentTarget as HTMLElement) || null) || centerOf(word.id, side) || localPoint(e);
   line.x1 = c.x;
   line.y1 = c.y;
   const p = localPoint(e);
@@ -325,23 +328,24 @@ function onCardDown(word, side, e) {
   e.preventDefault();
 }
 
-function onMove(e) {
+function onMove(e: PointerEvent) {
   if (!dragging.value || !downInfo) return;
   if (dragPointer !== null && pidOf(e) !== dragPointer) return; // 别的手指的移动
   const p = localPoint(e);
   line.x2 = p.x;
   line.y2 = p.y;
-  const cx = e.touches ? e.touches[0].clientX : e.clientX;
-  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  const pe = e as PointerEvent & { touches?: TouchList };
+  const cx = pe.touches ? pe.touches[0].clientX : e.clientX;
+  const cy = pe.touches ? pe.touches[0].clientY : e.clientY;
   const el = document.elementFromPoint(cx, cy);
   const hit = el && el.closest ? el.closest("[data-word]") : null;
   // 只有落在"另一侧"且尚未配对的卡片上才算命中
   const ok = hit && hit.getAttribute("data-side") !== startSide.value && !hit.classList.contains("gone");
   pendingWord = ok ? hit.getAttribute("data-word") : null;
-  pendingSide = ok ? hit.getAttribute("data-side") : null;
+  pendingSide = ok ? (hit.getAttribute("data-side") as Side | null) : null;
 }
 
-function onUp(e) {
+function onUp(e: PointerEvent) {
   const pid = pidOf(e);
   // 第二指抬起 = 执行多指配对（按住一张 + 点另一张）
   if (pairIntent && pid === pairIntent.pid) {
@@ -371,7 +375,7 @@ function onUp(e) {
   const targetSide = pendingSide;
   pendingWord = null;
   pendingSide = null;
-  if (target) tryMatch(target, targetSide);
+  if (target && targetSide) tryMatch(target, targetSide);
 }
 
 /** 手势被系统抢占（来电 / 切后台）→ 只清拖拽态，保留选中 */
@@ -385,7 +389,7 @@ function onCancel() {
 }
 
 /** 配对入口：取当前选中的卡与起点侧，交给 session 判定，成功时闪连线 */
-function tryMatch(other, otherSide) {
+function tryMatch(other: MatchWord, otherSide: Side) {
   const first = startWord.value;
   const from = startSide.value; // 先按下的那一侧 = 连线起点
   startWord.value = null;
@@ -413,7 +417,7 @@ watch(groupDone, async (done) => {
 });
 
 /** 组重置：session 清配对状态与列布局，组件清 DOM 侧的坐标/元素/反馈表 */
-function setupGroup(g) {
+function setupGroup(g: MatchWord[]) {
   sessionSetupGroup(g);
   // 坐标表必须随组清空：id 不跨组复用，但留着旧条目既是泄漏，
   // 也让"测量还没跑完就渲染的线"拿到上一组的错误坐标
@@ -577,11 +581,11 @@ onBeforeUnmount(() => {
             <img
               loading="lazy"
               decoding="async"
-              :src="w.image"
+              :src="w.image || undefined"
               :alt="w.en"
               @error="
-                $event.target.style.display = 'none';
-                $event.target.nextElementSibling.style.display = 'flex';
+                ($event.target as HTMLElement).style.display = 'none';
+                (($event.target as HTMLElement).nextElementSibling as HTMLElement).style.display = 'flex';
               "
             />
             <span class="ph" style="display: none">{{ w.emoji }}</span>
@@ -610,11 +614,11 @@ onBeforeUnmount(() => {
           <img
             loading="lazy"
             decoding="async"
-            :src="w.image"
+            :src="w.image || undefined"
             :alt="w.en"
             @error="
-              $event.target.style.display = 'none';
-              $event.target.nextElementSibling.style.display = 'flex';
+              ($event.target as HTMLElement).style.display = 'none';
+              (($event.target as HTMLElement).nextElementSibling as HTMLElement).style.display = 'flex';
             "
           />
           <span class="ph" style="display: none">{{ w.emoji }}</span>
