@@ -9,7 +9,7 @@
 ## 一、全景：歌词数据的三条来源
 
 ```
-lessons.ts 里的 lyrics[]          ← 歌词文本的唯一数据源（唯一手写的地方）
+lessons.json 里的 lyrics[]         ← 歌词文本的唯一数据源（唯一手写的地方；2212736 起数据本体 JSON 化，lessons.ts 只留类型与 normalize）
     │
     ├─ l6/l7/l8（自研合成曲）
     │     gen-songs.py 合成 mp3 时同步算出逐行时间轴
@@ -35,7 +35,7 @@ lessons.ts 里的 lyrics[]          ← 歌词文本的唯一数据源（唯一�
 
 ## 二、新课歌词配置步骤（老师给了 mp3 的课）
 
-1. **歌词文本**进 `frontend/src/data/lessons.ts` 对应课时的 `song.lyrics`（或多轨课的
+1. **歌词文本**进 `frontend/src/data/lessons.json` 对应课时的 `song.lyrics`（或多轨课的
    `tracks[n].lyrics`）。约定：
    - 一行 = 一个语义句（和孩子跟唱的节奏一致，别一行塞两句）；
    - **段间空行用 `""` 条目**（界面上渲染为间隔）；
@@ -50,7 +50,7 @@ lessons.ts 里的 lyrics[]          ← 歌词文本的唯一数据源（唯一�
    产出 `public/lessons/l12/song.lrc` + 控制台逐行核查报告（对齐值 vs 估算值/插值标注）。
 3. **核对报告**：`~ 插值` 行 = whisper 没听清、靠前后锚点推算的行，逐条听音频确认；
    `<<< 偏差大` 行重点听。低置信行多说明歌词文本和音频对不上（见「结构核查」）。
-4. 后端 seed 同步（`backend/seed/lessons.json` 的歌词数组要和 lessons.ts 一致）。
+4. 后端 seed 同步：跑 `node frontend/scripts/export-lessons.mjs`（正规通道；他人半成品挡路时才手术式替换）。
 
 ## 三、结构核查：歌词文本必须先对齐"歌的真实结构"
 
@@ -66,7 +66,7 @@ lessons.ts 里的 lyrics[]          ← 歌词文本的唯一数据源（唯一�
 1. 裸识别全曲（**绝不带 initial_prompt**，见下），打印 SEG 段落级文本；
 2. 对重复性歌词（儿歌几乎全是），把标志性词（动物/乐器/颜色名）的出现时间列成表——
    每个标志性词出现几次、在几秒，就是歌的真实结构；
-3. 歌词行数/轮次与结构对不上 → 先改歌词（lessons.ts），再跑对齐；
+3. 歌词行数/轮次与结构对不上 → 先改歌词（lessons.json），再跑对齐；
 4. 拿不准的歌词文本用**切片 + 双提示词置信度仲裁**：对疑似两句之间切 2~3s 音频，
    分别以两个候选句做 initial_prompt 跑识别，平均词置信度高者为真（l5 "down your way
    vs far away" 三段全胜 far away，据此改词）。
@@ -94,7 +94,7 @@ mp3 解码用 macOS 自带 `afconvert`，无 ffmpeg 依赖。
 
 ## 五、song-timings.json 的角色与约束
 
-- 前端唯一消费点是 `SongStage` 的 **bpm**（舞台节拍动画）+ `lessons.ts` 里转成
+- 前端唯一消费点是 `SongStage` 的 **bpm**（舞台节拍动画）+ `lessons.ts` 从 lessons.json normalize 后转成
   `song.timings`；逐行高亮**不读它**（读 LRC）。
 - 所以：**真人演唱课（l9-l11）不要往 JSON 里加条目**——没有可靠 bpm，乱加会改变
   SongStage 动画行为。它们的逐行时间只在 LRC 里。

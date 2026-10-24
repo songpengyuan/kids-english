@@ -8,7 +8,8 @@
 
 儿童英语学习 App（面向 5 岁孩子）：`frontend/`（Vue3 + Pinia + Vite，PWA）+
 `backend/`（FastAPI，内容库与学习数据）。内容单元是「课时」（l1…l11…），
-数据源在 `frontend/src/data/`，媒体在 `frontend/public/lessons/<id>/`，
+数据本体在 `frontend/src/data/lessons.json`（课时/词/句/歌歌词；lessons.ts 只留
+类型与 normalize），媒体在 `frontend/public/lessons/<id>/`，
 后端种子 `backend/seed/lessons.json` 由脚本从前端数据导出。
 **隐私红线**：孩子发音录音是最敏感数据（`docs/DATA-INVENTORY.md` 第 3 节），
 任何运行期数据（录音/数据库）不得入库——pre-commit 门禁会拦。

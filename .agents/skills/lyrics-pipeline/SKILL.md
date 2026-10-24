@@ -11,7 +11,7 @@ description: 为 kids-english 项目的课时歌曲生成/核查逐行时间轴�
 
 | 文件 | 角色 |
 |---|---|
-| `frontend/src/data/lessons.ts` | 歌词文本唯一数据源（`song.lyrics` / 多轨 `tracks[n].lyrics`） |
+| `frontend/src/data/lessons.json` | 歌词文本唯一数据源（2212736 起数据本体 JSON 化：`song.lyrics` / 多轨 `tracks[n].lyrics`；lessons.ts 只留类型与 normalize） |
 | `frontend/scripts/gen-lrc.py` | 语音对齐工具：真人演唱 mp3 → 逐行时间 → LRC + 核查报告 |
 | `frontend/scripts/gen-songs.py` | 自研合成曲（l6-l8）生成器，时间轴由它精确给出 |
 | `frontend/src/data/song-timings.json` | 只服务 SongStage 的 bpm 节拍动画；l4/l5 的历史估算时间轴 |
@@ -30,7 +30,7 @@ description: 为 kids-english 项目的课时歌曲生成/核查逐行时间轴�
 
 要点（为什么）：faster-whisper 做词级识别；`av` 必须锁 `<19`（PyAV 19 删了 faster-whisper 依赖的 `metadata_errors` 参数，不锁必炸）；模型下载在国内走 `HF_ENDPOINT=https://hf-mirror.com HF_HUB_DISABLE_XET=1`（xet 后端过镜像会 401）；mp3 解码用 macOS 自带 `afconvert`（Linux 无此命令，需改脚本用 ffmpeg，暂未做）。
 
-## 第 1 步：歌词文本进 lessons.ts
+## 第 1 步：歌词文本进 lessons.json
 
 - 一行 = 一个语义句（跟唱节奏一致）；段间空行用 `""` 条目；多轨课写进对应 `tracks[n].lyrics`。
 - **歌词必须与音频的实际演唱结构一致**——先做第 2 步再定稿，不要按"经典版本"想当然。
@@ -41,7 +41,7 @@ description: 为 kids-english 项目的课时歌曲生成/核查逐行时间轴�
 
 1. **裸识别**全曲，打印 SEG 段落文本（识别代码在 gen-lrc.py 的 `ASR.words`，可直接复用）；
 2. 重复性儿歌把标志性词（动物/乐器/颜色名）出现时间列成表——每个词出现几次、在几秒，就是歌的真实结构；
-3. 歌词行数/轮次/顺序与结构不符 → **先改 lessons.ts 歌词**，再进第 3 步；
+3. 歌词行数/轮次/顺序与结构不符 → **先改 lessons.json 歌词**，再进第 3 步；
 4. 可疑歌词句（两句听不清哪个对）用**切片 + 双提示词置信度仲裁**：切 2~3s 音频，分别以两个候选句做 `initial_prompt` 识别，平均词置信度高者为真。
 
 ## 第 3 步：跑对齐
@@ -60,7 +60,7 @@ HF_ENDPOINT=https://hf-mirror.com HF_HUB_DISABLE_XET=1 \
 ## 第 4 步：同步与验收
 
 - `backend/seed/lessons.json`：**外科手术式**替换对应歌词数组/timings 块（正则定位 + 括号配对），改完 `json.load` 校验。它是多会话共享文件，**禁止整文件重 dump**（会卷进别人的未提交改动，曾把并行会话的半成品块搞成非法 JSON）。
-- 静态交叉验证 LRC↔歌词能被 `mapLrcToLyrics` 匹配（条数 + 首尾文本一致），否则前端会静默降级成比例高亮：解析 LRC 数非空行，与 `lessons.ts` 歌词的非空行比对。
+- 静态交叉验证 LRC↔歌词能被 `mapLrcToLyrics` 匹配（条数 + 首尾文本一致），否则前端会静默降级成比例高亮：解析 LRC 数非空行，与 `lessons.json` 歌词的非空行比对。
 - `npm --prefix frontend run test` 全绿；前端两处各验一首（磨耳朵歌词页含拖进度条、课时"音乐"tab 含切轨道）。
 - `song-timings.json` 边界：真人演唱课（无可靠 bpm）**不要新增条目**，逐行时间只放 LRC——乱加 bpm 会改变 SongStage 动画行为。l4/l5 已有条目会在重跑时自动更新（低置信行保留原值并维持 `estimated: true`）。
 

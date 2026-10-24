@@ -41,13 +41,13 @@ import tempfile
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LESSONS_TS = os.path.join(ROOT, "src", "data", "lessons.ts")
+LESSONS_JSON = os.path.join(ROOT, "src", "data", "lessons.json")
 TIMINGS_JSON = os.path.join(ROOT, "src", "data", "song-timings.json")
 
 # 需要音频对齐的课：(课时id, 音频相对路径, 只取前 N 行歌词或 None, LRC 标题或 None)。
 # l6/l7/l8 是合成曲、时间轴精确，不在此列。
 # l11 Brown Bear 用顶层歌词；颜色轨用 tracks[].lyrics，键为 "<id>#<track 标题>"。
-# l10 音频只唱一轮（4 个动物各出现一次，见 lessons.ts 注释），歌词已裁成一轮。
+# l10 音频只唱一轮（4 个动物各出现一次，见 lessons.json 注释），歌词已裁成一轮。
 ALIGN_LESSONS = [
     ("l4", "/lessons/l4/song.mp3", None, None),
     ("l5", "/lessons/l5/song.mp3", None, None),
@@ -67,36 +67,34 @@ SYNTH_LESSONS = ["l6", "l7", "l8"]
 # ---------------------------------------------------------------- 读歌词
 
 
-def read_lessons_ts():
-    """从 lessons.ts 解析歌词。顶层 song.lyrics 键为课时 id；
-    tracks[].lyrics 键为 "<id>#<track 标题>"（如 l11 的颜色轨）。"""
-    src = open(LESSONS_TS, encoding="utf-8").read()
+def read_lessons_data():
+    """从 lessons.json（课时数据本体，2212736 起应用/种子/生成脚本三方同源）读歌词。
+    顶层 song.lyrics 键为课时 id；tracks[].lyrics 键为 "<id>#<track 标题>"。"""
+    lessons = json.load(open(LESSONS_JSON, encoding="utf-8"))
     out = {}
-    marks = [(m.group(1), m.start()) for m in re.finditer(r'id:\s*"(l\d+)"', src)]
-    for idx, (lid, pos) in enumerate(marks):
-        end = marks[idx + 1][1] if idx + 1 < len(marks) else len(src)
-        block = src[pos:end]
-        m = re.search(r"lyrics:\s*\[(.*?)\n\s*\]", block, re.S)
-        if m:
-            out[lid] = [ln.replace('\\"', '"') for ln in re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1))]
-        # 轨道歌词（如 l11 的 Colors Song）：只在 tracks: [...] 区块内找，
-        # 避免误配顶层 song 的 title/lyrics
-        tsec = re.search(r"tracks:\s*\[", block)
-        if tsec:
-            depth, i = 0, tsec.end() - 1
-            while True:
-                if block[i] == "[":
-                    depth += 1
-                elif block[i] == "]":
-                    depth -= 1
-                    if depth == 0:
-                        break
-                i += 1
-            for tm in re.finditer(r'title:\s*"([^"]+)"[\s\S]{0,4000}?lyrics:\s*\[(.*?)\n\s*\]',
-                                  block[tsec.end():i], re.S):
-                t_title, t_body = tm.group(1), tm.group(2)
-                out[f"{lid}#{t_title}"] = [ln.replace('\\"', '"') for ln in re.findall(r'"((?:[^"\\]|\\.)*)"', t_body)]
+    for l in lessons:
+        song = l.get("song") or {}
+        if song.get("lyrics"):
+            out[l["id"]] = song["lyrics"]
+        for t in song.get("tracks") or []:
+            if t.get("lyrics"):
+                out[f"{l['id']}#{t['title']}"] = t["lyrics"]
     return out
+
+
+def lesson_title_of(lid):
+    """LRC 的 [ti:] 标题：课用 lesson.title，轨用 track.title。"""
+    base, _, track = lid.partition("#")
+    for l in json.load(open(LESSONS_JSON, encoding="utf-8")):
+        if l["id"] != base:
+            continue
+        if track:
+            for t in l.get("song", {}).get("tracks") or []:
+                if t.get("title") == track:
+                    return t["title"]
+            return lid
+        return l.get("title") or lid
+    return lid
 
 
 def words_of(line):
@@ -334,9 +332,7 @@ def process(asr, lid, audio_rel, lyrics, lrc_title=None):
     if lrc_title:
         title = lrc_title
     else:
-        title_m = re.search(rf'id:\s*"{lid}"[\s\S]{{0,400}}?title:\s*"([^"]+)"',
-                            open(LESSONS_TS, encoding="utf-8").read())
-        title = title_m.group(1) if title_m else lid
+        title = lesson_title_of(lid)
     out_lines = [
         f"[ti:{title}]",
         f"[al:lesson {lid.split('#')[0]}]",
@@ -362,7 +358,6 @@ def process(asr, lid, audio_rel, lyrics, lrc_title=None):
 
 def export_synth_lrc(lyrics_all, timings):
     """l6/l7/l8：直接从 song-timings.json 的精确时间轴导出 LRC。"""
-    src = open(LESSONS_TS, encoding="utf-8").read()
     for lid in SYNTH_LESSONS:
         lyrics = lyrics_all.get(lid)
         timing = timings.get(lid)
@@ -373,9 +368,8 @@ def export_synth_lrc(lyrics_all, timings):
         if len(timeline) != len(lyrics):
             print(f"!! {lid}: 时间轴 {len(timeline)} 条 ≠ 歌词 {len(lyrics)} 行，跳过")
             continue
-        title_m = re.search(rf'id:\s*"{lid}"[\s\S]{{0,400}}?title:\s*"([^"]+)"', src)
         out_lines = [
-            f"[ti:{title_m.group(1) if title_m else lid}]",
+            f"[ti:{lesson_title_of(lid)}]",
             f"[al:lesson {lid}]",
             "[offset:0]",
         ]
@@ -391,7 +385,7 @@ def export_synth_lrc(lyrics_all, timings):
 def main():
     synth_only = "--synth" in sys.argv[1:]
     args = [a for a in sys.argv[1:] if not a.startswith("-")]
-    lyrics_all = read_lessons_ts()
+    lyrics_all = read_lessons_data()
     timings = json.load(open(TIMINGS_JSON, encoding="utf-8")) if os.path.exists(TIMINGS_JSON) else {}
 
     if synth_only:
@@ -407,7 +401,7 @@ def main():
             continue
         lyrics = lyrics_all.get(lid)
         if not lyrics:
-            print(f"!! {lid}: lessons.ts 里没解析到歌词，跳过")
+            print(f"!! {lid}: lessons.json 里没有歌词，跳过")
             continue
         if line_limit:
             lyrics = lyrics[:line_limit]
