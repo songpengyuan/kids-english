@@ -21,51 +21,10 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.path.join(ROOT, "public", "heroes")
 
-# 名录：(角色主色, [形态 id …])，必须与 src/data/heroes.ts 的 ROSTER 完全一致
-# （`--check` 会校验文件齐全；Node 侧还有一条单测校验每个形态都有占位图）。
-ROSTER = [
-    ("#c0392b", ["zoffy-base"]),
-    ("#b8b8c8", ["ultraman-base"]),
-    ("#d94f3d", ["seven-base"]),
-    ("#e0703a", ["jack-base"]),
-    ("#d1372e", ["ace-base"]),
-    ("#e8453c", ["taro-base"]),
-    ("#d9a13b", ["leo-base"]),
-    ("#c98a2e", ["astra-base"]),
-    ("#e0453c", ["eighty-base"]),
-    ("#e07aa8", ["yullian-base"]),
-    ("#a8322a", ["father-base"]),
-    ("#e59ab8", ["mother-base"]),
-    ("#e8453c", ["tiga-multi", "tiga-power", "tiga-sky"]),
-    ("#e0453c", ["dyna-flash", "dyna-miracle", "dyna-strong"]),
-    ("#d1372e", ["gaia-v1", "gaia-v2", "gaia-supreme"]),
-    ("#2f7df6", ["agul-v1", "agul-v2"]),
-    ("#3f8ef0", ["cosmos-luna", "cosmos-corona", "cosmos-eclipse"]),
-    ("#8c98a8", ["justice-standard", "justice-crusher"]),
-    ("#8c98a8", ["nexus-anphans", "nexus-red", "nexus-blue"]),
-    ("#d1372e", ["max-base"]),
-    ("#e8453c", ["mebius-base", "mebius-burning", "mebius-infinity"]),
-    ("#2f7df6", ["zero-base", "zero-corona", "zero-luna", "zero-ultimate"]),
-    ("#b8b8c8", ["noa-base"]),
-    ("#e0a63a", ["legend-base"]),
-    ("#2f7df6", ["ginga-base", "ginga-strium"]),
-    ("#d1372e", ["victory-base", "victory-knight"]),
-    ("#3f8ef0", ["x-base", "x-gomora", "x-beta"]),
-    ("#e05a2b", ["orb-origin", "orb-zeperion", "orb-burn", "orb-hurricane"]),
-    ("#d1372e", ["geed-primitive", "geed-solid", "geed-acro", "geed-royal"]),
-    ("#e8453c", ["rosso-flame", "rosso-wind"]),
-    ("#2f7df6", ["blu-aqua", "blu-ground"]),
-    ("#ff6b9d", ["grigio-base"]),
-    ("#ff9f43", ["taiga-base", "taiga-photon"]),
-    ("#d1372e", ["titas-base"]),
-    ("#34c759", ["fuma-base"]),
-    ("#8c98a8", ["z-original", "z-alpha", "z-beta", "z-gamma", "z-delta"]),
-    ("#a05bd6", ["trigger-multi", "trigger-power", "trigger-sky", "trigger-eternity"]),
-    ("#e8453c", ["decker-flash", "decker-strong", "decker-miracle"]),
-    ("#e05a2b", ["blazar-base", "blazar-firdran"]),
-    ("#e0a63a", ["reiga-base"]),
-    ("#2f7df6", ["arc-base"]),
-]
+# 名录从 heroes.json 读取（唯一数据源，应用与生成脚本同源；--check 会校验文件齐全）
+import json
+with open(os.path.join(ROOT, "src", "data", "heroes.json"), encoding="utf-8") as f:
+    ROSTER = [(h["color"], [fid for fid, _, _ in h["forms"]]) for h in json.load(f)]
 
 # 形态造型按"在角色里的序号"循环，保证同一角色的形态一眼能分辨
 VARIANTS = [

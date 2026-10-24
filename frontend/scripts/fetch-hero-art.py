@@ -52,7 +52,7 @@ import urllib.request
 import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-HEROES_TS = os.path.join(ROOT, "src", "data", "heroes.ts")
+HEROES_JSON = os.path.join(ROOT, "src", "data", "heroes.json")
 DEFAULT_OUT = os.path.join(ROOT, "public", "heroes")
 
 UA = "kids-english-hero-art/1.0 (personal, non-commercial use)"
@@ -75,22 +75,15 @@ def show_path(path):
 # ---------------------------------------------------------------- 数据源
 
 def load_forms():
-    """从 src/data/heroes.ts 读形态清单（唯一数据源，避免两边不一致）。
+    """从 src/data/heroes.json 读形态清单（唯一数据源，避免两边不一致）。
 
     返回 [(form_id, 形态中文, 形态英文, 角色中文, 角色英文, 形态序号)]，顺序与名录一致。
     """
-    src = open(HEROES_TS, encoding="utf-8").read()
-    roster = src[src.index("const ROSTER"): src.index("/** 展开成图鉴用的正式结构")]
-    heroes = re.findall(r'id: "([a-z0-9]+)",\s*name: "([^"]+)",\s*en: "([^"]+)"', roster, re.S)
-    forms = re.findall(r'\["([a-z0-9-]+)", "([^"]+)", "([^"]+)"\]', roster)
+    roster = json.load(open(HEROES_JSON, encoding="utf-8"))
     out = []
-    seen = {}
-    for fid, zh, en in forms:
-        hero = next((h for h in heroes if fid.startswith(h[0] + "-")), None)
-        hid = hero[0] if hero else ""
-        idx = seen.get(hid, 0)
-        seen[hid] = idx + 1
-        out.append((fid, zh, en, hero[1] if hero else "", hero[2] if hero else "", idx))
+    for hero in roster:
+        for idx, (fid, zh, en) in enumerate(hero["forms"]):
+            out.append((fid, zh, en, hero["name"], hero["en"], idx))
     return out
 
 
@@ -394,7 +387,7 @@ def dcd_load_cards():
     return cards
 
 
-# 我们 heroes.ts 的角色中文名是简称（德凯），DCD 官方卡面用全名（德凯奥特曼）
+# 我们 heroes.json 的角色中文名是简称（德凯），DCD 官方卡面用全名（德凯奥特曼）
 _DCD_HERO_FULL = {
     "德凯": "德凯奥特曼", "特利迦": "特利迦奥特曼", "赛罗": "赛罗奥特曼", "诺亚": "诺亚奥特曼",
     "高斯": "高斯奥特曼", "梦比优斯": "梦比优斯奥特曼", "银河": "银河奥特曼", "艾克斯": "艾克斯奥特曼",

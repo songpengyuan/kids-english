@@ -17,19 +17,20 @@
       定位坏格时以"完全无关的实物（服饰/实验图/照片）"为准。
 """
 import os
+import json
 import re
 import sys
 from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-HEROES_TS = os.path.join(ROOT, "src", "data", "heroes.ts")
+HEROES_JSON = os.path.join(ROOT, "src", "data", "heroes.json")
 HEROES_DIR = os.path.join(ROOT, "public", "heroes")
 
 
 def load_forms():
-    src = open(HEROES_TS, encoding="utf-8").read()
-    roster = src[src.index("const ROSTER"): src.index("/** 展开成图鉴用的正式结构")]
-    return re.findall(r'\["([a-z0-9-]+)", "([^"]+)", "([^"]+)"\]', roster)
+    import json
+    roster = json.load(open(HEROES_JSON, encoding="utf-8"))
+    return [(fid, zh, en) for h in roster for fid, zh, en in h["forms"]]
 
 
 def make_grid(items, path, start_no, label, numbered):
