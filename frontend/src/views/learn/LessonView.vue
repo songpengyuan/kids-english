@@ -212,9 +212,10 @@ const playTotal = ref(0);
 
 /* ---------- 词群切换（l11 颜色 / 动物） ----------
  * lesson.wordGroups 声明分组（如 l11：颜色 / 动物），词表按 word.group 归组。
- * 只有词类玩法（学单词/听音选图/翻牌记忆/跟我读）显示切换；
- * 连一连按 colorPairs 玩颜色-动物配对、唱童谣/拼句子/亲子对话用不到词表，不显示。 */
-const GROUPED_STAGES = new Set(["learn", "quiz", "memory", "speak", "song"]);
+ * 词类玩法（学单词/听音选图/翻牌记忆/跟我读）、唱童谣（按词群分轨）、
+ * 亲子对话（按词群分段，2026-10-25：过去不分段，l11 一口气 19 轮）显示切换；
+ * 连一连按 colorPairs 玩颜色-动物配对、拼句子用句子表，与词群无关，不显示。 */
+const GROUPED_STAGES = new Set(["learn", "quiz", "memory", "speak", "song", "talk"]);
 /** 分组后的词表（[{key,name,words}]）；无 wordGroups 的课是空数组 */
 const wordGroups = computed(() => (lesson.value ? wordGroupsOf(lesson.value) : []));
 /** 当前选中的词群 key（空串 = 该课没有分组） */
@@ -255,7 +256,7 @@ watch(stage, (s) => {
   const firstTrack = lesson.value?.song.group;
   if (s === "song" && firstTrack && wordGroups.value.some((g) => g.key === firstTrack)) {
     activeGroup.value = firstTrack;
-  } else if (s === "learn" || s === "quiz" || s === "memory" || s === "speak") {
+  } else if (s === "learn" || s === "quiz" || s === "memory" || s === "speak" || s === "talk") {
     activeGroup.value = wordGroups.value[0]?.key ?? "";
   }
 });
@@ -269,8 +270,8 @@ watch(stage, (s) => {
  * （此前每加一个玩法模板就多一层 v-else-if，memory/order 时已叠到 7 层。） */
 type PlayStage = Exclude<LessonStage, "menu" | "result">;
 /** 词表驱动玩法：切词群 = 换一套牌，须随 activeGroup 重挂载；
- *  order/talk 由课时数据（句子/对话）驱动，词群对它们无意义，不重挂。 */
-const GROUP_REMOUNT: ReadonlySet<string> = new Set(["learn", "memory", "quiz", "match", "speak", "song"]);
+ *  order 由课时数据（句子）驱动，词群对它无意义，不重挂。 */
+const GROUP_REMOUNT: ReadonlySet<string> = new Set(["learn", "memory", "quiz", "match", "speak", "song", "talk"]);
 const STAGE_BINDINGS: Record<
   PlayStage,
   { component: Component; props: (c: { words: Word[]; lesson: Lesson; group: string }) => Record<string, unknown> }
@@ -282,7 +283,7 @@ const STAGE_BINDINGS: Record<
   speak: { component: SpeakView, props: (c) => ({ words: c.words }) },
   order: { component: OrderView, props: (c) => ({ lesson: c.lesson }) },
   song: { component: SongView, props: (c) => ({ lesson: c.lesson, group: c.group }) },
-  talk: { component: TalkView, props: (c) => ({ lesson: c.lesson }) },
+  talk: { component: TalkView, props: (c) => ({ lesson: c.lesson, words: c.words }) },
 };
 /** 当前玩法的渲染描述（menu/result 阶段为 null，模板据此落到菜单/结算分支） */
 const playStage = computed(() => {

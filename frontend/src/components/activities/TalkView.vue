@@ -33,12 +33,22 @@
  *   · "宝宝"小标签用 --ink-faint 画在固定浅绿底板上：又是"插画面上用主题态文字色"，
  *     实测亮色 2.19:1 / 暗色 3.47:1 都不达标，改用 --talk-ink-soft（4.98:1）。
  *   另外把"🎤 按住说话"改成"点一下说话"——实现是点击切换，键面必须等于行为。
+ *
+ * 2026-10-25 ⑤ 按词选问答：过去 phrases[0] 当全课固定问句、答句按问句类型套模板，
+ *   词性多样的课会产出错误英文——l11 动物轮问"什么颜色"、答句缺冠词（"It's duck."）；
+ *   l9 的 nose 命中祈使句 "Put it on your nose."。问答选择下沉到 utils/talkQa
+ *   （精确匹配 → 填空 → 同组替换 → 模板兜底），问句里的示例词（"Where is your
+ *   finger?"）也按轮替换成当前词。配合 LessonView：talk 加入词群（l11 颜色/动物
+ *   各一段，不再一口气 19 轮）。顺带三处小修：完成庆祝只在「我都会啦」放一次
+ *   （过去最后一轮通过 + 点按钮各放一次）；卸载时清问句定时器（过去退出页面
+ *   ~180ms 后问句还会响一声）；开录音前先停 TTS（过去 ASR 可能录进问句人声）。
  */
-import { computed, nextTick, ref, watch, onMounted } from "vue";
-import { speak, speakText } from "../../services/speech";
+import { computed, nextTick, ref, watch, onMounted, onBeforeUnmount } from "vue";
+import { speak, speakText, stopSpeaking } from "../../services/speech";
 import { hapticTap } from "../../services/haptics";
 import { sfxCorrect, sfxWrong, bigCelebrate } from "../../services/effects";
 import { useSpeechSession } from "../../composables/useSpeechSession";
+import { talkQa } from "../../utils/talkQa";
 import type { Lesson, Word, Phrase } from "../../data/lessons";
 import { Check, MessageCircle, Mic, Square, Volume2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
@@ -46,33 +56,14 @@ import SafeBottom from "../layout/SafeBottom.vue";
 import StageHead from "./StageHead.vue";
 import LessonFooter from "./LessonFooter.vue";
 
-const props = defineProps<{ lesson: Lesson }>();
+const props = defineProps<{ lesson: Lesson; words?: Word[] }>();
 const emit = defineEmits(["done", "progress", "total"]);
 
-const words = computed(() => props.lesson.words ?? []);
+/** 本轮词表：LessonView 按词群传入（l11 颜色/动物各一段）；无分组课时等于全课词表 */
+const words = computed(() => (props.words?.length ? props.words : props.lesson.words ?? []));
 const phrases = computed<Phrase[]>(() => props.lesson.phrases ?? []);
-/** 家长问句（每轮固定，取第一句：What's that?） */
-const questionPhrase = computed<Phrase | null>(() => phrases.value[0] ?? null);
-/** 孩子答句：优先在 phrases 里精确匹配（有现成答句就用），没有就按问句类型套模板 */
-function answerText(w: Word): string {
-  const en = w.en.toLowerCase().trim();
-  // 1) 先在 phrases 里找包含这个单词的答句（按词边界）
-  const p = phrases.value.find((x) => {
-    if (x.en.includes("?")) return false;
-    return new RegExp(`\\b${en}\\b`).test(x.en.toLowerCase());
-  });
-  if (p) return p.en;
-  // 2) 按问句类型套模板
-  const q = phrases.value[0]?.en ?? "";
-  if (q.includes("What can you play")) return `I can play the ${w.en}.`;
-  if (q.includes("What color")) return `It's ${w.en}.`;
-  if (q.includes("What letter")) return `It's letter ${w.en.toUpperCase()}.`;
-  if (q.includes("How many")) return `${w.en}.`;
-  if (q.includes("Where is your")) return `This is my ${w.en}.`;
-  if (q.includes("What do you see")) return `I see the ${w.en}.`;
-  if (q.includes("What's that")) return `It's a ${w.en}.`;
-  return w.en;
-}
+/** 本轮问答：按词选问句与答句（动物轮换 "What animal is it?"，答句不缺冠词） */
+const curQa = computed(() => (cur.value ? talkQa(cur.value, props.lesson) : null));
 
 /* ---------- 微信聊天式消息流 ---------- */
 interface ChatMsg {
@@ -95,7 +86,7 @@ function pushParent(w: Word, text: string) {
 }
 /** 孩子"发送"消息：大图 + 答句 + 语音文本（右上角头像 + 右侧气泡） */
 function pushKid(w: Word, heardText?: string) {
-  messages.value.push({ id: ++msgSeq, role: "kid", word: w, text: answerText(w), heard: heardText });
+  messages.value.push({ id: ++msgSeq, role: "kid", word: w, text: talkQa(w, props.lesson).a, heard: heardText });
   scrollBottom();
 }
 /** 新消息后自动滚到底部（微信聊天习惯） */
@@ -126,11 +117,10 @@ const session = useSpeechSession(words, {
     sfxCorrect();
     // 孩子"发消息"：大图 + 答句 + 识别文本
     pushKid(w, heard.value || undefined);
-    if (allPassed.value) {
-      bigCelebrate(); // 全部对话完成 → 庆祝
-    } else {
+    if (!allPassed.value) {
       advance(); // 通过一轮 → 立刻进入下一轮（不留"太棒了"的展示态）
     }
+    // 最后一轮的庆祝交给 finish()（「我都会啦」），这里不再放一次
   },
   onWrong: () => sfxWrong(),
 });
@@ -163,46 +153,51 @@ watch(
 
 /** 轮次切换 → 家长发出问句消息 + 自动朗读（孩子先听再回答） */
 let questionTimer: ReturnType<typeof setTimeout> | null = null;
-watch(dlgIdx, (v) => {
-  if (questionPhrase.value) {
-    if (questionTimer) clearTimeout(questionTimer);
-    // 260 → 180ms：上一轮"孩子消息"刚落到底，新问句紧跟着出现才像对话
-    questionTimer = window.setTimeout(() => {
-      pushParent(cur.value, questionPhrase.value!.en);
-      speak(questionPhrase.value!.en);
-    }, 180);
-  }
+/** 延迟发出本轮家长问句（问句文本随词走：talkQa 按当前词选） */
+function queueParentQuestion(delayMs: number) {
+  if (!curQa.value?.q) return;
+  if (questionTimer) clearTimeout(questionTimer);
+  questionTimer = window.setTimeout(() => {
+    const qa = curQa.value;
+    if (!qa?.q || !cur.value) return;
+    pushParent(cur.value, qa.q);
+    speak(qa.q);
+  }, delayMs);
+}
+watch(dlgIdx, () => {
+  // 260 → 180ms：上一轮"孩子消息"刚落到底，新问句紧跟着出现才像对话
+  queueParentQuestion(180);
 });
-onMounted(() => {
-  if (questionPhrase.value) {
-    if (questionTimer) clearTimeout(questionTimer);
-    questionTimer = window.setTimeout(() => {
-      pushParent(cur.value, questionPhrase.value!.en);
-      speak(questionPhrase.value!.en);
-    }, 320);
-  }
+onMounted(() => queueParentQuestion(320));
+// 离开玩法页时清掉：过去 ~180ms 后问句还会在新页面上响一声
+onBeforeUnmount(() => {
+  if (questionTimer) clearTimeout(questionTimer);
 });
 
-/** 播放家长问句（点家长消息气泡重听） */
-function playQuestion() {
-  if (questionPhrase.value) speak(questionPhrase.value.en);
+/** 点家长消息气泡重听那句问句（气泡里存的就是当时发出的文本） */
+function playParentMsg(m: ChatMsg) {
+  if (m.text) speak(m.text);
 }
 /**
  * 播放孩子的答句（整句，非单词）：底部「宝宝要说的话」和孩子消息气泡点读都用它。
  * 曾经点「It's a frog.」只读 "frog"——键面是句子、读的却是单词。
  */
 function playAnswer(w: Word) {
-  speakText(answerText(w));
+  speakText(talkQa(w, props.lesson).a);
 }
 /** 点孩子消息气泡：重听那句已发出的答句 */
 function playSentence(text?: string) {
   if (text) speakText(text);
 }
-/** 点底部输入框：开始 / 停止录音（说完 = 发消息） */
+/** 点底部输入框：开始 / 停止录音（说完 = 发消息）。
+ *  开始前先停掉正在播的 TTS——过去问句还没播完孩子就点麦克风，ASR 会录进人声。 */
 function toggleMic() {
   hapticTap();
   if (status.value === "listening") stopMic();
-  else startMic();
+  else {
+    stopSpeaking();
+    startMic();
+  }
 }
 /** 孩子这一轮读得不错（ASR perfect/good） */
 const gradeOk = computed(
@@ -234,7 +229,7 @@ function finish() {
       >
         <span v-if="m.role === 'parent'" class="msg-av mom" aria-hidden="true">👩</span>
         <div class="msg-col">
-          <div class="msg-bubble" :class="m.role" @click="m.role === 'parent' ? playQuestion() : m.word && playSentence(m.text)">
+          <div class="msg-bubble" :class="m.role" @click="m.role === 'parent' ? playParentMsg(m) : m.word && playSentence(m.text)">
             <template v-if="m.role === 'parent'">
               <!-- 家长发题：文字在上、图片在下（孩子看图回答，不显示英文答案） -->
               <span class="msg-text">{{ m.text }}</span>
@@ -275,7 +270,7 @@ function finish() {
       <!-- 孩子这一轮要说的句子：**始终显示**（点喇叭听发音）。
            麦克风不可用时更要显示——对话流里只有"上一轮"的答句，孩子根本不知道该说什么。 -->
       <button class="ci-say" aria-label="宝宝要说的句子，点一下听整句发音" @click="playAnswer(cur)">
-        <span class="ci-say-text">{{ answerText(cur) }}</span>
+        <span class="ci-say-text">{{ curQa?.a }}</span>
         <Volume2 class="ci-say-vol k-ico" />
       </button>
 

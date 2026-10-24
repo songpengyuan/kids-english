@@ -11,7 +11,7 @@
 import { describe, expect, it, vi, beforeEach, beforeAll, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
 
-vi.mock("../../../services/speech", () => ({ speak: vi.fn(), speakText: vi.fn() }));
+vi.mock("../../../services/speech", () => ({ speak: vi.fn(), speakText: vi.fn(), stopSpeaking: vi.fn() }));
 vi.mock("../../../services/effects", () => ({
   sfxCorrect: vi.fn(),
   sfxWrong: vi.fn(),
@@ -42,14 +42,16 @@ beforeAll(() => {
   });
 });
 
+const lessonWords = ["frog", "monkey", "tiger"].map((id) => ({
+  id, en: id, zh: id, emoji: "🐾", image: null, lessonId: "l10",
+}));
+
 const lesson = {
   id: "l10",
   en: "Walking In The Jungle",
   zh: "丛林漫步",
   emoji: "🌴",
-  words: ["frog", "monkey", "tiger"].map((id) => ({
-    id, en: id, zh: id, emoji: "🐾", image: null, lessonId: "l10",
-  })),
+  words: lessonWords,
   phrases: [
     { en: "What's that?", zh: "那是什么？", audio: "/lessons/l10/audio/ph-1.mp3" },
     { en: "It's a frog.", zh: "那是一只青蛙。", audio: "/lessons/l10/audio/ph-2.mp3" },
@@ -195,5 +197,13 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     const kid = wrapper.findAll(".msg-row.kid")[0];
     await kid.find(".msg-bubble").trigger("click");
     expect(speakText).toHaveBeenCalledWith("It's a frog.");
+  });
+
+  it("分组课传入 words：按传入词表推进（l11 亲子对话按词群分段）", async () => {
+    const wrapper = mount(TalkView, { props: { lesson, words: lessonWords.slice(0, 2) } });
+    expect(wrapper.find(".stage-head .prog").text()).toBe("1 / 2");
+    expect(wrapper.emitted("total")?.[0]?.[0]).toBe(2);
+    await vi.advanceTimersByTimeAsync(400);
+    expect(wrapper.find(".ci-say-text").text()).toBe("It's a frog.");
   });
 });
