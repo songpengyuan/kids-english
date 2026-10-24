@@ -6,7 +6,7 @@
  * 【你自己提供的课】l4、l5：
  *   public/lessons/<课时id>/song.mp3     童谣音频（你提供的）
  *   public/lessons/<课时id>/song.mp4     童谣视频（你提供的，音乐页默认先播它）
- *   public/lessons/<课时id>/words/*.png  单词图片（你提供的）
+ *   public/lessons/<课时id>/words/*.webp 单词图片（optimize-word-art.py 从 PNG 去白底转出）
  *   public/lessons/<课时id>/audio/*.mp3  单词发音（可选，没有则浏览器 TTS 朗读）
  *   脚本不会覆盖这些文件；歌词高亮因为没有逐行时间轴，按比例映射。
  *
@@ -206,13 +206,13 @@ const rawLessons: RawLesson[] = [
       ]
     },
     words: [
-      { id: "violin", en: "violin", zh: "小提琴", emoji: "🎻", image: "/lessons/l5/words/violin.png" },
-      { id: "piano", en: "piano", zh: "钢琴", emoji: "🎹", image: "/lessons/l5/words/piano.png" },
-      { id: "musicman", en: "Music Man", zh: "音乐人", emoji: "🎹", image: "/lessons/l5/words/musicman.png" },
-      { id: "trombone", en: "trombone", zh: "长号", emoji: "🎺", image: "/lessons/l5/words/trombone.png" },
-      { id: "mantis", en: "mantis", zh: "螳螂", emoji: "🦗", image: "/lessons/l5/words/mantis.png" },
-      { id: "squirrel", en: "squirrel", zh: "松鼠", emoji: "🐿️", image: "/lessons/l5/words/squirrel.png" },
-      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l5/words/frog.png" }
+      { id: "violin", en: "violin", zh: "小提琴", emoji: "🎻", image: "/lessons/l5/words/violin.webp" },
+      { id: "piano", en: "piano", zh: "钢琴", emoji: "🎹", image: "/lessons/l5/words/piano.webp" },
+      { id: "musicman", en: "Music Man", zh: "音乐人", emoji: "🎹", image: "/lessons/l5/words/musicman.webp" },
+      { id: "trombone", en: "trombone", zh: "长号", emoji: "🎺", image: "/lessons/l5/words/trombone.webp" },
+      { id: "mantis", en: "mantis", zh: "螳螂", emoji: "🦗", image: "/lessons/l5/words/mantis.webp" },
+      { id: "squirrel", en: "squirrel", zh: "松鼠", emoji: "🐿️", image: "/lessons/l5/words/squirrel.webp" },
+      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l5/words/frog.webp" }
     ],
     phrases: [
       { en: "What can you play?", zh: "你会演奏什么呀？" },
@@ -329,15 +329,15 @@ const rawLessons: RawLesson[] = [
 ]
     },
     words: [
-      { id: "seahorse", en: "seahorse", zh: "海马", emoji: "🐴", image: "/lessons/l4/words/seahorse.png" },
-      { id: "jellyfish", en: "jellyfish", zh: "水母", emoji: "🪼", image: "/lessons/l4/words/jellyfish.png" },
-      { id: "turtle", en: "turtle", zh: "海龟", emoji: "🐢", image: "/lessons/l4/words/turtle.png" },
-      { id: "octopus", en: "octopus", zh: "章鱼", emoji: "🐙", image: "/lessons/l4/words/octopus.png" },
-      { id: "shark", en: "shark", zh: "鲨鱼", emoji: "🦈", image: "/lessons/l4/words/shark.png" },
-      { id: "whale", en: "whale", zh: "鲸鱼", emoji: "🐳", image: "/lessons/l4/words/whale.png" },
-      { id: "sailor", en: "sailor", zh: "水手", emoji: "⛵", image: "/lessons/l4/words/sailor.png" },
-      { id: "sea", en: "sea", zh: "大海", emoji: "🌊", image: "/lessons/l4/words/sea.png" },
-      { id: "blue", en: "blue", zh: "蓝色", emoji: "🔵", image: "/lessons/l4/words/blue.png" }
+      { id: "seahorse", en: "seahorse", zh: "海马", emoji: "🐴", image: "/lessons/l4/words/seahorse.webp" },
+      { id: "jellyfish", en: "jellyfish", zh: "水母", emoji: "🪼", image: "/lessons/l4/words/jellyfish.webp" },
+      { id: "turtle", en: "turtle", zh: "海龟", emoji: "🐢", image: "/lessons/l4/words/turtle.webp" },
+      { id: "octopus", en: "octopus", zh: "章鱼", emoji: "🐙", image: "/lessons/l4/words/octopus.webp" },
+      { id: "shark", en: "shark", zh: "鲨鱼", emoji: "🦈", image: "/lessons/l4/words/shark.webp" },
+      { id: "whale", en: "whale", zh: "鲸鱼", emoji: "🐳", image: "/lessons/l4/words/whale.webp" },
+      { id: "sailor", en: "sailor", zh: "水手", emoji: "⛵", image: "/lessons/l4/words/sailor.webp" },
+      { id: "sea", en: "sea", zh: "大海", emoji: "🌊", image: "/lessons/l4/words/sea.webp" },
+      { id: "blue", en: "blue", zh: "蓝色", emoji: "🔵", image: "/lessons/l4/words/blue.webp" }
     ],
     phrases: [
       { en: "What do you see?", zh: "你看见什么啦？" },
@@ -397,13 +397,13 @@ const rawLessons: RawLesson[] = [
       ]
     },
     words: [
-      { id: "nose", en: "nose", zh: "鼻子", emoji: "👃", image: "/lessons/l9/words/nose.png" },
-      { id: "arm", en: "arm", zh: "手臂", emoji: "💪", image: "/lessons/l9/words/arm.png" },
-      { id: "leg", en: "leg", zh: "腿", emoji: "🦵", image: "/lessons/l9/words/leg.png" },
-      { id: "foot", en: "foot", zh: "脚", emoji: "🦶", image: "/lessons/l9/words/foot.png" },
-      { id: "chin", en: "chin", zh: "下巴", emoji: "😊", image: "/lessons/l9/words/chin.png" },
-      { id: "finger", en: "finger", zh: "手指", emoji: "👆", image: "/lessons/l9/words/finger.png" },
-      { id: "head", en: "head", zh: "头", emoji: "🧑", image: "/lessons/l9/words/head.png" }
+      { id: "nose", en: "nose", zh: "鼻子", emoji: "👃", image: "/lessons/l9/words/nose.webp" },
+      { id: "arm", en: "arm", zh: "手臂", emoji: "💪", image: "/lessons/l9/words/arm.webp" },
+      { id: "leg", en: "leg", zh: "腿", emoji: "🦵", image: "/lessons/l9/words/leg.webp" },
+      { id: "foot", en: "foot", zh: "脚", emoji: "🦶", image: "/lessons/l9/words/foot.webp" },
+      { id: "chin", en: "chin", zh: "下巴", emoji: "😊", image: "/lessons/l9/words/chin.webp" },
+      { id: "finger", en: "finger", zh: "手指", emoji: "👆", image: "/lessons/l9/words/finger.webp" },
+      { id: "head", en: "head", zh: "头", emoji: "🧑", image: "/lessons/l9/words/head.webp" }
     ],
     phrases: [
       { en: "Where is your finger?", zh: "你的手指在哪里？" },
@@ -512,13 +512,13 @@ const rawLessons: RawLesson[] = [
     },
     words: [
       /* 老师正式词表（2026-10-14 提供）：7 词；图片老师未提供，缺失自动回退 emoji */
-      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l10/words/frog.png" },
-      { id: "monkey", en: "monkey", zh: "猴子", emoji: "🐒", image: "/lessons/l10/words/monkey.png" },
-      { id: "tiger", en: "tiger", zh: "老虎", emoji: "🐯", image: "/lessons/l10/words/tiger.png" },
-      { id: "toucan", en: "toucan", zh: "巨嘴鸟", emoji: "🦜", image: "/lessons/l10/words/toucan.png" },
-      { id: "afraid", en: "afraid", zh: "害怕的", emoji: "😨", image: "/lessons/l10/words/afraid.png" },
-      { id: "jungle", en: "jungle", zh: "丛林", emoji: "🌴", image: "/lessons/l10/words/jungle.png" },
-      { id: "listen", en: "listen", zh: "听", emoji: "👂", image: "/lessons/l10/words/listen.png" }
+      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l10/words/frog.webp" },
+      { id: "monkey", en: "monkey", zh: "猴子", emoji: "🐒", image: "/lessons/l10/words/monkey.webp" },
+      { id: "tiger", en: "tiger", zh: "老虎", emoji: "🐯", image: "/lessons/l10/words/tiger.webp" },
+      { id: "toucan", en: "toucan", zh: "巨嘴鸟", emoji: "🦜", image: "/lessons/l10/words/toucan.webp" },
+      { id: "afraid", en: "afraid", zh: "害怕的", emoji: "😨", image: "/lessons/l10/words/afraid.webp" },
+      { id: "jungle", en: "jungle", zh: "丛林", emoji: "🌴", image: "/lessons/l10/words/jungle.webp" },
+      { id: "listen", en: "listen", zh: "听", emoji: "👂", image: "/lessons/l10/words/listen.webp" }
     ],
     phrases: [
       /* 老师亲子口语模板：What's that? -- It's a ... .（配歌词里 4 个动物实例） */
@@ -593,15 +593,15 @@ const rawLessons: RawLesson[] = [
       { id: "purple", en: "purple", zh: "紫色", emoji: "🟣", image: "/lessons/l11/words/purple.svg", group: "colors", color: "#8E24AA" },
       { id: "white", en: "white", zh: "白色", emoji: "⚪", image: "/lessons/l11/words/white.svg", group: "colors", color: "#FFFFFF" },
       { id: "black", en: "black", zh: "黑色", emoji: "⚫", image: "/lessons/l11/words/black.svg", group: "colors", color: "#212121" },
-      { id: "bear", en: "bear", zh: "棕熊", emoji: "🐻", image: "/lessons/l11/words/bear.png", group: "animals" },
-      { id: "bird", en: "bird", zh: "小鸟", emoji: "🐦", image: "/lessons/l11/words/bird.png", group: "animals" },
-      { id: "duck", en: "duck", zh: "鸭子", emoji: "🦆", image: "/lessons/l11/words/duck.png", group: "animals" },
-      { id: "horse", en: "horse", zh: "小马", emoji: "🐎", image: "/lessons/l11/words/horse.png", group: "animals" },
-      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l11/words/frog.png", group: "animals" },
-      { id: "cat", en: "cat", zh: "小猫", emoji: "🐱", image: "/lessons/l11/words/cat.png", group: "animals" },
-      { id: "dog", en: "dog", zh: "小狗", emoji: "🐶", image: "/lessons/l11/words/dog.png", group: "animals" },
-      { id: "sheep", en: "sheep", zh: "绵羊", emoji: "🐑", image: "/lessons/l11/words/sheep.png", group: "animals" },
-      { id: "goldfish", en: "goldfish", zh: "金鱼", emoji: "🐟", image: "/lessons/l11/words/goldfish.png", group: "animals" }
+      { id: "bear", en: "bear", zh: "棕熊", emoji: "🐻", image: "/lessons/l11/words/bear.webp", group: "animals" },
+      { id: "bird", en: "bird", zh: "小鸟", emoji: "🐦", image: "/lessons/l11/words/bird.webp", group: "animals" },
+      { id: "duck", en: "duck", zh: "鸭子", emoji: "🦆", image: "/lessons/l11/words/duck.webp", group: "animals" },
+      { id: "horse", en: "horse", zh: "小马", emoji: "🐎", image: "/lessons/l11/words/horse.webp", group: "animals" },
+      { id: "frog", en: "frog", zh: "青蛙", emoji: "🐸", image: "/lessons/l11/words/frog.webp", group: "animals" },
+      { id: "cat", en: "cat", zh: "小猫", emoji: "🐱", image: "/lessons/l11/words/cat.webp", group: "animals" },
+      { id: "dog", en: "dog", zh: "小狗", emoji: "🐶", image: "/lessons/l11/words/dog.webp", group: "animals" },
+      { id: "sheep", en: "sheep", zh: "绵羊", emoji: "🐑", image: "/lessons/l11/words/sheep.webp", group: "animals" },
+      { id: "goldfish", en: "goldfish", zh: "金鱼", emoji: "🐟", image: "/lessons/l11/words/goldfish.webp", group: "animals" }
     ],
     wordGroups: [
       { key: "colors", name: "Colors" },
