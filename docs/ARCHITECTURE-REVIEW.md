@@ -155,4 +155,34 @@
 ## 4. 经验教训（沉淀）
 1. **“超时兜底”必须区分“成功放行”与“失败降级”**：旧实现 10s 无条件 `resolve(true)` 把失败伪装成成功，调用方永远不降级——超时兜底默认应走降级路径，成功信号只来自真实事件（playing/onend）。
 2. **统一点读入口要 props 配置化**：同一个“点文字发音”有 10 种变体（单词带定位/不带、纯文案、中文、语速、是否绕过静音……），组件把变体收敛为 props，页面只需声明意图。
-3. **组件化与业务语义的边界**：WordCard 点读带着“标记已点/统计/入场动画”业务逻辑，强包 SpeakText 会破坏玩法；组件用于“纯点读文字”，带业务逻辑的点读保持服务层调用——先探结构再定边界。
+3. **组件化与业务语义的边界**：WordCard 点读带着”标记已点/统计/入场动画”业务逻辑，强包 SpeakText 会破坏玩法；组件用于”纯点读文字”，带业务逻辑的点读保持服务层调用——先探结构再定边界。
+
+# 四次评审：schema 治理与玩法舞台注册表（2026-10-24）
+
+> 动因：架构师视角全面复核（全仓 + 文档 + CI + 近一个月提交）。先核销上轮风险，再处理三个新压力点。
+
+## 1. 上轮（2026-10-17 ARCHITECTURE-EVOLUTION）风险核销——逐条到代码验证
+
+| 上轮风险 | 状态 | 证据 |
+|---|---|---|
+| R1 内容双源漂移 | ✅ 已落地 | `deploy.yml` Content seed drift check + `ci-local.sh` 同构拦截；l11 新课两源一致，证明闸门在实际生效 |
+| R2 危险 deploy-server.sh | ✅ 已落地 | exclude 已修对（.venv/.env/*.db/media）+ 交互确认，定位”本地应急部署” |
+| R3 迁移无版本 | ✅ 已落地 | ADR-002，`schema_version=3` 生产回显 |
+| R4/R5 错误上报与埋点 | 🟡 大幅改善 | `activity_done / lesson_enter / level_pass / listen_play` 已接入（10-17 时仅 2 个事件） |
+
+## 2. 本轮落地（三笔提交）
+
+| 项 | 发现 | 处置 | 提交 |
+|---|---|---|---|
+| 儿童录音曾入 git | 21 条录音（1.5MB）在 `.gitignore` 规则**之前**已被跟踪——规则对已跟踪文件不生效，”规则在、漏洞也在” | `git rm -r --cached`；`ci-local.sh` 快检新增「运行期数据入库检查」（实测拦截 `git add -f`）；ADR-005 补回执：**仓库转公开前必须 filter-repo 清史** | `5459b39` |
+| LessonView 玩法分发 | 玩法已到 8 个（memory/order 一周内新增），撞上二次评审自定的拆分阈值；模板 7 层 v-else-if 随玩法数线性增长 | `STAGE_BINDINGS` 注册表 + `<component :is>`；`Record<PlayStage,...>` 穷举类型让”加玩法漏注册”编译期就红；词群重挂载语义与原 `:key` 完全一致；顺手清掉 colorPairs 对 quiz/speak 的 fallthrough 透传 | `7d3a15f` |
+| 课时能力字段 entropy | l11 给顶层贡献了 wordGroups/tracks/colorPairs 等可选字段，注释全是”l11 用”；评审最初建议嵌套 features 重排，**实施前核查推翻**：字段已在生产 wire 格式（schemas.py + types/api.ts），组合校验大半已存在 | 扁平保留 + 四条扩展约定固化进 lessons.ts；MatchView 删本地 COLOR_HEX（与数据已实际漂移：white/brown 两处色值不一致）；validate-data 新增 7 项校验（枚举/色值格式/引用完整/配对唯一/轨道可播/音视频查盘）；决策记录 ADR-007，写明重开条件 | `bffa935` |
+
+## 3. 遗留与观察项
+
+- **progress store 拆分（636 行）已评估可做**：按”今日学情 / 课程进度 / 云同步”拆，硬边界 = localStorage 键名冻结 + 逐字段 max 合并口径（PROGRESS-DATA.md §7）。推迟原因：并行会话正在改 useLessonFlow / 玩法视图（titleZh + lastActKey），这些是 progress store 的直接消费方，现在拆必撞。
+- **媒体播放子域**（ListenView 811 + SongView 739 + SongStage 434 + player 317 ≈ 2300 行）：等 l11 多轨波动平息后抽 `useMediaPlayer` composable 三处共用。
+- **GamePath.vue（1039 行）**：纯展示大头，下次触碰时再拆，不专门立项。
+- **双会话同仓的协作教训**：pre-commit 的 vue-tsc 是全项目检查，会被另一会话的半成品挡住；解法是按 hunk 精确暂存（`git diff` 过滤 + `git apply --cached`）把两个会话的改动干净分离，各自提交各自验证过的内容。
+
+
