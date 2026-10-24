@@ -51,7 +51,9 @@ const colorPairs = [
   { color: "black", wordId: "sheep" },
 ];
 
-/** 点选配对一张：pointerdown 色圆 → pointerdown 动物 → window pointerup */
+/** 点选配对一张：模拟真实的"按下→抬起→按下→抬起"两段点击
+ *  （⚠️ 不能按下两张再一起抬起——那会被按"多指手势"路径处理：
+ *   第二指的抬起路径不清 dragPointer，后续手势全部被当成多指忽略） */
 async function pairByClick(w: ReturnType<typeof mount>, colorId: string, animalId: string) {
   const cell = (sel: string) =>
     w.findAll(`[data-word="${sel}"]`).filter((c) => !c.classes().includes("gone"))[0];
@@ -60,8 +62,10 @@ async function pairByClick(w: ReturnType<typeof mount>, colorId: string, animalI
   expect(a, `色圆 ${colorId}`).toBeTruthy();
   expect(b, `动物 ${animalId}`).toBeTruthy();
   await a.trigger("pointerdown");
+  window.dispatchEvent(new Event("pointerup")); // 抬起：保留选中（点选模式）
+  await w.vm.$nextTick();
   await b.trigger("pointerdown");
-  window.dispatchEvent(new Event("pointerup"));
+  window.dispatchEvent(new Event("pointerup")); // 抬起：执行配对
   await w.vm.$nextTick();
 }
 
@@ -108,6 +112,24 @@ describe("MatchView 颜色配对模式（左色圆 ↔ 右动物）", () => {
     await pairByClick(w, ok2, thirdAnimal!);
     expect(w.find(`[data-word="${ok2}"]`).classes()).not.toContain("gone");
     expect(w.find(`[data-word="${thirdAnimal}"]`).classes()).not.toContain("gone");
+    w.unmount();
+  });
+
+  it("配到一半不换组（colorMode 一对占两个 id，曾按 Set 尺寸提前误判完成）", async () => {
+    const w = mount(MatchView, { props: { words: animals, colorPairs } });
+    await w.vm.$nextTick();
+    const map = new Map(colorPairs.map((p) => [`c-${p.wordId}`, p.wordId]));
+    const colorIds = [...w.element.querySelectorAll('[data-word^="c-"]')].map(
+      (c) => c.getAttribute("data-word")!
+    );
+    expect(colorIds.length).toBeGreaterThanOrEqual(3); // 组内至少 3 对才能演示"配一半"
+    // 只配前 2 对（旧 bug：2 对 = 4 席 ≥ 组阈值 → 提前换组）
+    await pairByClick(w, colorIds[0], map.get(colorIds[0])!);
+    await pairByClick(w, colorIds[1], map.get(colorIds[1])!);
+    await vi.advanceTimersByTimeAsync(1500); // 超过组间过场时长，不该有任何推进
+    // 还在同一组：第 3 个色圆仍在盘上且未配对，已配的恰好 2 对（4 格）
+    expect(w.find(`[data-word="${colorIds[2]}"]`).classes()).not.toContain("gone");
+    expect(w.findAll(".cell.gone")).toHaveLength(4);
     w.unmount();
   });
 

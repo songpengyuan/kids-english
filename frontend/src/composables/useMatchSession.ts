@@ -77,7 +77,11 @@ export function useMatchSession(
   const pairMap = reactive<Record<string, string>>({});
   const wrongCount = ref(0); // 跨组累计，用于评分
 
-  const doneCount = computed(() => matched.size);
+  /** 已配对**对数**：普通模式同一词的图/词格共用一个 id（Set 去重后即对数）；
+   *  colorMode 一对是两个 id（c-duck 色圆 + duck 动物），Set 尺寸是对数的 2 倍——
+   *  必须除回来。曾经直接拿 size 当对数，颜色模式配到一半（2 对 = 4 席 ≥ 组阈值）
+   *  就误判整组完成、提前进下一组（2026-10-25 用户实测反馈）。 */
+  const doneCount = computed(() => (colorMode.value ? matched.size / 2 : matched.size));
   const groupDone = computed(() => totalPairs.value > 0 && doneCount.value >= totalPairs.value);
   /** 头部计数（StageHead 的 rightText）：多组带组号，单组只显示配对进度 */
   const counterText = computed(() =>
