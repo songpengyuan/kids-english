@@ -68,7 +68,21 @@ const badgeEl = ref<HTMLElement | null>(null);
 const flyEl = ref<HTMLElement | null>(null);
 /** 展示区贝壳元素（飞行源点：每轮取"将要消失"的那枚的坐标） */
 const shellEls = ref<HTMLElement[]>([]);
-const flyOne = useFlyToEl(flyEl);
+/** 拖尾粒子容器（飞行轨迹上的彗星尾巴） */
+const trails = ref<{ id: number; x: number; y: number; rot: number }[]>([]);
+let trailId = 0;
+const flyOne = useFlyToEl(flyEl, (p, t) => {
+  // 每隔一帧拉一颗尾粒（渐隐缩小），仰角随飞行进度翻转，形成彗尾
+  if (Math.round(t * 30) % 2) return;
+  const id = ++trailId;
+  trails.value.push({ id, x: p.x, y: p.y, rot: (t * 60 - 30) });
+  if (trails.value.length > 24) trails.value.shift();
+  setTimeout(() => {
+    trails.value = trails.value.filter((n) => n.id !== id);
+  }, 420);
+});
+/** 到达爆闪计数（keyed 重触发 CSS 动画） */
+const burstTick = ref(0);
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -129,10 +143,11 @@ async function collect() {
     panelShown.value -= 1; // 展示区数量 -1（贝壳少一枚）
     sfxCoin(); // 落地：硬币"叮"
     pulseTick.value++; // 徽标接收脉冲
-    if (panelShown.value > 0) await sleep(160); // 逐个小间隔（收紧节奏，重复开箱不拖）
+    burstTick.value++; // 徽标爆闪
+    if (panelShown.value > 0) await sleep(90); // 逐个小间隔（提速：原 160ms 拖）
   }
-  // 最后一枚飞完：稍作停留（徽标数字生长 + 叮声看完）再收尾，避免秒切页面
-  await sleep(650);
+  // 最后一枚飞完：稍作停留（徽标数字生长 + 叮声看完）再收尾（提速：原 650ms）
+  await sleep(420);
   endCollect();
   emit("done");
 }
@@ -177,7 +192,17 @@ const cap = computed(() => {
       <span class="b-num" :key="'num-' + pulseTick">{{ shown }}</span>
       <!-- 每枚贝壳入账：从徽标位置"长出"新数字（放大弹出 + 上飘淡出，真实感） -->
       <span v-if="pulseTick" :key="'pop-' + pulseTick" class="b-pop" aria-hidden="true">{{ shown }}</span>
+      <!-- 每枚到达：金色爆闪环（keyed 重触发） -->
+      <span v-if="burstTick" :key="'burst-' + burstTick" class="b-burst" aria-hidden="true"></span>
     </div>
+    <!-- 彗尾粒子：飞行轨迹上渐隐的金色小点 -->
+    <span
+      v-for="n in trails"
+      :key="'t' + n.id"
+      class="fly-trail"
+      :style="{ left: n.x + 'px', top: n.y + 'px', '--rot': n.rot + 'deg' }"
+      aria-hidden="true"
+    ></span>
 
     <!-- 跳过动画（整个敲击阶段都可见，敲到一半也能跳）：奖励照常入账 -->
     <button v-if="phase === 'closed'" class="skip-btn" @click="skip">
@@ -348,6 +373,36 @@ const cap = computed(() => {
   pointer-events: none;
   white-space: nowrap;
   animation: b-pop 0.7s cubic-bezier(0.22, 1.4, 0.36, 1) forwards;
+}
+/* 每枚贝壳到达徽标：金色爆闪环（放大 + 淡出一圈） */
+.b-burst {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  border: 3px solid var(--star-gold);
+  animation: b-burst 0.45s ease-out both;
+  pointer-events: none;
+}
+@keyframes b-burst {
+  0% { transform: scale(0.6); opacity: 0.95; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+/* 飞行彗尾：沿轨迹渐隐缩小的金色小点（JS 每 2 帧撒一颗，420ms 生命周期） */
+.fly-trail {
+  position: fixed;
+  z-index: 44;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--star-gold) 0%, rgba(255, 193, 7, 0.25) 70%, transparent 100%);
+  transform: rotate(var(--rot, 0deg)) translateX(9px) scale(0.7);
+  animation: fly-trail-fade 0.42s ease-out both;
+  pointer-events: none;
+}
+@keyframes fly-trail-fade {
+  0% { opacity: 0.85; transform: rotate(var(--rot, 0deg)) translateX(9px) scale(0.7); }
+  100% { opacity: 0; transform: rotate(var(--rot, 0deg)) translateX(-4px) scale(0.15); }
 }
 @keyframes b-pop {
   0% {

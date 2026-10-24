@@ -7,6 +7,7 @@ import { useAudioTransport, fmtDuration } from "../../composables/useAudioTransp
 import { useLrc, activeLrcIndex, mapLrcToLyrics } from "../../composables/useLrc";
 import { Clapperboard, Headphones, Music, Pause, Play, Repeat, Sparkles, SkipBack, SkipForward } from "@lucide/vue";
 import SongStage from "./SongStage.vue";
+import SafeBottom from "../layout/SafeBottom.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import type { Lesson } from "../../data/lessons";
 
@@ -25,6 +26,9 @@ const emit = defineEmits<{ back: []; "song-done": [] }>();
 const audioEl = ref<HTMLAudioElement | null>(null);
 const audioMissing = ref(false);
 const videoEl = ref<HTMLVideoElement | null>(null);
+/** 视频是否已开始播放：开始前盖海报层（Chromium 在 preload 出数据后直接绘
+ *  第一帧而不加载 poster——这部 mp4 首帧是黑的，看着像坏了） */
+const videoStarted = ref(false);
 
 /** 多段音视频轨道：顶层 audio/video/lyrics 是第一轨，tracks 追加后续轨。
  *  配了词群的课（l11）按当前群过滤：Colors 只放颜色歌、Animals 只放 Brown Bear。 */
@@ -250,17 +254,28 @@ function onVideoError() {
 
     <!-- ===== 视频模式（课时放了 song.mp4 时才有） ===== -->
     <div v-if="mode === 'video' && hasVideo" class="video-zone view-body">
-      <video
-        ref="videoEl"
-        :src="curTrack.video || undefined"
-        :poster="posterOf(curTrack.video ?? null)"
-        controls
-        playsinline
-        preload="metadata"
-        class="video"
-        @error="onVideoError"
-        @ended="onVideoEnded"
-      ></video>
+      <div class="video-box">
+        <video
+          ref="videoEl"
+          :src="curTrack.video || undefined"
+          :poster="posterOf(curTrack.video ?? null)"
+          controls
+          playsinline
+          preload="metadata"
+          class="video"
+          @play="videoStarted = true"
+          @error="onVideoError"
+          @ended="onVideoEnded"
+        ></video>
+        <!-- 海报覆盖层：只盖"还没开始播"的阶段；pointer-events:none 让点击穿透到
+             原生控件（点视频体 = 开始播放），开始后整层撤掉 -->
+        <img
+          v-if="!videoStarted && curTrack.video"
+          class="video-cover"
+          :src="posterOf(curTrack.video ?? null)"
+          alt=""
+        />
+      </div>
     </div>
 
     <!-- ===== 动画舞台：随节拍弹跳的角色 ===== -->
@@ -366,13 +381,17 @@ function onVideoError() {
     </div>
     <p v-if="mode !== 'audio'" class="under-tip">跟着唱完一遍，就能领小星星啦</p>
 
-    <!-- 收尾：完整听过一遍才可领星（循环模式下这是本页唯一出口） -->
-    <BaseButton v-if="canFinish" class="finish" @click="finishSong">
-      <Sparkles class="k-ico" />领到小星星
-    </BaseButton>
-    <BaseButton v-else class="finish" disabled>
-      <Headphones class="k-ico" />听完一遍就能领星星
-    </BaseButton>
+    <!-- 收尾：完整听过一遍才可领星（循环模式下这是本页唯一出口）。
+         SafeBottom：按钮不再直贴视口底（全面屏 Home 条会压住它） -->
+    <SafeBottom class="finish-zone" :gap="14">
+      <BaseButton v-if="canFinish" class="finish" @click="finishSong">
+        <Sparkles class="k-ico" />领到小星星
+      </BaseButton>
+      <!-- 未听完：灰色次级态（曾用 disabled 的绿色主键——一大块死灰板压在歌词上，像坏了） -->
+      <BaseButton v-else class="finish" variant="gray" disabled>
+        <Headphones class="k-ico" />听完一遍就能领星星
+      </BaseButton>
+    </SafeBottom>
   </div>
 </template>
 
@@ -413,6 +432,21 @@ function onVideoError() {
 .video-zone {
   width: 100%;
   display: flex;
+}
+.video-box {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.video-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  pointer-events: none;
 }
 .video {
   width: 100%;
@@ -552,6 +586,8 @@ function onVideoError() {
   overscroll-behavior: contain;
   text-align: center;
   padding: var(--gap-m) var(--pad-x);
+  /* 底部留白：最后一行歌词能滚出按钮区，不被盖住 */
+  padding-bottom: clamp(24px, 6vh, 56px);
   mask-image: linear-gradient(180deg, transparent, var(--black) 15%, var(--black) 85%, transparent);
   -webkit-mask-image: linear-gradient(180deg, transparent, var(--black) 15%, var(--black) 85%, transparent);
 }
@@ -622,6 +658,12 @@ function onVideoError() {
   color: var(--ink);
 }
 
+.finish-zone {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex: none;
+}
 .finish {
   flex: none;
   width: 100%;

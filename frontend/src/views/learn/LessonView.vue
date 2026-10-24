@@ -197,6 +197,13 @@ function practiceGroup() {
   const act = activities.value.find((a) => a.key === lastActKey.value);
   if (act) open(act);
 }
+/** 自由结算：宝箱收完（或关掉）稍作停留后自动回本课菜单——
+ *  孩子不用再找"再选一个玩法"按钮；菜单就是自由模式，想玩什么自己挑 */
+function onChestCollected() {
+  setTimeout(() => {
+    if (stage.value === "result") toMenu();
+  }, 600);
+}
 /** 闯关结算页领宝箱：标记该课宝箱已领取（与地图宝箱关同一口径） */
 function claimChest() {
   if (lessonId.value) progress.markChest(lessonId.value);
@@ -395,6 +402,7 @@ const playStage = computed(() => {
       @go-next-lesson="router.push('/course/' + (nextLesson?.id ?? ''))"
       @open-chest="claimChest"
       @go-group-practice="practiceGroup"
+      @chest-collected="onChestCollected"
     />
 
   </div>

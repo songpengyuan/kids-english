@@ -45,6 +45,8 @@ const emit = defineEmits<{
   openChest: [];
   /** 自由结算：切换词组重练同一玩法 */
   goGroupPractice: [];
+  /** 自由结算：宝箱收完（或关闭）→ 父组件自动回本课菜单（孩子不用再点"再选一个玩法"） */
+  chestCollected: [];
 }>();
 
 /**
@@ -130,8 +132,8 @@ function nav(fn: () => void) {
       <div v-if="streakJustHit" class="streak-banner anim-pop">
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
-      <!-- 收取完成（或点关闭）就卸载，避免卡在"已收进宝藏罐"那一屏 -->
-      <ChestReward v-if="!chestDone" @done="chestDone = true" />
+      <!-- 收取完成（或点关闭）就卸载 + 通知父组件自动回菜单（曾停在原地等孩子再点一次） -->
+      <ChestReward v-if="!chestDone" @done="chestDone = true; emit('chestCollected')" />
       <div class="btn-row">
         <BaseButton variant="green" @click="emit('toMenu')">再选一个玩法</BaseButton>
         <BaseButton v-if="nextGroup" variant="gray" @click="emit('goGroupPractice')">

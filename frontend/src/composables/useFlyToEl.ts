@@ -16,9 +16,13 @@ export interface FlyPoint {
   y: number;
 }
 
-const FLY_MS = 560;
+const FLY_MS = 380;
 
-export function useFlyToEl(flyEl: Ref<HTMLElement | null>) {
+export function useFlyToEl(
+  flyEl: Ref<HTMLElement | null>,
+  /** 每帧回调（当前抛物线位置）：调用方用来拉拖尾粒子等视效 */
+  onStep?: (p: FlyPoint, t: number) => void
+) {
   return function flyOne(from: FlyPoint, to: FlyPoint, apex: number): Promise<void> {
     return new Promise((resolve) => {
       const el = flyEl.value;
@@ -33,6 +37,7 @@ export function useFlyToEl(flyEl: Ref<HTMLElement | null>) {
         const p = parabola(from, to, apex, t);
         target.style.left = p.x + "px";
         target.style.top = p.y + "px";
+        onStep?.(p, t);
         if (t < 1) requestAnimationFrame(step);
         else {
           target.style.opacity = "0";
