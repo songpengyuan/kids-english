@@ -1,0 +1,1153 @@
+[
+  {
+    "id": "l5",
+    "title": "I Am the Music Man",
+    "titleZh": "我是一个音乐人",
+    "emoji": "🎺",
+    "tone": "orange",
+    "date": "2026-09-16",
+    "song": {
+      "audio": "/lessons/l5/song.mp3",
+      "video": "/lessons/l5/song.mp4",
+      "scene": "stage",
+      "lyrics": [
+        "I am the Music Man,",
+        "I come from far away,",
+        "And I can play!",
+        "What can you play?",
+        "I play the piano!",
+        "Pia, pia, piano, piano, piano,",
+        "Pia, pia, piano, pia, piano!",
+        "",
+        "I am the Music Man,",
+        "I come from far away,",
+        "And I can play!",
+        "What can you play?",
+        "I play the trombone!",
+        "Trom, trom, trombone, trombone, trombone,",
+        "Trom, trom, trombone, trom, trombone!",
+        "",
+        "I am the Music Man,",
+        "I come from far away,",
+        "And I can play!",
+        "What can you play?",
+        "I play the violin!",
+        "Vio, vio, violin, violin, violin,",
+        "Vio, vio, violin, vio, violin!"
+      ]
+    },
+    "words": [
+      {
+        "id": "violin",
+        "en": "violin",
+        "zh": "小提琴",
+        "emoji": "🎻",
+        "image": "/lessons/l5/words/violin.webp"
+      },
+      {
+        "id": "piano",
+        "en": "piano",
+        "zh": "钢琴",
+        "emoji": "🎹",
+        "image": "/lessons/l5/words/piano.webp"
+      },
+      {
+        "id": "musicman",
+        "en": "Music Man",
+        "zh": "音乐人",
+        "emoji": "🎹",
+        "image": "/lessons/l5/words/musicman.webp"
+      },
+      {
+        "id": "trombone",
+        "en": "trombone",
+        "zh": "长号",
+        "emoji": "🎺",
+        "image": "/lessons/l5/words/trombone.webp"
+      },
+      {
+        "id": "mantis",
+        "en": "mantis",
+        "zh": "螳螂",
+        "emoji": "🦗",
+        "image": "/lessons/l5/words/mantis.webp"
+      },
+      {
+        "id": "squirrel",
+        "en": "squirrel",
+        "zh": "松鼠",
+        "emoji": "🐿️",
+        "image": "/lessons/l5/words/squirrel.webp"
+      },
+      {
+        "id": "frog",
+        "en": "frog",
+        "zh": "青蛙",
+        "emoji": "🐸",
+        "image": "/lessons/l5/words/frog.webp"
+      }
+    ],
+    "phrases": [
+      {
+        "en": "What can you play?",
+        "zh": "你会演奏什么呀？"
+      },
+      {
+        "en": "I can play the piano.",
+        "zh": "我会弹钢琴。"
+      },
+      {
+        "en": "I can play the violin.",
+        "zh": "我会拉小提琴。"
+      },
+      {
+        "en": "I can play the trombone.",
+        "zh": "我会吹长号。"
+      }
+    ]
+  },
+  {
+    "id": "l4",
+    "title": "A Sailor Went to Sea",
+    "titleZh": "水手出海去",
+    "emoji": "🌊",
+    "tone": "blue",
+    "date": "2026-09-18",
+    "song": {
+      "audio": "/lessons/l4/song.mp3",
+      "video": "/lessons/l4/song.mp4",
+      "scene": "sea",
+      "lyrics": [
+        "A sailor went to sea, sea, sea",
+        "To see what he could see, see, see",
+        "But all that he could see, see, see",
+        "Was the bottom of the deep blue sea, sea, sea",
+        "",
+        "A sailor went to sea, sea, sea",
+        "To see what he could see, see, see",
+        "But all that he could see, see, see",
+        "Was the bottom of the deep blue sea, sea, sea",
+        "",
+        "A sailor went to sea, sea, sea",
+        "To see what he could see, see, see",
+        "But all that he could see, see, see",
+        "Was the bottom of the deep blue sea, sea, sea",
+        "A sailor went to sea, sea, sea",
+        "To see what he could see, see, see",
+        "But all that he could see, see, see",
+        "Was the bottom of the deep blue sea, sea, sea",
+        "",
+        "A sailor went to sea, sea, sea",
+        "To see what he could see, see, see",
+        "But all that he could see, see, see",
+        "Was the bottom of the deep blue sea, sea, sea",
+        "",
+        "A sailor went to sea, sea, sea",
+        "To see what he could see, see, see",
+        "But all that he could see, see, see",
+        "Was the bottom of the deep blue sea, sea, sea",
+        "A sailor went to sea, sea, sea",
+        "To see what he could see, see, see",
+        "But all that he could see, see, see",
+        "Was the bottom of the deep blue sea, sea, sea",
+        "",
+        "A sailor went to sea, sea, sea",
+        "To see what he could see, see, see",
+        "But all that he could see, see, see",
+        "Was the bottom of the deep blue sea, sea, sea",
+        "",
+        "A sailor went to sea, sea, sea",
+        "To see what he could see, see, see",
+        "But all that he could see, see, see",
+        "Was the bottom of the deep blue sea, sea, sea"
+      ]
+    },
+    "words": [
+      {
+        "id": "seahorse",
+        "en": "seahorse",
+        "zh": "海马",
+        "emoji": "🐴",
+        "image": "/lessons/l4/words/seahorse.webp"
+      },
+      {
+        "id": "jellyfish",
+        "en": "jellyfish",
+        "zh": "水母",
+        "emoji": "🪼",
+        "image": "/lessons/l4/words/jellyfish.webp"
+      },
+      {
+        "id": "turtle",
+        "en": "turtle",
+        "zh": "海龟",
+        "emoji": "🐢",
+        "image": "/lessons/l4/words/turtle.webp"
+      },
+      {
+        "id": "octopus",
+        "en": "octopus",
+        "zh": "章鱼",
+        "emoji": "🐙",
+        "image": "/lessons/l4/words/octopus.webp"
+      },
+      {
+        "id": "shark",
+        "en": "shark",
+        "zh": "鲨鱼",
+        "emoji": "🦈",
+        "image": "/lessons/l4/words/shark.webp"
+      },
+      {
+        "id": "whale",
+        "en": "whale",
+        "zh": "鲸鱼",
+        "emoji": "🐳",
+        "image": "/lessons/l4/words/whale.webp"
+      },
+      {
+        "id": "sailor",
+        "en": "sailor",
+        "zh": "水手",
+        "emoji": "⛵",
+        "image": "/lessons/l4/words/sailor.webp"
+      },
+      {
+        "id": "sea",
+        "en": "sea",
+        "zh": "大海",
+        "emoji": "🌊",
+        "image": "/lessons/l4/words/sea.webp"
+      },
+      {
+        "id": "blue",
+        "en": "blue",
+        "zh": "蓝色",
+        "emoji": "🔵",
+        "image": "/lessons/l4/words/blue.webp"
+      }
+    ],
+    "phrases": [
+      {
+        "en": "What do you see?",
+        "zh": "你看见什么啦？"
+      },
+      {
+        "en": "I see a ...",
+        "zh": "我看见了一只……"
+      }
+    ]
+  },
+  {
+    "id": "l9",
+    "title": "One Little Finger",
+    "titleZh": "一根小手指",
+    "emoji": "👆",
+    "tone": "teal",
+    "date": "2026-10-10",
+    "song": {
+      "audio": "/lessons/l9/song.mp3",
+      "video": "/lessons/l9/song.mp4",
+      "scene": "stage",
+      "lyrics": [
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your head, head!",
+        "",
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your nose, nose!",
+        "",
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your chin, chin!",
+        "",
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your arm, arm!",
+        "",
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your leg, leg!",
+        "",
+        "One little finger, one little finger, one little finger",
+        "Tap tap tap!",
+        "Point your finger up, point your finger down",
+        "Put it on your foot, foot!",
+        "",
+        "Put it on your leg, leg!",
+        "Put it on your arm, arm!",
+        "Put it on your chin, chin!",
+        "Put it on your nose, nose!",
+        "Put it on your head, head!",
+        "",
+        "Now let's wave goodbye!",
+        "Goodbye!"
+      ]
+    },
+    "words": [
+      {
+        "id": "nose",
+        "en": "nose",
+        "zh": "鼻子",
+        "emoji": "👃",
+        "image": "/lessons/l9/words/nose.webp"
+      },
+      {
+        "id": "arm",
+        "en": "arm",
+        "zh": "手臂",
+        "emoji": "💪",
+        "image": "/lessons/l9/words/arm.webp"
+      },
+      {
+        "id": "leg",
+        "en": "leg",
+        "zh": "腿",
+        "emoji": "🦵",
+        "image": "/lessons/l9/words/leg.webp"
+      },
+      {
+        "id": "foot",
+        "en": "foot",
+        "zh": "脚",
+        "emoji": "🦶",
+        "image": "/lessons/l9/words/foot.webp"
+      },
+      {
+        "id": "chin",
+        "en": "chin",
+        "zh": "下巴",
+        "emoji": "😊",
+        "image": "/lessons/l9/words/chin.webp"
+      },
+      {
+        "id": "finger",
+        "en": "finger",
+        "zh": "手指",
+        "emoji": "👆",
+        "image": "/lessons/l9/words/finger.webp"
+      },
+      {
+        "id": "head",
+        "en": "head",
+        "zh": "头",
+        "emoji": "🧑",
+        "image": "/lessons/l9/words/head.webp"
+      }
+    ],
+    "phrases": [
+      {
+        "en": "Where is your finger?",
+        "zh": "你的手指在哪里？"
+      },
+      {
+        "en": "This is my head.",
+        "zh": "这是我的头。"
+      },
+      {
+        "en": "Put it on your nose.",
+        "zh": "把它放在鼻子上。"
+      },
+      {
+        "en": "Point your finger up.",
+        "zh": "手指向上指。"
+      },
+      {
+        "en": "Wave goodbye!",
+        "zh": "挥挥手说再见！"
+      }
+    ]
+  },
+  {
+    "id": "l10",
+    "title": "Walking In The Jungle",
+    "titleZh": "丛林里散步",
+    "emoji": "🐒",
+    "tone": "green",
+    "date": "2026-10-14",
+    "song": {
+      "audio": "/lessons/l10/song.mp3",
+      "video": "/lessons/l10/song.mp4",
+      "scene": "stage",
+      "lyrics": [
+        "Let's take a walk in the jungle.",
+        "Walking in the jungle. Walking in the jungle.",
+        "We're not afraid. We're not afraid.",
+        "Walking in the jungle. Walking in the jungle.",
+        "We're not afraid. We're not afraid.",
+        "One step. Two steps. Three steps forward.",
+        "One step. Two steps. Three steps back.",
+        "Stop. Listen. What's that?",
+        "It's a frog! We're not afraid!",
+        "",
+        "Let's stomp.",
+        "Stomping in the jungle. Stomping in the jungle.",
+        "We're not afraid. We're not afraid.",
+        "Stomping in the jungle. Stomping in the jungle.",
+        "We're not afraid. We're not afraid.",
+        "One step, two steps, three steps forward.",
+        "One step, two steps, three steps back.",
+        "Stop! Listen! What's that?",
+        "It's a monkey!",
+        "We're not afraid!",
+        "",
+        "Let's jump!",
+        "Jumping in the jungle. Jumping in the jungle.",
+        "We're not afraid. We're not afraid.",
+        "Jumping in the jungle. Jumping in the jungle.",
+        "We're not afraid. We're not afraid.",
+        "One step, two steps, three steps forward.",
+        "One step, two steps, three steps back.",
+        "Stop! Listen! What's that?",
+        "It's a toucan!",
+        "We're not afraid!",
+        "",
+        "Let's skip!",
+        "Skipping in the jungle. Skipping in the jungle.",
+        "We're not afraid. We're not afraid.",
+        "Skipping in the jungle. Skipping in the jungle.",
+        "We're not afraid. We're not afraid.",
+        "One step, two steps, three steps forward.",
+        "One step, two steps, three steps back.",
+        "Stop! Listen! What's that?",
+        "It's a tiger!",
+        "Run!"
+      ]
+    },
+    "words": [
+      {
+        "id": "frog",
+        "en": "frog",
+        "zh": "青蛙",
+        "emoji": "🐸",
+        "image": "/lessons/l10/words/frog.webp"
+      },
+      {
+        "id": "monkey",
+        "en": "monkey",
+        "zh": "猴子",
+        "emoji": "🐒",
+        "image": "/lessons/l10/words/monkey.webp"
+      },
+      {
+        "id": "tiger",
+        "en": "tiger",
+        "zh": "老虎",
+        "emoji": "🐯",
+        "image": "/lessons/l10/words/tiger.webp"
+      },
+      {
+        "id": "toucan",
+        "en": "toucan",
+        "zh": "巨嘴鸟",
+        "emoji": "🦜",
+        "image": "/lessons/l10/words/toucan.webp"
+      },
+      {
+        "id": "afraid",
+        "en": "afraid",
+        "zh": "害怕的",
+        "emoji": "😨",
+        "image": "/lessons/l10/words/afraid.webp"
+      },
+      {
+        "id": "jungle",
+        "en": "jungle",
+        "zh": "丛林",
+        "emoji": "🌴",
+        "image": "/lessons/l10/words/jungle.webp"
+      },
+      {
+        "id": "listen",
+        "en": "listen",
+        "zh": "听",
+        "emoji": "👂",
+        "image": "/lessons/l10/words/listen.webp"
+      }
+    ],
+    "phrases": [
+      {
+        "en": "What's that?",
+        "zh": "那是什么？"
+      },
+      {
+        "en": "It's a frog.",
+        "zh": "那是一只青蛙。"
+      },
+      {
+        "en": "It's a monkey.",
+        "zh": "那是一只猴子。"
+      },
+      {
+        "en": "It's a tiger.",
+        "zh": "那是一只老虎。"
+      },
+      {
+        "en": "It's a toucan.",
+        "zh": "那是一只巨嘴鸟。"
+      }
+    ]
+  },
+  {
+    "id": "l11",
+    "title": "Brown Bear, Brown Bear",
+    "titleZh": "棕熊你看到了什么",
+    "emoji": "🐻",
+    "tone": "orange",
+    "date": "2026-10-21",
+    "song": {
+      "title": "Brown Bear Song",
+      "audio": "/lessons/l11/brown-bear.mp3",
+      "video": "/lessons/l11/brown-bear.mp4",
+      "scene": "stage",
+      "group": "animals",
+      "lyrics": [
+        "Brown bear, brown bear, what do you see?",
+        "I see a red bird looking at me.",
+        "Red bird, red bird, what do you see?",
+        "I see a yellow duck looking at me.",
+        "Yellow duck, yellow duck, what do you see?",
+        "I see a blue horse looking at me.",
+        "Blue horse, blue horse, what do you see?",
+        "I see a green frog looking at me.",
+        "Green frog, green frog, what do you see?",
+        "I see a purple cat looking at me.",
+        "Purple cat, purple cat, what do you see?",
+        "I see a white dog looking at me.",
+        "White dog, white dog, what do you see?",
+        "I see a black sheep looking at me.",
+        "Black sheep, black sheep, what do you see?",
+        "I see a goldfish looking at me.",
+        "Goldfish, goldfish, what do you see?",
+        "I see a teacher looking at me.",
+        "Teacher, teacher, what do you see?",
+        "I see children looking at me."
+      ],
+      "tracks": [
+        {
+          "title": "Colors Song",
+          "titleZh": "颜色歌",
+          "audio": "/lessons/l11/song.mp3",
+          "video": "/lessons/l11/song.mp4",
+          "lyrics": [
+            "I see colors everywhere.",
+            "I see colors everywhere.",
+            "I see colors everywhere.",
+            "What colors do you see?",
+            "Red and blue!",
+            "Red, red, hello red!",
+            "Blue, blue, hello blue!",
+            "Red, red, goodbye red!",
+            "Blue, blue, see you later, blue!",
+            "Yellow and green!",
+            "Yellow, yellow, hello yellow!",
+            "Green, green, hello green!",
+            "Yellow, yellow, goodbye yellow!",
+            "Green, green, see you later, green!",
+            "Orange and pink!",
+            "Orange, orange, hello orange!",
+            "Pink, pink, hello pink!",
+            "Orange, orange, goodbye orange!",
+            "Pink, pink, see you later, pink!",
+            "Purple and brown!",
+            "Purple, purple, hello purple!",
+            "Brown, brown, hello brown!",
+            "Purple, purple, goodbye purple!",
+            "Brown, brown, see you later, brown!",
+            "Black and white!",
+            "Black, black, hello black!",
+            "White, white, hello white!",
+            "Black, black, goodbye black!",
+            "White, white, see you later, white!",
+            "What colors do you see?",
+            "I see colors everywhere.",
+            "I see colors everywhere.",
+            "I see colors everywhere.",
+            "What colors do you see?"
+          ],
+          "group": "colors"
+        }
+      ]
+    },
+    "words": [
+      {
+        "id": "brown",
+        "en": "brown",
+        "zh": "棕色",
+        "emoji": "🟤",
+        "image": "/lessons/l11/words/brown.svg",
+        "group": "colors",
+        "color": "#8B4513"
+      },
+      {
+        "id": "red",
+        "en": "red",
+        "zh": "红色",
+        "emoji": "🔴",
+        "image": "/lessons/l11/words/red.svg",
+        "group": "colors",
+        "color": "#E53935"
+      },
+      {
+        "id": "yellow",
+        "en": "yellow",
+        "zh": "黄色",
+        "emoji": "🟡",
+        "image": "/lessons/l11/words/yellow.svg",
+        "group": "colors",
+        "color": "#FDD835"
+      },
+      {
+        "id": "blue",
+        "en": "blue",
+        "zh": "蓝色",
+        "emoji": "🔵",
+        "image": "/lessons/l11/words/blue.svg",
+        "group": "colors",
+        "color": "#1E88E5"
+      },
+      {
+        "id": "green",
+        "en": "green",
+        "zh": "绿色",
+        "emoji": "🟢",
+        "image": "/lessons/l11/words/green.svg",
+        "group": "colors",
+        "color": "#43A047"
+      },
+      {
+        "id": "orange",
+        "en": "orange",
+        "zh": "橙色",
+        "emoji": "🍊",
+        "image": "/lessons/l11/words/orange.svg",
+        "group": "colors",
+        "color": "#FB8C00"
+      },
+      {
+        "id": "pink",
+        "en": "pink",
+        "zh": "粉色",
+        "emoji": "🌸",
+        "image": "/lessons/l11/words/pink.svg",
+        "group": "colors",
+        "color": "#EC407A"
+      },
+      {
+        "id": "purple",
+        "en": "purple",
+        "zh": "紫色",
+        "emoji": "🟣",
+        "image": "/lessons/l11/words/purple.svg",
+        "group": "colors",
+        "color": "#8E24AA"
+      },
+      {
+        "id": "white",
+        "en": "white",
+        "zh": "白色",
+        "emoji": "⚪",
+        "image": "/lessons/l11/words/white.svg",
+        "group": "colors",
+        "color": "#FFFFFF"
+      },
+      {
+        "id": "black",
+        "en": "black",
+        "zh": "黑色",
+        "emoji": "⚫",
+        "image": "/lessons/l11/words/black.svg",
+        "group": "colors",
+        "color": "#212121"
+      },
+      {
+        "id": "bear",
+        "en": "bear",
+        "zh": "棕熊",
+        "emoji": "🐻",
+        "image": "/lessons/l11/words/bear.webp",
+        "group": "animals"
+      },
+      {
+        "id": "bird",
+        "en": "bird",
+        "zh": "小鸟",
+        "emoji": "🐦",
+        "image": "/lessons/l11/words/bird.webp",
+        "group": "animals"
+      },
+      {
+        "id": "duck",
+        "en": "duck",
+        "zh": "鸭子",
+        "emoji": "🦆",
+        "image": "/lessons/l11/words/duck.webp",
+        "group": "animals"
+      },
+      {
+        "id": "horse",
+        "en": "horse",
+        "zh": "小马",
+        "emoji": "🐎",
+        "image": "/lessons/l11/words/horse.webp",
+        "group": "animals"
+      },
+      {
+        "id": "frog",
+        "en": "frog",
+        "zh": "青蛙",
+        "emoji": "🐸",
+        "image": "/lessons/l11/words/frog.webp",
+        "group": "animals"
+      },
+      {
+        "id": "cat",
+        "en": "cat",
+        "zh": "小猫",
+        "emoji": "🐱",
+        "image": "/lessons/l11/words/cat.webp",
+        "group": "animals"
+      },
+      {
+        "id": "dog",
+        "en": "dog",
+        "zh": "小狗",
+        "emoji": "🐶",
+        "image": "/lessons/l11/words/dog.webp",
+        "group": "animals"
+      },
+      {
+        "id": "sheep",
+        "en": "sheep",
+        "zh": "绵羊",
+        "emoji": "🐑",
+        "image": "/lessons/l11/words/sheep.webp",
+        "group": "animals"
+      },
+      {
+        "id": "goldfish",
+        "en": "goldfish",
+        "zh": "金鱼",
+        "emoji": "🐟",
+        "image": "/lessons/l11/words/goldfish.webp",
+        "group": "animals"
+      }
+    ],
+    "wordGroups": [
+      {
+        "key": "colors",
+        "name": "Colors"
+      },
+      {
+        "key": "animals",
+        "name": "Animals"
+      }
+    ],
+    "phrases": [
+      {
+        "en": "What color is it?",
+        "zh": "这是什么颜色？"
+      },
+      {
+        "en": "It's brown.",
+        "zh": "是棕色。"
+      },
+      {
+        "en": "What animal is it?",
+        "zh": "这是什么动物？"
+      },
+      {
+        "en": "It's a bear.",
+        "zh": "是一只棕熊。"
+      }
+    ],
+    "colorPairs": [
+      {
+        "color": "red",
+        "wordId": "bird"
+      },
+      {
+        "color": "yellow",
+        "wordId": "duck"
+      },
+      {
+        "color": "blue",
+        "wordId": "horse"
+      },
+      {
+        "color": "green",
+        "wordId": "frog"
+      },
+      {
+        "color": "purple",
+        "wordId": "cat"
+      },
+      {
+        "color": "white",
+        "wordId": "dog"
+      },
+      {
+        "color": "black",
+        "wordId": "sheep"
+      }
+    ]
+  },
+  {
+    "id": "l6",
+    "title": "A Rainbow of Colors",
+    "titleZh": "彩虹颜色歌",
+    "emoji": "🎨",
+    "tone": "pink",
+    "date": "2026-09-24",
+    "song": {
+      "audio": "/lessons/l6/song.mp3",
+      "video": null,
+      "scene": "rainbow",
+      "lyrics": [
+        "Red, red, a red red apple",
+        "Yellow, yellow, the yellow sun",
+        "Blue, blue, the blue blue sky",
+        "I see a rainbow in the sky",
+        "",
+        "Green, green, the green green tree",
+        "Orange, orange, an orange cat",
+        "Purple, purple, a purple grape",
+        "I see a rainbow in the sky",
+        "",
+        "Pink, pink, a pink pink flower",
+        "White, white, a white white cloud",
+        "Black, black, a black black hat",
+        "I see a rainbow in the sky"
+      ]
+    },
+    "words": [
+      {
+        "id": "red",
+        "en": "red",
+        "zh": "红色",
+        "emoji": "🍎",
+        "image": "/lessons/l6/words/red.svg"
+      },
+      {
+        "id": "yellow",
+        "en": "yellow",
+        "zh": "黄色",
+        "emoji": "🍋",
+        "image": "/lessons/l6/words/yellow.svg"
+      },
+      {
+        "id": "blue",
+        "en": "blue",
+        "zh": "蓝色",
+        "emoji": "🫐",
+        "image": "/lessons/l6/words/blue.svg"
+      },
+      {
+        "id": "green",
+        "en": "green",
+        "zh": "绿色",
+        "emoji": "🥝",
+        "image": "/lessons/l6/words/green.svg"
+      },
+      {
+        "id": "orange",
+        "en": "orange",
+        "zh": "橙色",
+        "emoji": "🍊",
+        "image": "/lessons/l6/words/orange.svg"
+      },
+      {
+        "id": "purple",
+        "en": "purple",
+        "zh": "紫色",
+        "emoji": "🍇",
+        "image": "/lessons/l6/words/purple.svg"
+      },
+      {
+        "id": "pink",
+        "en": "pink",
+        "zh": "粉色",
+        "emoji": "🌸",
+        "image": "/lessons/l6/words/pink.svg"
+      },
+      {
+        "id": "white",
+        "en": "white",
+        "zh": "白色",
+        "emoji": "🥛",
+        "image": "/lessons/l6/words/white.svg"
+      },
+      {
+        "id": "black",
+        "en": "black",
+        "zh": "黑色",
+        "emoji": "🐧",
+        "image": "/lessons/l6/words/black.svg"
+      }
+    ],
+    "phrases": [
+      {
+        "en": "What color is it?",
+        "zh": "它是什么颜色呀？"
+      },
+      {
+        "en": "It's red.",
+        "zh": "它是红色的。"
+      },
+      {
+        "en": "I like blue.",
+        "zh": "我喜欢蓝色。"
+      },
+      {
+        "en": "Look at my rainbow!",
+        "zh": "看我的彩虹！"
+      }
+    ]
+  },
+  {
+    "id": "l7",
+    "title": "Count With Me",
+    "titleZh": "跟我数数 0-10",
+    "emoji": "🔢",
+    "tone": "green",
+    "date": "2026-09-24",
+    "song": {
+      "audio": "/lessons/l7/song.mp3",
+      "video": null,
+      "scene": "numbers",
+      "lyrics": [
+        "Zero, zero, zero!",
+        "One, two, three",
+        "Four, five, six",
+        "Seven, eight, nine",
+        "Nine, and ten",
+        "",
+        "Let's count again",
+        "One, two, three",
+        "Four, five, six",
+        "Seven, eight, nine",
+        "Nine, and ten",
+        "",
+        "Ten, nine, eight",
+        "Seven, six, five",
+        "Four, three, two",
+        "One, and zero!",
+        "We counted to ten"
+      ]
+    },
+    "words": [
+      {
+        "id": "zero",
+        "en": "zero",
+        "zh": "零",
+        "emoji": "0️⃣",
+        "image": "/lessons/l7/words/zero.svg"
+      },
+      {
+        "id": "one",
+        "en": "one",
+        "zh": "一",
+        "emoji": "1️⃣",
+        "image": "/lessons/l7/words/one.svg"
+      },
+      {
+        "id": "two",
+        "en": "two",
+        "zh": "二",
+        "emoji": "2️⃣",
+        "image": "/lessons/l7/words/two.svg"
+      },
+      {
+        "id": "three",
+        "en": "three",
+        "zh": "三",
+        "emoji": "3️⃣",
+        "image": "/lessons/l7/words/three.svg"
+      },
+      {
+        "id": "four",
+        "en": "four",
+        "zh": "四",
+        "emoji": "4️⃣",
+        "image": "/lessons/l7/words/four.svg"
+      },
+      {
+        "id": "five",
+        "en": "five",
+        "zh": "五",
+        "emoji": "5️⃣",
+        "image": "/lessons/l7/words/five.svg"
+      },
+      {
+        "id": "six",
+        "en": "six",
+        "zh": "六",
+        "emoji": "6️⃣",
+        "image": "/lessons/l7/words/six.svg"
+      },
+      {
+        "id": "seven",
+        "en": "seven",
+        "zh": "七",
+        "emoji": "7️⃣",
+        "image": "/lessons/l7/words/seven.svg"
+      },
+      {
+        "id": "eight",
+        "en": "eight",
+        "zh": "八",
+        "emoji": "8️⃣",
+        "image": "/lessons/l7/words/eight.svg"
+      },
+      {
+        "id": "nine",
+        "en": "nine",
+        "zh": "九",
+        "emoji": "9️⃣",
+        "image": "/lessons/l7/words/nine.svg"
+      },
+      {
+        "id": "ten",
+        "en": "ten",
+        "zh": "十",
+        "emoji": "🔟",
+        "image": "/lessons/l7/words/ten.svg"
+      }
+    ],
+    "phrases": [
+      {
+        "en": "How many apples?",
+        "zh": "有几个苹果呀？"
+      },
+      {
+        "en": "Let's count together.",
+        "zh": "我们一起数一数。"
+      },
+      {
+        "en": "I can count to ten.",
+        "zh": "我能数到十。"
+      },
+      {
+        "en": "Give me five!",
+        "zh": "击个掌！"
+      }
+    ]
+  },
+  {
+    "id": "l8",
+    "title": "The ABC Song",
+    "titleZh": "字母歌 ABC",
+    "emoji": "🔤",
+    "tone": "purple",
+    "date": "2026-09-24",
+    "song": {
+      "audio": "/lessons/l8/song.mp3",
+      "video": null,
+      "scene": "letters",
+      "lyrics": [
+        "A B C D E F G",
+        "H I J K L M N O P",
+        "Q R S T U V",
+        "W X Y and Z",
+        "Now I know my ABC",
+        "Next time won't you sing with me",
+        "",
+        "A B C D E F G",
+        "H I J K L M N O P",
+        "Q R S T U V",
+        "W X Y and Z",
+        "Now I know my ABC",
+        "Next time won't you sing with me"
+      ]
+    },
+    "words": [
+      {
+        "id": "apple",
+        "en": "apple",
+        "zh": "苹果（A）",
+        "emoji": "🍎",
+        "image": "/lessons/l8/words/apple.svg"
+      },
+      {
+        "id": "ball",
+        "en": "ball",
+        "zh": "皮球（B）",
+        "emoji": "⚽",
+        "image": "/lessons/l8/words/ball.svg"
+      },
+      {
+        "id": "cat",
+        "en": "cat",
+        "zh": "小猫（C）",
+        "emoji": "🐱",
+        "image": "/lessons/l8/words/cat.svg"
+      },
+      {
+        "id": "dog",
+        "en": "dog",
+        "zh": "小狗（D）",
+        "emoji": "🐶",
+        "image": "/lessons/l8/words/dog.svg"
+      },
+      {
+        "id": "egg",
+        "en": "egg",
+        "zh": "鸡蛋（E）",
+        "emoji": "🥚",
+        "image": "/lessons/l8/words/egg.svg"
+      },
+      {
+        "id": "fish",
+        "en": "fish",
+        "zh": "小鱼（F）",
+        "emoji": "🐟",
+        "image": "/lessons/l8/words/fish.svg"
+      },
+      {
+        "id": "grape",
+        "en": "grape",
+        "zh": "葡萄（G）",
+        "emoji": "🍇",
+        "image": "/lessons/l8/words/grape.svg"
+      },
+      {
+        "id": "hat",
+        "en": "hat",
+        "zh": "帽子（H）",
+        "emoji": "🎩",
+        "image": "/lessons/l8/words/hat.svg"
+      },
+      {
+        "id": "icecream",
+        "en": "ice cream",
+        "zh": "冰淇淋（I）",
+        "emoji": "🍦",
+        "image": "/lessons/l8/words/icecream.svg"
+      }
+    ],
+    "phrases": [
+      {
+        "en": "What letter is it?",
+        "zh": "这是什么字母呀？"
+      },
+      {
+        "en": "It's letter A.",
+        "zh": "这是字母 A。"
+      },
+      {
+        "en": "A is for apple.",
+        "zh": "A 是 apple（苹果）。"
+      },
+      {
+        "en": "Let's sing ABC!",
+        "zh": "我们一起唱字母歌！"
+      }
+    ]
+  }
+]

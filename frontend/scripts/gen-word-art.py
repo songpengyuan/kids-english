@@ -17,7 +17,7 @@
 用法：
   /Users/perrysong/.workbuddy/binaries/python/envs/default/bin/python scripts/gen-word-art.py
 
-自检：脚本会读 src/data/lessons.js，核对「生成的文件」与「课里引用的图片」完全一致，
+自检：脚本会读 src/data/lessons.json，核对「生成的文件」与「课里引用的图片」完全一致，
       多一个少一个都报错——避免出现图片改了名字、课里还指着旧名字的 404。
 """
 
@@ -26,7 +26,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LESSONS_JS = os.path.join(ROOT, "src", "data", "lessons.js")
+LESSONS_JSON = os.path.join(ROOT, "src", "data", "lessons.json")
 PUBLIC = os.path.join(ROOT, "public")
 
 # 与 src/styles/tokens.css 的色调板同源，保证和卡片/按钮是一套颜色
@@ -301,16 +301,15 @@ def letter_tile(word_id, index):
 
 
 def referenced_images():
-    """从 lessons.js 读出「课时id → {单词id: 图片路径}」，作为唯一数据源"""
-    src = open(LESSONS_JS, encoding="utf-8").read()
+    """从 lessons.json 读出「课时id → {单词id: 图片路径}」，作为唯一数据源"""
+    import json
+    lessons = json.load(open(LESSONS_JSON, encoding="utf-8"))
     out = {}
-    pattern = (
-        r'id:\s*"([a-z]+)",\s*en:\s*"[^"]+",\s*zh:\s*"[^"]+",\s*emoji:\s*"[^"]*",'
-        r'\s*image:\s*"(/lessons/[^"]+)"'
-    )
-    for wid, path in re.findall(pattern, src):
-        lid = path.split("/")[2]
-        out.setdefault(lid, {})[wid] = path
+    for lesson in lessons:
+        mapping = out.setdefault(lesson["id"], {})
+        for w in lesson.get("words", []):
+            if w.get("image"):
+                mapping[w["id"]] = w["image"]
     return out
 
 
@@ -345,7 +344,7 @@ def main():
             bad += 1
             print(f"  ✗ {lid}: 课里引用 {sorted(want)} / 实际生成 {sorted(got)}", file=sys.stderr)
     if bad:
-        sys.exit("图片与 lessons.js 不一致，请先对齐再生成")
+        sys.exit("图片与 lessons.json 不一致，请先对齐再生成")
     print("自检通过：三课引用的图片与生成结果一致")
     return 0
 

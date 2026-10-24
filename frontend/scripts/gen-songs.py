@@ -20,7 +20,7 @@
     public/lessons/<id>/song.mp3     童谣音频（覆盖旧文件）
     src/data/song-timings.json       每行歌词的开始时间（秒）+ bpm，供 KTV 式精确高亮
 
-歌词来源：src/data/lessons.js 的 song.lyrics —— 单一数据源，改完歌词重跑本脚本即可。
+歌词来源：src/data/lessons.json 的 song.lyrics —— 单一数据源，改完歌词重跑本脚本即可。
 脚本会逐句核对「旋律音符数 == 歌词音节数」，对不上直接报错，不会悄悄生成跑调的伴奏。
 """
 
@@ -36,7 +36,7 @@ SR = 44100
 BPM = 120
 BEAT = 60.0 / BPM  # 0.5s；两首统一速度，动画舞台好对拍
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LESSONS_JS = os.path.join(ROOT, "src", "data", "lessons.js")
+LESSONS_JSON = os.path.join(ROOT, "src", "data", "lessons.json")
 TIMINGS_JSON = os.path.join(ROOT, "src", "data", "song-timings.json")
 
 rng = np.random.default_rng(20260924)
@@ -427,15 +427,9 @@ def chatter(sc, t0, chord_spec, groups, inst, octave_shift, vel, pan=0.0):
 
 
 def read_lyrics():
-    src = open(LESSONS_JS, encoding="utf-8").read()
-    out = {}
-    marks = [(m.group(1), m.start()) for m in re.finditer(r'id:\s*"(l\d+)"', src)]
-    for idx, (lid, pos) in enumerate(marks):
-        end = marks[idx + 1][1] if idx + 1 < len(marks) else len(src)
-        m = re.search(r"lyrics:\s*\[(.*?)\]", src[pos:end], re.S)
-        if m:
-            out[lid] = [ln.replace('\\"', '"') for ln in re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1))]
-    return out
+    import json
+    lessons = json.load(open(LESSONS_JSON, encoding="utf-8"))
+    return {l["id"]: l["song"].get("lyrics", []) for l in lessons}
 
 
 def stanzas(lines):

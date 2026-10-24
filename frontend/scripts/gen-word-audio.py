@@ -13,7 +13,7 @@
     pip install edge-tts
 
 约定：
-    - 单词与口语句数据来自 src/data/lessons.js（正则解析，改数据结构后需同步此脚本）
+    - 单词与口语句数据来自 src/data/lessons.json
     - 单词输出到 public/lessons/<课时id>/audio/<单词id>.mp3
     - 口语句（亲子对话）输出到 public/lessons/<课时id>/audio/ph-<序号>.mp3
     - 文件缺失时 App 会回退浏览器 TTS
@@ -31,22 +31,20 @@ except ImportError:
     sys.exit("请先安装依赖：pip install edge-tts")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LESSONS_JS = os.path.join(ROOT, "src", "data", "lessons.js")
+LESSONS_JSON = os.path.join(ROOT, "src", "data", "lessons.json")
 
 
 def extract_items():
-    """从 lessons.js 提取 [(lesson_id, 文件名, 文本)]：单词 + 亲子口语句。"""
-    src = open(LESSONS_JS, encoding="utf-8").read()
-    blocks = re.split(r"\n  \{\n    id:", src)[1:]
+    """从 lessons.json 提取 [(lesson_id, 文件名, 文本)]：单词 + 亲子口语句。"""
+    import json
+    lessons = json.load(open(LESSONS_JSON, encoding="utf-8"))
     items = []
-    for b in blocks:
-        lid = re.match(r'\s*"(l\d)"', b).group(1)
-        for wid, en in re.findall(r'id:\s*"([^"]+)",\s*en:\s*"([^"]+)"', b):
-            items.append((lid, wid, en))
-        m = re.search(r"phrases:\s*\[(.*?)\n\s*\]", b, re.S)
-        if m:
-            for i, en in enumerate(re.findall(r'en:\s*"([^"]+)"', m.group(1)), 1):
-                items.append((lid, f"ph-{i}", en))
+    for lesson in lessons:
+        lid = lesson["id"]
+        for w in lesson.get("words", []):
+            items.append((lid, w["id"], w["en"]))
+        for i, phrase in enumerate(lesson.get("phrases", []), 1):
+            items.append((lid, f"ph-{i}", phrase["en"]))
     return items
 
 
