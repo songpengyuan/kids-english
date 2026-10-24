@@ -1,13 +1,14 @@
 <script setup lang="ts">
 /**
- * 课时页（阶段 2-3：瘦身为流程编排层）。
+ * 课时页（阶段 4：玩法舞台注册表化，加玩法不改模板）。
  *
  * 状态与逻辑已抽取：
  *  - useQuest   —— 闯关身份（模式/关卡序列/当前关/下一关）；
- *  - useLessonFlow —— 阶段机（菜单→玩法→结算）+ 结算/测量/引导。
+ *  - useLessonFlow —— 阶段机（菜单→玩法→结算）+ 结算/测量/引导；
+ *  - STAGE_BINDINGS —— 玩法 stage → 组件/props 的注册表（见文件底部）。
  * 本组件只保留：课时解析、玩法清单（依赖 phrases）、composable 装配与模板。
  */
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch, type Component } from "vue";
 import LearnStage from "../../components/activities/LearnStage.vue";
 import QuizView from "../../components/activities/QuizView.vue";
 import MemoryView from "../../components/activities/MemoryView.vue";
@@ -20,7 +21,7 @@ import HeaderBar from "../../components/layout/HeaderBar.vue";
 import LessonResult from "../../components/lesson/LessonResult.vue";
 import LessonMenu from "../../components/lesson/LessonMenu.vue";
 import LessonProgressHeader from "../../components/lesson/LessonProgressHeader.vue";
-import { activityKeys, getLesson as getLocalLesson, wordGroupsOf, type Lesson } from "../../data/lessons";
+import { activityKeys, getLesson as getLocalLesson, wordGroupsOf, type Lesson, type Word } from "../../data/lessons";
 import { useContentStore } from "../../stores/content";
 import { speak, speakZh } from "../../services/speech";
 import { useProgressStore } from "../../stores/progress";
@@ -29,7 +30,7 @@ import { track } from "../../services/telemetry";
 import { useRoute, useRouter } from "vue-router";
 import { useViewport } from "../../composables/useViewport";
 import { useQuest, type QuestAct } from "../../composables/useQuest";
-import { useLessonFlow } from "../../composables/useLessonFlow";
+import { useLessonFlow, type LessonStage } from "../../composables/useLessonFlow";
 import { BookOpen, Headphones, Layers, Link2, MessageCircle, Mic, Music, PenLine } from "@lucide/vue";
 
 const progress = useProgressStore();
@@ -207,6 +208,42 @@ watch(activeGroup, () => {
   playPct.value = 0;
   playTotal.value = 0;
 });
+
+/* ---------- 玩法舞台：stage → 组件注册表 ----------
+ * 契约：玩法统一 emit done / progress / total（结算 + 顶栏进度），
+ * song 额外 emit song-done / back；多出的监听挂在不 emit 它的组件上无害。
+ * 加第 9 个玩法 = 三步，模板永远不用动：
+ *   ① useLessonFlow 的 LessonStage 联合类型加 key；② 建组件；③ 这里注册一行。
+ * Record<PlayStage, ...> 的穷举检查保证漏注册在编译期就红，而不是菜单里静默少一项。
+ * （此前每加一个玩法模板就多一层 v-else-if，memory/order 时已叠到 7 层。） */
+type PlayStage = Exclude<LessonStage, "menu" | "result">;
+/** 词表驱动玩法：切词群 = 换一套牌，须随 activeGroup 重挂载；
+ *  order/talk 由课时数据（句子/对话）驱动，词群对它们无意义，不重挂。 */
+const GROUP_REMOUNT: ReadonlySet<string> = new Set(["learn", "memory", "quiz", "match", "speak", "song"]);
+const STAGE_BINDINGS: Record<
+  PlayStage,
+  { component: Component; props: (c: { words: Word[]; lesson: Lesson; group: string }) => Record<string, unknown> }
+> = {
+  learn: { component: LearnStage, props: (c) => ({ words: c.words, dialog: c.lesson.stageStyle === "dialog", phrases: c.lesson.phrases }) },
+  memory: { component: MemoryView, props: (c) => ({ words: c.words }) },
+  quiz: { component: QuizView, props: (c) => ({ words: c.words }) },
+  match: { component: MatchView, props: (c) => ({ words: c.words, colorPairs: c.lesson.colorPairs }) },
+  speak: { component: SpeakView, props: (c) => ({ words: c.words }) },
+  order: { component: OrderView, props: (c) => ({ lesson: c.lesson }) },
+  song: { component: SongView, props: (c) => ({ lesson: c.lesson, group: c.group }) },
+  talk: { component: TalkView, props: (c) => ({ lesson: c.lesson }) },
+};
+/** 当前玩法的渲染描述（menu/result 阶段为 null，模板据此落到菜单/结算分支） */
+const playStage = computed(() => {
+  const s = stage.value;
+  if (s === "menu" || s === "result" || !lesson.value) return null;
+  const binding = STAGE_BINDINGS[s];
+  return {
+    component: binding.component,
+    props: binding.props({ words: playWords.value, lesson: lesson.value, group: activeGroup.value }),
+    key: GROUP_REMOUNT.has(s) ? `${s}:${activeGroup.value}` : s,
+  };
+});
 </script>
 
 
@@ -272,52 +309,18 @@ watch(activeGroup, () => {
       @open-activity="openSound"
     />
 
-    <!-- 各玩法 -->
-    <LearnStage
-      v-else-if="stage === 'learn'"
-      :key="'learn:' + activeGroup"
-      :words="playWords"
-      :dialog="lesson.stageStyle === 'dialog'"
-      :phrases="lesson.phrases"
-      @done="afterGame"
-      @progress="playPct = $event"
-      @total="playTotal = $event"
-    />
-    <MemoryView
-      v-else-if="stage === 'memory'"
-      :key="'memory:' + activeGroup"
-      :words="playWords"
-      @done="afterGame"
-      @progress="playPct = $event"
-      @total="playTotal = $event"
-    />
+    <!-- 玩法舞台：stage → 组件统一分发（STAGE_BINDINGS 注册，加玩法不改模板） -->
     <component
-      v-else-if="stage === 'quiz' || stage === 'match' || stage === 'speak'"
-      :is="stage === 'quiz' ? QuizView : stage === 'match' ? MatchView : SpeakView"
-      :key="stage + ':' + activeGroup"
-      :words="playWords"
-      :color-pairs="lesson.colorPairs"
+      v-else-if="playStage"
+      :is="playStage.component"
+      v-bind="playStage.props"
+      :key="playStage.key"
       @done="afterGame"
       @progress="playPct = $event"
       @total="playTotal = $event"
-    />
-    <OrderView
-      v-else-if="stage === 'order'"
-      :lesson="lesson"
-      @done="afterGame"
-      @progress="playPct = $event"
-      @total="playTotal = $event"
-    />
-    <SongView
-      v-else-if="stage === 'song'"
-      :key="'song:' + activeGroup"
-      :lesson="lesson"
-      :group="activeGroup"
       @song-done="afterSong"
       @back="toMenu"
     />
-    <TalkView v-else-if="stage === 'talk'" :lesson="lesson" @progress="playPct = $event" @total="playTotal = $event" @done="afterGame" />
-
 
     <!-- 结算（闯关/自由统一组件） -->
     <LessonResult
