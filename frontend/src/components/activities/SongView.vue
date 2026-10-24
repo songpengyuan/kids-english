@@ -3,9 +3,9 @@ import { ref, computed, onBeforeUnmount, watch } from "vue";
 import { bigCelebrate } from "../../services/effects";
 import { hapticTap } from "../../services/haptics";
 import { useProgressStore } from "../../stores/progress";
+import { useAudioTransport, fmtDuration } from "../../composables/useAudioTransport";
 import { Clapperboard, Headphones, Music, Pause, Play, Repeat, Sparkles, SkipBack, SkipForward } from "@lucide/vue";
 import SongStage from "./SongStage.vue";
-import BaseButton from "../ui/BaseButton.vue";
 
 const progress = useProgressStore();
 
@@ -16,7 +16,6 @@ const props = defineProps({
 });
 const emit = defineEmits(["back", "song-done"]);
 
-const playing = ref(false);
 const audioEl = ref(null);
 const audioMissing = ref(false);
 const videoEl = ref(null);
@@ -49,6 +48,41 @@ const trackIdx = ref(0);
 const curTrack = computed(() => tracks.value[trackIdx.value] || tracks.value[0]);
 const videoMissing = ref(!curTrack.value.video);
 
+/* ---------- 播放机芯：transport composable（进度/缓冲/循环/拖动条） ---------- */
+const lyricsEl = ref(null);
+const seekEl = ref(null);
+/** 完整听过一遍（音频或视频）→ 才有资格领星；与"是否循环"无关 */
+const watched = ref(false);
+
+const {
+  playing, duration, currentTime, loop, playedPct, bufPct,
+  play: transportPlay, pause: transportPause, reset: transportReset,
+  toggleLoop, handleEnded, handleLoadedMeta, handleTimeUpdate,
+  handleError: onAudioError, onSeekDown,
+} = useAudioTransport(audioEl, seekEl, {
+  onEnded: () => {
+    watched.value = true;
+    finishSong();
+  },
+  onMissing: () => {
+    audioMissing.value = true;
+  },
+  // 循环回到开头也要落"听过"的标记，否则默认循环就永远领不到星
+  onLoopRestart: () => {
+    watched.value = true;
+    lyricsEl.value?.scrollTo({ top: 0 });
+  },
+});
+
+/** 点播放：音频缺失时别去 play（避免无意义的报错） */
+function play() {
+  if (audioMissing.value) return;
+  transportPlay();
+}
+function pause() {
+  transportPause();
+}
+
 /** 切词群 = 换歌：停播、回到第一轨、重算素材状态（组件通常由上层 key 重挂载，这里兜底） */
 watch(
   () => props.group,
@@ -59,8 +93,7 @@ watch(
     watched.value = false;
     audioMissing.value = false;
     videoMissing.value = !curTrack.value.video;
-    duration.value = 0;
-    currentTime.value = 0;
+    transportReset();
   }
 );
 
@@ -80,9 +113,7 @@ onBeforeUnmount(() => {
   videoEl.value?.pause();
 });
 
-/** 完整听过一遍（音频或视频）→ 才有资格领星；与"是否循环"无关 */
-const watched = ref(false);
-/** 两样素材都没有（还没上传 mp3/mp4）→ 直接放行，别把孩子卡在这一页 */
+/** 完整听过一遍（音频或视频）→ 才有资格领星；与"是否循环"无关（watched 在 transport 回调里落） */
 const canFinish = computed(() => watched.value || (videoMissing.value && audioMissing.value));
 
 /** 切 Tab：互斥播放（切走的一路立刻暂停），避免两个声音叠在一起 */
@@ -104,46 +135,7 @@ function switchTrack(i) {
   watched.value = false;
   audioMissing.value = false;
   videoMissing.value = !curTrack.value.video;
-  duration.value = 0;
-  currentTime.value = 0;
-}
-
-function play() {
-  if (audioMissing.value) return;
-  audioEl.value
-    .play()
-    .then(() => {
-      playing.value = true;
-    })
-    .catch(() => {
-      /* 播放被拒（自动播放策略 / 被打断）只影响这一次；
-       * 文件真打不开时 <audio> 的 @error 事件会负责把 audioMissing 置真 */
-      playing.value = false;
-    });
-}
-function pause() {
-  audioEl.value && audioEl.value.pause();
-  playing.value = false;
-}
-function onAudioError() {
-  audioMissing.value = true;
-  playing.value = false;
-}
-function onEnded() {
-  // 先落"听过一遍"的标记：循环模式下也要能领星，否则默认循环就永远领不到
-  watched.value = true;
-  // 循环模式：回到开头继续唱，不结算、不离开本页
-  if (loop.value) {
-    if (lyricsEl.value) lyricsEl.value.scrollTo({ top: 0 });
-    const a = audioEl.value;
-    if (a) {
-      a.currentTime = 0;
-      currentTime.value = 0;
-      a.play().catch(() => (playing.value = false));
-    }
-    return;
-  }
-  finishSong();
+  transportReset();
 }
 
 /** 视频也计入"看过一遍"（原来视频路径没有任何 @ended，导致看完视频领不到星） */
@@ -162,107 +154,6 @@ function onVideoError() {
   videoMissing.value = true;
 }
 
-/* ---------- 播放进度条 / 循环播放 ---------- */
-const duration = ref(0);
-const currentTime = ref(0);
-const buffered = ref(0);
-const seeking = ref(false);
-const seekEl = ref(null);
-
-const LOOP_KEY = "kids-english-song-loop";
-/* 会话内兜底：iOS 无痕模式 localStorage 写入会被拒，靠 sessionStorage
- * 在本次会话里保持用户的选择（跨会话无法持久化是系统限制） */
-const LOOP_SESSION_KEY = "kids-english-song-loop-session";
-/* 默认循环：童谣就是反复听才上口，孩子不用去管播放到哪了。
- * 只有"手动关过"（localStorage 里存了 "0"）才保持关闭，尊重用户的选择。 */
-const loop = ref(
-  (() => {
-    const s = sessionStorage.getItem(LOOP_SESSION_KEY);
-    if (s !== null) return s !== "0";
-    return localStorage.getItem(LOOP_KEY) !== "0";
-  })()
-);
-
-const playedPct = computed(() =>
-  duration.value ? Math.min(100, (currentTime.value / duration.value) * 100) + "%" : "0%"
-);
-const bufPct = computed(() =>
-  duration.value ? Math.min(100, (buffered.value / duration.value) * 100) + "%" : "0%"
-);
-
-/** 秒 → m:ss */
-function fmt(sec) {
-  if (!isFinite(sec) || sec <= 0) return "0:00";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return m + ":" + String(s).padStart(2, "0");
-}
-
-function onLoadedMeta() {
-  const a = audioEl.value;
-  duration.value = a && isFinite(a.duration) ? a.duration : 0;
-}
-
-function toggleLoop() {
-  loop.value = !loop.value;
-  const v = loop.value ? "1" : "0";
-  try {
-    localStorage.setItem(LOOP_KEY, v);
-  } catch {
-    /* 无痕模式写入失败，忽略 */
-  }
-  try {
-    sessionStorage.setItem(LOOP_SESSION_KEY, v);
-  } catch {
-    /* 会话存储也不可用，忽略 */
-  }
-  hapticTap();
-}
-
-/* 拖动进度条：pointer 事件挂在 window 上，手指滑出条外也不丢跟踪 */
-function onSeekDown(e) {
-  if (audioMissing.value || !duration.value) return;
-  seeking.value = true;
-  hapticTap();
-  applySeek(e);
-  window.addEventListener("pointermove", onSeekMove);
-  window.addEventListener("pointerup", onSeekUp);
-  window.addEventListener("pointercancel", onSeekUp);
-  e.preventDefault();
-}
-function onSeekMove(e) {
-  if (seeking.value) applySeek(e);
-}
-function onSeekUp() {
-  seeking.value = false;
-  window.removeEventListener("pointermove", onSeekMove);
-  window.removeEventListener("pointerup", onSeekUp);
-  window.removeEventListener("pointercancel", onSeekUp);
-}
-function applySeek(e) {
-  const box = seekEl.value;
-  const a = audioEl.value;
-  if (!box || !a || !duration.value) return;
-  const p = e.touches ? e.touches[0] : e;
-  const r = box.getBoundingClientRect();
-  const ratio = Math.min(1, Math.max(0, (p.clientX - r.left) / r.width));
-  const t = ratio * duration.value;
-  a.currentTime = t;
-  currentTime.value = t;
-}
-
-/* ---------- 歌词：纯展示，手动滚动，不自动跟随播放 ---------- */
-const lyricsEl = ref(null);
-
-function onTimeUpdate() {
-  const a = audioEl.value;
-  if (!a) return;
-  if (isFinite(a.duration) && a.duration) duration.value = a.duration;
-  if (a.buffered.length) buffered.value = a.buffered.end(a.buffered.length - 1);
-  if (seeking.value) return; // 拖动中由 applySeek 负责同步，避免被回放进度打断
-  currentTime.value = a.currentTime || 0;
-}
-
 </script>
 
 <template>
@@ -272,9 +163,9 @@ function onTimeUpdate() {
       :src="curTrack.audio"
       preload="metadata"
       @error="onAudioError"
-      @ended="onEnded"
-      @timeupdate="onTimeUpdate"
-      @loadedmetadata="onLoadedMeta"
+      @ended="handleEnded"
+      @timeupdate="handleTimeUpdate"
+      @loadedmetadata="handleLoadedMeta"
     />
 
     <!-- 动画 / 视频 / 音乐切换 -->
@@ -316,13 +207,14 @@ function onTimeUpdate() {
       ></video>
     </div>
 
-    <!-- ===== 动画舞台：随节拍弹跳的角色 + 卡拉OK字幕 ===== -->
+    <!-- ===== 动画舞台：随节拍弹跳的角色 ===== -->
     <div v-else-if="mode === 'stage'" class="video-zone view-body">
+      <!-- 卡拉OK逐行字幕（props.line）随音频对拍的能力已随 transport 下沉删除：
+           舞台只做氛围动画，逐行高亮在"音乐"tab 的歌词区 -->
       <SongStage
         :lesson="lesson"
         :audio="audioEl"
         :playing="playing"
-        :line="-1"
         :idle="audioMissing ? '童谣音频还没上传哦' : '点我开始唱吧'"
         @tap="playing ? pause() : play()"
       />
@@ -359,7 +251,7 @@ function onTimeUpdate() {
 
       <!-- 播放进度条 + 循环播放（不能挂 data-haptic：透明开关的 touch-action:none 会吃掉拖动） -->
       <div v-if="!audioMissing" class="transport">
-        <span class="t-time">{{ fmt(currentTime) }}</span>
+        <span class="t-time">{{ fmtDuration(currentTime) }}</span>
         <div
           class="seek"
           ref="seekEl"
@@ -377,7 +269,7 @@ function onTimeUpdate() {
           </div>
           <span class="seek-knob" :style="{ left: playedPct }"></span>
         </div>
-        <span class="t-time">{{ fmt(duration) }}</span>
+        <span class="t-time">{{ fmtDuration(duration) }}</span>
         <button
           class="loop-btn"
           :class="{ on: loop }"

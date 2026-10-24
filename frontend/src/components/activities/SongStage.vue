@@ -16,7 +16,6 @@ const props = defineProps({
   lesson: { type: Object, required: true },
   audio: { type: Object, default: null }, // <audio> 元素，用于读播放进度对拍
   playing: { type: Boolean, default: false },
-  line: { type: Number, default: -1 }, // 当前歌词行（-1 = 段间/未开始）
   idle: { type: String, default: "点我开始唱吧" }
 });
 
@@ -25,10 +24,6 @@ const bpm = computed(() => props.lesson.song.timings?.bpm || 0);
 const beatCss = computed(() => (bpm.value ? 60 / bpm.value : 0.5) + "s");
 /* 当前场景：sea / rainbow / numbers / letters / stage（默认） */
 const scene = computed(() => props.lesson.song.scene || "stage");
-const subtitle = computed(() => {
-  const i = props.line;
-  return i >= 0 ? props.lesson.song.lyrics[i] || "" : "";
-});
 /* 出场角色：本课的单词 emoji，最多 8 个，太多会挤 */
 const cast = computed(() => props.lesson.words.slice(0, 8));
 const notes = ref([]);
@@ -137,13 +132,11 @@ onBeforeUnmount(() => clearInterval(noteTimer));
       <Music class="k-ico" />
     </span>
 
-    <!-- 卡拉OK字幕 -->
-    <Transition name="sub" mode="out-in">
-      <p v-if="subtitle" :key="props.line" class="subtitle">{{ subtitle }}</p>
-      <p v-else :key="'idle'" class="subtitle idle">
-        <span v-if="!playing">{{ idle }}</span>
-      </p>
-    </Transition>
+    <!-- 闲置提示（逐行卡拉OK字幕已随 transport 下沉删除——SongView 从未传过真实 line，
+         这里的歌词高亮在"音乐"tab 的歌词区） -->
+    <p class="subtitle idle">
+      <span v-if="!playing">{{ idle }}</span>
+    </p>
   </div>
 </template>
 
@@ -428,7 +421,4 @@ onBeforeUnmount(() => clearInterval(noteTimer));
   width: fit-content;
   margin-inline: auto;
 }
-.sub-enter-active { animation: anim-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.sub-leave-active { transition: opacity 0.12s; }
-.sub-leave-to { opacity: 0; }
 </style>
