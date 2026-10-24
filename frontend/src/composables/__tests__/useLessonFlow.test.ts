@@ -54,8 +54,9 @@ async function bootHost(url: string, activityList: QuestAct[] = acts): Promise<H
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: "/course/:id/game", name: "course-game", component: { template: "<div />" } },
-      { path: "/course/:id/menu", name: "lesson-menu", component: { template: "<div />" } },
+      // 2026-10-25 路由收口：课程详情 = /course/:id（?view=game|menu），
+      // 旧的 /course/:id/game、/course/:id/menu 已删（真实路由表见 router/index.ts）
+      { path: "/course/:id", name: "course-detail", component: { template: "<div />" } },
       { path: "/course/:id/memory", name: "lesson-memory", component: { template: "<div />" } },
       { path: "/course/:id/order", name: "lesson-order", component: { template: "<div />" } },
       { path: "/course/:id/:stage?", name: "lesson", component: { template: "<div />" } },
@@ -98,7 +99,7 @@ describe("useLessonFlow 引导（深链解析）", () => {
   afterEach(() => vi.useRealTimers());
 
   it("无 stage 直达：进菜单，稍后朗读课程标题", async () => {
-    const { flow } = await bootHost("/course/l4/menu");
+    const { flow } = await bootHost("/course/l4");
     vi.useFakeTimers();
     flow.boot();
     expect(flow.stage.value).toBe("menu");
@@ -135,7 +136,7 @@ describe("useLessonFlow 引导（深链解析）", () => {
   });
 
   it("URL 无 stage（#/lesson/l4）时 boot 幂等回菜单（防回退卡在玩法）", async () => {
-    const { flow } = await bootHost("/course/l4/menu");
+    const { flow } = await bootHost("/course/l4");
     flow.boot();
     flow.open(acts[0]);
     expect(flow.stage.value).toBe("learn");
@@ -164,7 +165,7 @@ describe("useLessonFlow 玩法迁移", () => {
   });
 
   it("open() 切换到玩法 stage 并触发触感反馈", async () => {
-    const { flow } = await bootHost("/course/l4/menu");
+    const { flow } = await bootHost("/course/l4");
     flow.boot();
     flow.open(acts[0]);
     expect(flow.stage.value).toBe("learn");
@@ -172,7 +173,7 @@ describe("useLessonFlow 玩法迁移", () => {
   });
 
   it("toMenu() 回菜单", async () => {
-    const { flow } = await bootHost("/course/l4/menu");
+    const { flow } = await bootHost("/course/l4");
     flow.boot();
     flow.open(acts[1]);
     flow.toMenu();
@@ -180,15 +181,16 @@ describe("useLessonFlow 玩法迁移", () => {
   });
 
   it("back()：卡片目录页返回本课闯关地图", async () => {
-    const { flow, router } = await bootHost("/course/l4/menu");
+    const { flow, router } = await bootHost("/course/l4");
     flow.boot();
     flow.back();
     await new Promise((r) => setTimeout(r, 0));
-    expect(router.currentRoute.value.path).toBe("/course/l4/game");
+    expect(router.currentRoute.value.name).toBe("course-detail");
+    expect(router.currentRoute.value.query.view).toBe("game");
   });
 
-  it("back()：玩法中先回本课卡片目录，URL 同步到 /menu", async () => {
-    const { flow, router } = await bootHost("/course/l4/menu");
+  it("back()：玩法中先回本课卡片目录（view=menu）", async () => {
+    const { flow, router } = await bootHost("/course/l4");
     flow.boot();
     flow.open(acts[0]);
     await new Promise((r) => setTimeout(r, 0));
@@ -196,7 +198,8 @@ describe("useLessonFlow 玩法迁移", () => {
     flow.back();
     await new Promise((r) => setTimeout(r, 0));
     expect(flow.stage.value).toBe("menu");
-    expect(router.currentRoute.value.path).toBe("/course/l4/menu");
+    expect(router.currentRoute.value.name).toBe("course-detail");
+    expect(router.currentRoute.value.query.view).toBe("menu");
   });
 });
 
@@ -207,7 +210,7 @@ describe("useLessonFlow 结算", () => {
   });
 
   it("自由模式满分结算：写 3 星、首通、双彩带大庆祝、累计今日学情", async () => {
-    const { flow } = await bootHost("/course/l4/menu");
+    const { flow } = await bootHost("/course/l4");
     flow.boot();
     flow.open(acts[0]);
     flow.afterGame(3);
@@ -224,7 +227,7 @@ describe("useLessonFlow 结算", () => {
   });
 
   it("重玩低星：markNewLevel(false)、小彩带庆祝", async () => {
-    const { flow } = await bootHost("/course/l4/menu");
+    const { flow } = await bootHost("/course/l4");
     flow.boot();
     // 首次通关先拿 3 星
     flow.open(acts[0]);
@@ -250,7 +253,7 @@ describe("useLessonFlow 结算", () => {
   });
 
   it("afterSong 结算：进结算并累计今日学情（童谣星数由 SongView 内部记）", async () => {
-    const { flow } = await bootHost("/course/l4/menu");
+    const { flow } = await bootHost("/course/l4");
     flow.boot();
     flow.open(acts[2]);
     flow.afterSong();
@@ -264,11 +267,14 @@ describe("useLessonFlow 结算", () => {
   it("闯关收尾跳转：左上角返回（结算页唯一的回地图出口）→ 当前课地图", async () => {
     // 2026-10-19：结算页底部「返回闯关地图」按钮已下线（闯关完成不再开宝箱），
     // 回地图只剩左上角 ← 这一条路 —— 这条用例锁的就是这个出口不失效。
+    // 2026-10-25 路由收口：地图 = course-detail（?view=game），旧 /course/:id/game 已删。
     const { flow, router } = await bootHost("/course/l4/game/quest?step=quiz");
     flow.boot();
     const push = vi.spyOn(router, "push");
     flow.back();
-    expect(push).toHaveBeenCalledWith("/course/l4/game");
+    expect(push).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "course-detail", query: { view: "game" } })
+    );
   });
 });
 
@@ -287,7 +293,7 @@ describe("useLessonFlow 埋点（ADR-004）", () => {
   }
 
   it("玩法完成 → 上报 activity_done，带课时/玩法名/秒数", async () => {
-    const { flow } = await bootHost("/course/l4/menu");
+    const { flow } = await bootHost("/course/l4");
     flow.boot();
     vi.useFakeTimers();
     flow.open(acts[1]); // quiz（听音选图）
@@ -303,7 +309,7 @@ describe("useLessonFlow 埋点（ADR-004）", () => {
   it("afterSong 里 stage 已改成 result，activity 仍须是真实的玩法名", async () => {
     // 这条专防一类静默失真：结算函数在改完 stage 之后再埋点，
     // 会把所有童谣时长记成 activity="result"，看板上还看不出异常
-    const { flow } = await bootHost("/course/l4/menu");
+    const { flow } = await bootHost("/course/l4");
     flow.boot();
     vi.useFakeTimers();
     flow.open(acts[2]); // song（唱童谣）
@@ -316,7 +322,7 @@ describe("useLessonFlow 埋点（ADR-004）", () => {
   });
 
   it("不足 1 秒的点击视为误触，不上报（防菜单来回点刷出大量 0 秒事件）", async () => {
-    const { flow } = await bootHost("/course/l4/menu");
+    const { flow } = await bootHost("/course/l4");
     flow.boot();
     vi.useFakeTimers();
     flow.open(acts[0]);
@@ -338,7 +344,7 @@ describe("useLessonFlow 埋点（ADR-004）", () => {
   });
 
   it("自由模式结算（非闯关）不应误报 level_pass", async () => {
-    const { flow } = await bootHost("/course/l4/menu");
+    const { flow } = await bootHost("/course/l4");
     flow.boot();
     vi.useFakeTimers();
     flow.open(acts[0]);

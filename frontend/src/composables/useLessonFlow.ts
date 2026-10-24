@@ -229,24 +229,28 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     return Math.min(100, Math.round((done / activities.value.length) * 100));
   });
 
-  /** 左上角 ←：玩法中先回本课卡片目录，目录里再点才回地图（两步退出，防止误触跳走） */
+  /** 左上角 ←：玩法中先回本课卡片目录，目录里再点才回地图（两步退出，防止误触跳走）。
+   *  2026-10-25 路由收口后课程详情是 /course/:id（?view=game|menu），
+   *  旧的 /course/:id/menu、/course/:id/game 已删——继续推旧地址会被
+   *  "未知路径兜底"送回课程首页（表现为：闯关中点返回竟然离开本课）。 */
   function back() {
+    const lid = lesson.value?.id;
     if (!quest.questMode.value && stage.value !== "menu") {
-      // 玩法中：回本课卡片目录，URL 同步到 /course/:id/menu
+      // 玩法中：回本课卡片目录
       stage.value = "menu";
-      const lid = lesson.value?.id;
-      if (lid) router.replace(`/course/${lid}/menu`);
+      if (lid) router.replace({ name: "course-detail", params: { id: lid }, query: { view: "menu" } });
       return;
     }
     // 目录页再点返回：闯关模式回地图，卡片模式也回地图（地图是主入口）
-    router.push(`/course/${lesson.value?.id ?? ""}/game`);
+    router.push({ name: "course-detail", params: { id: lid ?? "" }, query: { view: "game" } });
   }
 
   function toMenu() {
     stage.value = "menu";
     // 结算页"再选玩法"：URL 同步回卡片目录
     const lid = lesson.value?.id;
-    if (lid && !quest.questMode.value) router.replace(`/course/${lid}/menu`);
+    if (lid && !quest.questMode.value)
+      router.replace({ name: "course-detail", params: { id: lid }, query: { view: "menu" } });
   }
 
   /** 下一课（与课程列表同源：远端详情优先、本地兜底；最后一课为 null） */
