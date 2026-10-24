@@ -4,8 +4,7 @@ import { speak } from "../../services/speech";
 import { sfxMatch, sfxWrong } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import { useViewport } from "../../composables/useViewport";
-import { buildMatchGroups, matchGroupRange, matchStars } from "../../utils/matchBoard";
-import { shuffleWith } from "../../utils/quizSession";
+import { useMatchSession } from "../../composables/useMatchSession";
 import { BookOpenText, Link2, Volume2 } from "@lucide/vue";
 import SpeakWave from "../ui/SpeakWave.vue";
 import StageHead from "./StageHead.vue";
@@ -15,23 +14,41 @@ const props = defineProps({
   /** 颜色配对（l11 Brown Bear）：传了就切到"左列颜色圆 ↔ 右列动物图"模式 */
   colorPairs: { type: Array, default: () => null }
 });
-const emit = defineEmits(["done", "progress", "total", "page"]);
+const emit = defineEmits(["done", "progress", "total"]);
 
 const progress = useProgressStore();
 
 const { sizeTier, isNarrow } = useViewport();
 
-/** 颜色配对模式：左列颜色圆 ↔ 右列动物图（l11 Brown Bear） */
-const colorMode = computed(() => Array.isArray(props.colorPairs) && props.colorPairs.length > 0);
-/** 颜色词 id → 色值：以课时数据为单源（颜色词的 word.color 十六进制）。
- *  曾在这里维护过一份组件本地色表，与数据漂移过两处（white/brown 色值不一致），
- *  数据新增颜色而本地表没登记时，左列色圆还会静默回退成 #ccc。
- *  引用完整性由 validate-data.mjs 把关：colorPairs.color 必须是带 color 的本课单词。 */
-const hexById = computed(() => {
-  const m = {};
-  for (const w of props.words) if (w.color) m[w.id] = w.color;
-  return m;
-});
+/* ---------- 会话逻辑：分组/配对判定/记分（useMatchSession，可单测） ---------- */
+const {
+  colorMode, colorOf, groups, groupIdx, groupCount, curGroup,
+  totalPairs, matched, matchFrom, pairMap, doneCount, groupDone,
+  counterText, stars, leftImgs, rightImgs, midWords,
+  setupGroup: sessionSetupGroup, tryMatch: sessionTryMatch,
+} = useMatchSession(
+  computed(() => props.words),
+  computed(() => props.colorPairs),
+  isNarrow,
+  sizeTier,
+  {
+    onMatched: (w) => {
+      sfxMatch();
+      speak(w.en, { lessonId: w.lessonId, wordId: w.id });
+      progress.recordWord(w.lessonId, w.id, { correct: 1 });
+    },
+    onWrong: (a, b) => {
+      sfxWrong();
+      // 统一错误反馈（与听音选图一致）：连错只标红，不自动读答案、不揭示；
+      // 两个词都记一次错误 → 进入复习池
+      const aWord = findWord(a.id) || {};
+      const bWord = findWord(b.id) || {};
+      if (aWord.lessonId) progress.recordWord(aWord.lessonId, a.id, { wrong: 1 });
+      if (bWord.lessonId) progress.recordWord(bWord.lessonId, b.id, { wrong: 1 });
+      markWrong(a, b);
+    },
+  }
+);
 
 /**
  * 两种练习方式（用户要求：不显示单词的形式也要有，两种切换着来）：
@@ -56,36 +73,6 @@ function setMode(m) {
     /* 隐私模式忽略 */
   }
 }
-
-/** 分组与星级口径见 utils/matchBoard（分组随屏幕大小变化，规则可单测）。
- *  ⚠️ 分组必须**只在这些输入真变时重算**：buildMatchGroups 内含随机洗牌，
- *  若用 computed，任何无关重渲染都可能触发重算 → 游戏途中棋盘重洗、进度清零。 */
-const groupRange = computed(() => matchGroupRange(isNarrow.value, sizeTier.value));
-/** colorMode 时只对"有颜色配对的动物词"分组，其余词不参与 */
-const pairedWords = computed(() => {
-  if (!colorMode.value) return props.words;
-  const ids = new Set(props.colorPairs.map((p) => p.wordId));
-  return props.words.filter((w) => ids.has(w.id));
-});
-const groupKey = computed(
-  () => pairedWords.value.map((w) => w.id).join("|") + `@${groupRange.value.min}-${groupRange.value.max}`
-);
-const groups = ref(buildMatchGroups(pairedWords.value, groupRange.value));
-watch(groupKey, () => {
-  groups.value = buildMatchGroups(pairedWords.value, groupRange.value);
-  groupIdx.value = 0;
-});
-
-/** colorMode：wordId → color */
-const colorOf = (wordId) => props.colorPairs?.find((p) => p.wordId === wordId)?.color;
-
-const groupIdx = ref(0);
-const curGroup = computed(() => groups.value[groupIdx.value] || []);
-const groupCount = computed(() => groups.value.length);
-
-const leftImgs = ref([]); // 左列图片（组内前半）
-const rightImgs = ref([]); // 右列图片（组内后半）
-const midWords = ref([]); // 中间单词列
 
 const board = ref(null);
 /** 卡片元素**按 id 存**（图片格 / 单词格各一张表）。
@@ -167,17 +154,12 @@ function matchedLine(wordId) {
   return { x1: start.x, y1: start.y, x2: end.x, y2: end.y };
 }
 
-const matched = reactive(new Set()); // 当前组已配对 id
-const matchFrom = reactive({}); // id → 'img' | 'word'：该配对的起点侧（决定连线方向）
-/** colorMode：配对对互查（c-bird ↔ bird），两端都在 picEls 里 */
-const pairMap = reactive({});
 const dragging = ref(false);
 const startWord = ref(null);
 const startSide = ref("img"); // 起点所在侧：'img'（两侧图片）| 'word'（中间单词）
 const line = reactive({ x1: 0, y1: 0, x2: 0, y2: 0 });
 const imgWrong = ref(null);
 const wordWrong = ref(null);
-const wrongCount = ref(0); // 跨组累计，用于评分
 /** 听音模式：当前正在播放声波动画的卡片 id */
 const playingId = ref(null);
 let playTimer = 0;
@@ -209,15 +191,14 @@ const transitioning = ref(false);
 let pendingWord = null;
 let pendingSide = null; // pendingWord 所在侧，供连错时精确定位要标红的卡
 
-const totalPairs = computed(() => curGroup.value.length);
-const doneCount = computed(() => matched.size);
-const groupDone = computed(() => totalPairs.value > 0 && doneCount.value >= totalPairs.value);
-/** 头部计数（StageHead 的 rightText）：多组带组号，单组只显示配对进度 */
-const counterText = computed(() =>
-  groupCount.value > 1
-    ? `第 ${groupIdx.value + 1} / ${groupCount.value} 组 · ${doneCount.value}/${totalPairs.value}`
-    : `${doneCount.value} / ${totalPairs.value}`
-);
+/** 颜色词 id → 色值：以课时数据为单源（颜色词的 word.color 十六进制）。
+ *  曾在这里维护过一份组件本地色表，与数据漂移过两处（white/brown 色值不一致）；
+ *  引用完整性由 validate-data.mjs 把关：colorPairs.color 必须是带 color 的本课单词。 */
+const hexById = computed(() => {
+  const m = {};
+  for (const w of props.words) if (w.color) m[w.id] = w.color;
+  return m;
+});
 
 /** 组内配对进度 → 顶栏进度条（多邻国式：连线逐对推进）；对数同步上报显示 x/y */
 watch(
@@ -226,11 +207,9 @@ watch(
     if (totalPairs.value === 0) return;
     emit("total", groupCount.value);
     emit("progress", Math.round(((groupIdx.value + (groupDone.value ? 1 : 0)) / groupCount.value) * 100));
-    emit("page", groupIdx.value);
   },
   { immediate: true }
 );
-const stars = computed(() => matchStars(wrongCount.value));
 
 function localPoint(e) {
   const rect = board.value.getBoundingClientRect();
@@ -404,6 +383,7 @@ function onCancel() {
   pendingSide = null;
 }
 
+/** 配对入口：取当前选中的卡与起点侧，交给 session 判定，成功时闪连线 */
 function tryMatch(other, otherSide) {
   const first = startWord.value;
   const from = startSide.value; // 先按下的那一侧 = 连线起点
@@ -411,28 +391,11 @@ function tryMatch(other, otherSide) {
   pendingWord = null;
   pendingSide = null;
   if (!first) return;
-  // colorMode 时颜色圆.matchId === 动物.id；普通模式 first.id === other.id
-  const firstKey = first.matchId || first.id;
-  const otherKey = other.matchId || other.id;
-  if (firstKey === otherKey) {
-    matched.add(first.id);
-    matched.add(other.id);
-    matchFrom[first.id] = from;
-    pairMap[first.id] = other.id;
-    pairMap[other.id] = first.id;
+  const wasMatched = matched.size;
+  sessionTryMatch(first, from, other, otherSide);
+  if (matched.size > wasMatched) {
     justMatched.value = first.id;
-    sfxMatch();
-    speak(other.en, { lessonId: other.lessonId, wordId: other.id });
-    progress.recordWord(other.lessonId, other.id, { correct: 1 });
     setTimeout(() => (justMatched.value = null), 600);
-  } else {
-    wrongCount.value++;
-    sfxWrong();
-    markWrong({ id: first.id, side: from }, { id: other.id, side: otherSide });
-    // 统一错误反馈（与听音选图一致）：连错只标红，不自动读答案、不揭示；
-    // 两个词都记一次错误 → 进入复习池
-    progress.recordWord(first.lessonId, first.id, { wrong: 1 });
-    progress.recordWord(other.lessonId, other.id, { wrong: 1 });
   }
 }
 
@@ -448,10 +411,9 @@ watch(groupDone, async (done) => {
   groupIdx.value++;
 });
 
+/** 组重置：session 清配对状态与列布局，组件清 DOM 侧的坐标/元素/反馈表 */
 function setupGroup(g) {
-  matched.clear();
-  Object.keys(matchFrom).forEach((k) => delete matchFrom[k]); // 方向随配对一起重置
-  Object.keys(pairMap).forEach((k) => delete pairMap[k]); // colorMode 配对对随组重置
+  sessionSetupGroup(g);
   // 坐标表必须随组清空：id 不跨组复用，但留着旧条目既是泄漏，
   // 也让"测量还没跑完就渲染的线"拿到上一组的错误坐标
   Object.keys(imgPos).forEach((k) => delete imgPos[k]);
@@ -464,22 +426,6 @@ function setupGroup(g) {
   pendingWord = null;
   pendingSide = null;
   ready.value = false;
-  if (colorMode.value) {
-    // 颜色配对：左列颜色圆（伪对象），右列动物图，无中间单词列
-    const shuffled = shuffleWith(g);
-    leftImgs.value = shuffled.map((w) => ({
-      id: `c-${w.id}`, en: colorOf(w.id), matchId: w.id,
-      color: colorOf(w.id), lessonId: w.lessonId
-    }));
-    rightImgs.value = shuffled;
-    midWords.value = [];
-  } else {
-    // 两列布局：左列全部图片，右列全部单词/声音（中间连线空间更大）
-    const imgs = shuffleWith(g);
-    leftImgs.value = imgs;
-    rightImgs.value = [];
-    midWords.value = shuffleWith(g);
-  }
   transitioning.value = false;
 }
 

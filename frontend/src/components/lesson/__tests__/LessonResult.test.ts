@@ -102,7 +102,7 @@ describe("LessonResult 闯关结算", () => {
   });
 
   it("闯关最后一关 + 宝箱刚解锁：给「开宝箱」出口，点击才弹宝箱层", async () => {
-    const w = mountQuest(null, { chestReady: true, nextLesson: { id: "l12", title: "Head Shoulders" } });
+    const w = mountQuest(null, { chestReady: true, lessonComplete: true, nextLesson: { id: "l12", title: "Head Shoulders" } });
     const btns = w.findAll("button");
     expect(btns).toHaveLength(1);
     expect(btns[0].text()).toContain("开宝箱");
@@ -117,11 +117,17 @@ describe("LessonResult 闯关结算", () => {
     expect(w.text()).toContain("本课全部完成");
   });
 
-  it("闯关最后一关 + 宝箱已领（chestReady=false）+ 有下一课：接力「下一课」", () => {
-    const w = mountQuest(null, { chestReady: false, nextLesson: { id: "l12", title: "Head Shoulders" } });
+  it("闯关最后一关 + 宝箱已领（chestReady=false）+ 全课通关：接力「下一课」", () => {
+    const w = mountQuest(null, { chestReady: false, lessonComplete: true, nextLesson: { id: "l12", title: "Head Shoulders" } });
     const btns = w.findAll("button");
     expect(btns).toHaveLength(1);
     expect(btns[0].text()).toContain("下一课");
+  });
+
+  it("闯关最后一关但全课未通关：不误报「本课全部完成」，也不给下一课按钮", () => {
+    const w = mountQuest(null, { chestReady: false, lessonComplete: false, nextLesson: { id: "l12", title: "Head Shoulders" } });
+    expect(w.text()).not.toContain("本课全部完成");
+    expect(w.findAll("button")).toHaveLength(0);
   });
 
   it("唱童谣（maxStars=1）不再提示「重玩可拿满 3 星」", () => {

@@ -28,6 +28,9 @@ defineProps<{
   nextLesson?: { id: string; title: string } | null;
   /** 闯关结算：本课玩法全部通关 → 宝箱关已解锁，给"开宝箱"出口（没有它最后一关没有任何下一步） */
   chestReady?: boolean;
+  /** 本课全部玩法都已通关（"本课全部完成→下一课"接力必须以它为前提：
+   *  曾经只判"没有下一关"就放行——重玩最后一关但全课没通关也误报"全部完成"） */
+  lessonComplete?: boolean;
   /** 自由结算：分组课（l11 颜色/动物）还没练的另一个词组 → "换组再练"入口 */
   nextGroup?: { key: string; name: string } | null;
   /** 该玩法的星数上限（song 记 1 分封顶，别再提示"重玩可拿满 3 星"） */
@@ -91,8 +94,9 @@ function nav(fn: () => void) {
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
       <!-- 闯关完成不开箱：停在大画面，只给一个"下一步"出口（返回地图走左上角 ←）。
-           下一关不存在时依次接力：宝箱刚解锁 → 开宝箱；宝箱已领 → 下一课。
-           曾经最后一关 nextLevel 为 null 就什么都不给，宝箱解锁了孩子也不知道。 -->
+           下一关不存在时依次接力：宝箱刚解锁 → 开宝箱；宝箱已领且全课通关 → 下一课。
+           曾经最后一关 nextLevel 为 null 就什么都不给，宝箱解锁了孩子也不知道；
+           也曾只判"没有下一关"就显示"全部完成"——重玩最后一关但全课没通关也误报。 -->
       <div v-if="nextLevel" class="btn-row">
         <BaseButton :disabled="navClicked" @click="nav(() => emit('goNextLevel'))">
           下一关：<PathIcon :name="nextLevel.actKey" /> {{ nextLevel.name }} →
@@ -102,7 +106,7 @@ function nav(fn: () => void) {
         <BaseButton variant="green" @click="questChestOpen = true">🎁 课程宝箱已解锁，开宝箱</BaseButton>
         <ChestReward v-if="questChestOpen" @done="onQuestChestDone" />
       </div>
-      <div v-else-if="nextLesson" class="btn-row">
+      <div v-else-if="lessonComplete && nextLesson" class="btn-row">
         <BaseButton variant="green" :disabled="navClicked" @click="nav(() => emit('goNextLesson'))">
           本课全部完成 🎉 下一课：{{ nextLesson.title }} →
         </BaseButton>

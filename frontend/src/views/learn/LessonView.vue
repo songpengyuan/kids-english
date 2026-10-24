@@ -169,13 +169,16 @@ function openGame() {
 const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
 
 /* ---------- 结算页衔接（阶段 2026-10-24 走查收口） ---------- */
+/** 本课全部玩法都已通关（星数 > 0）——"全部完成→下一课"接力的前提 */
+const lessonComplete = computed(
+  () => !!lesson.value && activities.value.every((a) => showStars(a.key) > 0)
+);
 /** 闯关结算：本课玩法全部通关且宝箱未领 → 结算页给"开宝箱"出口。
  *  曾经最后一关 nextLevel 为 null 时结算页没有任何按钮，宝箱刚解锁孩子却不知道。 */
 const chestReady = computed(() => {
-  if (!questMode.value || !questDone.value) return false;
+  if (!questMode.value || !questDone.value || !lessonComplete.value) return false;
   const l = lesson.value;
   if (!l) return false;
-  if (!activities.value.every((a) => showStars(a.key) > 0)) return false;
   return !((progress.progress[l.id]?.completed as string[]) || []).includes("chest");
 });
 /** 自由结算：分组课（l11）切到另一个词组再练同一玩法（否则闯完一整条链只练了默认组一半的词） */
@@ -383,6 +386,7 @@ const playStage = computed(() => {
       :next-level="questMode && questDone ? (nextLevel || null) : null"
       :next-lesson="nextLesson || null"
       :chest-ready="chestReady"
+      :lesson-complete="lessonComplete"
       :next-group="nextGroup"
       :max-stars="lastActKey === 'song' ? 1 : 3"
       @go-next-level="goNextLevel"
