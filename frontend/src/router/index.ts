@@ -42,7 +42,7 @@
  *
  * - 未知路径兜底：统一由 beforeEach 送回课程主页（见文件底部）。
  */
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHashHistory, type RouteRecordRaw } from "vue-router";
 import LearnView from "../views/learn/LearnView.vue";
 import GameView from "../views/game/GameView.vue";
 import LessonView from "../views/learn/LessonView.vue";
@@ -52,9 +52,10 @@ import { parentGateDecision } from "./parentGuard";
 import { appGateDecision } from "./gateGuard";
 import GateView from "../views/GateView.vue";
 
-export const router = createRouter({
-  history: createWebHashHistory(),
-  routes: [
+/** 应用路由表。导出给页面冒烟测试复用——曾经冒烟自己手抄一份路由表，
+ *  /learn → /course 重构后还在测旧路径、memory/order 两条漏登记（漂移不可见）。
+ *  冒烟用 `routes: appRoutes` 建全新 memory router（不挂守卫：守卫有专属测试）。 */
+export const appRoutes: RouteRecordRaw[] = [
     // #/ → 课程主页
     { path: "/", redirect: "/course" },
 
@@ -139,7 +140,11 @@ export const router = createRouter({
 
     // 未知路径兜底：只匹配不 redirect，交由守卫统一送回课程主页
     { path: "/:pathMatch(.*)*", name: "not-found", component: { render: () => null } },
-  ],
+];
+
+export const router = createRouter({
+  history: createWebHashHistory(),
+  routes: appRoutes,
 });
 
 // 守卫只做两件事：未知路径兜底 + 两级门禁。

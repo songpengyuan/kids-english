@@ -6,6 +6,14 @@
  * MyView / ReportView 还在读 `rewards.stickers`（已删除的字段），
  * 两个页面**线上直接白屏** —— 而当时它们还是 JS 模式的 SFC，`type-check` 覆盖不到，
  * 组件测试又只测了单个组件。这层"每页都挂一次"的护栏就是为了堵住这一类事故。
+ *
+ * 2026-10-25 重整：
+ *  - 路由表**直接用生产 `appRoutes`**——旧版手抄一份，/learn → /course 重构后还在测
+ *    旧路径、memory/order 两条漏登记（漂移不可见）。守卫不挂：守卫行为有专属测试
+ *    （gateGuard/parentGuard/redirect），这层只回答"页面渲染得出来吗"。
+ *  - 新增**全课 × 全玩法参数化挂载**：加一节新课后，CI 自动验证它的每个玩法都渲染
+ *    得出来——这是「标准新课 = 组件零改动」验收线的机器化（见 docs/ACTIVITY-VARIANTS.md）。
+ *  - 补齐从未覆盖的页面：磨耳朵 / 应用口令 / 家长中心 / 闯关玩法页。
  */
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
@@ -54,14 +62,20 @@ vi.mock("../../services/effects", () => ({
 
 import LearnView from "../../views/learn/LearnView.vue";
 import GameView from "../game/GameView.vue";
+import QuestView from "../game/QuestView.vue";
 import CourseDetailView from "../course/CourseDetailView.vue";
 import MyView from "../me/MyView.vue";
 import ReportView from "../me/ReportView.vue";
+import ParentView from "../me/ParentView.vue";
 import TreasureView from "../me/TreasureView.vue";
 import ReviewView from "../learn/ReviewView.vue";
 import LessonView from "../learn/LessonView.vue";
 import HeroDetailView from "../me/HeroDetailView.vue";
 import CalendarView from "../me/CalendarView.vue";
+import ListenView from "../listen/ListenView.vue";
+import GateView from "../../views/GateView.vue";
+import { appRoutes } from "../../router";
+import { lessons, activityKeys } from "../../data/lessons";
 
 /** jsdom 没有 ResizeObserver（LearnView/GamePath 会用到） */
 class RO {
@@ -71,56 +85,11 @@ class RO {
 }
 (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = RO;
 
-const routes = [
-  {
-    path: "/learn",
-    name: "learn",
-    component: LearnView,
-    children: [
-      {
-        path: ":id",
-        name: "lesson",
-        component: LessonView,
-        children: [
-          { path: "learn", name: "lesson-learn", component: LessonView },
-          { path: "quiz", name: "lesson-quiz", component: LessonView },
-          { path: "match", name: "lesson-match", component: LessonView },
-          { path: "speak", name: "lesson-speak", component: LessonView },
-          { path: "song", name: "lesson-song", component: LessonView },
-          { path: "talk", name: "lesson-talk", component: LessonView },
-        ],
-      },
-      { path: ":id", name: "course-detail", component: CourseDetailView },
-      { path: "review", name: "review", component: ReviewView },
-    ],
-  },
-  {
-    path: "/game",
-    name: "game",
-    component: GameView,
-    children: [{ path: "quest", name: "quest", component: LessonView }],
-  },
-  {
-    path: "/me",
-    name: "me",
-    component: MyView,
-    children: [
-      // 原「连击日历」已并入学习日历，这里只保留合并后的页面
-      { path: "calendar", name: "calendar", component: CalendarView },
-      {
-        path: "treasure",
-        children: [
-          { path: "", name: "treasure", component: TreasureView },
-          { path: "hero/:id", name: "hero-detail", component: HeroDetailView },
-        ],
-      },
-      { path: "report", name: "report", component: ReportView },
-    ],
-  },
-];
+/** 玩法 key → 路由段（历史原因：quiz 的路径段叫 hear） */
+const STAGE_PATH: Record<string, string> = { quiz: "hear" };
 
 async function mountPage(component: unknown, path: string, query: Record<string, string> = {}) {
-  const router: Router = createRouter({ history: createMemoryHistory(), routes });
+  const router: Router = createRouter({ history: createMemoryHistory(), routes: appRoutes });
   await router.push({ path, query });
   await router.isReady();
   return mount(component as never, { global: { plugins: [createPinia(), router] } });
@@ -141,20 +110,44 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it("学习主页（自由练习）", async () => {
-    const w = await mountPage(LearnView, "/learn");
-    expect(w.text()).toContain("Walking In The Jungle");
+  /* ---------- 四域主页面 ---------- */
+
+  it("学习主页（自由练习，课程按 date 上课顺序排列）", async () => {
+    const w = await mountPage(LearnView, "/course");
+    expect(w.text()).toContain("我是一个音乐人"); // date 最早的课排第一
+    expect(w.text()).toContain("Walking In The Jungle"); // l10 也在列表里
     expect(errors).toEqual([]);
   });
 
-  it("游戏闯关（独立路由 /game）", async () => {
+  it("磨耳朵", async () => {
+    const w = await mountPage(ListenView, "/listen");
+    expect(w.find(".listen").exists()).toBe(true);
+    expect(errors).toEqual([]);
+  });
+
+  it("应用口令页", async () => {
+    const w = await mountPage(GateView, "/gate");
+    expect(w.text()).toContain("丞丞学英语"); // 品牌区
+    expect(w.find("input").attributes("placeholder")).toContain("家长口令");
+    expect(errors).toEqual([]);
+  });
+
+  it("家长中心", async () => {
+    const w = await mountPage(ParentView, "/me/parent");
+    expect(w.text()).toContain("孩子管理");
+    expect(errors).toEqual([]);
+  });
+
+  it("游戏总地图（独立路由 /game）", async () => {
     const w = await mountPage(GameView, "/game");
     expect(w.text()).toContain("游戏闯关");
     expect(errors).toEqual([]);
   });
 
-  it("当前课游戏地图（课程详情页 game 视图，只服务本课关卡）", async () => {
-    const w = await mountPage(CourseDetailView, "/learn/l10", { view: "game" });
+  /* ---------- 课程域 ---------- */
+
+  it("课程详情 game 视图（本课地图，只服务本课关卡）", async () => {
+    const w = await mountPage(CourseDetailView, "/course/l10", { view: "game" });
     // 标题显示本课课程名 + 关卡列表（唱童谣/学单词…）
     expect(w.text()).toContain("丛林里散步");
     expect(w.text()).toContain("学单词");
@@ -168,6 +161,31 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(w.find(".game-path-scroll").exists()).toBe(true);
     expect(errors).toEqual([]);
   });
+
+  it("课程详情 menu 视图（玩法瓷片，顺序 = activityKeys：song 打头）", async () => {
+    const w = await mountPage(CourseDetailView, "/course/l4", { view: "menu" });
+    const tiles = w.findAll(".tile").map((t) => t.text());
+    expect(tiles[0]).toContain("学童谣");
+    expect(tiles[1]).toContain("学单词");
+    expect(tiles[2]).toContain("听音选图");
+    expect(w.text()).not.toContain("闯关挑战");
+  });
+
+  it("闯关玩法页（quest 薄壳 → LessonView，闯关身份由路由名识别）", async () => {
+    const w = await mountPage(QuestView, "/course/l4/game/quest", { step: "learn" });
+    await flushPromises();
+    expect(w.find(".lesson").exists()).toBe(true);
+    expect(errors).toEqual([]);
+  });
+
+  it("玩法直达子路径 /course/:id/:stage 能渲染（#/course/l4/learn）", async () => {
+    const w = await mountPage(LessonView, "/course/l4/learn");
+    // 子路径直达应直接进入看图学词（而不是菜单）
+    expect(w.text()).toContain("点图片听发音");
+    expect(errors).toEqual([]);
+  });
+
+  /* ---------- 我的域 ---------- */
 
   it("我的", async () => {
     const w = await mountPage(MyView, "/me");
@@ -214,26 +232,24 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(errors).toEqual([]);
   });
 
+  it("角色详情页（宝藏库奥特曼）", async () => {
+    const w = await mountPage(HeroDetailView, "/me/treasure/hero/tiga");
+    expect(w.text()).toContain("迪迦");
+    expect(w.text()).toContain("介绍");
+    expect(w.text()).toContain("招牌技能");
+    expect(errors).toEqual([]);
+  });
+
   it("到期复习", async () => {
-    const w = await mountPage(ReviewView, "/learn/review");
+    const w = await mountPage(ReviewView, "/course/review");
     expect(w.text()).toContain("到期复习");
     expect(errors).toEqual([]);
   });
 
-  it("课程页（菜单）", async () => {
-    const w = await mountPage(LessonView, "/learn/l4");
-    expect(w.find(".lesson").exists()).toBe(true);
-    // 菜单顺序 = activityKeys（song 打头）：童谣→学单词→听音→连线→跟读→亲子对话
-    // 2026-10：闯关地图是默认落地页，卡片目录不再放"闯关挑战"入口
-    const tiles = w.findAll(".tile").map((t) => t.text());
-    expect(tiles[0]).toContain("学童谣");
-    expect(tiles[1]).toContain("学单词");
-    expect(tiles[2]).toContain("听音选图");
-    expect(w.text()).not.toContain("闯关挑战");
-  });
+  /* ---------- 变体行为（数据驱动的玩法变体，回归锁） ---------- */
 
   it("l11 学单词按词群分 Colors / Animals 两部分（切 tab 换词表）", async () => {
-    const w = await mountPage(LessonView, "/learn/l11/learn");
+    const w = await mountPage(LessonView, "/course/l11/learn");
     await flushPromises();
     // 两个分组 tab
     const tabTexts = w.findAll(".group-switch__btn").map((b) => b.text());
@@ -251,7 +267,7 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   });
 
   it("l11 学童谣也按词群切歌：默认第一轨 Brown Bear（Animals），可切 Colors", async () => {
-    const w = await mountPage(LessonView, "/learn/l11/song");
+    const w = await mountPage(LessonView, "/course/l11/song");
     await flushPromises();
     const chipText = () => w.findAll(".words-strip .chip").map((c) => c.text()).join(" ");
     // 默认跟第一轨的词群（Brown Bear 动物歌）——课程主打歌不该藏在切换后面
@@ -265,7 +281,7 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   });
 
   it("学童谣的领星入口是真按钮（曾因 SongView 丢 BaseButton 导入渲染成 <basebutton>，点了没反应）", async () => {
-    const w = await mountPage(LessonView, "/learn/l11/song");
+    const w = await mountPage(LessonView, "/course/l11/song");
     await flushPromises();
     const finish = w.find(".finish");
     expect(finish.exists()).toBe(true);
@@ -273,18 +289,18 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(finish.text()).toContain("星星");
   });
 
-  it("玩法直达子路径 /learn/:id/:stage 能渲染（#/learn/l4/learn）", async () => {
-    const w = await mountPage(LessonView, "/learn/l4/learn");
-    // 子路径直达应直接进入看图学词（而不是菜单）
-    expect(w.text()).toContain("点图片听发音");
-    expect(errors).toEqual([]);
-  });
-
-  it("角色详情页（宝藏库奥特曼）", async () => {
-    const w = await mountPage(HeroDetailView, "/me/treasure/hero/tiga");
-    expect(w.text()).toContain("迪迦");
-    expect(w.text()).toContain("介绍");
-    expect(w.text()).toContain("招牌技能");
-    expect(errors).toEqual([]);
-  });
+  /* ---------- 全课 × 全玩法：加课的机器验收 ----------
+   * 加新课（含其全部变体数据）后，这里自动长出该课 × 其全部玩法的挂载用例；
+   * 哪课哪个玩法白屏，用例名直接点名。这是「标准新课 = 组件零改动」的验收线。 */
+  for (const lesson of lessons) {
+    for (const key of activityKeys(lesson)) {
+      it(`${lesson.id}（${lesson.titleZh}）· ${key} 渲染冒烟`, async () => {
+        const seg = STAGE_PATH[key] ?? key;
+        const w = await mountPage(LessonView, `/course/${lesson.id}/${seg}`);
+        await flushPromises();
+        expect(w.find(".lesson").exists()).toBe(true);
+        expect(errors).toEqual([]);
+      });
+    }
+  }
 });
