@@ -39,7 +39,8 @@ const buildGroups = (): Group[] => {
   const out: Group[] = [];
   for (let i = 0; i < picked.length; i += groupSize.value) {
     const slice = picked.slice(i, i + groupSize.value);
-    if (slice.length < 2) break;
+    // 剩 1 个词也要练（1 对 = 2 张卡）：曾经 < 2 直接丢弃，9 词的组永远少练最后一个词
+    if (slice.length < 1) break;
     const cards: Card[] = slice.flatMap((w) => [
       { uid: `${w.id}-img`, wordId: w.id, kind: "img" as const, word: w },
       { uid: `${w.id}-word`, wordId: w.id, kind: "word" as const, word: w }
@@ -55,6 +56,10 @@ const groupCount = computed(() => groups.value.length);
 const curGroup = computed(() => groups.value[groupIdx.value] || { cards: [] });
 const totalPairs = computed(() => props.words.length);
 const donePairs = computed(() => matchedUids.value.size / 2);
+/** 当前组的对数：词数不整除时最后一组比 groupSize 小（10 词 → 4/4/2） */
+const curPairs = computed(() => curGroup.value.cards.length / 2);
+/** 全局累计已配对数（换组不清零：顶栏进度/计数跨组单调递增，不回退） */
+const solvedPairs = ref(0);
 
 watch(groupIdx, async () => {
   flipped.value = [];
@@ -62,7 +67,7 @@ watch(groupIdx, async () => {
   lockBoard.value = false;
 });
 
-watch(groupCount, () => emit("total", groupCount.value * groupSize.value), { immediate: true });
+watch(groupCount, () => emit("total", totalPairs.value), { immediate: true });
 
 const stars = computed(() => {
   if (wrongCount.value <= 1) return 3;
@@ -71,8 +76,11 @@ const stars = computed(() => {
 });
 
 watch(donePairs, async (n) => {
-  emit("progress", n / totalPairs.value);
-  if (n < groupSize.value) return;
+  // 顶栏进度条口径是 0-100（LessonProgressHeader.playPct），跨组用累计值
+  emit("progress", Math.round((solvedPairs.value / totalPairs.value) * 100));
+  // 完成判定按"当前组实际对数"（曾经误用固定的 groupSize：
+  // 10 词课最后一组只有 2 对，2 < 4 永远不结算，关卡卡死在最后一组）
+  if (n < curPairs.value) return;
   // 本组配完
   await new Promise((r) => setTimeout(r, 900));
   if (groupIdx.value + 1 >= groupCount.value) {
@@ -99,6 +107,7 @@ async function flipCard(card: Card) {
     // 配对成功：同词图+词
     matchedUids.value.add(a.uid);
     matchedUids.value.add(b.uid);
+    solvedPairs.value++;
     flipped.value = [];
     sfxCorrect();
     progress.recordWord(a.word.lessonId, a.word.id, { correct: 1 });
@@ -130,9 +139,9 @@ onBeforeUnmount(() => {
         翻两张卡片，找到相同单词的图和词
       </p>
       <span class="counter" v-if="groupCount > 1">
-        第 {{ groupIdx + 1 }} / {{ groupCount }} 组 · {{ donePairs }}/{{ totalPairs }}
+        第 {{ groupIdx + 1 }} / {{ groupCount }} 组 · {{ solvedPairs }}/{{ totalPairs }}
       </span>
-      <span class="counter" v-else>{{ donePairs }} / {{ totalPairs }}</span>
+      <span class="counter" v-else>{{ solvedPairs }} / {{ totalPairs }}</span>
     </div>
 
     <div class="board view-body">

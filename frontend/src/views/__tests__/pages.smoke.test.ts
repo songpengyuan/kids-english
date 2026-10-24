@@ -54,7 +54,7 @@ vi.mock("../../services/effects", () => ({
 
 import LearnView from "../../views/learn/LearnView.vue";
 import GameView from "../game/GameView.vue";
-import GameLessonView from "../game/GameLessonView.vue";
+import CourseDetailView from "../course/CourseDetailView.vue";
 import MyView from "../me/MyView.vue";
 import ReportView from "../me/ReportView.vue";
 import TreasureView from "../me/TreasureView.vue";
@@ -90,7 +90,7 @@ const routes = [
           { path: "talk", name: "lesson-talk", component: LessonView },
         ],
       },
-      { path: ":id/game", name: "course-game", component: GameLessonView },
+      { path: ":id/detail", name: "course-detail", component: CourseDetailView },
       { path: "review", name: "review", component: ReviewView },
     ],
   },
@@ -153,10 +153,10 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(errors).toEqual([]);
   });
 
-  it("当前课游戏地图（只服务本课关卡）", async () => {
-    const w = await mountPage(GameLessonView, "/learn/l10/game");
+  it("当前课游戏地图（课程详情页 game 视图，只服务本课关卡）", async () => {
+    const w = await mountPage(CourseDetailView, "/learn/l10/detail", { view: "game" });
     // 标题显示本课课程名 + 关卡列表（唱童谣/学单词…）
-    expect(w.text()).toContain("Walking In The Jungle");
+    expect(w.text()).toContain("丛林里散步");
     expect(w.text()).toContain("学单词");
     // 只画本课 9 关（8 玩法 + 宝箱），序号本课内 1..9
     const nodes = w.findAll(".gp-level");
@@ -250,18 +250,18 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(words()).not.toContain("brown");
   });
 
-  it("l11 学童谣也按词群切歌：Colors 只有颜色词，Animals 切到 Brown Bear", async () => {
+  it("l11 学童谣也按词群切歌：默认第一轨 Brown Bear（Animals），可切 Colors", async () => {
     const w = await mountPage(LessonView, "/learn/l11/song");
     await flushPromises();
     const chipText = () => w.findAll(".words-strip .chip").map((c) => c.text()).join(" ");
-    // 默认 Colors：词条条只有颜色词
-    expect(chipText()).toContain("brown");
-    expect(chipText()).not.toContain("bear");
-    // 切到 Animals：换成 Brown Bear 的动物词
-    await w.findAll(".group-switch__btn").find((b) => b.text().includes("Animals"))!.trigger("click");
-    await flushPromises();
+    // 默认跟第一轨的词群（Brown Bear 动物歌）——课程主打歌不该藏在切换后面
     expect(chipText()).toContain("bear");
     expect(chipText()).not.toContain("brown");
+    // 切到 Colors：换成颜色歌的颜色词
+    await w.findAll(".group-switch__btn").find((b) => b.text().includes("Colors"))!.trigger("click");
+    await flushPromises();
+    expect(chipText()).toContain("brown");
+    expect(chipText()).not.toContain("bear");
   });
 
   it("玩法直达子路径 /learn/:id/:stage 能渲染（#/learn/l4/learn）", async () => {

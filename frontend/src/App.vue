@@ -109,10 +109,11 @@ onMounted(() => {
 
 <template>
   <CuteBackdrop />
-  <!-- 缓存三个页面壳（学习主页 #/course、多课总地图 #/game、本课地图 #/course/:id/game）：
-       回地图时 GamePath 的 onActivated 对比关卡状态触发解锁动效、恢复滚动位置 -->
+  <!-- 缓存两个页面壳（学习主页 #/course、多课总地图 #/game）：
+       回地图时 GamePath 的 onActivated 对比关卡状态触发解锁动效、恢复滚动位置。
+       （本课地图 #/course/:id/detail 未缓存：CourseDetailView 每次进都要重测关卡状态） -->
   <router-view v-slot="{ Component }">
-    <KeepAlive include="LearnView,GameView,GameLessonView">
+    <KeepAlive include="LearnView,GameView">
       <component :is="Component" />
     </KeepAlive>
   </router-view>

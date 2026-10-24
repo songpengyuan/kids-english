@@ -122,6 +122,7 @@ watch(
 const {
   stage,
   lastStars,
+  lastActKey,
   streakJustHit,
   lessonProgress,
   nextLesson,
@@ -166,6 +167,37 @@ function openGame() {
   void router.push({ name: "course-detail", params: { id: lessonId.value }, query: { view: "game" } });
 }
 const { questMode, questDone, questLevel, currentActName, nextLevel } = quest;
+
+/* ---------- 结算页衔接（阶段 2026-10-24 走查收口） ---------- */
+/** 闯关结算：本课玩法全部通关且宝箱未领 → 结算页给"开宝箱"出口。
+ *  曾经最后一关 nextLevel 为 null 时结算页没有任何按钮，宝箱刚解锁孩子却不知道。 */
+const chestReady = computed(() => {
+  if (!questMode.value || !questDone.value) return false;
+  const l = lesson.value;
+  if (!l) return false;
+  if (!activities.value.every((a) => showStars(a.key) > 0)) return false;
+  return !((progress.progress[l.id]?.completed as string[]) || []).includes("chest");
+});
+/** 自由结算：分组课（l11）切到另一个词组再练同一玩法（否则闯完一整条链只练了默认组一半的词） */
+const nextGroup = computed(() => {
+  if (questMode.value || stage.value !== "result") return null;
+  const groups = wordGroups.value;
+  if (groups.length < 2) return null;
+  if (!GROUPED_STAGES.has(lastActKey.value)) return null;
+  const other = groups.find((g) => g.key !== activeGroup.value);
+  return other ?? null;
+});
+function practiceGroup() {
+  const g = nextGroup.value;
+  if (!g) return;
+  activeGroup.value = g.key;
+  const act = activities.value.find((a) => a.key === lastActKey.value);
+  if (act) open(act);
+}
+/** 闯关结算页领宝箱：标记该课宝箱已领取（与地图宝箱关同一口径） */
+function claimChest() {
+  if (lessonId.value) progress.markChest(lessonId.value);
+}
 /** 玩法页（答题中）：顶部按钮用"关闭"（✕）而非返回箭头（多邻国式）。
  *  除 menu/result 外都是玩法页——别再手写玩法 key 列表（新增 memory/order 时漏项，
  *  会把它们误当菜单页：顶栏没有进度、左上角还是返回箭头）。 */
@@ -193,10 +225,13 @@ const playWords = computed(() => {
   if (!showGroupSwitch.value) return lesson.value?.words ?? [];
   return wordGroups.value.find((g) => g.key === activeGroup.value)?.words ?? [];
 });
+/** 用户手动切过词群（手动选择优先于玩法默认组） */
+const groupPicked = ref(false);
 // 换课/远端详情回来导致分组变化时，把选中项挪到第一个有效组
 watch(
   wordGroups,
   (groups) => {
+    groupPicked.value = false; // 换课 = 重新按玩法默认，不继承上一课的手动选择
     if (!groups.some((g) => g.key === activeGroup.value)) {
       activeGroup.value = groups[0]?.key ?? "";
     }
@@ -207,6 +242,19 @@ watch(
 watch(activeGroup, () => {
   playPct.value = 0;
   playTotal.value = 0;
+});
+
+/** 各玩法的默认词群：唱童谣跟**第一轨**的词群（l11 第一轨是 Brown Bear 动物歌，
+ *  课程主打歌不该藏在切换后面）；词类玩法跟 wordGroups 顺序（l11：先颜色后动物）。
+ *  只在孩子没手动选过时生效——选过就全程尊重孩子的选择。 */
+watch(stage, (s) => {
+  if (groupPicked.value) return;
+  const firstTrack = lesson.value?.song.group;
+  if (s === "song" && firstTrack && wordGroups.value.some((g) => g.key === firstTrack)) {
+    activeGroup.value = firstTrack;
+  } else if (s === "learn" || s === "quiz" || s === "memory" || s === "speak") {
+    activeGroup.value = wordGroups.value[0]?.key ?? "";
+  }
 });
 
 /* ---------- 玩法舞台：stage → 组件注册表 ----------
@@ -285,7 +333,8 @@ const playStage = computed(() => {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h6a4 4 0 0 0 0-8h-4a4 4 0 0 1 0-8h6"/></svg>
         </button>
       </template>
-      <!-- 词群切换（l11：颜色 / 动物）：紧凑放右上角，不占整行 -->
+      <!-- 词群切换（l11：颜色 / 动物）：紧凑放右上角，不占整行。
+           手动切换后记住选择（不再被玩法的默认组覆盖） -->
       <template v-if="showGroupSwitch" #right>
         <div class="group-switch">
           <button
@@ -293,7 +342,7 @@ const playStage = computed(() => {
             :key="g.value"
             class="group-switch__btn"
             :class="{ on: activeGroup === g.value }"
-            @click="activeGroup = g.value"
+            @click="groupPicked = true; activeGroup = g.value"
           >{{ g.label }}</button>
         </div>
       </template>
@@ -332,10 +381,15 @@ const playStage = computed(() => {
       :quest-level="questLevel"
       :act-name="currentActName"
       :next-level="questMode && questDone ? (nextLevel || null) : null"
-      :next-lesson="!questMode ? (nextLesson || null) : null"
+      :next-lesson="nextLesson || null"
+      :chest-ready="chestReady"
+      :next-group="nextGroup"
+      :max-stars="lastActKey === 'song' ? 1 : 3"
       @go-next-level="goNextLevel"
       @to-menu="toMenu"
       @go-next-lesson="router.push('/course/' + (nextLesson?.id ?? ''))"
+      @open-chest="claimChest"
+      @go-group-practice="practiceGroup"
     />
 
   </div>

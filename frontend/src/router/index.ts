@@ -27,7 +27,7 @@
  *
  *   父路由**不带组件**（纯路径容器）：所有页面组件都渲染在 App 顶层 router-view，
  *   行为与平铺一致、各页自带 HeaderBar 全屏，仅 URL 语义分层；
- *   KeepAlive 缓存三个页面壳（LearnView / GameView / GameLessonView）。
+ *   KeepAlive 缓存两个页面壳（LearnView / GameView；本课地图在 CourseDetailView 里，不缓存）。
  *
  * - 加载策略（配合 sw 预缓存清单，见 vite.config.js kids-pwa 插件）：
  *   · 学习主链路（学习主页/课程/玩法）**同步加载**——离线首开最稳，装完即有；

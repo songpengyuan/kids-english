@@ -17,10 +17,13 @@ import LessonMenu from "../../components/lesson/LessonMenu.vue";
 import { activityKeys, getLesson as getLocalLesson, type Lesson } from "../../data/lessons";
 import type { QuestAct } from "../../composables/useQuest";
 import { useContentStore } from "../../stores/content";
+import { useProgressStore } from "../../stores/progress";
+import { BookOpen, Headphones, Layers, Link2, MessageCircle, Mic, Music, PenLine } from "@lucide/vue";
 
 const route = useRoute();
 const router = useRouter();
 const content = useContentStore();
+const progress = useProgressStore();
 
 const lessonId = computed(() => route.params.id as string);
 const lesson = ref<Lesson | null>(getLocalLesson(lessonId.value));
@@ -47,23 +50,45 @@ function goBack() {
   void router.push("/course");
 }
 
-/** 玩法清单（与 LessonView 同源：activityKeys 是唯一顺序来源） */
+/** 玩法清单（与 LessonView 同源：activityKeys 是唯一顺序来源）。
+ *  图标用 lucide 组件（曾经传 "ear" 之类字符串，<component :is> 渲染不出 → 瓷片空白）；
+ *  星数取进度 store（曾经不传，玩过的玩法也看不到星标）。 */
+const ACT_META: Record<string, { name: string; tone: string; icon: unknown }> = {
+  song: { name: "唱童谣", tone: "green", icon: Music },
+  learn: { name: "学单词", tone: "orange", icon: BookOpen },
+  quiz: { name: "听音选图", tone: "blue", icon: Headphones },
+  memory: { name: "翻牌记忆", tone: "blue", icon: Layers },
+  match: { name: "连一连", tone: "purple", icon: Link2 },
+  speak: { name: "跟读", tone: "pink", icon: Mic },
+  order: { name: "拼句子", tone: "teal", icon: PenLine },
+  talk: { name: "亲子对话", tone: "teal", icon: MessageCircle },
+};
 const activities = computed<(QuestAct & { stars?: number })[]>(() => {
-  if (!lesson.value) return [];
-  return activityKeys(lesson.value).map((key) => {
-    const meta: Record<string, { name: string; tone: string; icon: any }> = {
-      song: { name: "唱童谣", tone: "green", icon: "music" },
-      learn: { name: "学单词", tone: "orange", icon: "book" },
-      quiz: { name: "听音选图", tone: "blue", icon: "ear" },
-      memory: { name: "翻牌记忆", tone: "blue", icon: "cards" },
-      match: { name: "连一连", tone: "purple", icon: "link" },
-      speak: { name: "跟读", tone: "pink", icon: "mic" },
-      order: { name: "拼句子", tone: "teal", icon: "blocks" },
-      talk: { name: "亲子对话", tone: "teal", icon: "chat" },
-    };
-    const m = meta[key] || { name: key, tone: "blue", icon: "star" };
-    return { key, name: m.name, tone: m.tone, game: key } as QuestAct & { stars?: number };
+  const l = lesson.value;
+  if (!l) return [];
+  const p = progress.progress[l.id];
+  return activityKeys(l).map((key) => {
+    const m = ACT_META[key] || { name: key, tone: "blue", icon: Music };
+    return {
+      key,
+      name: m.name,
+      tone: m.tone,
+      icon: m.icon,
+      game: key,
+      stars: (p?.[key as keyof typeof p] as number) || 0,
+    } as QuestAct & { stars?: number };
   });
+});
+
+/** 课程完成度（与闯关地图同一口径：玩过的玩法数 / 总玩法数） */
+const lessonProgress = computed(() => {
+  const l = lesson.value;
+  if (!l) return 0;
+  const p = progress.progress[l.id];
+  const keys = activityKeys(l);
+  const completed = (p?.completed as string[] | undefined) || [];
+  const done = keys.filter((k) => completed.includes(k)).length;
+  return Math.min(100, Math.round((done / keys.length) * 100));
 });
 
 function openActivity(key: string) {
@@ -112,7 +137,7 @@ function openActivity(key: string) {
     <div v-else-if="view === 'menu'" class="menu-wrap">
       <LessonMenu
         :activities="activities"
-        :progress="0"
+        :progress="lessonProgress"
         @open-song="openActivity('song')"
         @open-learn="openActivity('learn')"
         @open-activity="(a) => openActivity(a.key)"

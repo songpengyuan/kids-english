@@ -51,17 +51,22 @@ describe("LessonResult 星星", () => {
 });
 
 /**
- * 闯关结算口径（2026-10-19 产品调整）：
- *  - 关卡完成**不再开宝箱**——完成即停在大画面；
+ * 闯关结算口径（2026-10-19 产品调整；2026-10-24 走查补衔接）：
+ *  - 关卡完成**不自动开宝箱**——完成即停在大画面；
  *  - 底部**不再有**「返回闯关地图」按钮（回地图只走左上角 ←）；
- *  - 只在有下一关时给「下一关」一个按钮。
- * 这三条是显式口径，容易被"顺手加回来"，所以各锁一条用例。
+ *  - 底部始终最多一个"下一步"动作，按序接力：
+ *    有下一关 →「下一关」；最后一关且宝箱刚解锁 →「开宝箱」（点开才弹）；
+ *    宝箱已领/无宝箱但有下一课 →「下一课」。曾经最后一关什么都不给，
+ *    宝箱解锁了孩子看不到出口（走查 P1）。
  */
 describe("LessonResult 闯关结算", () => {
   /** 按钮用渲染 slot 的桩（真按钮的文案才能被 text() 断言到） */
   const btnStub = { template: "<button><slot /></button>" };
 
-  function mountQuest(nextLevel: { actKey: string; name: string } | null) {
+  function mountQuest(
+    nextLevel: { actKey: string; name: string } | null,
+    extra: Record<string, unknown> = {}
+  ) {
     return mount(LessonResult, {
       props: {
         mode: "quest",
@@ -71,12 +76,13 @@ describe("LessonResult 闯关结算", () => {
         questLevel: 2,
         actName: "听音选图",
         nextLevel,
+        ...extra,
       },
       global: { stubs: { BaseButton: btnStub, ChestReward: true } },
     });
   }
 
-  it("闯关完成：显示「第 N 关完成」且不开宝箱", () => {
+  it("闯关完成：显示「第 N 关完成」且不自动开宝箱", () => {
     const w = mountQuest({ actKey: "match", name: "连一连" });
     expect(w.text()).toContain("第 2 关完成！");
     expect(w.findComponent({ name: "ChestReward" }).exists()).toBe(false);
@@ -90,16 +96,69 @@ describe("LessonResult 闯关结算", () => {
     expect(w.text()).not.toContain("返回闯关地图");
   });
 
-  it("闯关最后一关：没有下一关时不渲染任何按钮", () => {
+  it("闯关最后一关且宝箱未解锁/未传入：不渲染按钮", () => {
     const w = mountQuest(null);
     expect(w.findAll("button")).toHaveLength(0);
   });
 
-  it("自由练习结算仍开宝箱", () => {
+  it("闯关最后一关 + 宝箱刚解锁：给「开宝箱」出口，点击才弹宝箱层", async () => {
+    const w = mountQuest(null, { chestReady: true, nextLesson: { id: "l12", title: "Head Shoulders" } });
+    const btns = w.findAll("button");
+    expect(btns).toHaveLength(1);
+    expect(btns[0].text()).toContain("开宝箱");
+    // 不自动弹层：点按钮才挂载 ChestReward
+    expect(w.findComponent({ name: "ChestReward" }).exists()).toBe(false);
+    await btns[0].trigger("click");
+    expect(w.findComponent({ name: "ChestReward" }).exists()).toBe(true);
+    // 领取（层 done）：上抛 openChest（父组件 markChest），接力出「下一课」
+    w.findComponent({ name: "ChestReward" }).vm.$emit("done");
+    await w.vm.$nextTick();
+    expect(w.emitted("openChest")).toHaveLength(1);
+    expect(w.text()).toContain("本课全部完成");
+  });
+
+  it("闯关最后一关 + 宝箱已领（chestReady=false）+ 有下一课：接力「下一课」", () => {
+    const w = mountQuest(null, { chestReady: false, nextLesson: { id: "l12", title: "Head Shoulders" } });
+    const btns = w.findAll("button");
+    expect(btns).toHaveLength(1);
+    expect(btns[0].text()).toContain("下一课");
+  });
+
+  it("唱童谣（maxStars=1）不再提示「重玩可拿满 3 星」", () => {
+    const w = mountQuest({ actKey: "learn", name: "学单词" }, { maxStars: 1 });
+    expect(w.text()).not.toContain("重玩可拿满 3 星");
+  });
+
+  it("自由练习结算仍自动开宝箱", () => {
     const w = mount(LessonResult, {
       props: { mode: "free", stars: 2, streakJustHit: false, streakDays: 0 },
       global: { stubs: { BaseButton: btnStub, ChestReward: true } },
     });
     expect(w.findComponent({ name: "ChestReward" }).exists()).toBe(true);
+  });
+});
+
+/** 自由结算的词组接力（l11 颜色/动物两组）：练完一组提示换另一组再练 */
+describe("LessonResult 换词组再练", () => {
+  const btnStub = { template: "<button><slot /></button>" };
+
+  function mountFree(extra: Record<string, unknown> = {}) {
+    return mount(LessonResult, {
+      props: { mode: "free", stars: 2, streakJustHit: false, streakDays: 0, ...extra },
+      global: { stubs: { BaseButton: btnStub, ChestReward: true } },
+    });
+  }
+
+  it("分组课：显示「换 X 组再练」并上抛 goGroupPractice", async () => {
+    const w = mountFree({ nextGroup: { key: "animals", name: "Animals" } });
+    const btn = w.findAll("button").find((b) => b.text().includes("换 Animals"));
+    expect(btn).toBeTruthy();
+    await btn!.trigger("click");
+    expect(w.emitted("goGroupPractice")).toHaveLength(1);
+  });
+
+  it("非分组课：不显示换组按钮", () => {
+    const w = mountFree();
+    expect(w.text()).not.toContain("组再练");
   });
 });

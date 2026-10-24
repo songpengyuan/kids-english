@@ -8,7 +8,7 @@
  * 本课地图传 lesson = 只画这一课 + 本课内序号。
  *
  * 滚动由 GamePath 自带的 .game-path-scroll 负责；本页只提供剩余高度。
- * KeepAlive 缓存整页（App.vue include="LearnView,GameView,GameLessonView"），
+ * KeepAlive 缓存整页（App.vue include="LearnView,GameView"），
  * 返回本页时 GamePath 的 onActivated 对比关卡状态触发解锁动效。
  * 顶栏带返回（游戏非底部主 tab，从学习页进入，返回即回学习）。
  */

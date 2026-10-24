@@ -26,12 +26,22 @@ defineProps<{
   actName?: string;
   nextLevel?: { actKey: string; name: string } | null;
   nextLesson?: { id: string; title: string } | null;
+  /** 闯关结算：本课玩法全部通关 → 宝箱关已解锁，给"开宝箱"出口（没有它最后一关没有任何下一步） */
+  chestReady?: boolean;
+  /** 自由结算：分组课（l11 颜色/动物）还没练的另一个词组 → "换组再练"入口 */
+  nextGroup?: { key: string; name: string } | null;
+  /** 该玩法的星数上限（song 记 1 分封顶，别再提示"重玩可拿满 3 星"） */
+  maxStars?: number;
 }>();
 
 const emit = defineEmits<{
   goNextLevel: [];
   toMenu: [];
   goNextLesson: [];
+  /** 开宝箱（闯关结算页直接领地图宝箱关的奖励；领取动作由父组件 markChest） */
+  openChest: [];
+  /** 自由结算：切换词组重练同一玩法 */
+  goGroupPractice: [];
 }>();
 
 /**
@@ -39,6 +49,16 @@ const emit = defineEmits<{
  * 之前这里没接 @done：收取后组件仍留在 collected 态，界面卡在"已收进宝藏罐"没法退出。
  */
 const chestDone = ref(false);
+/** 闯关结算的宝箱关：点"开宝箱"才弹出（不自动打断大画面），领完由父组件标记已领取 */
+const questChestOpen = ref(false);
+const questChestClaimed = ref(false);
+function onQuestChestDone() {
+  questChestOpen.value = false;
+  if (!questChestClaimed.value) {
+    questChestClaimed.value = true;
+    emit("openChest");
+  }
+}
 /** 防止"下一关/下一课"按钮重复点击导致连续跳转 */
 const navClicked = ref(false);
 function nav(fn: () => void) {
@@ -65,15 +85,26 @@ function nav(fn: () => void) {
         </span>
       </div>
       <h2>{{ actName }} · 获得 <span class="star-num">{{ stars }}</span> 颗星</h2>
-      <p v-if="stars < 3" class="quest-total-stars">重玩可拿满 3 星</p>
+      <p v-if="stars < 3 && maxStars !== 1" class="quest-total-stars">重玩可拿满 3 星</p>
       <!-- 今日目标首次达成：连击火焰横幅 -->
       <div v-if="streakJustHit" class="streak-banner anim-pop">
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
-      <!-- 闯关完成不开箱：停在大画面，只给「下一关」一个出口（返回地图走左上角 ←） -->
+      <!-- 闯关完成不开箱：停在大画面，只给一个"下一步"出口（返回地图走左上角 ←）。
+           下一关不存在时依次接力：宝箱刚解锁 → 开宝箱；宝箱已领 → 下一课。
+           曾经最后一关 nextLevel 为 null 就什么都不给，宝箱解锁了孩子也不知道。 -->
       <div v-if="nextLevel" class="btn-row">
         <BaseButton :disabled="navClicked" @click="nav(() => emit('goNextLevel'))">
           下一关：<PathIcon :name="nextLevel.actKey" /> {{ nextLevel.name }} →
+        </BaseButton>
+      </div>
+      <div v-else-if="chestReady && !questChestClaimed" class="btn-row">
+        <BaseButton variant="green" @click="questChestOpen = true">🎁 课程宝箱已解锁，开宝箱</BaseButton>
+        <ChestReward v-if="questChestOpen" @done="onQuestChestDone" />
+      </div>
+      <div v-else-if="nextLesson" class="btn-row">
+        <BaseButton variant="green" :disabled="navClicked" @click="nav(() => emit('goNextLesson'))">
+          本课全部完成 🎉 下一课：{{ nextLesson.title }} →
         </BaseButton>
       </div>
     </template>
@@ -99,6 +130,9 @@ function nav(fn: () => void) {
       <ChestReward v-if="!chestDone" @done="chestDone = true" />
       <div class="btn-row">
         <BaseButton variant="green" @click="emit('toMenu')">再选一个玩法</BaseButton>
+        <BaseButton v-if="nextGroup" variant="gray" @click="emit('goGroupPractice')">
+          换 {{ nextGroup.name }} 组再练
+        </BaseButton>
         <BaseButton v-if="nextLesson" variant="gray" :disabled="navClicked" @click="nav(() => emit('goNextLesson'))">
           下一课：<PathIcon :name="nextLesson.id" /> {{ nextLesson.title }}
         </BaseButton>

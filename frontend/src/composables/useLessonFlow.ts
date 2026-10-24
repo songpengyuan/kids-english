@@ -61,6 +61,8 @@ export interface UseLessonFlowOptions {
 export interface UseLessonFlow {
   stage: Ref<LessonStage>;
   lastStars: Ref<number>;
+  /** 刚结算的玩法 key（结算页 stage 已是 result，不能就地读 stage） */
+  lastActKey: Ref<string>;
   streakJustHit: Ref<boolean>;
   lessonProgress: ComputedRef<number>;
   nextLesson: ComputedRef<Lesson | null>;
@@ -80,6 +82,8 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
 
   const stage = ref<LessonStage>("menu");
   const lastStars = ref(0);
+  /** 刚结算的玩法 key：结算页判断星级上限（song 封顶 1 星）/ 词组切换入口用 */
+  const lastActKey = ref("");
   /** 今日目标刚达成（结算页显示连击横幅） */
   const streakJustHit = ref(false);
   /** 当前玩法会话开始时间戳（0 = 未开始），结算时累计进今日学情 */
@@ -190,6 +194,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     lastStars.value = s;
     const lessonId = lesson.value?.id ?? "";
     const actKey = stage.value;
+    lastActKey.value = actKey;
     // 首次通关判定要在写星之前取（写进去就都成"已完成"了）
     const firstTime = !((progress.progress[lessonId]?.[actKey] as number | undefined) ?? 0);
     progress.setGameStars(lessonId, actKey, s);
@@ -211,6 +216,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   function afterSong() {
     stage.value = "result";
     lastStars.value = 1;
+    lastActKey.value = "song";
     // 童谣星数由 SongView 内部记（markSong 幂等），这里只累计今日学情
     settleActivity();
     const first = streak.markNewLevel(true);
@@ -253,6 +259,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   return {
     stage,
     lastStars,
+    lastActKey,
     streakJustHit,
     lessonProgress,
     nextLesson,
