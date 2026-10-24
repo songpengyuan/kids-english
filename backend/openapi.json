@@ -2457,6 +2457,17 @@
             "title": "Title",
             "default": ""
           },
+          "titleZh": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Titlezh"
+          },
           "audio": {
             "anyOf": [
               {
