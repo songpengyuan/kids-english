@@ -275,8 +275,9 @@ function onCardDown(word, side, e) {
   }
   if (pairIntent !== null) return;
   // 听音模式：点声音卡只做"播放 + 选中"，不直接判定配对
-  // （孩子想"逐个听一遍再连"，不能把听一下当成连错）
-  if (mode.value === "sound" && side === "word") {
+  // （孩子想"逐个听一遍再连"，不能把听一下当成连错）。
+  //  colorMode 除外——颜色模式的左列虽然也是 "word" 侧，但它是色圆不是声音卡
+  if (!colorMode.value && mode.value === "sound" && side === "word") {
     speak(word.en, { lessonId: word.lessonId, wordId: word.id });
     // 触发声波动画
     playingId.value = word.id;
@@ -546,21 +547,24 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="col imgs">
+        <!-- 左列：普通模式 = 图片（img 侧）；颜色配对模式 = 色圆，扮演"另一侧"（word 侧）——
+             配对门控（点选配对/拖拽命中/多指配对）都要求两侧不同，曾经两列都标 img，
+             颜色↔动物怎么点都连不上（2026-10-25 走查实测复现） -->
         <div
           v-for="(w, i) in leftImgs"
           :key="w.id"
           :ref="(el) => setPicEl(w.id, el)"
           class="cell pic anim-pop"
           data-haptic
-          data-side="img"
+          :data-side="colorMode ? 'word' : 'img'"
           :data-word="w.id"
           :style="{ animationDelay: i * 0.06 + 's' }"
           :class="{
             gone: matched.has(w.id),
-            wrong: imgWrong === w.id,
-            active: startWord && startSide === 'img' && startWord.id === w.id
+            wrong: (colorMode ? wordWrong : imgWrong) === w.id,
+            active: startWord && startSide === (colorMode ? 'word' : 'img') && startWord.id === w.id
           }"
-          @pointerdown="onCardDown(w, 'img', $event)"
+          @pointerdown="onCardDown(w, colorMode ? 'word' : 'img', $event)"
         >
           <!-- 颜色配对模式：左列渲染纯色圆 -->
           <span

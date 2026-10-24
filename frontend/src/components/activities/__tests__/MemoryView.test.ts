@@ -12,6 +12,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
 
 vi.mock("../../../services/speech", () => ({ speak: vi.fn().mockResolvedValue(undefined) }));
+
+import { speak } from "../../../services/speech";
 vi.mock("../../../services/effects", () => ({
   sfxCorrect: vi.fn(),
   sfxWrong: vi.fn(),
@@ -118,6 +120,26 @@ describe("MemoryView 完成判定", () => {
       expect(w.emitted("done")).toHaveLength(1);
       w.unmount();
     }
+  });
+
+  it("翻词卡也发音：图卡、词卡翻动都要朗读（曾经只有图卡出声）", async () => {
+    const w = mount(MemoryView, { props: { words: makeWords(4) } });
+    vi.mocked(speak).mockClear();
+    const first = w.element.querySelectorAll(".m-card")[0];
+    const firstIsImg = !!first.querySelector("img");
+    const firstWord = first.querySelector("img")?.alt || first.querySelector(".word-text")?.textContent;
+    await w.findAll(".m-card")[0].trigger("pointerdown");
+    await w.vm.$nextTick();
+    expect(speak).toHaveBeenCalledTimes(1);
+    // 再翻另一侧、**不同词**的一张卡（避免凑成一对触发配对成功的第二次朗读）
+    const other = w.findAll(".m-card").find((c) => {
+      const hasImg = c.find("img").exists();
+      const word = c.element.querySelector("img")?.alt || c.element.querySelector(".word-text")?.textContent;
+      return hasImg !== firstIsImg && word !== firstWord;
+    });
+    await other!.trigger("pointerdown");
+    await w.vm.$nextTick();
+    expect(speak).toHaveBeenCalledTimes(2);
   });
 
   it("进度跨组累计（0-100）不回退，最终到 100", async () => {

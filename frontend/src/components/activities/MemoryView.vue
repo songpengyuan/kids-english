@@ -109,10 +109,8 @@ async function flipCard(card: Card) {
   if (flipped.value.includes(card.uid)) return;
   sfxTap();
   flipped.value.push(card.uid);
-  // 翻图卡顺便发音
-  if (card.kind === "img") {
-    speak(card.word.en, { lessonId: card.word.lessonId, wordId: card.word.id });
-  }
+  // 翻卡即发音：图卡、词卡都要读（音-图-形三重对应；曾经只有图卡出声）
+  speak(card.word.en, { lessonId: card.word.lessonId, wordId: card.word.id });
   if (flipped.value.length < 2) return;
 
   const [a, b] = flipped.value.map((uid) => curGroup.value.cards.find((c) => c.uid === uid)!);

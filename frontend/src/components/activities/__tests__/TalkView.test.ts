@@ -11,7 +11,7 @@
 import { describe, expect, it, vi, beforeEach, beforeAll, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
 
-vi.mock("../../../services/speech", () => ({ speak: vi.fn() }));
+vi.mock("../../../services/speech", () => ({ speak: vi.fn(), speakText: vi.fn() }));
 vi.mock("../../../services/effects", () => ({
   sfxCorrect: vi.fn(),
   sfxWrong: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock("../../../utils/speechScore", () => ({
 vi.mock("../../../utils/speakSession", () => ({ speakStars: () => 3 }));
 
 import TalkView from "../TalkView.vue";
-import { speak } from "../../../services/speech";
+import { speak, speakText } from "../../../services/speech";
 import { createRecorder } from "../../../utils/speechScore";
 
 /** jsdom 没有媒体播放，桩掉 play */
@@ -95,9 +95,9 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     const wrapper = mount(TalkView, { props: { lesson } });
     // 输入区就位
     expect(wrapper.find(".input-bar").exists()).toBe(true);
-    // 输入框上方显示孩子要说的话（点喇叭听发音）
+    // 输入框上方显示孩子要说的话（点喇叭听整句发音）
     expect(wrapper.find(".ci-say-text").text()).toBe("It's a frog.");
-    expect(wrapper.find(".ci-say").attributes("aria-label")).toContain("宝宝要说的话");
+    expect(wrapper.find(".ci-say").attributes("aria-label")).toContain("宝宝要说的句子");
     // 进页自动：家长消息出现在左侧 + 朗读问句
     await vi.advanceTimersByTimeAsync(400);
     const parentMsg = wrapper.findAll(".msg-row.parent");
@@ -174,5 +174,26 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     expect(btn.text()).toContain("我都会啦");
     await btn.trigger("click");
     expect(wrapper.emitted("done")?.[0]?.[0]).toBe(3);
+  });
+
+  it("点「宝宝要说的话」读整句而非单词（曾经只读单词）", async () => {
+    const wrapper = mount(TalkView, { props: { lesson } });
+    vi.mocked(speakText).mockClear();
+    vi.mocked(speak).mockClear();
+    await wrapper.find(".ci-say").trigger("click");
+    // 读的是完整答句，不是 "frog"
+    expect(speakText).toHaveBeenCalledWith("It's a frog.");
+    expect(speak).not.toHaveBeenCalledWith("frog", expect.anything());
+  });
+
+  it("点孩子消息气泡重听那句答句（整句）", async () => {
+    const stop = vi.fn().mockResolvedValue("blob:rec-url");
+    vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);
+    const wrapper = mount(TalkView, { props: { lesson } });
+    await passOneRound(wrapper);
+    vi.mocked(speakText).mockClear();
+    const kid = wrapper.findAll(".msg-row.kid")[0];
+    await kid.find(".msg-bubble").trigger("click");
+    expect(speakText).toHaveBeenCalledWith("It's a frog.");
   });
 });

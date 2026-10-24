@@ -35,7 +35,7 @@
  *   另外把"🎤 按住说话"改成"点一下说话"——实现是点击切换，键面必须等于行为。
  */
 import { computed, nextTick, ref, watch, onMounted } from "vue";
-import { speak } from "../../services/speech";
+import { speak, speakText } from "../../services/speech";
 import { hapticTap } from "../../services/haptics";
 import { sfxCorrect, sfxWrong, bigCelebrate } from "../../services/effects";
 import { useSpeechSession } from "../../composables/useSpeechSession";
@@ -187,9 +187,16 @@ onMounted(() => {
 function playQuestion() {
   if (questionPhrase.value) speak(questionPhrase.value.en);
 }
-/** 播放单词发音（点孩子消息里的大图提示孩子怎么说） */
-function playWord(w: Word) {
-  speak(w.en, { lessonId: w.lessonId, wordId: w.id });
+/**
+ * 播放孩子的答句（整句，非单词）：底部「宝宝要说的话」和孩子消息气泡点读都用它。
+ * 曾经点「It's a frog.」只读 "frog"——键面是句子、读的却是单词。
+ */
+function playAnswer(w: Word) {
+  speakText(answerText(w));
+}
+/** 点孩子消息气泡：重听那句已发出的答句 */
+function playSentence(text?: string) {
+  if (text) speakText(text);
 }
 /** 点底部输入框：开始 / 停止录音（说完 = 发消息） */
 function toggleMic() {
@@ -227,7 +234,7 @@ function finish() {
       >
         <span v-if="m.role === 'parent'" class="msg-av mom" aria-hidden="true">👩</span>
         <div class="msg-col">
-          <div class="msg-bubble" :class="m.role" @click="m.role === 'parent' ? playQuestion() : m.word && playWord(m.word)">
+          <div class="msg-bubble" :class="m.role" @click="m.role === 'parent' ? playQuestion() : m.word && playSentence(m.text)">
             <template v-if="m.role === 'parent'">
               <!-- 家长发题：文字在上、图片在下（孩子看图回答，不显示英文答案） -->
               <span class="msg-text">{{ m.text }}</span>
@@ -267,7 +274,7 @@ function finish() {
     <div v-if="!allPassed" class="chat-input">
       <!-- 孩子这一轮要说的句子：**始终显示**（点喇叭听发音）。
            麦克风不可用时更要显示——对话流里只有"上一轮"的答句，孩子根本不知道该说什么。 -->
-      <button class="ci-say" aria-label="宝宝要说的话，点一下听发音" @click="playWord(cur)">
+      <button class="ci-say" aria-label="宝宝要说的句子，点一下听整句发音" @click="playAnswer(cur)">
         <span class="ci-say-text">{{ answerText(cur) }}</span>
         <Volume2 class="ci-say-vol k-ico" />
       </button>
