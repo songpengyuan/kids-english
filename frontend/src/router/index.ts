@@ -10,14 +10,15 @@
  *   #/course（学习域；历史旧路径 #/learn 已不再兼容，见文件底部说明）
  *     ├─ /course                         课程主页（父容器空 path 子路由，顶层渲染）
  *     ├─ /course/:id                     课时本位：课程详情（地图 + 卡片目录，?view= 切换）
- *     │   ├─ /course/:id/learn|hear|...  题型子路由（二级，继承父组件，仅声明 name/meta）
- *     │   ├─ /course/:id/game            旧本课地图路径 → 重定向到本位 ?view=game
- *     │   ├─ /course/:id/game/quest      本课闯关玩法（URL 归属课程域：课时是主资源）
- *     │   └─ /course/:id/detail          旧详情路径 → 重定向到本位
+ *     │   ├─ /course/:id/learn|hear|...  题型子路由（二级，仅声明 name/meta）
+ *     │   └─ /course/:id/game/quest      本课闯关玩法（课时是主资源，玩法嵌在课程下）
  *     └─ /course/review                  错词复习（跨课学习闭环：学 → 错 → 复习）
  *   #/game（游戏域）
- *     ├─ /game                          多课总地图（入口已收起）
- *     └─ /game/quest/:id/:stage?        旧闯关路径 → 重定向到 /course/:id/game/quest
+ *     └─ /game                          多课总地图（入口已收起）
+ *
+ *   旧地址一律**不留兼容重定向**（家用 PWA 无外部书签负担，留着只是死代码）：
+ *   /game/quest/:id、/game/lesson/:id、/course/:id/detail、/course/:id/game|menu
+ *   都落入未知路径，由 beforeEach 统一送回课程主页。
  *   #/me（我的域）
  *     ├─ /me                            我的
  *     ├─ /me/calendar                   学习日历（**已合并原连击日历**，/me/streak 重定向至此）
@@ -69,24 +70,10 @@ export const router = createRouter({
         {
           path: ":id",
           // 课程详情页 = 课时本位（游戏地图 + 卡片目录共用 header，右上角切换；
-          // ?view=game|menu 决定默认视图）。旧 /course/:id/detail 重定向到本位。
+          // ?view=game|menu 决定默认视图）
           name: "course-detail",
           component: () => import("../views/course/CourseDetailView.vue"),
           meta: { title: "课程", sky: true },
-        },
-        // 旧路径兼容：详情页已提升到 /course/:id 本位
-        {
-          path: ":id/detail",
-          redirect: (to) => ({ name: "course-detail", params: { id: to.params.id }, query: to.query }),
-        },
-        // 旧路径兼容：game/menu 重定向到本位并带 view 参数
-        {
-          path: ":id/game",
-          redirect: (to) => ({ name: "course-detail", params: { id: to.params.id }, query: { view: "game" } }),
-        },
-        {
-          path: ":id/menu",
-          redirect: (to) => ({ name: "course-detail", params: { id: to.params.id }, query: { view: "menu" } }),
         },
         // 玩法页（独立路由，用 LessonView）
         { path: "/course/:id/learn", name: "lesson-learn", component: LessonView, meta: { title: "学单词", stage: "learn" } },
@@ -98,7 +85,7 @@ export const router = createRouter({
         { path: "/course/:id/song", name: "lesson-song", component: LessonView, meta: { title: "唱童谣", stage: "song" } },
         { path: "/course/:id/talk", name: "lesson-talk", component: LessonView, meta: { title: "亲子对话", stage: "talk" } },
         // 本课闯关玩法（地图点关卡直达）：URL 归属课程域——课时是主资源，
-        // 玩法是课时内的行为（2026-10-25 从 /game/quest/:id 迁入，旧路径见游戏域重定向）
+        // 玩法是课时内的行为（2026-10-25 从 /game/quest/:id 迁入，旧地址不留兼容）
         {
           path: ":id/game/quest",
           name: "quest",
@@ -115,21 +102,6 @@ export const router = createRouter({
       children: [
         // 多课总地图（入口已收起，路由保留；天空场景由 meta.sky 决定）
         { path: "", name: "game", component: GameView, meta: { title: "游戏闯关", sky: true } },
-        // 旧路径兼容：闯关玩法已并入课程域 /course/:id/game/quest
-        // （旧 :stage 路径参数转成 ?step= 查询，与现行为一致）
-        {
-          path: "quest/:id/:stage?",
-          redirect: (to) => ({
-            name: "quest",
-            params: { id: to.params.id },
-            query:
-              typeof to.params.stage === "string" && to.params.stage
-                ? { step: to.params.stage, ...to.query }
-                : to.query,
-          }),
-        },
-        // 旧路径兼容：本课地图已挪到课程域（只留一个 redirect，不留两份页面）
-        { path: "lesson/:id", redirect: (to) => ({ name: "course-detail", params: { id: to.params.id }, query: { view: "game" } }) },
       ],
     },
 
