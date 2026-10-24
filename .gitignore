@@ -45,3 +45,8 @@ backend/*.db-*
 
 # Runtime media (recordings)
 backend/app/media/*
+
+# AI 会话本地数据（同 .workbuddy，纯本地不进仓库）
+.zcode/
+# pytest 运行缓存
+.pytest_cache/
