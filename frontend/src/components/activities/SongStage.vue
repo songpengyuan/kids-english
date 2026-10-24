@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 歌曲动画舞台 —— 没有视频文件时的「看动画」模式。
  *
@@ -11,22 +11,34 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { Music } from "@lucide/vue";
+import type { Lesson } from "../../data/lessons";
 
-const props = defineProps({
-  lesson: { type: Object, required: true },
-  audio: { type: Object, default: null }, // <audio> 元素，用于读播放进度对拍
-  playing: { type: Boolean, default: false },
-  idle: { type: String, default: "点我开始唱吧" }
-});
+const props = withDefaults(
+  defineProps<{
+    lesson: Lesson;
+    /** <audio> 元素，用于读播放进度对拍 */
+    audio?: HTMLAudioElement | null;
+    playing?: boolean;
+    idle?: string;
+  }>(),
+  { audio: null, playing: false, idle: "点我开始唱吧" }
+);
 
-const root = ref(null);
+const emit = defineEmits<{ tap: [] }>();
+
+const root = ref<HTMLElement | null>(null);
 const bpm = computed(() => props.lesson.song.timings?.bpm || 0);
 const beatCss = computed(() => (bpm.value ? 60 / bpm.value : 0.5) + "s");
 /* 当前场景：sea / rainbow / numbers / letters / stage（默认） */
 const scene = computed(() => props.lesson.song.scene || "stage");
 /* 出场角色：本课的单词 emoji，最多 8 个，太多会挤 */
 const cast = computed(() => props.lesson.words.slice(0, 8));
-const notes = ref([]);
+interface Note {
+  id: number;
+  x: number;
+  s: number;
+}
+const notes = ref<Note[]>([]);
 let noteId = 0;
 
 /* ---------- 节拍：rAF 读播放进度，写 CSS 变量（不走 Vue 响应式，60fps 不卡） ---------- */
@@ -46,7 +58,7 @@ watch(
   (on) => {
     cancelAnimationFrame(raf);
     if (on) raf = requestAnimationFrame(tick);
-    else root.value?.style.setProperty("--bob", 0);
+    else root.value?.style.setProperty("--bob", "0");
   }
 );
 onBeforeUnmount(() => cancelAnimationFrame(raf));
@@ -59,7 +71,7 @@ watch(
     clearInterval(noteTimer);
     if (on) {
       noteTimer = setInterval(() => {
-        const n = { id: ++noteId, x: 8 + Math.random() * 84, s: 0.7 + Math.random() * 0.5 };
+        const n: Note = { id: ++noteId, x: 8 + Math.random() * 84, s: 0.7 + Math.random() * 0.5 };
         notes.value.push(n);
         if (notes.value.length > 7) notes.value.shift();
         setTimeout(() => {

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 开宝箱奖励组件（游戏闯关通关结算，多邻国式激励）。
  *
@@ -9,6 +9,8 @@
  *   4. 点「收取」：宝石/贝壳从宝箱位置沿抛物线逐个飞向顶部贝壳徽标，
  *      徽标接收时脉冲 + 数字逐个递增，全部收完动画停止 → done。
  *
+ * - 阶段流转/入账/双计数在 useChestMachine（可单测），飞行在 useFlyToEl，
+ *   本组件只剩 DOM 触发器（晃动/脉冲/飞行源点）与收取循环编排。
  * - 抛物线轨迹为纯函数 `parabola()`（src/utils/flyCurve.ts，TDD 覆盖）。
  * - 反馈齐备：CSS 动画 + WebAudio 音效 + 触感震动；不引入额外动画库。
  */
@@ -32,7 +34,7 @@ import BaseButton from "../ui/BaseButton.vue";
 
 const rewards = useRewardsStore();
 
-const emit = defineEmits(["done"]);
+const emit = defineEmits<{ done: [] }>();
 
 /* ---------- 状态机：阶段/入账/双计数（useChestMachine，可单测） ---------- */
 const {
@@ -61,14 +63,14 @@ const pulseTick = ref(0);
 /** 宝箱晃动重触发计数 */
 const shakeTick = ref(0);
 
-const chestEl = ref(null);
-const badgeEl = ref(null);
-const flyEl = ref(null);
+const chestEl = ref<HTMLElement | null>(null);
+const badgeEl = ref<HTMLElement | null>(null);
+const flyEl = ref<HTMLElement | null>(null);
 /** 展示区贝壳元素（飞行源点：每轮取"将要消失"的那枚的坐标） */
-const shellEls = ref([]);
+const shellEls = ref<HTMLElement[]>([]);
 const flyOne = useFlyToEl(flyEl);
 
-function sleep(ms) {
+function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
@@ -87,10 +89,10 @@ function tapChest() {
 }
 
 /** 点遮罩层任意空白处也算敲一下（按钮/奖励卡除外） */
-function onWrapClick(e) {
+function onWrapClick(e: MouseEvent) {
   if (phase.value !== "closed") return; // 已开箱后空白处不触发
   // 点到按钮或交互元素上不触发（close/skip/take/奖励卡）
-  const t = e.target.closest("button, .reward, .fly");
+  const t = (e.target as HTMLElement).closest("button, .reward, .fly");
   if (t) return;
   tapChest();
 }
@@ -150,7 +152,7 @@ const totalShells = computed(() => reward.value?.shells ?? 0);
  */
 const shellRows = computed(() => shellRowsOf(totalShells.value));
 /** 第 ri 行首个贝壳的全局序号（0-based 偏移） */
-function rowOffset(ri) {
+function rowOffset(ri: number) {
   return rowOffsetOf(shellRows.value, ri);
 }
 const cap = computed(() => {
@@ -195,7 +197,8 @@ const cap = computed(() => {
       :key="'shake-' + shakeTick"
       :aria-label="taps < 3 ? '敲宝箱' : '宝箱'"
     >
-      <div v-if="phase === 'open' || phase === 'reward' || phase === 'flying'" class="light">
+      <!-- 外层 v-if 已限定 closed|open：光柱只在开箱瞬间可见 -->
+      <div v-if="phase === 'open'" class="light">
         <span class="beam"></span>
         <span class="beam b2"></span>
         <span class="beam b3"></span>
@@ -237,7 +240,7 @@ const cap = computed(() => {
             <span
               v-for="(j, ci) in row"
               :key="'sh' + (rowOffset(ri) + ci + 1)"
-              :ref="(el) => { if (el) shellEls[rowOffset(ri) + ci] = el; }"
+              :ref="(el) => { if (el) shellEls[rowOffset(ri) + ci] = el as HTMLElement; }"
               class="shell-item anim-pop"
               :class="{ gone: rowOffset(ri) + ci + 1 > panelShown }"
               :style="{ '--i': rowOffset(ri) + ci }"
