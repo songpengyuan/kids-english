@@ -264,6 +264,15 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(chipText()).not.toContain("bear");
   });
 
+  it("学童谣的领星入口是真按钮（曾因 SongView 丢 BaseButton 导入渲染成 <basebutton>，点了没反应）", async () => {
+    const w = await mountPage(LessonView, "/learn/l11/song");
+    await flushPromises();
+    const finish = w.find(".finish");
+    expect(finish.exists()).toBe(true);
+    expect(finish.element.tagName).toBe("BUTTON"); // 解析失败的组件会渲染成 <basebutton>
+    expect(finish.text()).toContain("星星");
+  });
+
   it("玩法直达子路径 /learn/:id/:stage 能渲染（#/learn/l4/learn）", async () => {
     const w = await mountPage(LessonView, "/learn/l4/learn");
     // 子路径直达应直接进入看图学词（而不是菜单）

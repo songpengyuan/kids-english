@@ -7,6 +7,7 @@ import { useAudioTransport, fmtDuration } from "../../composables/useAudioTransp
 import { useLrc, activeLrcIndex, mapLrcToLyrics } from "../../composables/useLrc";
 import { Clapperboard, Headphones, Music, Pause, Play, Repeat, Sparkles, SkipBack, SkipForward } from "@lucide/vue";
 import SongStage from "./SongStage.vue";
+import BaseButton from "../ui/BaseButton.vue";
 import type { Lesson } from "../../data/lessons";
 
 const progress = useProgressStore();
