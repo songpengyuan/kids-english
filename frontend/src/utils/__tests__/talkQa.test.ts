@@ -12,6 +12,7 @@
 import { describe, expect, it } from "vitest";
 import { talkQa } from "../talkQa";
 import type { Word } from "../../data/lessons";
+import realLessons from "../../data/lessons.json";
 
 function w(id: string, en: string, group?: string): Word {
   return { id, en, zh: id, emoji: "🐾", image: null, lessonId: "l11", ...(group ? { group } : {}) };
@@ -107,5 +108,45 @@ describe("talkQa 按词选问答", () => {
   it("课里没有问句：q 为空串，答句兜底为词本身", () => {
     const lesson = { id: "x", phrases: [{ en: "Hello!", zh: "", audio: "" }], words: [w("cat", "cat")] } as never;
     expect(talkQa(w("cat", "cat"), lesson)).toEqual({ q: "", a: "cat" });
+  });
+});
+
+describe("talkQa × 真实课时数据（lessons.json）", () => {
+  const lessons = realLessons as never as { id: string; phrases: { en: string }[]; words: Word[] }[];
+
+  it("每课每个词都有问句与答句，答句不会是裸模板词以外的坏英文", () => {
+    for (const lesson of lessons) {
+      if (!lesson.phrases?.length) continue;
+      for (const word of lesson.words) {
+        const qa = talkQa(word, lesson as never);
+        expect(qa.a, `${lesson.id}/${word.en} 答句为空`).toBeTruthy();
+        expect(qa.a, `${lesson.id}/${word.en} 答句应含本词`).toContain(word.en.split(" ").pop()!);
+      }
+    }
+  });
+
+  it("l5 动物词走 I see a ... 问答，不再产出 I can play the squirrel.", () => {
+    const l5 = lessons.find((l) => l.id === "l5")!;
+    expect(talkQa(l5.words.find((x) => x.en === "squirrel")!, l5 as never)).toEqual({
+      q: "What do you see?",
+      a: "I see a squirrel.",
+    });
+    // 乐器词不受影响：仍是 What can you play? 家族
+    expect(talkQa(l5.words.find((x) => x.en === "violin")!, l5 as never).q).toBe("What can you play?");
+  });
+
+  it("l10 afraid/listen 有自己的问答（afraid 用儿歌原句 I'm not afraid.）", () => {
+    const l10 = lessons.find((l) => l.id === "l10")!;
+    expect(talkQa(l10.words.find((x) => x.en === "afraid")!, l10 as never)).toEqual({
+      q: "Are you afraid?",
+      a: "I'm not afraid.",
+    });
+    expect(talkQa(l10.words.find((x) => x.en === "listen")!, l10 as never)).toEqual({
+      q: "What can you do?",
+      a: "I can listen.",
+    });
+    // 动物词与 jungle 不受影响
+    expect(talkQa(l10.words.find((x) => x.en === "frog")!, l10 as never).a).toBe("It's a frog.");
+    expect(talkQa(l10.words.find((x) => x.en === "jungle")!, l10 as never).a).toBe("It's a jungle.");
   });
 });

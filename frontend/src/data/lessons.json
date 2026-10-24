@@ -103,6 +103,22 @@
       {
         "en": "I can play the trombone.",
         "zh": "我会吹长号。"
+      },
+      {
+        "en": "What do you see?",
+        "zh": "你看到了什么？"
+      },
+      {
+        "en": "I see a squirrel.",
+        "zh": "我看到一只松鼠。"
+      },
+      {
+        "en": "I see a mantis.",
+        "zh": "我看到一只螳螂。"
+      },
+      {
+        "en": "I see a frog.",
+        "zh": "我看到一只青蛙。"
       }
     ]
   },
@@ -491,6 +507,22 @@
       {
         "en": "It's a toucan.",
         "zh": "那是一只巨嘴鸟。"
+      },
+      {
+        "en": "What can you do?",
+        "zh": "你会做什么呀？"
+      },
+      {
+        "en": "I can listen.",
+        "zh": "我会听。"
+      },
+      {
+        "en": "Are you afraid?",
+        "zh": "你害怕吗？"
+      },
+      {
+        "en": "I'm not afraid.",
+        "zh": "我才不怕。"
       }
     ]
   },
