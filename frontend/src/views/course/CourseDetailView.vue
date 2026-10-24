@@ -108,9 +108,10 @@ function openActivity(key: string) {
 </script>
 
 <template>
+  <!-- 不显示星/贝壳/连击徽章（2026-10-25 用户口径）：右上角已有地图/卡片切换，
+       数据徽章挤在一起抢注意力，孩子看数据去「我的」页 -->
   <PageShell
     fill
-    show-badges
     back-label="返回"
     @back="goBack"
   >
