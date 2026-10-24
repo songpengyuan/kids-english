@@ -1,8 +1,10 @@
 # kids-english 总体架构与长期演进（ARCHITECTURE-EVOLUTION）
 
-> 状态：**提案（Proposed）**，需产品负责人拍板（见 §7）。
-> 审阅对象：全仓（frontend 150 源文件 / backend 7 域路由 / CI + 双端部署 / SQLite 7 表）。
-> 日期：2026-10-17。
+> 状态：**活文档（Effective）**——§8 第一/二批已全部落地（2026-10-17 回执）；
+> §7 待拍板决策的 D2/D5 已按 ADR-003 落地、D4 已按 ADR-005 落地，D1/D3 并入 ROADMAP P1/P2 节奏。
+> 2026-10 设计草案的存档见 [archive/ARCHITECTURE-2026.md](./archive/ARCHITECTURE-2026.md)。
+> 阅阅对象：全仓（frontend 150+ 源文件 / backend 7 域路由 / CI + 双端部署 / SQLite 10 表）。
+> 日期：2026-10-17 起，持续维护。
 
 ## 本文的定位（先读这段，能省十分钟）
 
@@ -259,7 +261,7 @@
 
 | 文档 | 已更新内容 |
 |---|---|
-| `ARCHITECTURE-2026.md` | 状态从"草案待确认"改为"P0 已完成"，并指向本文 |
+| `ARCHITECTURE-2026.md`（现 `archive/`） | 状态从"草案待确认"改为"P0 已完成"，并指向本文 |
 | `STABILITY.md` §6.3 | 改为 CI 部署（ADR-003），并补 `rsync --delete` 会删掉"不在 git 里的文件"这条运维陷阱 |
 | `STABILITY.md` §3.1 | 重写为 `maintenance.sh` 单入口：防重叠/心跳/日志轮转/时区口径/验证方式 |
 | `PROGRESS-DATA.md` §7 | 补事件与分析口径，含「学习日」边界定义（`KIDS_TZ`） |

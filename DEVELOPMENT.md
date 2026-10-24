@@ -771,9 +771,7 @@ jsdom 没有 ResizeObserver/布局尺寸时在测试里桩掉，组件会走保�
 | 发音识别总是失败并提示切换录音模式 | 国内网络连不上 Google 识别服务 | 预期行为，录音回放模式是可用的主路径 |
 | 某个单词发音机械（走了 TTS） | 对应 mp3 没生成（`public/lessons/<课>/audio/<单词id>.mp3` 缺失） | 跑 `python3 scripts/gen-word-audio.py` 补齐 |
 | iOS 上点第一次没声音 | iOS Safari 要求用户手势后才能播放音频 | 已用点击触发规避，勿改成自动播放 |
-| 孩子的星星丢了 | localStorage 被清（换设备/清缓存）或存储键被改动 | 不要改 `stores/progress.ts` 里的 KEY；老数据会在 load() 增量迁移 |
-
-| 孩子的星星丢了 | localStorage 被清（换设备/清缓存）或存储键被改动 | 不要改 `stores/progress.ts` 里的 KEY；老数据会在 load() 增量迁移 |
+| 孩子的星星丢了 | localStorage 被清（换设备/清缓存）或存储键被改动 | 不要改 `stores/progress/shared.ts` 里的 KEY；老数据会在 load() 增量迁移 |
 | 手机上一直看到旧版本 | SW 被浏览器停用或更新被挂起（正在玩法里） | 回到首页即刷新；或在浏览器设置里清除该站点数据 |
 | 换了同名媒体文件但客户端还是旧的 | 媒体是 SWR，最多旧一次 | 刷新一次页面即可；要彻底立即可见可改文件名 |
 | iOS 上某个按钮点击无响应（有按压动画但路由/逻辑不触发） | 触感白名单机制把透明 switch 叠在了该元素上（iOS 真实触摸下 WebKit 吞掉宿主点击，历史教训：返回/底部导航） | 导航与功能按钮**绝不标** `data-haptic`；误标了移除属性，或加进 haptics.js 的 EXCLUDE_SELECTOR 兜底豁免 |

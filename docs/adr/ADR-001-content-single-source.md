@@ -75,7 +75,7 @@ for (const [id, lesson] of Object.entries(detailCache.value)) {
 **变难 / 新债**
 - 每次改课程内容会连带一个生成文件的 diff（噪声）。可接受：`openapi.json` 已经在承担同样的成本，
   且生成文件 diff 可读（它就是可读 JSON）。
-- **本决策不解决"加课要发版"**。产品目标（ROADMAP P2「新增一课 <1 天」、ARCHITECTURE-2026 §3 内容动态运营）
+- **本决策不解决"加课要发版"**。产品目标（ROADMAP P2「新增一课 <1 天」、`archive/ARCHITECTURE-2026.md` §3 内容动态运营）
   需要的是**运行期由后端决定内容**，那是另一个决策（见 ARCHITECTURE-EVOLUTION.md 待拍板 D1）。
   本 ADR 只保证"在还没有运营后台之前，双源不要互相骗"。
 - 诚实地说：在出现运营后台之前，`backend/seed/lessons.json` 这份副本的**收益接近 0**（没有后台可用它，

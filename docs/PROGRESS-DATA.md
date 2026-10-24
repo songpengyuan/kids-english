@@ -1,7 +1,7 @@
 # 进度 / 时长 / 奖励数据定义与同步
 
 > 本文档描述孩子学习进度、今日时长、贝壳奖励的**数据定义、更新规则与云同步机制**。
-> 对应代码：`frontend/src/stores/progress.ts`、`frontend/src/stores/rewards.ts`、`frontend/src/stores/player.ts`、`backend/app/api/progress.py`、`backend/app/api/rewards.py`。
+> 对应代码：`frontend/src/stores/progress/`（shared/course/words/daily/cloudSync 五模块 + index 门面，2026-10-24 拆分）、`frontend/src/stores/rewards.ts`、`frontend/src/stores/player.ts`、`backend/app/api/progress.py`、`backend/app/api/rewards.py`。
 
 ## 1. 数据总览
 
@@ -159,7 +159,7 @@
 | `lesson_enter` | 进入某课 | `lesson_id` | `views/learn/LessonView.vue` |
 | `activity_done` | 完成一个玩法 / 一段播放 | `seconds`、`active`、`lesson_id`、`activity` | `composables/useLessonFlow.ts`（`settleActivity`） |
 | `level_pass` | 通过关卡 | `lesson_id`、`level`（**本课内**序号 1..N，见 `lessonLevels`；不是全站累计序号） | `composables/useLessonFlow.ts` |
-| `listen_play` | 磨耳朵播放 | `seconds` | `stores/progress.ts`（`addListenActivity`） |
+| `listen_play` | 磨耳朵播放 | `seconds` | `stores/progress/daily.ts`（`addListenActivity`） |
 | `client_error` | 未捕获异常 / 未处理 Promise | `kind`、`msg`、`stack`、`url` | `utils/errors.js` |
 
 **上报位置的取舍**（新增事件前先读）：

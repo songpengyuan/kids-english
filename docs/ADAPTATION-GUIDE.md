@@ -3,7 +3,7 @@
 > 本文件是「手机 / iPad / 网页端三端适配」与「暗黑主题」的**开发时硬约束**。
 > 面向 5 岁孩子：大触控、一屏装下、可朗读、少点几下。
 > 事实源：`src/styles/tokens.css`（颜色/字号 token）、`src/styles/base.css`（布局体系）、
-> `src/components/layout/SafeBottom.vue`（底部安全区）。配套文档：`DESIGN-GUIDELINES.md`（交互设计）、`cross-device-testing.md`（测试计划）。
+> `src/components/layout/SafeBottom.vue`（底部安全区）。配套文档：`DESIGN-GUIDELINES.md`（交互设计）；试飞清单见本文第 8 节。
 
 ---
 
@@ -90,3 +90,60 @@
 2. SafeBottom 上的 `padding` 简写会踩掉安全间距（2026-09 实测）。
 3. `backface-visibility` 在项目渲染内核失效 → 翻卡用"翻转中点切换 visibility"方案，不要改用 perspective/inline 尝试。
 4. 并行 agent 编辑时模板 `:class` 出现双引号嵌套 `{ "x": y }` → 语法错被 pre-push 拦截；模板属性内统一用单引号包对象键。
+
+## 8. 跨端试飞清单（原 cross-device-testing.md，2026-10-24 并入）
+
+> 目标：iPad / 手机 / 桌面 Web 三端一屏装下、不滚动、按钮够大、安全区不被挡。
+> §5 是"每次改动后"的快速走查，本节是**发版前/大改后**的全量试飞。
+
+### 8.1 测试机型与视口
+
+| 端 | 机型 | 视口（CSS px） | 重点 |
+|---|---|---|---|
+| iPad | iPad Air / 10.2" 竖屏 | 768×1024 | 卡片列数、分屏 |
+| iPad | iPad Air 横屏 | 1024×768 | 横屏玩法不挤、不溢出 |
+| iPad | iPad 分屏（1/3） | ~360×1024 | 窄屏不崩 |
+| iPhone | SE (第3代) | 375×667 | 小屏不溢出 |
+| iPhone | 14 Pro Max | 430×932 | 大屏、Dynamic Island 安全区 |
+| iPhone | 横屏 | 844×390 | `max-height:480` 横屏档 |
+| Web | 桌面 1440 | 1440×900 | max-width 1180 居中 |
+| Web | 超宽 2560 | 2560×1440 | 不无限拉宽 |
+
+### 8.2 检查项
+
+**基础 HTML**
+- [ ] `viewport-fit=cover`（刘海屏安全区）
+- [ ] `apple-mobile-web-app-status-bar-style`
+- [ ] PWA manifest standalone
+
+**安全区**
+- [ ] 顶部：HeaderBar / AppHeader 不被刘海/灵动岛挡
+- [ ] 底部：LessonFooter / BottomNav 不被 Home 指示条挡
+- [ ] `env(safe-area-inset-*)` 全局兜底
+
+**首页（学习/游戏）**
+- [ ] 课程卡片网格在 iPad 竖屏 3 列、手机 1-2 列
+- [ ] AppHeader 三数字徽章不挤不换行
+- [ ] 底部 tab 大按钮够拇指点
+
+**玩法页**
+- [ ] QuizView：2×2 图片格，横屏 4 列
+- [ ] MatchView：三列布局在窄屏不挤
+- [ ] SpeakView：麦克风够大，反馈按钮不溢出
+- [ ] TalkView：对话卡片可滚动
+- [ ] SongView：播放器不溢出
+
+**子页面**
+- [ ] 宝藏罐：卡片网格自适应
+- [ ] 我的：列表不溢出
+- [ ] 报告/复习：表格/卡片不溢出
+
+**交互**
+- [ ] 触摸：`touch-action: manipulation`，双击不缩放
+- [ ] 桌面：hover 状态、鼠标点击
+- [ ] 旋转/分屏：resize 重算不闪烁
+
+### 8.3 执行顺序
+
+1. 修 HTML meta → 2. 修全局安全区 CSS → 3. 逐页面对比视口截图 → 4. 修复发现的问题 → 5. 构建+测试+提交
+
