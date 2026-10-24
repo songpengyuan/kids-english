@@ -180,9 +180,11 @@
 
 ## 3. 遗留与观察项
 
-- **progress store 拆分（636 行）已评估可做**：按”今日学情 / 课程进度 / 云同步”拆，硬边界 = localStorage 键名冻结 + 逐字段 max 合并口径（PROGRESS-DATA.md §7）。推迟原因：并行会话正在改 useLessonFlow / 玩法视图（titleZh + lastActKey），这些是 progress store 的直接消费方，现在拆必撞。
-- **媒体播放子域**（ListenView 811 + SongView 739 + SongStage 434 + player 317 ≈ 2300 行）：等 l11 多轨波动平息后抽 `useMediaPlayer` composable 三处共用。
+- ~~progress store 拆分~~ **已落地**（2026-10-24 深夜补做，`stores/progress/` 五模块 + 门面 index）：shared（类型+存储格式）/ course / words / daily / cloudSync；单门面不拆多 store（持久化是同一份冻结键文档，daily 依赖 words、云同步读写全部域）；22 处消费方导入路径零改动；396 前端 + 116 后端测试全绿。
+- **媒体播放子域**（ListenView + SongView + SongStage + player store ≈ 2300 行）：等 l11 多轨波动平息后抽 `useMediaPlayer` composable 三处共用。
 - **GamePath.vue（1039 行）**：纯展示大头，下次触碰时再拆，不专门立项。
-- **双会话同仓的协作教训**：pre-commit 的 vue-tsc 是全项目检查，会被另一会话的半成品挡住；解法是按 hunk 精确暂存（`git diff` 过滤 + `git apply --cached`）把两个会话的改动干净分离，各自提交各自验证过的内容。
+- **双会话同仓的协作教训（两轮，一次比一次贵）**：
+  1. pre-commit 的 vue-tsc 是全项目检查，会被另一会话的半成品挡住；解法是按 hunk 精确暂存（`git diff` 过滤 + `git apply --cached`）分离两边的改动。
+  2. **git index 是两会话共享的**：一边暂存的删除（progress.ts）与另一边暂存的资源（webp）被卷进了同一笔提交，且新文件未及入库时 HEAD 曾短暂处于”缺模块”状态。修复走 fix-forward（补提交），不 rebase（对方会话持有提交哈希）。**结论：两个会话不要共用一个工作区**——需要并行时用 `git worktree` 各占一份检出，或约定提交窗口。
 
 
