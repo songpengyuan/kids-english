@@ -40,6 +40,7 @@ try {
       timings: l.song.timings || null,
       tracks: (l.song.tracks || []).map((t) => ({
         title: t.title,
+        titleZh: t.titleZh ?? null,
         audio: t.audio ?? null,
         video: t.video ?? null,
         lyrics: t.lyrics ?? [],

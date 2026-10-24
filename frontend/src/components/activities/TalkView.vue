@@ -293,7 +293,8 @@ function finish() {
         >
           <Mic v-if="!listening" class="ib-ico" />
           <Square v-else class="ib-ico" />
-          <span class="ib-text">{{ listening ? "点一下结束 · 我在听…" : "🎤 点一下说话" }}</span>
+          <!-- 键面上不再放 🎤 emoji：左侧已有 Mic 线性图标，双图标并排显得重复 -->
+          <span class="ib-text">{{ listening ? "点一下结束 · 我在听…" : "点一下说话" }}</span>
         </button>
       </template>
 

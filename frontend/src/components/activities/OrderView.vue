@@ -102,9 +102,10 @@ function playSentence() {
 
 function nextSentence() {
   solved.value = false;
-  emit("progress", (sentenceIdx.value + 1) / total.value);
+  emit("progress", Math.round(((sentenceIdx.value + 1) / total.value) * 100));
   if (sentenceIdx.value + 1 >= phrases.length) {
-    emit("done", 3);
+    // 星级按拼错次数算（stars 公式），以前写死 3 星，拼错多次也满分
+    emit("done", stars.value);
     return;
   }
   sentenceIdx.value++;
@@ -122,7 +123,7 @@ onBeforeUnmount(() => {
     <div class="head">
       <p class="tip">
         <span class="tip-ico">✏️</span>
-        Tap words in order to build the sentence
+        按顺序点下面的词，拼出完整的句子
       </p>
       <span class="counter">{{ sentenceIdx + 1 }} / {{ total }}</span>
     </div>

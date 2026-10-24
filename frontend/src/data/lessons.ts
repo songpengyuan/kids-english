@@ -47,6 +47,8 @@ export type Tone = "blue" | "green" | "orange" | "purple" | "pink" | "teal";
 
 export interface SongTrack {
   title: string;
+  /** 轨道自己的中文名（缺省回退课程 titleZh；磨耳朵列表/视频列表的副标题用它） */
+  titleZh?: string;
   audio?: string | null;
   video?: string | null;
   lyrics?: string[];
@@ -570,6 +572,7 @@ const rawLessons: RawLesson[] = [
       tracks: [
         {
           title: "Colors Song",
+          titleZh: "颜色歌",
           audio: "/lessons/l11/song.mp3",
           video: "/lessons/l11/song.mp4",
           group: "colors"
@@ -801,6 +804,7 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
     // 多段音视频轨道：第一轨用顶层 audio/video/lyrics，后续在 tracks 里追加
     tracks: (lesson.song.tracks || []).map((t) => ({
       title: t.title,
+      titleZh: t.titleZh,
       audio: t.audio ? asset(t.audio) : null,
       video: t.video ? asset(t.video) : null,
       lyrics: t.lyrics || [],

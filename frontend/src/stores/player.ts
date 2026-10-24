@@ -46,7 +46,8 @@ export const SONG_LIST: PlayableSong[] = lessons
       .map((t, i) => ({
         id: `${l.id}-t${i + 2}`,
         title: t.title,
-        titleZh: l.titleZh,
+        // 轨道有自己的中文名（如 l11 颜色歌）就用它，别再把课程名错挂成副标题
+        titleZh: t.titleZh || l.titleZh,
         emoji: l.emoji,
         tone: l.tone ?? "blue",
         src: t.audio!,

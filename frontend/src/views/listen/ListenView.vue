@@ -140,7 +140,8 @@ const videoList = computed(() =>
         .map((t, i) => ({
           id: `${l.id}-t${i + 2}`,
           title: t.title,
-          titleZh: l.titleZh, emoji: l.emoji,
+          titleZh: t.titleZh || l.titleZh,
+          emoji: l.emoji,
           tone: l.tone ?? "blue", src: t.video!,
         }));
       return [...first, ...extras];

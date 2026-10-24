@@ -89,6 +89,8 @@ function enter(l: Lesson) {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  /* 顶一档间距：首行卡片不贴刘海/状态栏，随内容一起滚走 */
+  padding-top: var(--gap-m);
 }
 .stage::-webkit-scrollbar {
   display: none;

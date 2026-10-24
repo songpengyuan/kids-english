@@ -1194,6 +1194,7 @@
       "tracks": [
         {
           "title": "Colors Song",
+          "titleZh": "颜色歌",
           "audio": "/lessons/l11/song.mp3",
           "video": "/lessons/l11/song.mp4",
           "lyrics": [],

@@ -138,6 +138,8 @@ class TimingOut(BaseModel):
 
 class SongTrackOut(BaseModel):
     title: str = ""
+    # 轨道自己的中文名（缺省回退课程 titleZh，磨耳朵/视频列表副标题用）
+    titleZh: str | None = None
     audio: str | None = None
     video: str | None = None
     lyrics: list[str] = []
