@@ -12,7 +12,7 @@
  * - 抛物线轨迹为纯函数 `parabola()`（src/utils/flyCurve.ts，TDD 覆盖）。
  * - 反馈齐备：CSS 动画 + WebAudio 音效 + 触感震动；不引入额外动画库。
  */
-import { computed, nextTick, onBeforeUnmount, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 import PathIcon from "../PathIcon.vue";
 import {
   bigCelebrate,
@@ -23,8 +23,10 @@ import {
   sfxSticker
 } from "../../services/effects";
 import { useRewardsStore } from "../../stores/rewards";
-import { parabola } from "../../utils/flyCurve";
 import { formById } from "../../data/heroes";
+import { useChestMachine } from "../../composables/useChestMachine";
+import { useFlyToEl } from "../../composables/useFlyToEl";
+import { shellRowsOf, rowOffsetOf } from "../../utils/shellLayout";
 import ShellIcon from "../ShellIcon.vue";
 import BaseButton from "../ui/BaseButton.vue";
 
@@ -32,22 +34,28 @@ const rewards = useRewardsStore();
 
 const emit = defineEmits(["done"]);
 
-/** 已敲击次数（0..3；3 = 开箱） */
-const taps = ref(0);
-/** 阶段：closed(<3 敲击) | open(第 3 下开箱瞬间) | reward(展示+收取) | flying(飞行中) | collected */
-const phase = ref("closed");
-const reward = ref(null); // { shells, formId, isNew }
+/* ---------- 状态机：阶段/入账/双计数（useChestMachine，可单测） ---------- */
+const {
+  taps, phase, reward, shown, panelShown,
+  tap: machineTap, skip: machineSkip,
+  beginCollect, endCollect, closeOverlay: machineClose,
+} = useChestMachine(rewards, {
+  onOpened: () => {
+    sfxChestOpen();
+    bigCelebrate();
+  },
+  onRewardShown: (r) => {
+    sfxCoin();
+    if (r.formId) sfxSticker();
+  },
+});
+
 /** 本次掉落的形态（角色名 + 图片）；没掉到形态就是 null */
 const wonForm = computed(() => (reward.value?.formId ? formById(reward.value.formId) : null));
 /** 定制 png 加载失败 → 回退内置原创占位图 */
 const wonImgFailed = ref(false);
 const wonImg = computed(() => (wonImgFailed.value ? wonForm.value?.fallback : wonForm.value?.image));
-/** 顶部徽标当前显示数（收取动画前 = 入账前旧值，收取时逐个 +1 到新值） */
-const shown = ref(0);
-/** 中间展示区剩余贝壳数（开箱后 = 本次掉落数；收取时逐个 -1，与右上 +1 对应） */
-const panelShown = ref(0);
-/** 展示区贝壳元素（飞行源点：每轮取"将要消失"的那枚的坐标） */
-const shellEls = ref([]);
+
 /** 徽标脉冲重触发计数 */
 const pulseTick = ref(0);
 /** 宝箱晃动重触发计数 */
@@ -56,51 +64,25 @@ const shakeTick = ref(0);
 const chestEl = ref(null);
 const badgeEl = ref(null);
 const flyEl = ref(null);
+/** 展示区贝壳元素（飞行源点：每轮取"将要消失"的那枚的坐标） */
+const shellEls = ref([]);
+const flyOne = useFlyToEl(flyEl);
 
-let timers = [];
-function later(fn, ms) {
-  timers.push(setTimeout(fn, ms));
-}
-onBeforeUnmount(() => {
-  timers.forEach((t) => clearTimeout(t));
-  timers = [];
-});
-
-/** 第 3 下：开箱 + 奖励入账（幂等，贴纸去重） */
-function openChest() {
-  const oldShells = rewards.shells;
-  shown.value = oldShells; // 徽标先显示旧余额，收取时递增
-  panelShown.value = 0; // 开箱瞬间先清空，入账后填充展示区
-  sfxChestOpen();
-  bigCelebrate();
-  const r = rewards.rollChest();
-  rewards.grant(r);
-  reward.value = r;
-  panelShown.value = r.shells; // 展示区出现对应的贝壳/海螺（宝箱替换成奖励）
-  sfxCoin();
-  if (r.formId) sfxSticker();
-  // 650ms：金光/光柱足够看完，又不让性急的孩子干等（原 1s 偏拖）
-  later(() => {
-    phase.value = "reward";
-  }, 650);
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 function tapChest() {
-  if (phase.value === "flying" || phase.value === "collected") return;
-  // 奖励展示阶段点宝箱 = 收取（孩子开箱后会继续戳宝箱，别给"没反应"的死区）
-  if (phase.value === "reward") {
+  const result = machineTap();
+  if (result === "collect") {
     collect();
     return;
   }
-  if (taps.value >= 3) return; // 开箱瞬间（open 阶段）不再响应
-  taps.value++;
-  // 每一下敲击都要"听得见"：旧的 sfxTap 只有 7ms/0.06 增益，手机上等于静音，
-  // 孩子会以为点了没反应。sfxChestTap 按第几下升调，三下有"越来越近"的推进感。
-  sfxChestTap(taps.value);
-  shakeTick.value++; // 重触发晃动动画
-  if (taps.value === 3) {
-    phase.value = "open";
-    openChest();
+  if (result === "tapped") {
+    // 每一下敲击都要"听得见"：旧的 sfxTap 只有 7ms/0.06 增益，手机上等于静音，
+    // 孩子会以为点了没反应。sfxChestTap 按第几下升调，三下有"越来越近"的推进感。
+    sfxChestTap(taps.value);
+    shakeTick.value++; // 重触发晃动动画
   }
 }
 
@@ -113,38 +95,23 @@ function onWrapClick(e) {
   tapChest();
 }
 
-/** 跳过开箱动画（奖励照常入账）：直接完成三连击 → 展示奖励 */
+/** 跳过开箱动画（奖励照常入账） */
 function skip() {
-  if (phase.value !== "closed") return;
-  timers.forEach((t) => clearTimeout(t));
-  timers = [];
-  taps.value = 3;
-  phase.value = "open";
-  openChest();
+  machineSkip();
 }
 
-/**
- * 关闭 · 无论动画进行到哪一步都能一键退出：
- * 还没开箱（closed）→ 奖励照常入账（与"跳过"一致）；已开箱 → 直接收起。
- * 注意：**已收进宝藏罐（collected）也能关** —— 结算页如果没有接 @done，
- * 这里就是用户唯一的出口（否则会卡在"已收进宝藏罐"这一屏）。
- */
 function closeOverlay() {
-  if (phase.value === "closed") {
-    rewards.grant(rewards.rollChest());
-  }
-  phase.value = "collected";
+  machineClose();
   emit("done");
 }
 
 /** 逐个抛物线飞入顶部贝壳徽标 */
 async function collect() {
-  if (phase.value !== "reward" || !reward.value) return;
-  phase.value = "flying";
+  if (!beginCollect()) return;
   sfxCollect();
   const dst = badgeEl.value?.getBoundingClientRect();
   if (!dst) {
-    phase.value = "collected";
+    endCollect();
     emit("done");
     return;
   }
@@ -164,37 +131,8 @@ async function collect() {
   }
   // 最后一枚飞完：稍作停留（徽标数字生长 + 叮声看完）再收尾，避免秒切页面
   await sleep(650);
-  phase.value = "collected";
+  endCollect();
   emit("done");
-}
-
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-/** 单个宝石/贝壳沿抛物线飞行（rAF，丝滑 560ms） */
-function flyOne(from, to, apex) {
-  return new Promise((resolve) => {
-    const el = flyEl.value;
-    if (!el) return resolve();
-    el.style.opacity = "1";
-    el.style.left = from.x + "px";
-    el.style.top = from.y + "px";
-    const t0 = performance.now();
-    const dur = 560;
-    function step(now) {
-      const t = Math.min((now - t0) / dur, 1);
-      const p = parabola(from, to, apex, t);
-      el.style.left = p.x + "px";
-      el.style.top = p.y + "px";
-      if (t < 1) requestAnimationFrame(step);
-      else {
-        el.style.opacity = "0";
-        resolve();
-      }
-    }
-    requestAnimationFrame(step);
-  });
 }
 
 const opened = computed(() => taps.value >= 3);
@@ -207,27 +145,13 @@ const totalShells = computed(() => reward.value?.shells ?? 0);
 
 /**
  * 贝壳山形排布：顶层 1 枚，逐层 +1（金字塔），直到放完。
+ * 布局算法在 utils/shellLayout（纯函数，单测覆盖）；
  * 基于固定总数计算，收取过程中布局不变。
- * 6 枚 → 3-2-1；5 枚 → 2-2-1；4 枚 → 2-1-1；3 枚 → 2-1。
  */
-const shellRows = computed(() => {
-  const n = totalShells.value;
-  const rows = [];
-  let rem = n;
-  let level = 1;
-  while (rem > 0) {
-    const cur = Math.min(level, rem);
-    rows.push(cur);
-    rem -= cur;
-    level++;
-  }
-  return rows;
-});
+const shellRows = computed(() => shellRowsOf(totalShells.value));
 /** 第 ri 行首个贝壳的全局序号（0-based 偏移） */
 function rowOffset(ri) {
-  let acc = 0;
-  for (let i = 0; i < ri; i++) acc += shellRows.value[i];
-  return acc;
+  return rowOffsetOf(shellRows.value, ri);
 }
 const cap = computed(() => {
   if (phase.value === "collected") return "";
