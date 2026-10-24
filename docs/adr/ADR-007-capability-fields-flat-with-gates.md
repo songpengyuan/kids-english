@@ -40,6 +40,9 @@ Accepted（2026-10-24 随第四次架构复核落地；推翻的是同日评审�
   `colorPairs.color` 须指向带色值的本课颜色词、`wordId` 不得重复配对、至少 2 对成局、
   歌曲轨道 title + audio/video 至少其一、第一轨与多轨的音视频文件逐个查盘
   （替换旧版「按约定查 song.mp3」——l11 第一轨是 brown-bear.mp3，按约定查会查错文件）。
+- **配套登记表**（2026-10-25 补）：[`../ACTIVITY-VARIANTS.md`](../ACTIVITY-VARIANTS.md)
+  ——「已有哪些能力/变体」的活文档。ADR 定字段怎么进 schema，登记表定哪些能力已存在；
+  加变体必须同笔提交更新登记表。
 
 ## Consequences
 

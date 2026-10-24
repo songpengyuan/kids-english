@@ -90,6 +90,8 @@ export interface RawLessonWord {
  *   4. 同步进后端契约：backend/app/schemas.py 的 LessonOut 族 + pnpm export:lessons 重导种子。
  * 刻意**不做**嵌套 features 对象重排：这些字段已在生产 wire 格式（content API）上，
  * 观感收益抵不过破坏性改动——决策记录见 docs/adr/ADR-007。 */
+/* 已有哪些能力/变体、由哪个字段选择，见 docs/ACTIVITY-VARIANTS.md（登记表）——
+ * 加变体必须同笔提交更新该表。 */
 export interface RawLesson {
   id: string;
   title: string;

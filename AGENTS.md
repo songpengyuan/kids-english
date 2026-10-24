@@ -55,6 +55,7 @@ type 前缀：feat / fix / refactor / perf / docs / test / chore（+ scope，如
 ## 文档地图
 
 - `docs/ADAPTATION-GUIDE.md` — 三端适配 + 暗黑主题硬约束（改样式前必读，含试飞清单）
+- `docs/ACTIVITY-VARIANTS.md` — 玩法变体登记表（**加课前必查**：哪些形态纯数据可配、加变体三步流程）
 - `docs/DESIGN-GUIDELINES.md` / `frontend/DESIGN_SYSTEM.md` — 交互与视觉规范
 - `docs/DATA-INVENTORY.md` — 数据清单与隐私边界
 - `docs/ARCHITECTURE-REVIEW.md` / `ARCHITECTURE-EVOLUTION.md` / `adr/` — 架构决策
