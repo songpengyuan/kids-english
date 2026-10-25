@@ -184,6 +184,9 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
         lesson_id: lesson.value?.id ?? "",
         activity: key,
         seconds: Math.round(sec),
+        // 注意不要在这里显式传 active：§7.2 口径里「主动/被动」= 会话来源
+        // （孩子自己发起 vs 家长开门），由 telemetry.track() 统一注入，
+        // 调用方写死会覆盖会话语义（2026-10-25 周视图落地时差点改错）。
       });
     }
   }

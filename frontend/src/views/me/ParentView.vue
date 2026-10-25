@@ -26,6 +26,7 @@ import PageShell from "../../components/ui/PageShell.vue";
 import EntryRow from "../../components/ui/EntryRow.vue";
 import IconTile from "../../components/ui/IconTile.vue";
 import SoundToggle from "../../components/layout/SoundToggle.vue";
+import WeeklyActiveCard from "../../components/report/WeeklyActiveCard.vue";
 import {
   BarChart3,
   ChevronRight,
@@ -158,6 +159,13 @@ function pickChild(id: number) {
           <span class="today-stat-label">总星星</span>
         </span>
       </span>
+    </section>
+
+    <!-- 每周学习时长（周视图）：玩法分钟（大数字/柱状）+ 磨耳朵分钟。
+         北极星的严格「主动」口径（会话来源）在服务端 daily_stats，见 PROGRESS-DATA §7 -->
+    <section class="card">
+      <h3 class="card-title">每周学习时长</h3>
+      <WeeklyActiveCard :days="progress.recentDays(30)" />
     </section>
 
     <!-- 家长报告：全页唯一的实质行动 -->
