@@ -1,4 +1,10 @@
-"""评测代理：孩子跟读上传 wav → 讯飞流式 ISE（/api/v1/evaluation）。"""
+"""
+评测代理：孩子跟读上传 wav → 讯飞流式 ISE（/api/v1/evaluation）。
+
+**预留状态（2026-10-25 拍板）**：前端暂无调用方是有意的——等域名备案通过、
+全站 HTTPS 可用后接入（getUserMedia/音频上传需要安全上下文）。评审时
+不要再按"死端点"建议下线；接入时前端替换 speechScore 的本地打分即可。
+"""
 import io
 import os
 import wave
