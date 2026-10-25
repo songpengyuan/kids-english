@@ -11,7 +11,7 @@
 
 ## 技术栈
 
-**前端**（`frontend/`，独立 pnpm 项目）：Vue 3.5 + Vite 8 + Pinia 4 + vue-router（hash 模式）+ TypeScript。预生成童声 mp3（edge-tts）优先、Web Speech API 回退朗读；canvas-confetti 彩带、CSS 关键帧、Web Audio 合成音效；SVG + Pointer Events 做图词连线（鼠标与平板触屏同源）；PWA 可离线玩。
+**前端**（`frontend/`，独立 pnpm 项目）：Vue 3.5 + Vite 8 + Pinia 4 + vue-router（hash 模式）+ TypeScript。预生成女声 mp3（edge-tts AriaNeural）优先、Web Speech API 回退朗读；canvas-confetti 彩带、CSS 关键帧、Web Audio 合成音效；SVG + Pointer Events 做图词连线（鼠标与平板触屏同源）；PWA 可离线玩。
 
 **后端**（`backend/`，独立 Python 项目）：FastAPI + SQLite（10 张表，版本化迁移），只做**跨设备同步**与埋点聚合，不是应用的运行前提。
 
@@ -75,7 +75,7 @@ frontend/public/lessons/<课时id>/
 └── words/<单词id>.png 单词图片（缺失回退 emoji 占位）
 ```
 
-**l6/l7/l8 的音视频与图片全部是仓库自研合成的**（无版权风险）：`scripts/gen-songs.py` 合成童谣并写回逐行时间轴、`gen-word-art.py` 生成贴纸风 SVG、`gen-word-audio.py` 生成童声发音。改内容重跑脚本即可，没有素材也能完整试玩。⚠️ `gen-songs.py` **只**作用于 l6/l7/l8，不会覆盖你自己提供的 l4/l5。
+**l6/l7/l8 的音视频与图片全部是仓库自研合成的**（无版权风险）：`scripts/gen-songs.py` 合成童谣并写回逐行时间轴、`gen-word-art.py` 生成贴纸风 SVG、`gen-word-audio.py` 生成神经网络发音（成年女声）。改内容重跑脚本即可，没有素材也能完整试玩。⚠️ `gen-songs.py` **只**作用于 l6/l7/l8，不会覆盖你自己提供的 l4/l5。
 
 **新增课时**：编辑 `frontend/src/data/lessons.ts` 的 `rawLessons`。一节课的结构见 `RawLesson` 接口，要点：
 

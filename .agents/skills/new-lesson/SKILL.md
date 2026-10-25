@@ -43,7 +43,7 @@ BASE 前缀，别自己拼）；`words[].image` 缺失自动回退 emoji。
 
 ```bash
 cd frontend
-python3 scripts/gen-word-audio.py            # 单词+口语句发音 mp3（edge-tts 童声，只补缺失）
+python3 scripts/gen-word-audio.py            # 单词+口语句发音 mp3（edge-tts Aria 成年女声，只补缺失）
 python3 scripts/gen-word-art.py <...>        # 词图生成（见脚本 docstring）
 python3 scripts/optimize-word-art.py         # 词图去白底 → 透明 WebP；入库后删源 PNG
 node scripts/optimize-videos.mjs             # mp4 → 720p/CRF26/faststart + 首帧 poster

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-为所有课时单词生成神经网络发音 mp3（默认音色 en-US-AnaNeural 童声）。
+为所有课时单词生成神经网络发音 mp3（默认音色 en-US-AriaNeural 成年女声）。
 
 用法：
     # 只补缺失的（增量，推荐）
@@ -54,7 +54,7 @@ async def gen(text, out, voice):
 
 async def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--voice", default="en-US-AnaNeural")
+    ap.add_argument("--voice", default="en-US-AriaNeural")  # 2026-10-25 用户试听四音色后定版：成年女声咬字最清、匹配女老师心智模型（旧默认 Ana 童声）
     ap.add_argument("--force", action="store_true", help="已存在的也重新生成")
     args = ap.parse_args()
 
