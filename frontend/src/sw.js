@@ -42,7 +42,10 @@ function relPath(url) {
   return p.startsWith(SCOPE_PATH) ? p.slice(SCOPE_PATH.length) : p.slice(1);
 }
 
-const SHELL_URL = new URL("./", self.registration.scope).href; // index.html
+// 应用壳 = scope 下的 app/（双根部署：站点根是备案落地页，SPA 在 /app/ 子目录）。
+// ⚠️ 不能用 scope 根——那是备案页，断网回退会把孩子带到落地页而不是应用
+// （双根改造后 verify-pwa 实测抓到，2026-10-25）。
+const SHELL_URL = new URL("app/", self.registration.scope).href;
 
 function withTimeout(promise, ms) {
   return new Promise((resolve, reject) => {

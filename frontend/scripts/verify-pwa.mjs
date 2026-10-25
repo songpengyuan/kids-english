@@ -21,7 +21,11 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CHROME = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const CDP_PORT = Number(process.env.AUDIT_PORT || 9340);
 const PREVIEW_PORT = 4173;
-const BASE = `http://localhost:${PREVIEW_PORT}/kids-english/`;
+// 双根布局（与生产 zelab.cn 同构）：站点根 = 备案落地页，SPA 在 /app/ 子目录，
+// sw.js 与 manifest/图标在根（注册 /sw.js、scope /）。曾按旧的"子路径单根"布局
+// 导航到 /kids-english/——打开的是不注册 SW 的备案页，SW 永远"未接管"（2026-10-25 排查）。
+const BASE = `http://localhost:${PREVIEW_PORT}/`;
+const APP = `${BASE}app/`;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -47,8 +51,8 @@ function check(name, ok, detail = "") {
 }
 
 /* ---------- 0. 构建 + 起 preview ---------- */
-console.log("building (GH_REPO=kids-english)...");
-const build = spawnSync("pnpm", ["build"], { cwd: ROOT, env: { ...process.env, GH_REPO: "kids-english" }, stdio: "pipe" });
+console.log("building (BASE_PATH=/，与生产 build:root 同构)...");
+const build = spawnSync("pnpm", ["build"], { cwd: ROOT, env: { ...process.env, BASE_PATH: "/" }, stdio: "pipe" });
 if (build.status !== 0) {
   console.error(String(build.stderr || build.stdout));
   process.exit(1);
@@ -59,7 +63,7 @@ function startPreview() {
   // 停的时候整组杀掉，否则子进程会占着 4173 端口导致重启失败
   const p = spawn("pnpm", ["preview", "--port", String(PREVIEW_PORT), "--strictPort"], {
     cwd: ROOT,
-    env: { ...process.env, GH_REPO: "kids-english" },
+    env: { ...process.env, BASE_PATH: "/" },
     stdio: "ignore",
     detached: true,
   });
@@ -77,7 +81,7 @@ function stopPreview(p) {
 async function waitPreview() {
   for (let i = 0; i < 40; i++) {
     try {
-      const r = await fetch(BASE);
+      const r = await fetch(APP);
       if (r.ok) return true;
     } catch {}
     await sleep(250);
@@ -140,11 +144,11 @@ try {
   };
 
   /* ---------- 1. 产物与 manifest ---------- */
-  await goto(BASE, 800);
+  await goto(APP, 800);
   const html = await evalJs(`document.documentElement.outerHTML`);
-  check("index.html 引用子路径 manifest", html.includes("/kids-english/manifest.webmanifest"), "base 重写正确");
+  check("SPA 壳引用根路径 manifest", html.includes("/manifest.webmanifest"), "双根布局：manifest 在站点根");
   const mf = await evalJs(`(async () => {
-    const r = await fetch("manifest.webmanifest");
+    const r = await fetch("/manifest.webmanifest");
     if (!r.ok) return { ok: false, status: r.status };
     const j = await r.json();
     return { ok: true, display: j.display, start: j.start_url, icons: (j.icons || []).map(i => i.src) };
@@ -157,12 +161,12 @@ try {
   check("manifest 图标全部可访问", iconOk === true, (mf.icons || []).join(", "));
 
   /* ---------- 2. SW 接管 + 壳缓存 ---------- */
-  await goto(BASE, 1000);
+  await goto(APP, 1000);
   let controlled = false;
   for (let i = 0; i < 30; i++) {
     controlled = await evalJs(`!!navigator.serviceWorker.controller`);
     if (controlled) break;
-    await send("Page.navigate", { url: BASE }); // 首次访问要等 SW 激活并 claim，刷一次
+    await send("Page.navigate", { url: APP }); // 首次访问要等 SW 激活并 claim，刷一次
     await sleep(1000);
   }
   check("Service Worker 已注册并接管页面", controlled === true);
@@ -171,18 +175,17 @@ try {
     const shellName = names.find(n => n.startsWith("kids-app-"));
     if (!shellName) return { found: false };
     const keys = (await (await caches.open(shellName)).keys()).map(k => new URL(k.url).pathname);
-    return { found: true, name: shellName, count: keys.length, hasIndex: keys.some(k => k.endsWith("/kids-english/") || k.endsWith("/kids-english/index.html")), hasAssets: keys.some(k => k.includes("/assets/")) };
+    return { found: true, name: shellName, count: keys.length, hasIndex: keys.some(k => k.endsWith("/app/") || k.endsWith("/app/index.html")), hasAssets: keys.some(k => k.includes("/assets/")) };
   })()`);
-  check("壳缓存就位(index.html + 哈希资源)", shell.found && shell.hasIndex && shell.hasAssets, `${shell.name} 共 ${shell.count} 项`);
+  check("壳缓存就位(/app/ 壳 + 哈希资源)", shell.found && shell.hasIndex && shell.hasAssets, `${shell.name} 共 ${shell.count} 项`);
 
   /* ---------- 3. 媒体进缓存 ---------- */
-  const mediaUrl = BASE + "lessons/l4/song.mp3";
   const mediaCached = await evalJs(`(async () => {
-    const r = await fetch("lessons/l4/song.mp3");
+    const r = await fetch("/lessons/l4/song.mp3");
     if (!r.ok) return { ok: false, status: r.status };
     await new Promise(res => setTimeout(res, 800)); // 等后台写缓存完成
     const cache = await caches.open("kids-media-v1");
-    const hit = await cache.match(location.origin + "/kids-english/lessons/l4/song.mp3");
+    const hit = await cache.match(location.origin + "/lessons/l4/song.mp3");
     return { ok: true, cached: !!hit, size: hit ? Number(hit.headers.get("content-length")) : 0 };
   })()`);
   check("童谣音频已进媒体缓存", mediaCached.ok && mediaCached.cached && mediaCached.size > 1000000, `${(mediaCached.size / 1048576).toFixed(1)} MB`);

@@ -133,9 +133,9 @@ function nav(fn: () => void) {
       <!-- 收取完成（或点关闭）就卸载，避免卡在"已收进宝藏罐"那一屏 -->
       <ChestReward v-if="!chestDone" @done="chestDone = true" />
       <div class="btn-row">
-        <!-- 主按钮 = 回本课菜单（自由模式：想玩什么回菜单自己挑）；
+        <!-- 主按钮 = 回本课玩法目录（自由模式：想玩什么回菜单自己挑）；
              不放"下一课"——结算页直接跳下一课会跳过孩子对进度的感知 -->
-        <BaseButton variant="green" @click="emit('toMenu')">下一个菜单</BaseButton>
+        <BaseButton variant="green" @click="emit('toMenu')">再选一个玩法</BaseButton>
         <BaseButton v-if="nextGroup" variant="gray" @click="emit('goGroupPractice')">
           换 {{ nextGroup.name }} 组再练
         </BaseButton>
