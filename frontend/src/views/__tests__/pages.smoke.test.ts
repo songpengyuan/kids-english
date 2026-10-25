@@ -134,7 +134,9 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   it("家长中心", async () => {
     const w = await mountPage(ParentView, "/me/parent");
-    expect(w.text()).toContain("孩子管理");
+    // 本地模式：孩子速览卡在前（孩子管理仅云模式显示）
+    expect(w.text()).toContain("完整报告");
+    expect(w.text()).toContain("家长报告");
     expect(errors).toEqual([]);
   });
 

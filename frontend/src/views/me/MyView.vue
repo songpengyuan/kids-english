@@ -28,6 +28,8 @@ import { useRoute, useRouter } from "vue-router";
 import { lessons } from "../../data/lessons";
 import { dueWords } from "../../utils/reviewQueue";
 import PageShell from "../../components/ui/PageShell.vue";
+import SectionTitle from "../../components/ui/SectionTitle.vue";
+import { FORM_TOTAL } from "../../data/heroes";
 import EntryRow from "../../components/ui/EntryRow.vue";
 import IconTile from "../../components/ui/IconTile.vue";
 import ShellIcon from "../../components/ShellIcon.vue";
@@ -114,6 +116,9 @@ const goalPct = computed(() => {
   const l = Math.min(1, streak.newLevels / 1);
   return Math.round(((r + l) / 2) * 100);
 });
+
+/** 收藏磁贴：图鉴进度（rewards.ownedCount 已按星级>0 计数） */
+const ownedForms = computed(() => rewards.ownedCount);
 
 /** 主行动：接着上次没学完的那课继续 */
 const continueLesson = computed(
@@ -207,6 +212,23 @@ function sayEntry(name: string, path: string) {
         <IconTile tone="orange"><RotateCcw class="k-ico" /></IconTile>
       </template>
     </EntryRow>
+
+    <!-- ④ 我的收藏：宝藏罐 / 学习日历（孩子的两个大入口，从 pill 升级成大磁贴） -->
+    <section class="collection">
+      <SectionTitle>我的收藏</SectionTitle>
+      <div class="collection-grid">
+        <button class="coll-card tone-gold" @click="goTreasure">
+          <span class="coll-ico" aria-hidden="true"><ShellIcon /></span>
+          <span class="coll-num">{{ rewards.shells }}</span>
+          <span class="coll-label">宝藏罐 · 英雄 {{ ownedForms }}/{{ FORM_TOTAL }}</span>
+        </button>
+        <button class="coll-card tone-blue" @click="goCalendar">
+          <span class="coll-ico coll-ico--flame" aria-hidden="true"><Flame class="k-ico" /></span>
+          <span class="coll-num">{{ streak.streak }}</span>
+          <span class="coll-label">学习日历 · 连击天数</span>
+        </button>
+      </div>
+    </section>
 
     <!-- 家长中心：低调的文字入口，避免孩子误点 -->
     <button class="parent-entry" @click="openParent">
@@ -361,6 +383,47 @@ function sayEntry(name: string, path: string) {
   border-radius: var(--radius-pill);
   background: var(--on-tone);
   transition: width var(--dur-slow) var(--ease-pop);
+}
+
+/* ---------- 我的收藏磁贴 ---------- */
+.collection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
+}
+.collection-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap-s);
+}
+.coll-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
+  padding: var(--gap-m) var(--gap-s);
+  border-radius: var(--radius);
+  text-align: center;
+  /* 按下下沉由 tone-* 注入，这里只补过渡 */
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.coll-ico {
+  font-size: var(--fs-emoji-l);
+  line-height: 1;
+  display: inline-flex;
+}
+.coll-ico--flame {
+  color: var(--on-tone);
+}
+.coll-num {
+  font-size: var(--fs-hero);
+  font-weight: var(--fw-strong);
+  line-height: 1;
+}
+.coll-label {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  opacity: 0.9;
 }
 
 /* ---------- 家长中心 ---------- */
