@@ -275,12 +275,12 @@ class TestLegacy:
     def test_ping(self):
         assert client.get("/api/ping").json()["ok"] is True
 
-    def test_legacy_evaluate_unchanged(self, monkeypatch):
-        # 旧前端路径保留：无凭据时返回 server_not_configured（契约不变）
+    def test_legacy_evaluate_retired(self, monkeypatch):
+        """旧前端路径已下线（2026-10-25 评审）：前端无调用方，双路径只剩多余上传面。"""
         for k in ("XF_APPID", "XF_API_KEY", "XF_API_SECRET"):
             monkeypatch.delenv(k, raising=False)
         r = client.post("/api/evaluate", files={"file": ("x.wav", b"\x00" * 300, "audio/wav")}, data={"text": "hello"})
-        assert r.json() == {"ok": False, "error": "server_not_configured", "msg": "讯飞凭据未配置"}
+        assert r.status_code == 404
 
 
 class TestHardening:
@@ -599,6 +599,17 @@ class TestConcurrency:
         got = self._get(token, cid)
         assert got["data"]["l4"]["learn"] == 3  # max
         assert got["data"]["l4"]["quiz"] == 1  # 未上报的字段保留
+
+    def test_new_activity_stars_take_max(self):
+        """新玩法（memory/order）星数同样取 max：曾因星数键白名单漏登记，
+        走整键覆盖——多设备同步时较低星把服务端较高星抹掉（2026-10-25 评审）。"""
+        token = _auth()
+        cid = self._child(token)
+        self._put(token, cid, {"l11": {"memory": 3, "order": 2}})
+        self._put(token, cid, {"l11": {"memory": 1, "order": 3}})  # 另一端 replay 星数更低/更高
+        got = self._get(token, cid)
+        assert got["data"]["l11"]["memory"] == 3  # 低星不得覆盖高星
+        assert got["data"]["l11"]["order"] == 3
 
     def test_completed_union(self):
         token = _auth()

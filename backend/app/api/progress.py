@@ -16,7 +16,11 @@ from .auth import _require_family
 
 router = APIRouter(prefix="/api/v1/children/{child_id}", tags=["progress"])
 
-_STAR_KEYS = ("learn", "quiz", "match", "speak", "song", "talk")
+# 合并时按结构保留的字段（星级之外的容器/列表字段，各有专门合并逻辑）。
+# 数值键不设白名单——曾经手写 6 个旧玩法，memory/order 上线后漏进清单，
+# 星数走了整键覆盖而非取 max，多设备同步时较低星会抹掉服务端的较高星
+# （2026-10-25 接口评审发现）。任何"只增不减"的数值字段都按 max 合。
+_STRUCT_KEYS = ("completed", "words")
 
 
 def _child_belongs(conn, child_id: int, family_id: int) -> bool:
@@ -49,11 +53,15 @@ def _merge_word(existing: dict, incoming: dict) -> dict:
 
 
 def _merge_lesson(existing: dict, incoming: dict) -> dict:
-    """一课合并：星级取 max、completed 取并集、words 逐词合并。"""
+    """一课合并：星数取 max、completed 取并集、words 逐词合并。"""
     merged = {**existing, **incoming}
-    for k in _STAR_KEYS:
-        a, b = existing.get(k, 0) or 0, incoming.get(k, 0) or 0
-        if a or b:
+    # 数值键一律取 max（不只是已知玩法：任何"计数只增不减"的数值字段都该这样合，
+    # 结构字段除外——它们有各自的合并语义，绝不能按数字 max）
+    for k in set(existing) | set(incoming):
+        if k in _STRUCT_KEYS:
+            continue
+        a, b = existing.get(k), incoming.get(k)
+        if isinstance(a, int) and isinstance(b, int):
             merged[k] = max(a, b)
     ca, cb = set(existing.get("completed", []) or []), set(incoming.get("completed", []) or [])
     if ca or cb:

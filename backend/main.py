@@ -98,7 +98,6 @@ def ping():
     return {"ok": True, "msg": "kids-english backend ready", "schema_version": ver}
 
 
-# 兼容旧前端路径：评测端点保留 /api/evaluate（新前端迁移到 /api/v1/evaluation）
-@app.post("/api/evaluate")
-async def legacy_evaluate(file: UploadFile = File(...), text: str = Form(...)):
-    return await evaluation.api_evaluate(file, text)
+# 旧前端路径 /api/evaluate 已下线（2026-10-25 接口评审）：
+# 新前端从未调用过它（前端只有 /api/v1/evaluation 的生成类型，无调用方），
+# 双路径只多一份上传面。回滚锚点：git log -S "legacy_evaluate"。

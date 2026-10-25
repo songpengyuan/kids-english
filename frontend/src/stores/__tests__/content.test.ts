@@ -47,7 +47,7 @@ const DETAIL: LessonDetailOut = {
       group: "animals",
       lyrics: ["A sailor went to sea, sea, sea", "To see what he could see"],
       timings: { bpm: 120, beatsPerBar: 4, duration: 10, timeline: [0, 1, 2] },
-      tracks: [{ title: "Colors Song", audio: "/lessons/l11/song.mp3", video: null, lyrics: [], group: "colors" }],
+      tracks: [{ title: "Colors Song", titleZh: "颜色歌", audio: "/lessons/l11/song.mp3", video: null, lyrics: [], group: "colors" }],
     },
     words: [
       { id: "seahorse", en: "seahorse", zh: "海马", emoji: "🐴", image: "/lessons/l4/words/seahorse.png", audio: "/lessons/l4/audio/seahorse.mp3", group: "animals" },
@@ -112,6 +112,8 @@ describe("content store · 契约", () => {
     expect(lesson!.wordGroups).toEqual([{ key: "animals", name: "动物" }]);
     expect(lesson!.colorPairs).toEqual([{ color: "blue", wordId: "seahorse" }]);
     expect(lesson!.song.group).toBe("animals");
+    // 轨道中文名透传（漏映射会让磨耳朵副标题退化回课程名）
+    expect(lesson!.song.tracks[0]).toMatchObject({ titleZh: "颜色歌", group: "colors" });
     expect(lesson!.song.tracks[0]).toMatchObject({ title: "Colors Song", group: "colors" });
   });
 

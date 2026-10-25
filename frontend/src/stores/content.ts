@@ -42,6 +42,9 @@ function toLesson(raw: LessonOut): Lesson {
       timings: song.timings ?? null,
       tracks: (song.tracks ?? []).map((t) => ({
         title: t.title ?? "",
+        // 轨道中文名（l11 Colors Song→颜色歌）：漏映射会让磨耳朵副标题退化回课程名
+        //（8658df4 修过的 bug 在远端数据路径上复发——2026-10-25 接口评审发现）
+        titleZh: t.titleZh ?? undefined,
         audio: t.audio ?? null,
         video: t.video ?? null,
         lyrics: t.lyrics ?? [],

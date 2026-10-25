@@ -1170,42 +1170,6 @@
           }
         }
       }
-    },
-    "/api/evaluate": {
-      "post": {
-        "summary": "Legacy Evaluate",
-        "operationId": "legacy_evaluate_api_evaluate_post",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_legacy_evaluate_api_evaluate_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -1274,25 +1238,6 @@
           "file"
         ],
         "title": "Body_create_recording_api_v1_children__child_id__recordings_post"
-      },
-      "Body_legacy_evaluate_api_evaluate_post": {
-        "properties": {
-          "file": {
-            "type": "string",
-            "contentMediaType": "application/octet-stream",
-            "title": "File"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          }
-        },
-        "type": "object",
-        "required": [
-          "file",
-          "text"
-        ],
-        "title": "Body_legacy_evaluate_api_evaluate_post"
       },
       "CalendarDayOut": {
         "properties": {
