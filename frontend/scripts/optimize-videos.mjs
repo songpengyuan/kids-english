@@ -1,11 +1,20 @@
 /**
- * 课程视频一次性压缩：public/lessons/<id>/*.mp4 → 720p/CRF26/faststart，
+ * 课程视频一次性压缩：public/lessons/<id>/*.mp4 → ≤1080p/CRF20/faststart，
  * 并提取首帧 poster（public/lessons/<id>/<同名>.jpg）。
  *
- * 为什么：6 个 mp4 共 94.5MB（最大单文件 28MB），是 PWA 媒体缓存的大头；
- * 童谣动画 720p 足够（播放宽度 ≤ 屏宽 390-768），CRF26 视觉无损感、体积约 1/3。
+ * 参数的教训（2026-10-25 返工）：首版 720p/CRF26「手机上看着没问题」，
+ * 但家庭场景会在**电视**上看（投屏/大屏）——720p CRF26 在大屏上明显模糊，
+ * 全量从 git 历史恢复原片重压。现在的口径：
+ *   · 分辨率：保留源分辨率（≤1080，不再降到 720）
+ *   · CRF 22 + preset slow：大屏视觉透明。22 而不是 20：这批源是 640-1024 宽的
+ *     实拍/扫描内容，CRF20 会把噪点也护住，产物比原片还大（96MB>94MB 实测）
+ *   · 音频 128k（童谣是音乐内容，96k 在电视音响上发闷）
  * faststart 把 moov 挪到文件头，浏览器拿到前 100KB 就能起播。
  * poster 用 jpg 不用 webp：@ffmpeg-installer 的构建没编 libwebp。
+ *
+ * ⚠️ 不要对已压缩产物再跑（二次有损）。判定"已压过"靠 poster mtime，
+ * 不可靠时用 --dry 先看命令；恢复原片的正规通道是 git 历史
+ * （a992a5f^ 里存有全部原始 mp4）。
  *
  * 用法：node scripts/optimize-videos.mjs [--dry] [--force]
  *   --dry   只打印将执行的 ffmpeg 命令
@@ -26,8 +35,8 @@ const args = new Set(process.argv.slice(2));
 const dry = args.has("--dry");
 const force = args.has("--force");
 
-const CRF = "26";
-const MAXH = "720";
+const CRF = "22";
+const MAXH = "1080";
 
 /** 就地压一个 mp4 + 提取 poster。返回 { before, after, poster } */
 function compress(src) {
@@ -38,17 +47,21 @@ function compress(src) {
   const tmp = src + ".tmp.mp4";
 
   const filters = [
-    `scale='min(${MAXH},ih)':-2`, // 限高 720，等比、宽取偶数
+    // 限高不放大：高 = min(1080, 源高)，宽按比例（-2 保证偶数）。
+    // ⚠️ 曾写成 scale='min(720,ih)':-2 —— 第一参数是【宽】，却拿源【高】当宽上限：
+    // 960 宽的原片被压到 544 宽（-44% 像素），这就是电视上看模糊的主因
+    // （再叠 CRF26 双重劣化）。宽度/高度参数各管各的，别混用。
+    `scale=-2:'min(${MAXH},ih)'`,
   ];
   const videoArgs = [
     "-y", "-i", src,
     "-vf", filters.join(","),
-    "-c:v", "libx264", "-crf", CRF, "-preset", "medium",
-    "-c:a", "aac", "-b:a", "96k",
+    "-c:v", "libx264", "-crf", CRF, "-preset", "slow",
+    "-c:a", "aac", "-b:a", "128k",
     "-movflags", "+faststart",
     tmp,
   ];
-  const posterArgs = ["-y", "-ss", "0.5", "-i", src, "-frames:v", "1", "-vf", "scale='min(720,ih)':-2", "-q:v", "3", poster];
+  const posterArgs = ["-y", "-ss", "0.5", "-i", src, "-frames:v", "1", "-vf", "scale=-2:'min(1080,ih)'", "-q:v", "3", poster];
 
   if (dry) {
     console.log(`[dry] ${path.relative(root, src)}`);
