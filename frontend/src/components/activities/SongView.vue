@@ -29,6 +29,13 @@ const videoEl = ref<HTMLVideoElement | null>(null);
 /** 视频是否已开始播放：开始前盖海报层（Chromium 在 preload 出数据后直接绘
  *  第一帧而不加载 poster——这部 mp4 首帧是黑的，看着像坏了） */
 const videoStarted = ref(false);
+/** 视频真实宽高比（loadedmetadata 后更新）：盒子按它收身，原生控制条贴住画面下缘，
+ *  不再沉在一片拉高的黑底底下（元素曾被 .video-zone 拉到 503px 高，内容只有 234px） */
+const videoAspect = ref("16 / 9");
+function onVideoMeta(e: Event) {
+  const v = e.target as HTMLVideoElement;
+  if (v.videoWidth && v.videoHeight) videoAspect.value = `${v.videoWidth} / ${v.videoHeight}`;
+}
 
 /** 多段音视频轨道：顶层 audio/video/lyrics 是第一轨，tracks 追加后续轨。
  *  配了词群的课（l11）按当前群过滤：Colors 只放颜色歌、Animals 只放 Brown Bear。 */
@@ -254,7 +261,7 @@ function onVideoError() {
 
     <!-- ===== 视频模式（课时放了 song.mp4 时才有） ===== -->
     <div v-if="mode === 'video' && hasVideo" class="video-zone view-body">
-      <div class="video-box">
+      <div class="video-box" :style="{ aspectRatio: videoAspect }">
         <video
           ref="videoEl"
           :src="curTrack.video || undefined"
@@ -264,6 +271,7 @@ function onVideoError() {
           preload="metadata"
           class="video"
           @play="videoStarted = true"
+          @loadedmetadata="onVideoMeta"
           @error="onVideoError"
           @ended="onVideoEnded"
         ></video>
@@ -436,7 +444,12 @@ function onVideoError() {
 .video-box {
   position: relative;
   width: 100%;
-  height: 100%;
+  /* 宽高比由视频 metadata 决定：盒子紧贴画面，原生控制条正好是画面下缘那一行。
+     align-self 防父级 flex（.video-zone 为 row）把盒子拉伸回满高——
+     一旦被拉高，aspect-ratio 失效，控制条又沉到黑底底下 */
+  align-self: center;
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
 }
 .video-cover {
   position: absolute;

@@ -202,23 +202,24 @@ onBeforeUnmount(segSettle);
       <X class="k-ico" />
     </button>
 
-    <video
-      ref="videoEl"
-      class="vp-video"
-      :src="cur.src"
-      :poster="poster ?? undefined"
-      playsinline
-      preload="metadata"
-      autoplay
-      @play="playing = true; segBegin()"
-      @pause="playing = false; segSettle()"
-      @ended="playing = false; onEnded()"
-      @timeupdate="onTime"
-      @loadedmetadata="onMeta"
-      @click="togglePlay"
-    />
+    <div class="vp-body">
+      <video
+        ref="videoEl"
+        class="vp-video"
+        :src="cur.src"
+        :poster="poster ?? undefined"
+        playsinline
+        preload="metadata"
+        autoplay
+        @play="playing = true; segBegin()"
+        @pause="playing = false; segSettle()"
+        @ended="playing = false; onEnded()"
+        @timeupdate="onTime"
+        @loadedmetadata="onMeta"
+        @click="togglePlay"
+      />
 
-    <div class="vp-panel">
+      <div class="vp-panel">
       <div class="vp-seek">
         <span class="vp-time">{{ fmt(curSec) }}</span>
         <input
@@ -260,6 +261,7 @@ onBeforeUnmount(segSettle);
 
     <p class="vp-caption">{{ cur.titleZh }} · {{ cur.title }}</p>
   </div>
+  </div>
 </template>
 
 <style scoped>
@@ -277,6 +279,53 @@ onBeforeUnmount(segSettle);
 }
 .vp:fullscreen {
   background: var(--black);
+  padding: 0;
+}
+/* 真全屏：视频占满除控制栏外的全部空间（contain 黑底无缝），面板通栏 */
+.vp:fullscreen .vp-body {
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+}
+.vp:fullscreen .vp-video {
+  max-width: none;
+  max-height: none;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  border-radius: 0;
+}
+.vp:fullscreen .vp-panel {
+  width: 100%;
+  border-radius: 0;
+}
+.vp:fullscreen .vp-caption {
+  display: none;
+}
+/* 旧 Safari 前缀（16.4 前不支持无前缀 :fullscreen） */
+.vp:-webkit-full-screen {
+  background: var(--black);
+  padding: 0;
+}
+.vp:-webkit-full-screen .vp-body {
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+}
+.vp:-webkit-full-screen .vp-video {
+  max-width: none;
+  max-height: none;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  border-radius: 0;
+}
+.vp:-webkit-full-screen .vp-panel {
+  width: 100%;
+  border-radius: 0;
+}
+.vp:-webkit-full-screen .vp-caption {
+  display: none;
 }
 .vp-close {
   position: absolute;
@@ -289,8 +338,21 @@ onBeforeUnmount(segSettle);
   color: var(--mask-ink);
   z-index: 1;
 }
+.vp-body {
+  /* 视频 + 控制栏同宽一体化：控制栏永远正好跨满视频那一行 */
+  width: min(560px, 94vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
+  min-height: 0;
+}
 .vp-video {
-  max-width: 95vw;
+  display: block;
+  /* fit-content：元素紧贴视频画面（不拉伸不留黑边），控制栏才贴得住画面下缘 */
+  width: auto;
+  height: auto;
+  max-width: 100%;
   /* 双重限高：常规 58vh；矮视口（手机横屏 ~390px 高）再扣除控制面板+标题+内边距，
      保证整列不超高——fixed 浮层内容超高会上下两头裁切，比小视频更伤 */
   max-height: min(58vh, calc(100dvh - 240px));
@@ -302,9 +364,9 @@ onBeforeUnmount(segSettle);
   display: flex;
   flex-direction: column;
   gap: var(--gap-xs);
-  width: min(560px, 94vw);
+  width: 100%;
   padding: var(--gap-s) var(--gap-m);
-  border-radius: var(--radius);
+  border-radius: var(--radius-s);
   background: var(--mask-control);
 }
 .vp-seek {
