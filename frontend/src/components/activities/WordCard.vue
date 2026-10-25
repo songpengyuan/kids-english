@@ -211,8 +211,9 @@ function onWord() {
   font-size: clamp(19px, min(3.8vh, 3vw), 34px);
 }
 
-/* 极窄或极矮时把"点读"图标藏掉，避免遮挡图片 */
-@media (max-height: 420px), (max-width: 340px) {
+/* 极矮时把"点读"图标藏掉，避免遮挡图片（480 = 批准的 tiny 档；
+ * 旧值 420/340 已收口：420-480 的横屏机型一并隐藏，<340 宽设备实际不存在） */
+@media (max-height: 480px) {
   .speaker {
     display: none;
   }

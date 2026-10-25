@@ -100,7 +100,9 @@ function onClick(c: MenuCard) {
 @media (min-width: 600px) {
   .grid { grid-template-columns: repeat(3, 1fr); }
 }
-@media (min-width: 900px) {
+/* 4 列：结构档（768 + landscape，批准清单内）——旧值 900px 已收口；
+ * 行为差异：768-900 的横屏（如手机横屏 844 宽）从 3 列变 4 列，走查验证过 */
+@media (min-width: 768px) and (orientation: landscape) {
   .grid { grid-template-columns: repeat(4, 1fr); }
 }
 

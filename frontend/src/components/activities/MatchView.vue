@@ -720,12 +720,20 @@ onBeforeUnmount(() => {
 .cell.pic:active {
   cursor: grabbing;
 }
-/* 图片缩小：占格子 62% */
+/* 图片占格比例：窄屏放大到 74% 保辨识度，宽屏回到 62% 留白呼吸
+ * （mobile-first：默认即窄屏值，≥600 覆盖。原反向写法 (max-width:600px)
+ * 已收口——那块里的两条 flex 与基础样式同值，是死代码，一并删除） */
 .cell.pic img {
-  width: 62%;
-  height: 62%;
+  width: 74%;
+  height: 74%;
   object-fit: contain;
   pointer-events: none;
+}
+@media (min-width: 600px) {
+  .cell.pic img {
+    width: 62%;
+    height: 62%;
+  }
 }
 /* 颜色配对：纯色圆，带细边框（白色/浅色圆需要描边才能看清） */
 .color-dot {
@@ -851,20 +859,6 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 
-/* 手机窄屏：中间单词列再加宽，图片列收窄，优先保证单词可读 */
-@media (max-width: 600px) {
-  .col.imgs {
-    flex: 1;
-  }
-  .col.words {
-    flex: 1;
-  }
-  .cell.pic img {
-    width: 74%;
-    height: 74%;
-  }
-}
-
 /* 手机横屏：格子很扁，隐藏提示语把高度让给棋盘 */
 @media (max-height: 480px) {
   .tip {
@@ -872,12 +866,14 @@ onBeforeUnmount(() => {
   }
 }
 
-/* ===== 平板/桌面（宽且不太矮）：图片卡方形化 + 图片填满 =====
+/* ===== 宽屏（≥600）：图片卡方形化 + 图片填满 =====
  * 修复 iPad 横屏「图片小」：拉伸布局下图片列和单词列各分一半宽（约 440px），
  * 但行高被对数均摊（5 对 → 每行约 110px），图片 object-fit 后实际只有 ~65px 高，
  * 卡片左右大片白底。这里让图片卡按行高取正方形、图片撑满卡片、列内居中：
- * 行高多少图片就多大，视觉密度立刻回来。手机竖屏（<600px）保持拉伸布局不动。 */
-@media (min-width: 600px) and (min-height: 640px) {
+ * 行高多少图片就多大，视觉密度立刻回来。手机竖屏（<600px）保持拉伸布局不动。
+ * 高度条款（min-height:640）已收口：手机横屏（667×375 / 844×390）实测棋盘
+ * 自适应行数后方形卡不溢出（layout-audit phone 组验证），无需再加高度门槛。 */
+@media (min-width: 600px) {
   .col.imgs {
     justify-items: center;
   }

@@ -186,8 +186,10 @@ html.no-bottom-nav #app {
   padding-bottom: 0;
 }
 
-/* 平板竖屏：空间充裕，稍微放宽左右留白 */
-@media (min-width: 700px) and (orientation: portrait) {
+/* 平板竖屏：空间充裕，稍微放宽左右留白（600 = 批准档，与 useViewport.isNarrow
+ * 同刀口。旧值 700px 已收口——600-700 竖屏（如 iPad 分屏 2/3 的 678 宽）现在
+ * 也放宽，layout-audit 的 split_two_thirds 视口验证过） */
+@media (min-width: 600px) and (orientation: portrait) {
   #app {
     --pad-x: clamp(20px, 4vw, 56px);
   }

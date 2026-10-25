@@ -349,6 +349,7 @@
 ```
 (max-height: 480px)                              tiny   —— 手机横屏，压高度
 (min-width: 600px)                               wide   —— iPad/Mac，token 放大一档
+(min-width: 600px) and (orientation: portrait)   平板竖屏 —— 竖向大屏专属的值级放宽（2026-10-25 增）
 (min-width: 768px) and (orientation: landscape)  宽横屏 —— 允许分栏 / 加列
 (hover: hover) and (pointer: fine)               非触屏 —— hover 效果
 (prefers-reduced-motion: reduce)                 无障碍 —— 与布局无关，单独放行
@@ -395,6 +396,18 @@ token，却够不到 768 拿不到播放页双栏。按 ListenView 注释里的�
 应该裁掉播放键，**实测 678×768 单列播放器完整装下**：封面与字号随宽度收缩，
 总高远不到 850px（850 是 1024 宽下的数）。`layout-audit` 已把播放器纳入常驻页面
 （`listen-player`），13 个视口全过，不会再靠推算。
+
+### 11.6 断点收口完成（2026-10-25）：受控清单清零
+
+五处旧值全部迁入批准清单（`BREAKPOINT_LEGACY` 已清空），迁移方式与实测依据：
+
+| 文件 | 旧 | 新 | 实测 |
+|---|---|---|---|
+| base.css | `700 + portrait` 放宽留白 | `600 + portrait` | 600-700 竖屏（分屏 2/3 的 678 宽）新命中，split_two_thirds 视口验证 |
+| LessonMenu | `900` → 4 列 | `768 + landscape` | 768-900 横屏（手机横屏 844）从 3 列变 4 列，phone 组验证 |
+| MatchView | `max-width:600` 窄屏图片 74% | 反转为 mobile-first：默认 74%，`min-width:600` 覆盖 62%（原块内两条 flex 与基础样式同值，是死代码已删） | 行为等价 |
+| MatchView | `600 + min-height:640` 方卡 | `600`（去掉高度门槛） | 手机横屏 667×375 / 844×390 实测棋盘自适应行数、方卡不溢出 |
+| WordCard | `420/340` 藏点读图标 | `480`（批准 tiny 档） | 420-480 横屏机型一并隐藏（正是挤的形态）；<340 宽设备实际不存在 |
 
 ## 12. 暗色模式
 

@@ -270,19 +270,19 @@ for (const f of files) {
 const BREAKPOINT_APPROVED = [
   '(max-height:480px)',
   '(min-width:600px)',
+  // 平板竖屏值档：放宽左右留白等"竖向大屏"专属的值级调整（2026-10-25 收口 700 时批准；
+  // 四形态验证见 DESIGN_SYSTEM §11.6——iPad 竖屏/分屏 2/3 命中，手机与横屏不受影响）
+  '(min-width:600px)and(orientation:portrait)',
   '(min-width:768px)and(orientation:landscape)',
   '(hover:hover)and(pointer:fine)',
   '(prefers-reduced-motion:reduce)'
 ]
 
-/** 待收口的旧值：只告警不失败（见文件头 ⑤ 的说明） */
-const BREAKPOINT_LEGACY = [
-  '(min-width:700px)and(orientation:portrait)',
-  '(min-width:900px)',
-  '(max-width:600px)',
-  '(min-width:600px)and(min-height:640px)',
-  '(max-height:420px),(max-width:340px)'
-]
+/** 待收口的旧值：只告警不失败（见文件头 ⑤ 的说明）
+ * 2026-10-25 五项全部收口清零（详见 DESIGN_SYSTEM §11.6）：
+ *  700+portrait→600+portrait；900→768+landscape；max-width:600→反转 mobile-first；
+ *  600+640→600（高度门槛实测可去）；420/340→480。 */
+const BREAKPOINT_LEGACY = []
 
 const normMedia = (s) => s.replace(/^@media/i, '').replace(/\s+/g, '').toLowerCase()
 
