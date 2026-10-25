@@ -22,6 +22,7 @@
 #   5. 课程种子同步    导出后 git diff 必须为空（CI: Content seed drift check）
 #   6. 生产构建        BASE_PATH=/ pnpm build:ci（CI: build 步的 build:root）
 #   7. 白屏冒烟        无头 Chrome 打开 /app/#/，断言应用真的渲染出来
+#   8. PWA 验证         SW 接管/离线壳/媒体缓存/Range/更新流（双根布局同构）
 #                      （CI 没有这一步 —— 而白屏正是这个项目的头号线上故障）
 #
 # 用法：
@@ -293,6 +294,24 @@ else
       *) bad "冒烟失败：页面没渲染出来 / 有 JS 异常 —— 这正是「部署后白屏」的形态"
          fail "白屏冒烟" ;;
     esac
+  fi
+
+  # ---------- 8) PWA 验证（2026-10-25 起纳入） ----------
+  # 曾烂了一周没人发现：双根部署重构后 SW 壳地址指向备案页（断网打开 App 落到
+  # 落地页），verify-pwa 不在任何门禁里、静默腐烂。现在 push 前必跑。
+  if [ -z "$FAILED_STEP" ] && [ "$RUN_SMOKE" = 1 ]; then
+    CHROME_BIN="${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
+    if [ ! -x "$CHROME_BIN" ]; then
+      warn "本机没有 Chrome，已跳过 PWA 验证（与冒烟同条件）"
+    else
+      step "PWA 验证  ·  node scripts/verify-pwa.mjs（SW 接管/离线壳/媒体缓存/Range/更新流）"
+      if (cd "$FE" && node scripts/verify-pwa.mjs); then
+        ok "PWA 验证全过"
+      else
+        bad "PWA 验证未通过 —— 复现：cd frontend && node scripts/verify-pwa.mjs"
+        fail "PWA 验证"
+      fi
+    fi
   fi
 
   [ -n "${CLEANUP_DIST:-}" ] && rm -rf "$BUILD_DIR"

@@ -206,14 +206,14 @@ try {
   stopPreview(preview);
   await sleep(800);
 
-  await send("Page.navigate", { url: BASE });
+  await send("Page.navigate", { url: APP });
   await sleep(2000);
   const offlineRender = await evalJs(`!!document.querySelector(".lesson-card")`);
   check("断网刷新仍能渲染首页(壳缓存兜底)", offlineRender === true);
 
   const offlineMedia = await evalJs(`(async () => {
     try {
-      const r = await fetch("lessons/l4/song.mp3");
+      const r = await fetch("/lessons/l4/song.mp3");
       return { ok: r.ok, status: r.status, len: Number(r.headers.get("content-length") || 0) };
     } catch (e) { return { ok: false, err: String(e) }; }
   })()`);
@@ -221,7 +221,7 @@ try {
 
   const offlineRange = await evalJs(`(async () => {
     try {
-      const r = await fetch("lessons/l4/song.mp3", { headers: { Range: "bytes=0-99" } });
+      const r = await fetch("/lessons/l4/song.mp3", { headers: { Range: "bytes=0-99" } });
       const buf = await r.arrayBuffer();
       return { status: r.status, bytes: buf.byteLength, cr: r.headers.get("content-range") };
     } catch (e) { return { status: 0, err: String(e) }; }
@@ -236,16 +236,16 @@ try {
   if (!(await waitPreview())) throw new Error("preview 重启失败");
 
   /* ---------- 5. 更新及时性 A：换了 HTML 立刻可见 ---------- */
-  const indexPath = path.join(ROOT, "dist", "index.html");
+  const indexPath = path.join(ROOT, "dist", "app", "index.html");
   const origIndex = fs.readFileSync(indexPath, "utf8");
   fs.writeFileSync(indexPath, origIndex.replace("</head>", '  <meta name="x-update-test" content="deploy-2" />\n</head>'));
-  await goto(BASE, 1500);
+  await goto(APP, 1500);
   const markerSeen = await evalJs(`!!document.querySelector('meta[name="x-update-test"]')`);
-  check("页面导航走 network-first(新部署立刻生效)", markerSeen === true, "改完 dist/index.html 刷新即见新标记");
+  check("页面导航走 network-first(新部署立刻生效)", markerSeen === true, "改完 dist/app/index.html 刷新即见新标记");
   fs.writeFileSync(indexPath, origIndex); // 还原，避免影响后续用例
 
   /* ---------- 6/7. 更新及时性 B + 不打断玩法 ---------- */
-  await goto(BASE + "?lesson=l4", 1500); // 深链进课时 = 非安全刷新时机
+  await goto(APP + "#/course/l4", 1500); // 深链进课时 = 非安全刷新时机
   const swPath = path.join(ROOT, "dist", "sw.js");
   const swSrc = fs.readFileSync(swPath, "utf8");
   const idA = /const BUILD_ID = "([^"]+)"/.exec(swSrc)?.[1];
@@ -265,7 +265,8 @@ try {
   const stillHeld = await evalJs(`window.__held`);
   check("玩法中不被强制刷新(更新挂起)", stillHeld === "in-lesson", "标记仍在 = 页面没被刷掉");
 
-  await evalJs(`document.querySelector(".hdr-back")?.click()`);
+  // 回首页（isIdle 判定 hash ∈ {"","#/","#/course"}）→ 挂起的更新立即应用（静默刷新）
+  await evalJs(`location.hash = "#/course"`);
   await sleep(2500);
   await evalJs(PING_FN); // 刷新后上下文已重置，重新注入再 PING
   const afterBack = await evalJs(`(async () => ({ held: window.__held, ping: await window.__swPing() }))()`);
