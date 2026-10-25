@@ -10,7 +10,7 @@
  *   public/lessons/<课时id>/audio/*.mp3  单词发音（可选，没有则浏览器 TTS 朗读）
  *   脚本不会覆盖这些文件；歌词高亮因为没有逐行时间轴，按比例映射。
  *
- * 【自研合成的课】l6 颜色 / l7 数字 / l8 字母：
+ * 【自研合成的课】（首例 l6/l7/l8，2026-10-25 已下线，脚本保留供后续自研课复用）：
  *   words/*.svg 由 scripts/gen-word-art.py 生成（贴纸风简笔画）
  *   audio/*.mp3 由 scripts/gen-word-audio.py 生成（神经网络童声发音）
  *   资源找不到时 App 会自动降级为 emoji 占位图 / 浏览器语音朗读。
