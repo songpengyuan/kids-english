@@ -296,6 +296,16 @@ try {
 
     for (const pg of PAGES) {
       await cdp.send("Page.navigate", { url: BASE + pg.q });
+      // 同文档 hash 导航没有 load 事件可等：固定 sleep 曾在后段视口整体串页一页
+      // （pro11/pro_landscape 37 张截图标签错位一页）。先轮询 hash 到位，再等渲染。
+      for (let i = 0; i < 20; i++) {
+        const h = await cdp.send("Runtime.evaluate", {
+          expression: "location.hash",
+          returnByValue: true,
+        });
+        if (String(h.result?.value ?? "").startsWith(pg.q)) break;
+        await sleep(200);
+      }
       // 等 Vue 挂载 + ResizeObserver 完成测量与分页；再留一点余量让入场动画
       // （anim-fade-up / anim-pop）跑完，否则探针会撞上动画中间态误报越界。
       // 首次导航（首个视口 × 首页）偶发更慢，统一给足 2.4s。

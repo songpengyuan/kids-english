@@ -202,7 +202,9 @@ onBeforeUnmount(() => {
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* minmax(0,1fr) 而非 1fr：裸 1fr 有 min-content 地板，窄分屏（507px）下
+     长单词卡把轨道顶出 ~1px/张（审计实报 9 张越界 9px）——归零地板让轨道严格等分 */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--gap-s);
   width: 100%;
   max-width: 480px;
