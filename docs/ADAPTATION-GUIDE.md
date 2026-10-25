@@ -13,7 +13,7 @@
 |---|---|---|
 | iPhone（SE~Pro Max） | 375×667 ~ 430×932 | 默认紧凑档（单列卡片、2×2 选项格） |
 | iPhone 横屏 | 844×390 | `@media (max-height:480px)` 矮屏档：收紧纵向、横向放宽 |
-| iPad 竖屏 | 768×1024 | `@media (min-width:700px) and (orientation:portrait)`：`--pad-x` 放宽到 `clamp(20px,4vw,56px)`，课程卡可多列 |
+| iPad 竖屏 | 768×1024 | `@media (min-width:600px) and (orientation:portrait)`（2026-10-25 收口自 700）：`--pad-x` 放宽到 `clamp(20px,4vw,56px)`，课程卡可多列 |
 | iPad 横屏 | 1024×768 | 宽而矮，靠 `min(Avh,Bvw)` 尺寸体系防空洞/防溢出 |
 | 桌面 Web | 1440×900 / 2560×1440 | `#app` `max-width:1180px` 居中，内容不无限拉宽 |
 

@@ -13,10 +13,11 @@ description: kids-english 前端 UI 改动后的走查验收——多视口布�
 
 ```bash
 cd frontend
-node scripts/layout-audit.mjs    # 多视口 × 多页面截图 + 溢出检测；改布局必跑（肉眼漏，它不漏）
-node scripts/smoke.mjs           # 构建产物白屏冒烟：真渲染、无 JS 异常、关键资源非 404
-node scripts/verify-haptics.mjs  # Safari 触感叠加层不破坏布局/命中（动过可点元素后跑）
-node scripts/verify-pwa.mjs      # 子路径部署 + SW 缓存 + 离线（动过媒体/SW/部署配置后跑）
+node scripts/layout-audit.mjs                            # 多视口 × 多页面截图 + 溢出检测；改布局必跑（肉眼漏，它不漏）
+AUDIT_THEME=dark node scripts/layout-audit.mjs           # 暗黑轮：同矩阵切 data-theme=dark，截图落 /tmp/shots-dark（动过颜色/主题后跑）
+node scripts/smoke.mjs                                   # 构建产物白屏冒烟：真渲染、无 JS 异常、关键资源非 404
+node scripts/verify-haptics.mjs                          # Safari 触感叠加层不破坏布局/命中（动过可点元素后跑）
+node scripts/verify-pwa.mjs                              # 双根布局（根=备案页、SPA=/app/）+ SW 缓存 + 离线（动过媒体/SW/部署配置后跑；也在 ci-local 第 8 步）
 ```
 
 视口矩阵与断网场景的验收标准都在 ADAPTATION-GUIDE 第 1/8 节，不要凭感觉过。
