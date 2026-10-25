@@ -34,9 +34,11 @@ import EntryRow from "../../components/ui/EntryRow.vue";
 import IconTile from "../../components/ui/IconTile.vue";
 import ShellIcon from "../../components/ShellIcon.vue";
 import ParentGate from "../../components/gate/ParentGate.vue";
+import ThemeToggle from "../../components/layout/ThemeToggle.vue";
 import {
   CalendarDays,
   Flame,
+  Moon,
   Play,
   RotateCcw,
   Shield,
@@ -229,6 +231,12 @@ function sayEntry(name: string, path: string) {
         </button>
       </div>
     </section>
+
+    <!-- 夜间模式：孩子自己切换白天/夜晚（从家长中心挪出——这是孩子也能玩的开关） -->
+    <div class="mode-row">
+      <span class="mode-label"><Moon class="k-ico" /> 夜间模式</span>
+      <ThemeToggle />
+    </div>
 
     <!-- 家长中心：低调的文字入口，避免孩子误点 -->
     <button class="parent-entry" @click="openParent">
@@ -424,6 +432,26 @@ function sayEntry(name: string, path: string) {
   font-size: var(--fs-small);
   font-weight: var(--fw-mid);
   opacity: 0.9;
+}
+
+/* ---------- 夜间模式行 ---------- */
+.mode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-s);
+  padding: var(--gap-xs) var(--gap-s);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-soft);
+}
+.mode-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-mid);
+  color: var(--ink);
 }
 
 /* ---------- 家长中心 ---------- */

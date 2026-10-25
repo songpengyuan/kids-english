@@ -26,12 +26,10 @@ import PageShell from "../../components/ui/PageShell.vue";
 import EntryRow from "../../components/ui/EntryRow.vue";
 import IconTile from "../../components/ui/IconTile.vue";
 import SoundToggle from "../../components/layout/SoundToggle.vue";
-import ThemeToggle from "../../components/layout/ThemeToggle.vue";
 import {
   BarChart3,
   ChevronRight,
   Flame,
-  Moon,
   Plus,
   Pencil,
   Shield,
@@ -232,10 +230,6 @@ function pickChild(id: number) {
       <div class="set-row">
         <span class="set-label"><Volume2 class="k-ico" /> 声音</span>
         <SoundToggle />
-      </div>
-      <div class="set-row">
-        <span class="set-label"><Moon class="k-ico" /> 暗黑模式</span>
-        <ThemeToggle />
       </div>
       <!-- 应用入口口令门禁（备案合规；口令固定，家长只可开/关） -->
       <div class="set-row">
