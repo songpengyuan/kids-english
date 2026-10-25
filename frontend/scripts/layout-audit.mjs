@@ -39,7 +39,8 @@ import path from "node:path";
 const CHROME = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PORT = Number(process.env.AUDIT_PORT || 9333);
 const BASE = process.env.AUDIT_BASE || "http://127.0.0.1:8801/app/";
-const OUT = process.env.AUDIT_OUT || "/tmp/shots";
+const THEME = process.env.AUDIT_THEME === "dark" ? "dark" : "light";
+const OUT = process.env.AUDIT_OUT || (THEME === "dark" ? "/tmp/shots-dark" : "/tmp/shots");
 /** 可选：覆盖 UA（例如模拟 iPhone Safari 17.4+ 走 Safari 触感分支） */
 const UA = process.env.AUDIT_UA || "";
 /** 可选：只跑某一组视口（按名字片段匹配） */
@@ -305,6 +306,13 @@ try {
         });
         if (String(h.result?.value ?? "").startsWith(pg.q)) break;
         await sleep(200);
+      }
+      // 等待导航完成（hash 到位）后，按需切暗黑主题（在 2.4s 渲染稳定期之前
+      // 注入，token 变量切换会整页重算）。暗黑轮的截图落到 /tmp/shots-dark。
+      if (THEME === "dark") {
+        await cdp.send("Runtime.evaluate", {
+          expression: "document.documentElement.setAttribute('data-theme','dark')",
+        });
       }
       // 等 Vue 挂载 + ResizeObserver 完成测量与分页；再留一点余量让入场动画
       // （anim-fade-up / anim-pop）跑完，否则探针会撞上动画中间态误报越界。
