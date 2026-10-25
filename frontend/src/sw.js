@@ -86,12 +86,17 @@ self.addEventListener("activate", (event) => {
 });
 
 /**
- * 媒体缓存裁剪：kids-media-v1 名字固定、只增不减，课程多了本地会膨胀到几十 MB。
- * 超过上限时按缓存条目顺序删最旧的文件，直到降到目标值。
+ * 媒体缓存裁剪：kids-media-v1 名字固定只增不减，超上限按缓存条目顺序删最旧的。
  * （Cache API 不保证 keys() 顺序，主流实现近似插入序，尽力而为即可。）
+ *
+ * 预算依据（2026-10-25）：视频全量重压为全分辨率 CRF22 后约 80MB（电视画质
+ * 口径，见 optimize-videos.mjs）+ 发音/词图约 15MB ≈ 95MB。旧上限 100/80MB
+ * 会天天触发裁剪、把孩子上周看过的视频顶掉（离线回放退化成走网络）——
+ * 故提到 200/160MB（≈ 当前总量 2 倍）。课程扩到 30+ 时媒体应上 CDN/OSS
+ * （P1-BACKLOG P0-3），届时本地只缓存高频内容、上限可回收。
  */
-const MEDIA_LIMIT = 100 * 1024 * 1024; // 100 MB 触发
-const MEDIA_TARGET = 80 * 1024 * 1024; // 清理到 80 MB 以下
+const MEDIA_LIMIT = 200 * 1024 * 1024; // 200 MB 触发
+const MEDIA_TARGET = 160 * 1024 * 1024; // 清理到 160 MB 以下
 
 async function trimMediaCache() {
   try {

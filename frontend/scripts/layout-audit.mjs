@@ -38,7 +38,7 @@ import path from "node:path";
 
 const CHROME = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PORT = Number(process.env.AUDIT_PORT || 9333);
-const BASE = process.env.AUDIT_BASE || "http://127.0.0.1:8801/";
+const BASE = process.env.AUDIT_BASE || "http://127.0.0.1:8801/app/";
 const OUT = process.env.AUDIT_OUT || "/tmp/shots";
 /** 可选：覆盖 UA（例如模拟 iPhone Safari 17.4+ 走 Safari 触感分支） */
 const UA = process.env.AUDIT_UA || "";
@@ -93,14 +93,18 @@ const VIEWPORTS = [
  */
 const PAGES = [
   { name: "home", q: "#/course" },
-  { name: "menu", q: "#/course/l4" },
+  // 课程详情页：默认 game 视图；?view=menu 是卡片目录（两个视图都要量）
+  { name: "course-game", q: "#/course/l4" },
+  { name: "course-menu", q: "#/course/l4?view=menu" },
   { name: "learn", q: "#/course/l4/learn" },
   { name: "hear", q: "#/course/l4/hear" },
+  { name: "memory", q: "#/course/l4/memory" },
   { name: "match", q: "#/course/l4/match" },
   { name: "speak", q: "#/course/l4/speak" },
+  { name: "order", q: "#/course/l4/order" },
   { name: "song", q: "#/course/l4/song" },
   { name: "talk", q: "#/course/l4/talk" },
-  { name: "quest", q: "#/course/l4/game" },
+  { name: "quest", q: "#/course/l4/game/quest?step=learn" },
   { name: "review", q: "#/course/review" },
   { name: "listen", q: "#/listen" },
   { name: "me", q: "#/me" },
@@ -110,7 +114,19 @@ const PAGES = [
   // 播放器是"点开才出现"的浮层，静态首屏量不到 —— 这正是它去年出过
   // "iPad 横屏看不到播放键"的原因（单列 850px 塞进 652px）。
   // prep：先点第一首歌把浮层展开，再按常规探针量。
-  { name: "listen-player", q: "#/listen", prep: "document.querySelector('.song-row')?.click()" }
+  { name: "listen-player", q: "#/listen", prep: "document.querySelector('.song-row')?.click()" },
+  // 视频播放浮层（2026-10-25 自绘控制栏后纳入）：切到视频 tab 再点第一张卡。
+  // tab 切换是 Vue 异步渲染，prep 里起 async 等一拍再点卡（外部有 900ms 稳定期兜底）。
+  {
+    name: "listen-video",
+    q: "#/listen",
+    prep: `(async () => {
+      const tab = [...document.querySelectorAll('button')].find(b => b.textContent.includes('视频'));
+      tab?.click();
+      await new Promise(r => setTimeout(r, 300));
+      document.querySelector('.video-card')?.click();
+    })()`,
+  },
 ];
 
 /** 检测当前页是否真实渲染、是否溢出、哪些元素越界 */
@@ -284,6 +300,19 @@ try {
       // （anim-fade-up / anim-pop）跑完，否则探针会撞上动画中间态误报越界。
       // 首次导航（首个视口 × 首页）偶发更慢，统一给足 2.4s。
       await sleep(2400);
+
+      // 防呆：BASE 指错站点时所有截图都在拍错的东西（曾因默认 BASE 少 /app/
+      // 前缀，整轮拍的是备案落地页白跑）。标题不含应用名即刻中止。
+      const title = await cdp.send("Runtime.evaluate", {
+        expression: "document.title",
+        returnByValue: true,
+      });
+      if (!String(title.result?.value ?? "").includes("丞丞ABC")) {
+        throw new Error(
+          `页面标题不是丞丞ABC（实际「${title.result?.value}」）—— BASE 大概率指错了站点：` +
+            `应用挂在 /app/ 子路径（dev: http://127.0.0.1:<port>/app/），根路径是备案落地页。`
+        );
+      }
 
       // 可选交互：把"点开才出现"的浮层展开（播放器 / 抽屉），否则量不到真实布局
       if (pg.prep) {

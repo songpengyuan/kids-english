@@ -45,8 +45,6 @@ const emit = defineEmits<{
   openChest: [];
   /** 自由结算：切换词组重练同一玩法 */
   goGroupPractice: [];
-  /** 自由结算：宝箱收完（或关闭）→ 父组件自动回本课菜单（孩子不用再点"再选一个玩法"） */
-  chestCollected: [];
 }>();
 
 /**
@@ -132,15 +130,14 @@ function nav(fn: () => void) {
       <div v-if="streakJustHit" class="streak-banner anim-pop">
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
-      <!-- 收取完成（或点关闭）就卸载 + 通知父组件自动回菜单（曾停在原地等孩子再点一次） -->
-      <ChestReward v-if="!chestDone" @done="chestDone = true; emit('chestCollected')" />
+      <!-- 收取完成（或点关闭）就卸载，避免卡在"已收进宝藏罐"那一屏 -->
+      <ChestReward v-if="!chestDone" @done="chestDone = true" />
       <div class="btn-row">
-        <BaseButton variant="green" @click="emit('toMenu')">再选一个玩法</BaseButton>
+        <!-- 主按钮 = 回本课菜单（自由模式：想玩什么回菜单自己挑）；
+             不放"下一课"——结算页直接跳下一课会跳过孩子对进度的感知 -->
+        <BaseButton variant="green" @click="emit('toMenu')">下一个菜单</BaseButton>
         <BaseButton v-if="nextGroup" variant="gray" @click="emit('goGroupPractice')">
           换 {{ nextGroup.name }} 组再练
-        </BaseButton>
-        <BaseButton v-if="nextLesson" variant="gray" :disabled="navClicked" @click="nav(() => emit('goNextLesson'))">
-          下一课：<PathIcon :name="nextLesson.id" /> {{ nextLesson.title }}
         </BaseButton>
       </div>
     </template>

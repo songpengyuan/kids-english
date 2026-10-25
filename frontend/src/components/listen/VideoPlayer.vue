@@ -291,7 +291,9 @@ onBeforeUnmount(segSettle);
 }
 .vp-video {
   max-width: 95vw;
-  max-height: 58vh;
+  /* 双重限高：常规 58vh；矮视口（手机横屏 ~390px 高）再扣除控制面板+标题+内边距，
+     保证整列不超高——fixed 浮层内容超高会上下两头裁切，比小视频更伤 */
+  max-height: min(58vh, calc(100dvh - 240px));
   border-radius: var(--radius-s);
   background: var(--black); /* 信箱底：tokens 里 --black 的既定用途 */
 }
