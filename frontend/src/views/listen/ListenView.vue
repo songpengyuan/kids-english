@@ -34,19 +34,20 @@
  *  · 补上播放模式（此前 store 里 repeatMode/shuffleOn 一直存在，界面上却没有入口）：
  *    随机 + 循环三档（顺序播放 → 列表循环 → 单曲循环），按钮带中文标注。
  */
-import { ref, computed, watch, nextTick, onBeforeUnmount, onMounted } from "vue";
-import { lessons, asset } from "../../data/lessons";
+import { ref, computed, watch, nextTick, onMounted } from "vue";
+import { lessons } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
 import { useLrc, activeLrcIndex, mapLrcToLyrics } from "../../composables/useLrc";
 import {
-  Play, Pause, X, ChevronDown, ListMusic, Music, Film, SkipBack, SkipForward,
+  Play, Pause, ChevronDown, ListMusic, Music, Film, SkipBack, SkipForward,
   Repeat, Repeat1, Shuffle,
 } from "@lucide/vue";
 import BaseDrawer from "../../components/ui/BaseDrawer.vue";
 import SegmentedTabs from "../../components/ui/SegmentedTabs.vue";
 import EmojiTile from "../../components/ui/EmojiTile.vue";
 import SpeakWave from "../../components/ui/SpeakWave.vue";
+import VideoPlayer, { type VideoItem } from "../../components/listen/VideoPlayer.vue";
 import type { ListenSubTab } from "../../types";
 
 const player = usePlayerStore();
@@ -136,11 +137,11 @@ const subTab = ref<ListenSubTab>("songs");
 function switchTab(t: ListenSubTab) {
   subTab.value = t;
   player.closeLyrics();
-  playingVideo.value = null;
+  videoIdx.value = -1;
 }
 const showPlaylist = ref(false);
 
-const videoList = computed(() =>
+const videoList = computed<VideoItem[]>(() =>
   lessons
 
     .flatMap((l) => {
@@ -164,41 +165,9 @@ const videoList = computed(() =>
     })
 );
 
-/* ---------- 视频播放（局部全屏；计时独立，不影响歌曲全局计时） ---------- */
-const playingVideo = ref<{ src: string; titleZh: string; title: string } | null>(null);
-/** 视频封面：optimize-videos.mjs 与 mp4 成对产出的同名 jpg（缺失时无封面，无害） */
-function posterOf(src: string) {
-  return src.replace(/\.mp4$/, ".jpg");
-}
-let videoTimer: number | null = null;
-let videoTick = 0;
-/** 结算式视频计时：后台标签页 setInterval 被节流也不丢时长（与音频一致） */
-function playVideo(v: { src: string; titleZh: string; title: string }) {
-  playingVideo.value = v;
-  stopVideoTimer();
-  videoTick = Date.now();
-  videoTimer = window.setInterval(() => {
-    const sec = (Date.now() - videoTick) / 1000;
-    videoTick = Date.now();
-    if (sec > 0.5) progStore.addListenActivity(sec);
-  }, 5000);
-}
-function stopVideoTimer() {
-  if (videoTimer) {
-    clearInterval(videoTimer);
-    videoTimer = null;
-  }
-  // 尾部结算：停止时把最后一次 tick 到现在的真实秒数补入（>0.5s 才记）
-  if (videoTick) {
-    const sec = (Date.now() - videoTick) / 1000;
-    videoTick = 0;
-    if (sec > 0.5) progStore.addListenActivity(sec);
-  }
-}
-onBeforeUnmount(() => {
-  stopVideoTimer();
-  // 歌曲播放由全局 store 持有，本页卸载不暂停（跨 tab 续播）
-});
+/* ---------- 视频播放（2026-10-25 起由 VideoPlayer 组件承担：
+ * 自绘控制栏 + 三档循环 + 播放段结算计时。本页只记"开了哪个"。 ---------- */
+const videoIdx = ref(-1);
 
 /**
  * 进页面拉一次云端：页面顶部「今天磨了 N 分钟」读的是 progress.todayStats，
@@ -316,7 +285,7 @@ onMounted(() => {
         </template>
         <template v-else>
           <div class="video-grid">
-            <button v-for="v in videoList" :key="v.id" class="video-card" :class="'tone-' + v.tone" @click="playVideo(v)">
+            <button v-for="(v, i) in videoList" :key="v.id" class="video-card" :class="'tone-' + v.tone" @click="videoIdx = i">
               <span class="vc-emoji" aria-hidden="true">{{ v.emoji }}</span>
               <span class="vc-name">{{ v.title }}</span>
               <span class="vc-sub">{{ v.titleZh }}</span>
@@ -343,14 +312,8 @@ onMounted(() => {
       </div>
     </BaseDrawer>
 
-    <!-- 视频播放 -->
-    <div v-if="playingVideo" class="video-mask" @click.self="playingVideo = null">
-      <button class="video-close round" aria-label="关闭视频" @click="playingVideo = null">
-        <X class="k-ico" />
-      </button>
-      <video :src="playingVideo.src" :poster="posterOf(playingVideo.src)" controls autoplay playsinline preload="metadata" class="video-player" />
-      <p class="video-caption">{{ playingVideo.titleZh }} · {{ playingVideo.title }}</p>
-    </div>
+    <!-- 视频播放（自绘控制栏：三档循环 / 进度 / 上下个 / 静音 / 全屏） -->
+    <VideoPlayer v-if="videoIdx >= 0" :videos="videoList" :start-index="videoIdx" @close="videoIdx = -1" />
   </div>
 </template>
 
@@ -797,36 +760,5 @@ onMounted(() => {
   font-size: var(--fs-small);
   background: var(--scrim);
   color: var(--mask-ink);
-}
-.video-mask {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-mask);
-  background: var(--mask-bg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--gap-s);
-}
-.video-close {
-  position: absolute;
-  top: var(--gap-m);
-  right: var(--gap-m);
-  width: var(--tap-min);
-  height: var(--tap-min);
-  font-size: var(--fs-title);
-  background: var(--mask-control);
-  color: var(--mask-ink);
-}
-.video-player {
-  max-width: 95vw;
-  max-height: 70vh;
-  border-radius: var(--radius-s);
-}
-.video-caption {
-  color: var(--mask-ink-soft);
-  margin: 0;
-  font-weight: var(--fw-mid);
 }
 </style>
