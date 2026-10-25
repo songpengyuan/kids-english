@@ -44,6 +44,18 @@ function nextSentence() {
     emit("done", stars.value);
   }
 }
+
+/** 进题主动朗读目标句（2026-10-25 用户反馈）：与听音选图同一节奏——
+ *  350ms 延迟起播，避免与上一句拼对后的完整朗读/音效重叠打架 */
+watch(
+  sentenceIdx,
+  () => {
+    setTimeout(() => {
+      if (cur.value) speak(cur.value.en, { lessonId: props.lesson.id });
+    }, 350);
+  },
+  { immediate: true }
+);
 </script>
 
 <template>

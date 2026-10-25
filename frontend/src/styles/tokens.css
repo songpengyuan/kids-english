@@ -195,7 +195,8 @@
    * 最小值（390 宽实测 --fs-body=14px、--gap-s=6px）。气泡是这块界面的主角，
    * 跟着一起被压小，就成了"大片面板里的小图小字"。这组锚 vh，窄屏也不缩水。 */
   --talk-bubble-fs: clamp(17px, min(2.8vh, 4.8vw), 23px);
-  --talk-pic: clamp(150px, min(24vh, 46vw), 220px);
+  /* 2026-10-25 用户反馈：图缩小一档（一屏能多看几轮对话），对话列宽同步放大（--talk-w） */
+  --talk-pic: clamp(120px, min(19vh, 38vw), 176px);
   --talk-av: clamp(32px, min(5vh, 10vw), 42px);
   --talk-pad: clamp(10px, min(1.8vh, 3.6vw), 20px);
   --talk-gap: clamp(10px, min(1.5vh, 3vw), 18px);
@@ -205,8 +206,9 @@
    * 主行动必须是这屏最大、最亮的可点目标，所以键高取到 --tap-min 之上。 */
   --talk-bar-fs: clamp(18px, min(2.8vh, 5vw), 24px);
   --talk-bar-h: clamp(58px, min(8.5vh, 15vw), 78px);
-  /* 对话区与底部输入条同宽（以前 620 / 560 两处各写各的，宽屏下错开一截） */
-  --talk-w: 620px;
+  /* 对话区与底部输入条同宽（以前 620 / 560 两处各写各的，宽屏下错开一截）；
+   * 2026-10-25 加宽到 720：配图缩小后对话文字成为主角，一行能说更完整的话 */
+  --talk-w: 720px;
   --mic-face: linear-gradient(180deg, #ff9d5c, #ff7a3c);
   --mic-base: #e05f1e;
   --mic-rec-face: linear-gradient(180deg, #ff5c5c, #e63939);
@@ -522,9 +524,10 @@
     --play-btn: clamp(72px, min(10vh, 14vw), 96px);
     --slider-thumb: clamp(24px, min(3.4vh, 4vw), 36px);
 
-    /* 宽屏下对话气泡整体再放大一档（iPad 上一屏能装下两条完整对话） */
+    /* 宽屏下对话气泡整体再放大一档（iPad 上一屏能装下两条完整对话）；
+     * 图维持缩小后的小档（宽屏信息密度更高，图更不该抢行宽） */
     --talk-bubble-fs: clamp(21px, min(2.8vh, 3.4vw), 30px);
-    --talk-pic: clamp(200px, min(22vh, 26vw), 300px);
+    --talk-pic: clamp(150px, min(18vh, 20vw), 220px);
     --talk-av: clamp(40px, min(4.6vh, 6vw), 56px);
     --talk-pad: clamp(14px, min(1.8vh, 2.2vw), 26px);
     --talk-gap: clamp(14px, min(1.6vh, 2vw), 24px);

@@ -135,6 +135,14 @@ describe("talkQa × 真实课时数据（lessons.json）", () => {
     expect(talkQa(l5.words.find((x) => x.en === "violin")!, l5 as never).q).toBe("What can you play?");
   });
 
+  it("l5 Music Man 走角色问答，不再产出 I can play the Music Man.（弹奏一个人）", () => {
+    const l5 = lessons.find((l) => l.id === "l5")!;
+    expect(talkQa(l5.words.find((x) => x.en === "Music Man")!, l5 as never)).toEqual({
+      q: "Who are you?",
+      a: "I am the Music Man!",
+    });
+  });
+
   it("l10 afraid/listen 有自己的问答（afraid 用儿歌原句 I'm not afraid.）", () => {
     const l10 = lessons.find((l) => l.id === "l10")!;
     expect(talkQa(l10.words.find((x) => x.en === "afraid")!, l10 as never)).toEqual({

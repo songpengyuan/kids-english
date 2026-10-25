@@ -134,7 +134,7 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
     <LessonFooter
       v-if="locked"
       :feedback="null"
-      button-text="太棒了！"
+      button-text="Next!"
       :show-arrow="true"
       @button="onFooterButton"
     />

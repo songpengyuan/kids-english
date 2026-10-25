@@ -368,6 +368,16 @@
         "en": "I see a frog.",
         "zh": "我看到一只青蛙。",
         "audio": "/lessons/l5/audio/ph-8.mp3"
+      },
+      {
+        "en": "Who are you?",
+        "zh": "你是谁呀？",
+        "audio": "/lessons/l5/audio/ph-9.mp3"
+      },
+      {
+        "en": "I am the Music Man!",
+        "zh": "我就是音乐人！",
+        "audio": "/lessons/l5/audio/ph-10.mp3"
       }
     ]
   },
