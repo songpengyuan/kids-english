@@ -135,36 +135,40 @@ describe("LessonResult 闯关结算", () => {
     expect(w.text()).not.toContain("重玩可拿满 3 星");
   });
 
-  it("自由练习结算仍自动开宝箱", () => {
+  it("自由练习结算轻量化（2026-10-26）：不挂贝壳奖励，只有「回菜单继续学」单按钮", () => {
     const w = mount(LessonResult, {
       props: { mode: "free", stars: 2, streakJustHit: false, streakDays: 0 },
       global: { stubs: { BaseButton: btnStub, ChestReward: true } },
     });
-    expect(w.findComponent({ name: "ChestReward" }).exists()).toBe(true);
+    expect(w.findComponent({ name: "ChestReward" }).exists()).toBe(false);
+    const btns = w.findAll("button");
+    expect(btns).toHaveLength(1);
+    expect(btns[0].text()).toContain("回菜单继续学");
+    expect(w.text()).not.toContain("再选一个玩法");
+  });
+
+  it("自由练习轻量结算：点「回菜单继续学」上抛 toMenu", async () => {
+    const w = mount(LessonResult, {
+      props: { mode: "free", stars: 3, streakJustHit: false, streakDays: 0 },
+      global: { stubs: { BaseButton: btnStub, ChestReward: true } },
+    });
+    await w.findAll("button")[0].trigger("click");
+    expect(w.emitted("toMenu")).toHaveLength(1);
   });
 });
 
-/** 自由结算的词组接力（l11 颜色/动物两组）：练完一组提示换另一组再练 */
-describe("LessonResult 换词组再练", () => {
+/** 自由结算轻量化（2026-10-26）：完成即停，底部只留「回菜单继续学」一个动作，
+ *  不再并列"换组再练"等出口（下一步回课程菜单自己选，菜单排序即学习路径）。 */
+describe("LessonResult 自由结算单按钮", () => {
   const btnStub = { template: "<button><slot /></button>" };
 
-  function mountFree(extra: Record<string, unknown> = {}) {
-    return mount(LessonResult, {
-      props: { mode: "free", stars: 2, streakJustHit: false, streakDays: 0, ...extra },
+  it("自由结算：即使分组课也不显示换组按钮（旧 nextGroup 出口已下线）", () => {
+    const w = mount(LessonResult, {
+      props: { mode: "free", stars: 2, streakJustHit: false, streakDays: 0 },
       global: { stubs: { BaseButton: btnStub, ChestReward: true } },
     });
-  }
-
-  it("分组课：显示「换 X 组再练」并上抛 goGroupPractice", async () => {
-    const w = mountFree({ nextGroup: { key: "animals", name: "Animals" } });
-    const btn = w.findAll("button").find((b) => b.text().includes("换 Animals"));
-    expect(btn).toBeTruthy();
-    await btn!.trigger("click");
-    expect(w.emitted("goGroupPractice")).toHaveLength(1);
-  });
-
-  it("非分组课：不显示换组按钮", () => {
-    const w = mountFree();
     expect(w.text()).not.toContain("组再练");
+    expect(w.findAll("button")).toHaveLength(1);
+    expect(w.findAll("button")[0].text()).toContain("回菜单继续学");
   });
 });

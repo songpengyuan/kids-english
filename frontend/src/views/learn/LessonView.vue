@@ -21,7 +21,7 @@ import HeaderBar from "../../components/layout/HeaderBar.vue";
 import LessonResult from "../../components/lesson/LessonResult.vue";
 import LessonMenu from "../../components/lesson/LessonMenu.vue";
 import LessonProgressHeader from "../../components/lesson/LessonProgressHeader.vue";
-import { activityKeys, actDisplayName, getLesson as getLocalLesson, joinActKey, splitActKey, wordGroupsOf, type Lesson, type Word } from "../../data/lessons";
+import { activityKeys, actDisplayName, getLesson as getLocalLesson, splitActKey, wordGroupsOf, type Lesson, type Word } from "../../data/lessons";
 import { useContentStore } from "../../stores/content";
 import { speak, speakZh } from "../../services/speech";
 import { useProgressStore } from "../../stores/progress";
@@ -181,25 +181,6 @@ const chestReady = computed(() => {
   if (!l) return false;
   return !((progress.progress[l.id]?.completed as string[]) || []).includes("chest");
 });
-/** 自由结算：分组课（l11）切到另一个词组再练同一玩法（否则闯完一整条链只练了默认组一半的词）。
- *  lastActKey 是复合键（learn:colors），判断用裸玩法名（ENTRY_GROUPED）。 */
-const nextGroup = computed(() => {
-  if (questMode.value || stage.value !== "result") return null;
-  const groups = wordGroups.value;
-  if (groups.length < 2) return null;
-  if (!ENTRY_GROUPED.has(splitActKey(lastActKey.value).act)) return null;
-  const other = groups.find((g) => g.key !== activeGroup.value);
-  return other ?? null;
-});
-function practiceGroup() {
-  const g = nextGroup.value;
-  if (!g) return;
-  const { act } = splitActKey(lastActKey.value);
-  const base = activities.value.find((a) => splitActKey(a.key).act === act);
-  if (!base) return;
-  // 构造同玩法、另一词群的复合键（learn:animals），open 会带 ?group= 跳转
-  open({ ...base, key: joinActKey(act, g.key) });
-}
 /** 闯关结算页领宝箱：标记该课宝箱已领取（与地图宝箱关同一口径） */
 function claimChest() {
   if (lessonId.value) progress.markChest(lessonId.value);
@@ -414,13 +395,11 @@ const playStage = computed(() => {
       :next-lesson="nextLesson || null"
       :chest-ready="chestReady"
       :lesson-complete="lessonComplete"
-      :next-group="nextGroup"
       :max-stars="lastActKey === 'song' ? 1 : 3"
       @go-next-level="goNextLevel"
       @to-menu="toMenu"
       @go-next-lesson="router.push('/course/' + (nextLesson?.id ?? ''))"
       @open-chest="claimChest"
-      @go-group-practice="practiceGroup"
     />
 
   </div>

@@ -1,15 +1,17 @@
 <script setup lang="ts">
 /**
- * 结算页（阶段 1-3：闯关/自由练习两套结算统一）。
+ * 结算页（阶段 1-3：闯关/自由练习两套结算统一；2026-10-26 自由结算轻量化）。
  *
  * - 星星展示（1~3 星渐次弹出）；
- * - 闯关模式：第 N 关完成大徽章 + 玩法名 + 重玩提示；
+ * - 闯关模式：第 N 关完成大徽章 + 玩法名 + 重玩提示，底部始终一个"下一步"动作；
  * - 今日目标首次达成：连击火焰横幅；
- * - 开宝箱（ChestReward）**只在自由练习结算挂载**：
- *   2026-10-19 产品口径调整——闯关完成直接停在「第 N 关完成」大画面，不再插一段开箱；
- *   返回地图只走左上角 ←（闯关模式顶栏 back-label 就是「返回闯关地图」），
- *   底部保留「下一关」一个动作，避免孩子误点直接退出连锁闯关。
- * - 底部动作：下一关（quest）、再选玩法/下一课（free），由父组件处理。
+ * - 开宝箱（ChestReward）：只在闯关结算「开宝箱」出口点开才挂载
+ *   （2026-10-19 产品口径：闯关完成不自动开箱，停在大画面，回地图走左上角 ←）；
+ * - 自由练习结算（2026-10-26 轻量化）：孩子完成一个玩法后**只给一个动作**——
+ *   「回菜单继续学」。不再自动弹贝壳奖励、不再给"换组再练"等并列出口：
+ *   下一步（换词群/下一玩法）回课程菜单自己选（菜单排序即学习路径），
+ *   避免完成后面临多个选项不知所措（走查时"孩子不知道接下来做什么"的同类问题）。
+ * - 底部动作：下一关/开宝箱/下一课（quest）、回菜单继续学（free），由父组件处理。
  */
 import { Star } from "@lucide/vue";
 import { ref } from "vue";
@@ -31,8 +33,6 @@ defineProps<{
   /** 本课全部玩法都已通关（"本课全部完成→下一课"接力必须以它为前提：
    *  曾经只判"没有下一关"就放行——重玩最后一关但全课没通关也误报"全部完成"） */
   lessonComplete?: boolean;
-  /** 自由结算：分组课（l11 颜色/动物）还没练的另一个词组 → "换组再练"入口 */
-  nextGroup?: { key: string; name: string } | null;
   /** 该玩法的星数上限（song 记 1 分封顶，别再提示"重玩可拿满 3 星"） */
   maxStars?: number;
 }>();
@@ -43,15 +43,13 @@ const emit = defineEmits<{
   goNextLesson: [];
   /** 开宝箱（闯关结算页直接领地图宝箱关的奖励；领取动作由父组件 markChest） */
   openChest: [];
-  /** 自由结算：切换词组重练同一玩法 */
-  goGroupPractice: [];
 }>();
 
 /**
  * 宝箱收取完就卸载 —— ChestReward 通过 @done 通知（收取完成 / 点关闭）。
  * 之前这里没接 @done：收取后组件仍留在 collected 态，界面卡在"已收进宝藏罐"没法退出。
+ * 仅闯关结算的「开宝箱」出口使用（自由练习结算已轻量化，不再挂贝壳奖励）。
  */
-const chestDone = ref(false);
 /** 闯关结算的宝箱关：点"开宝箱"才弹出（不自动打断大画面），领完由父组件标记已领取 */
 const questChestOpen = ref(false);
 const questChestClaimed = ref(false);
@@ -113,7 +111,9 @@ function nav(fn: () => void) {
       </div>
     </template>
 
-    <!-- 自由练习 -->
+    <!-- 自由练习（轻量结算 2026-10-26）：星星反馈 + 连击横幅，底部只留一个动作
+         「回菜单继续学」——不再自动弹贝壳奖励 / 不再并列"换组再练"等出口，
+         孩子完成一个玩法后只有一条路可走：回课程菜单，下一个玩法自己挑。 -->
     <template v-else>
       <div class="stars">
         <span
@@ -130,15 +130,8 @@ function nav(fn: () => void) {
       <div v-if="streakJustHit" class="streak-banner anim-pop">
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
-      <!-- 收取完成（或点关闭）就卸载，避免卡在"已收进宝藏罐"那一屏 -->
-      <ChestReward v-if="!chestDone" @done="chestDone = true" />
       <div class="btn-row">
-        <!-- 主按钮 = 回本课玩法目录（自由模式：想玩什么回菜单自己挑）；
-             不放"下一课"——结算页直接跳下一课会跳过孩子对进度的感知 -->
-        <BaseButton variant="green" @click="emit('toMenu')">再选一个玩法</BaseButton>
-        <BaseButton v-if="nextGroup" variant="gray" @click="emit('goGroupPractice')">
-          换 {{ nextGroup.name }} 组再练
-        </BaseButton>
+        <BaseButton variant="green" @click="emit('toMenu')">回菜单继续学</BaseButton>
       </div>
     </template>
   </div>
