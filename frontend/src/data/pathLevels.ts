@@ -13,8 +13,10 @@
  * 该模块是 GamePath（地图绘制）与 useQuest（单关完成画面/下一关按钮）的共享数据源，
  * 避免两处各维护一份关卡序列（高内聚低耦合）。
  */
-import { activityKeys, getLesson, lessons, type Lesson } from "./lessons";
+import { activityKeys, actDisplayName, getLesson, lessons, splitActKey, type Lesson } from "./lessons";
 import type { LessonProgress } from "../stores/progress";
+/** 兼容旧调用方（pathLevels 曾是 ACT_NAMES 的原始出处；现在统一定义在 lessons.ts） */
+export { ACT_NAMES } from "./lessons";
 
 export interface PathLevel {
   /** 全局唯一关卡 id：`${lessonId}-${actKey}`（如 "l4-learn"） */
@@ -47,26 +49,16 @@ export const ACT_EMOJI: Record<string, string> = {
   chest: "🎁",
 };
 
-export const ACT_NAMES: Record<string, string> = {
-  learn: "学单词",
-  quiz: "听音选图",
-  memory: "翻牌记忆",
-  match: "连一连",
-  speak: "跟我读",
-  order: "拼句子",
-  talk: "亲子对话",
-  song: "唱童谣",
-  chest: "开宝箱",
-};
-
-/** 构造单关（meta 全部取自课时对象，远端课程也能直接构建） */
+/** 构造单关（meta 全部取自课时对象，远端课程也能直接构建）。
+ *  name 用 actDisplayName：复合键（learn:colors）显示「学单词·颜色」
+ *  emoji 按拆分后的裸玩法查：复合键（learn:colors）也是 📖 而非 ⭐ */
 function makeLevel(l: Lesson, actKey: string, no: number): PathLevel {
   return {
     id: `${l.id}-${actKey}`,
     lessonId: l.id,
     actKey,
-    name: ACT_NAMES[actKey] || actKey,
-    emoji: ACT_EMOJI[actKey] || "⭐",
+    name: actDisplayName(actKey, l),
+    emoji: ACT_EMOJI[splitActKey(actKey).act] || "⭐",
     no,
     lessonEmoji: l.emoji,
     titleZh: l.titleZh,
@@ -122,7 +114,7 @@ export function levelDone(level: PathLevel, progress: Record<string, LessonProgr
 export function lessonDoneCount(
   lessonId: string,
   progress: Record<string, LessonProgress | undefined>,
-  lesson?: Pick<Lesson, "id" | "phrases">
+  lesson?: Pick<Lesson, "id" | "phrases" | "words" | "wordGroups">
 ): number {
   const l = progress[lessonId];
   const subject = lesson ?? getLesson(lessonId);

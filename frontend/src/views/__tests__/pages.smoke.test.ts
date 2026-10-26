@@ -75,7 +75,7 @@ import CalendarView from "../me/CalendarView.vue";
 import ListenView from "../listen/ListenView.vue";
 import GateView from "../../views/GateView.vue";
 import { appRoutes } from "../../router";
-import { lessons, activityKeys } from "../../data/lessons";
+import { lessons, activityKeys, splitActKey } from "../../data/lessons";
 
 /** jsdom 没有 ResizeObserver（LearnView/GamePath 会用到） */
 class RO {
@@ -250,25 +250,25 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   /* ---------- 变体行为（数据驱动的玩法变体，回归锁） ---------- */
 
-  it("l11 学单词按词群分 Colors / Animals 两部分（切 tab 换词表）", async () => {
+  it("l11 词群入口化：学单词·颜色直达锁群，无页内切换器；?group=animals 直达动物组", async () => {
+    // 词群入口化后（2026-10-25）：learn 在菜单/地图拆成 学单词·颜色 / 学单词·动物，
+    // 玩法内不再有 Colors/Animals 切换器——词群由 URL 锁死（?group= 或闯关 step 复合键）。
     const w = await mountPage(LessonView, "/course/l11/learn");
     await flushPromises();
-    // 两个分组 tab
-    const tabTexts = w.findAll(".group-switch__btn").map((b) => b.text());
-    expect(tabTexts.some((t) => t.includes("Colors"))).toBe(true);
-    expect(tabTexts.some((t) => t.includes("Animals"))).toBe(true);
-    // 默认颜色组：只有颜色词（brown 是颜色组的第一个），不出现动物
+    expect(w.findAll(".group-switch__btn").length).toBe(0);
+    // 无 ?group= 时默认第一组（l11：colors），只有颜色词
     const words = () => w.findAll(".word-card .word").map((e) => e.text());
     expect(words()).toContain("brown");
     expect(words()).not.toContain("bear");
-    // 切到动物：出现动物词、不再有颜色词
-    await w.findAll(".group-switch__btn").find((b) => b.text().includes("Animals"))!.trigger("click");
+    // 动物组直达：?group=animals 锁群，只出动物词
+    const w2 = await mountPage(LessonView, "/course/l11/learn", { group: "animals" });
     await flushPromises();
-    expect(words()).toContain("bear");
-    expect(words()).not.toContain("brown");
+    const words2 = () => w2.findAll(".word-card .word").map((e) => e.text());
+    expect(words2()).toContain("bear");
+    expect(words2()).not.toContain("brown");
   });
 
-  it("l11 学童谣也按词群切歌：默认第一轨 Brown Bear（Animals），可切 Colors", async () => {
+  it("l11 学童谣仍按词群切歌（song 保留页内切换）：默认第一轨 Brown Bear（Animals），可切 Colors", async () => {
     const w = await mountPage(LessonView, "/course/l11/song");
     await flushPromises();
     const chipText = () => w.findAll(".words-strip .chip").map((c) => c.text()).join(" ");
@@ -297,8 +297,15 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
   for (const lesson of lessons) {
     for (const key of activityKeys(lesson)) {
       it(`${lesson.id}（${lesson.titleZh}）· ${key} 渲染冒烟`, async () => {
-        const seg = STAGE_PATH[key] ?? key;
-        const w = await mountPage(LessonView, `/course/${lesson.id}/${seg}`);
+        // 词群入口化：key 可能是复合键（learn:colors）——路由段用裸玩法，
+        // 词群经 ?group= 锁（与 open() 的 URL 拼装同构）
+        const { act, group } = splitActKey(key);
+        const seg = STAGE_PATH[act] ?? act;
+        const w = await mountPage(
+          LessonView,
+          `/course/${lesson.id}/${seg}`,
+          group ? { group } : undefined
+        );
         await flushPromises();
         expect(w.find(".lesson").exists()).toBe(true);
         expect(errors).toEqual([]);

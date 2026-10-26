@@ -2,9 +2,13 @@
 /**
  * 课时菜单：统一卡片网格，自适应列数
  * iPhone 竖屏 2 列，宽屏/iPad 自动多列
+ *
+ * 词群入口化（2026-10-25）：不再手工前置 song/learn 卡片——
+ * activities 里已是完整入口序列（song → 学单词·颜色 → 学单词·动物 →
+ * 听音选图·颜色 → …），直接全量渲染，顺序由 activityKeys 决定。
  */
 import { computed } from "vue";
-import { Star, Music, BookOpen } from "@lucide/vue";
+import { Star } from "@lucide/vue";
 import type { QuestAct } from "../../composables/useQuest";
 
 const props = defineProps<{
@@ -12,13 +16,8 @@ const props = defineProps<{
   progress: number;
 }>();
 const emit = defineEmits<{
-  openSong: [];
-  openLearn: [];
   openActivity: [a: QuestAct & { stars?: number }];
 }>();
-
-const songStars = computed(() => props.activities.find((a) => a.key === "song")?.stars ?? 0);
-const learnStars = computed(() => props.activities.find((a) => a.key === "learn")?.stars ?? 0);
 
 interface MenuCard {
   key: string;
@@ -29,22 +28,20 @@ interface MenuCard {
   stars?: number;
 }
 
-const cards = computed<MenuCard[]>(() => {
-  const list: MenuCard[] = [
-    { key: "song", name: "学童谣", desc: "听歌看MV", tone: "green", icon: Music, stars: songStars.value },
-    { key: "learn", name: "学单词", desc: "看图听发音", tone: "orange", icon: BookOpen, stars: learnStars.value },
-  ];
-  for (const a of props.activities) {
-    if (["song", "learn"].includes(a.key)) continue;
-    list.push({ key: a.key, name: a.name, tone: a.tone, icon: a.icon, stars: a.stars });
-  }
-  return list;
-});
+const cards = computed<MenuCard[]>(() =>
+  props.activities.map((a) => ({
+    key: a.key,
+    name: a.name,
+    desc: a.desc,
+    tone: a.tone,
+    icon: a.icon,
+    stars: a.stars,
+  }))
+);
 
 function onClick(c: MenuCard) {
-  if (c.key === "song") emit("openSong");
-  else if (c.key === "learn") emit("openLearn");
-  else emit("openActivity", props.activities.find((a) => a.key === c.key)!);
+  const a = props.activities.find((x) => x.key === c.key);
+  if (a) emit("openActivity", a);
 }
 </script>
 

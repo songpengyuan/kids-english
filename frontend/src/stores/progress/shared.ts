@@ -17,6 +17,7 @@
  */
 import { seedFromCounts } from "../../utils/reviewSchedule";
 import type { SrsState } from "../../utils/reviewSchedule";
+import { lessons, migrateLegacyActivityKeys } from "../../data/lessons";
 
 /** 单个单词的掌握度记录 */
 export interface WordStat {
@@ -156,6 +157,14 @@ export function load(): ProgressMap {
           w.stage = seeded.stage;
           w.dueAt = seeded.dueAt;
         }
+      }
+      // 词群入口化迁移（2026-10-25）：分组课的老裸玩法键（learn/quiz/…）
+      // 复制到每个词群的复合键下（learn:colors / learn:animals），
+      // 孩子攒的星星不丢。getLesson 在同文件域内直接查静态数据。
+      const lesson = lessons.find((x) => x.id === k);
+      if (lesson) {
+        const migrated = migrateLegacyActivityKeys(lesson, l as unknown as Record<string, unknown>);
+        if (migrated) Object.assign(l as object, migrated);
       }
     }
     if (raw._daily === undefined) raw._daily = null;

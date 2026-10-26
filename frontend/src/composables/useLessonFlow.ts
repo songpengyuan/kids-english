@@ -15,7 +15,7 @@
  */
 import { computed, ref, watch, type ComputedRef, type Ref } from "vue";
 import type { Router, RouteLocationNormalizedLoadedGeneric } from "vue-router";
-import type { Lesson } from "../data/lessons";
+import { splitActKey, type Lesson } from "../data/lessons";
 import { useContentStore } from "../stores/content";
 import type { QuestAct, UseQuest } from "./useQuest";
 import { bigCelebrate, celebrate } from "../services/effects";
@@ -103,19 +103,23 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     const s = nameStage || ps || (typeof route.query.stage === "string" ? route.query.stage : "");
     if (quest.questMode.value) {
       // 单关模式：地图点关卡直接开玩对应玩法（跳过菜单/关卡卡）
+      // step 可能是复合键（learn:colors，词群入口化）：stage 存裸 act，
+      // actKey 存完整复合键（结算写星/埋点都要带词群）
       const idx = quest.bootFromQuery();
       const a = quest.questSeq.value[idx];
       if (a) {
-        stage.value = (a.game === "song" ? "song" : a.key) as LessonStage;
+        stage.value = (a.game === "song" ? "song" : splitActKey(a.key).act) as LessonStage;
         actStart = Date.now();
-        actKey = stage.value;
+        actKey = a.key;
       } else {
         stage.value = "menu";
       }
-    } else if (activities.value.some((a) => a.key === s)) {
+    } else if (activities.value.some((a) => splitActKey(a.key).act === s)) {
+      // 自由模式：URL 是裸玩法路径（/course/l4/learn）+ 可选 ?group=
+      const a = activities.value.find((x) => splitActKey(x.key).act === s)!;
       stage.value = s as LessonStage;
       actStart = Date.now();
-      actKey = stage.value;
+      actKey = a.key;
     } else {
       // 无直达 stage（含 URL 从玩法回退到 /course/:id）：回菜单，
       // 并报出主题歌名（英文），给孩子"这一课唱什么"的预期
@@ -125,17 +129,24 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   }
 
   /** 进入玩法：同步 stage 并把 URL 更新为独立子路径（题目详情标记：课 id + 题型）。
-   *  · 自由：#/course/l4/quiz；闯关：#/course/l4/game/quest?step=quiz
+   *  · 自由：#/course/l4/quiz[?group=colors]；闯关：#/course/l4/game/quest?step=learn:colors
+   *  · 词群入口化后：a.key 是复合键（learn:colors），stage 存裸 act，
+   *    完整键（含词群）记在 actKey，供结算写星/埋点使用。
    *  · replace 不堆历史（孩子误触返回键不至于层层回退） */
   function open(a: QuestAct) {
     hapticTap();
-    const key = (a.game === "song" ? "song" : a.key) as LessonStage;
+    const { act, group } = splitActKey(a.key);
+    const key = (a.game === "song" ? "song" : act) as LessonStage;
     actStart = Date.now();
-    actKey = key;
+    actKey = a.key;
     stage.value = key;
     const lid = lesson.value?.id;
     if (!lid) return;
-    router.replace(quest.questMode.value ? `/course/${lid}/game/quest?step=${a.key}` : `/course/${lid}/${key === "quiz" ? "hear" : key}`);
+    router.replace(
+      quest.questMode.value
+        ? `/course/${lid}/game/quest?step=${a.key}`
+        : `/course/${lid}/${key === "quiz" ? "hear" : key}${group ? `?group=${group}` : ""}`
+    );
   }
 
   /** 菜单卡片右上角的星星徽章：该玩法已获得的星数 */
@@ -196,11 +207,13 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     const s = stars || 1;
     lastStars.value = s;
     const lessonId = lesson.value?.id ?? "";
-    const actKey = stage.value;
-    lastActKey.value = actKey;
+    // 写星用完整复合键（词群入口化后 learn:colors 才是进度的主键）；
+    // stage 只存裸 act，这里不能再就地读它
+    const actKeyFull = actKey || stage.value;
+    lastActKey.value = actKeyFull;
     // 首次通关判定要在写星之前取（写进去就都成"已完成"了）
-    const firstTime = !((progress.progress[lessonId]?.[actKey] as number | undefined) ?? 0);
-    progress.setGameStars(lessonId, actKey, s);
+    const firstTime = !((progress.progress[lessonId]?.[actKeyFull] as number | undefined) ?? 0);
+    progress.setGameStars(lessonId, actKeyFull, s);
     settleActivity();
     // 今日目标：新学 1 关（首次通关）+ 复习到期词（复习页记）
     const first = streak.markNewLevel(firstTime);

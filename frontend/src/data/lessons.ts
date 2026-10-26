@@ -107,8 +107,9 @@ export interface RawLesson {
   /** 颜色配对玩法：左列颜色圆 ↔ 右列图（练"什么颜色配什么"）。
    *  color 指向本课颜色词 id（非色值），色值取该词的 word.color。首例 l11 Brown Bear */
   colorPairs?: { color: string; wordId: string }[];
-  /** 词群（如 颜色 / 动物）：词表按群分组展示与练习，歌曲轨道也可按群分轨 */
-  wordGroups?: { key: string; name: string }[];
+  /** 词群（如 颜色 / 动物）：词表按群分组展示与练习。
+   *  nameZh 供入口/关卡用中文名（学单词·颜色）；name 是玩法内切换器时代的英文显示名（Colors） */
+  wordGroups?: { key: string; name: string; nameZh?: string }[];
 }
 
 /** 单词（映射后：补课时归属 + 资源路径化） */
@@ -165,8 +166,9 @@ export interface Lesson {
   phrases: Phrase[];
   /** 颜色配对（l11）：左列颜色圆 ↔ 右列动物图 */
   colorPairs?: { color: string; wordId: string }[];
-  /** 词群（如 l11：颜色 / 动物）：词表按这两个部分分组展示与练习 */
-  wordGroups?: { key: string; name: string }[];
+  /** 词群（如 l11：颜色 / 动物）：词表按这两个部分分组展示与练习。
+   *  nameZh 供入口/关卡用中文名（学单词·颜色）；name 是玩法内切换器时代的英文显示名（Colors） */
+  wordGroups?: { key: string; name: string; nameZh?: string }[];
 }
 
 
@@ -240,10 +242,25 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
  * 曾经这里把 song 排在最后，而菜单/闯关玩法却按 song 打头；
  * 结果同一课出现两条“关卡顺序”，地图的「从这里开始」与下一关推进对不上。
  */
-export function activityKeys(lesson: Pick<Lesson, "phrases">): string[] {
+export function activityKeys(lesson: Pick<Lesson, "phrases" | "words" | "wordGroups">): string[] {
   const base = ["song", "learn", "quiz", "memory", "match", "speak"];
   if (lesson.phrases?.length) base.push("order", "talk");
-  return base;
+  // 词群入口化（2026-10-25）：配了 wordGroups 的课，词驱动玩法按群展开成
+  // 独立入口/关卡（learn:colors），入口名 =「学单词·颜色」。公共玩法
+  // （song/match/order）不拆——song 已按群分轨在页内切，match 的颜色配对
+  // 本来就是跨群交叉，order/talk 的句子是全课混合。
+  const groups = lesson.wordGroups ?? [];
+  if (groups.length <= 1) return base;
+  const GROUPED = new Set(["learn", "quiz", "memory", "speak"]);
+  const out: string[] = [];
+  for (const key of base) {
+    if (GROUPED.has(key)) {
+      for (const g of groups) out.push(`${key}:${g.key}`);
+    } else {
+      out.push(key);
+    }
+  }
+  return out;
 }
 
 /**
@@ -251,14 +268,69 @@ export function activityKeys(lesson: Pick<Lesson, "phrases">): string[] {
  * 没配 wordGroups 的课返回空数组（调用方按原来的平铺词表走）。
  * 词在两个组都没登记时会被漏掉，所以配套测试要求"分组并集 = 全部词"。
  */
-export function wordGroupsOf(lesson: Lesson): { key: string; name: string; words: Word[] }[] {
+export function wordGroupsOf(lesson: Lesson): { key: string; name: string; nameZh?: string; words: Word[] }[] {
   const groups = lesson.wordGroups ?? [];
   return groups.map((g) => ({
     key: g.key,
     name: g.name,
+    nameZh: g.nameZh,
     words: lesson.words.filter((w) => w.group === g.key),
   }));
 }
+
+/* ---------- 复合玩法键（actKey:group，词群入口化 2026-10-25） ---------- */
+
+/** 拆复合键 → { act, group }；普通键 group 为 undefined */
+export function splitActKey(actKey: string): { act: string; group?: string } {
+  const i = actKey.indexOf(":");
+  return i < 0 ? { act: actKey } : { act: actKey.slice(0, i), group: actKey.slice(i + 1) };
+}
+
+/** 玩法 + 词群 → 复合键；无群返回原键 */
+export function joinActKey(act: string, group?: string): string {
+  return group ? `${act}:${group}` : act;
+}
+
+/** 入口/关卡显示名：学单词·颜色（group 用中文名，缺省回退英文 name） */
+export function actDisplayName(actKey: string, lesson?: Lesson | null): string {
+  const { act, group } = splitActKey(actKey);
+  const base = ACT_NAMES[act] || act;
+  if (!group) return base;
+  const g = lesson?.wordGroups?.find((x) => x.key === group);
+  return `${base}·${g?.nameZh || g?.name || group}`;
+}
+
+/** 老 storage 里的玩法 key → 新复合键映射表。
+ *  词群入口化之前，分组课的玩法进度只存一份裸键（learn/quiz/...）；
+ *  展开后这些老星星必须复制到每个词群的新键下——否则孩子攒的星星"消失"。
+ *  返回 {} 表示无需迁移。 */
+export function migrateLegacyActivityKeys(
+  lesson: Lesson,
+  stored: Record<string, unknown>
+): Record<string, unknown> | null {
+  const groups = lesson.wordGroups ?? [];
+  if (groups.length <= 1) return null;
+  const GROUPED = ["learn", "quiz", "memory", "speak"];
+  const out: Record<string, unknown> | null = {};
+  for (const act of GROUPED) {
+    const legacy = stored[act];
+    if (typeof legacy !== "number" || legacy <= 0) continue;
+    for (const g of groups) out[joinActKey(act, g.key)] = legacy;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+export const ACT_NAMES: Record<string, string> = {
+  learn: "学单词",
+  quiz: "听音选图",
+  memory: "翻牌记忆",
+  match: "连一连",
+  speak: "跟我读",
+  order: "拼句子",
+  talk: "亲子对话",
+  song: "学童谣", // 菜单/地图既有 UI 口径（曾独立写"学童谣"，入口统一后从 ACT_NAMES 来，保持一致）
+  chest: "开宝箱",
+};
 
 export function getLesson(id: string): Lesson | null {
   return lessons.find((l) => l.id === id) || null;

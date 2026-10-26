@@ -21,7 +21,7 @@ import HeaderBar from "../../components/layout/HeaderBar.vue";
 import LessonResult from "../../components/lesson/LessonResult.vue";
 import LessonMenu from "../../components/lesson/LessonMenu.vue";
 import LessonProgressHeader from "../../components/lesson/LessonProgressHeader.vue";
-import { activityKeys, getLesson as getLocalLesson, wordGroupsOf, type Lesson, type Word } from "../../data/lessons";
+import { activityKeys, actDisplayName, getLesson as getLocalLesson, joinActKey, splitActKey, wordGroupsOf, type Lesson, type Word } from "../../data/lessons";
 import { useContentStore } from "../../stores/content";
 import { speak, speakZh } from "../../services/speech";
 import { useProgressStore } from "../../stores/progress";
@@ -87,11 +87,14 @@ const activities = computed<QuestAct[]>(() => {
   const l = lesson.value;
   if (!l) return [];
   return activityKeys(l).map((key) => {
-    const meta = ACT_META[key];
+    // 词群入口化（2026-10-25）：key 可能是复合键（learn:colors）。
+    // 图标/色调按裸玩法查 ACT_META；显示名用 actDisplayName（学单词·颜色）。
+    const act = splitActKey(key).act;
+    const meta = ACT_META[act];
     // 故意 fail loud：activityKeys 加了新玩法却没补元数据时，宁可开发期报错，
     // 也不要让菜单/关卡静默少一项（本仓库踩过太多次"静默失效"）。
     if (!meta) throw new Error(`玩法「${key}」缺少菜单元数据（LessonView.ACT_META）`);
-    return { key, ...meta };
+    return { ...meta, key, name: actDisplayName(key, l) };
   });
 });
 
@@ -146,16 +149,13 @@ function openSound(a: (typeof activities.value)[number]) {
   open(a);
 }
 
-/** 菜单：学童谣 */
+/** 菜单：学童谣（song 不拆入口，保留特例） */
 function openSong() {
   const song = activities.value.find((a) => a.key === "song");
   if (song) { speakZh("唱童谣"); open(song); }
 }
-/** 菜单：学单词 */
-function openLearn() {
-  const learn = activities.value.find((a) => a.key === "learn");
-  if (learn) { speakZh("学单词"); open(learn); }
-}
+/** 词群入口化后菜单不再有裸「学单词」卡片（learn:colors / learn:animals 走 open-activity），
+ *  openLearn 已删除。 */
 
 /** 点击顶栏课程名：朗读英文标题 */
 function sayTitle() {
@@ -181,21 +181,24 @@ const chestReady = computed(() => {
   if (!l) return false;
   return !((progress.progress[l.id]?.completed as string[]) || []).includes("chest");
 });
-/** 自由结算：分组课（l11）切到另一个词组再练同一玩法（否则闯完一整条链只练了默认组一半的词） */
+/** 自由结算：分组课（l11）切到另一个词组再练同一玩法（否则闯完一整条链只练了默认组一半的词）。
+ *  lastActKey 是复合键（learn:colors），判断用裸玩法名（ENTRY_GROUPED）。 */
 const nextGroup = computed(() => {
   if (questMode.value || stage.value !== "result") return null;
   const groups = wordGroups.value;
   if (groups.length < 2) return null;
-  if (!GROUPED_STAGES.has(lastActKey.value)) return null;
+  if (!ENTRY_GROUPED.has(splitActKey(lastActKey.value).act)) return null;
   const other = groups.find((g) => g.key !== activeGroup.value);
   return other ?? null;
 });
 function practiceGroup() {
   const g = nextGroup.value;
   if (!g) return;
-  activeGroup.value = g.key;
-  const act = activities.value.find((a) => a.key === lastActKey.value);
-  if (act) open(act);
+  const { act } = splitActKey(lastActKey.value);
+  const base = activities.value.find((a) => splitActKey(a.key).act === act);
+  if (!base) return;
+  // 构造同玩法、另一词群的复合键（learn:animals），open 会带 ?group= 跳转
+  open({ ...base, key: joinActKey(act, g.key) });
 }
 /** 闯关结算页领宝箱：标记该课宝箱已领取（与地图宝箱关同一口径） */
 function claimChest() {
@@ -210,32 +213,49 @@ const playPct = ref(0);
 /** 本局总量（题数/页数/对数/词数/轮数）与已完成量 → 顶栏显示 x/y，孩子知道一共要做多少 */
 const playTotal = ref(0);
 
-/* ---------- 词群切换（l11 颜色 / 动物） ----------
- * lesson.wordGroups 声明分组（如 l11：颜色 / 动物），词表按 word.group 归组。
- * 词类玩法（学单词/听音选图/翻牌记忆/跟我读）、唱童谣（按词群分轨）、
- * 亲子对话（按词群分段，2026-10-25：过去不分段，l11 一口气 19 轮）显示切换；
- * 连一连按 colorPairs 玩颜色-动物配对、拼句子用句子表，与词群无关，不显示。 */
-const GROUPED_STAGES = new Set(["learn", "quiz", "memory", "speak", "song", "talk"]);
+/* ---------- 词群（l11 颜色 / 动物） ----------
+ * 词群入口化（2026-10-25）：配 wordGroups 的课，learn/quiz/memory/speak 在
+ * 菜单/地图展开成独立入口（学单词·颜色 / 学单词·动物），入口即锁群——
+ * 玩法内不再有切换器，URL 带群（?group= 或闯关 step=learn:colors）。
+ * 仅剩两类玩法保留页内切换：
+ *  - song：两首歌按词群分轨（页内切轨按钮 + 右上角切换器）
+ *  - talk：句子按词群分段（l11 一段 19 轮太长，页内可切）
+ * 连一连（颜色×动物交叉配对）、拼句子（全课混合句子）与词群无关。 */
+const ENTRY_GROUPED = new Set(["learn", "quiz", "memory", "speak"]);
+const INNER_GROUPED = new Set(["song", "talk"]);
 /** 分组后的词表（[{key,name,words}]）；无 wordGroups 的课是空数组 */
 const wordGroups = computed(() => (lesson.value ? wordGroupsOf(lesson.value) : []));
 /** 当前选中的词群 key（空串 = 该课没有分组） */
 const activeGroup = ref("");
 const groupTabs = computed(() => wordGroups.value.map((g) => ({ value: g.key, label: g.name })));
+/** 玩法内保留切换器：只剩 song/talk（入口未拆分、页内需要切） */
 const showGroupSwitch = computed(
-  () => wordGroups.value.length > 1 && GROUPED_STAGES.has(stage.value)
+  () => wordGroups.value.length > 1 && INNER_GROUPED.has(stage.value)
 );
-/** 当前玩法该用哪些词：分组课只取当前组，其他课/玩法用全部词 */
-const playWords = computed(() => {
-  if (!showGroupSwitch.value) return lesson.value?.words ?? [];
-  return wordGroups.value.find((g) => g.key === activeGroup.value)?.words ?? [];
+/** URL 指定的词群：自由模式 ?group=；闯关模式 step 复合键（learn:colors） */
+const urlGroup = computed(() => {
+  if (questMode.value) {
+    const step = route.query.step;
+    if (typeof step === "string") return splitActKey(step).group ?? "";
+    return "";
+  }
+  return typeof route.query.group === "string" ? route.query.group : "";
 });
-/** 用户手动切过词群（手动选择优先于玩法默认组） */
-const groupPicked = ref(false);
+/** 当前玩法该用哪些词：
+ *  - 无分组课（大多数）：永远全部词；
+ *  - 分组课：词类玩法（learn/quiz/memory/speak）与保留页内切换的 song/talk 用当前组；
+ *  - match（连一连，颜色×动物交叉配对）、order（拼句子，全课句子）与词群无关 → 全部词。 */
+const playWords = computed(() => {
+  if (wordGroups.value.length === 0) return lesson.value?.words ?? [];
+  if (ENTRY_GROUPED.has(stage.value) || INNER_GROUPED.has(stage.value)) {
+    return wordGroups.value.find((g) => g.key === activeGroup.value)?.words ?? [];
+  }
+  return lesson.value?.words ?? [];
+});
 // 换课/远端详情回来导致分组变化时，把选中项挪到第一个有效组
 watch(
   wordGroups,
   (groups) => {
-    groupPicked.value = false; // 换课 = 重新按玩法默认，不继承上一课的手动选择
     if (!groups.some((g) => g.key === activeGroup.value)) {
       activeGroup.value = groups[0]?.key ?? "";
     }
@@ -248,15 +268,22 @@ watch(activeGroup, () => {
   playTotal.value = 0;
 });
 
-/** 各玩法的默认词群：唱童谣跟**第一轨**的词群（l11 第一轨是 Brown Bear 动物歌，
- *  课程主打歌不该藏在切换后面）；词类玩法跟 wordGroups 顺序（l11：先颜色后动物）。
- *  只在孩子没手动选过时生效——选过就全程尊重孩子的选择。 */
+/** 进玩法时选词群：
+ *  - learn/quiz/memory/speak：入口已锁群（URL 带群），URL 没有才默认第一组；
+ *  - song：跟**第一轨**的词群（l11 第一轨是 Brown Bear 动物歌，课程主打歌
+ *    不该藏在切换后面）；talk：默认第一组（页内可切）。
+ *  song/talk 页内手动切换直接改 activeGroup，不经过本 watch（stage 没变）。 */
 watch(stage, (s) => {
-  if (groupPicked.value) return;
   const firstTrack = lesson.value?.song.group;
   if (s === "song" && firstTrack && wordGroups.value.some((g) => g.key === firstTrack)) {
     activeGroup.value = firstTrack;
-  } else if (s === "learn" || s === "quiz" || s === "memory" || s === "speak" || s === "talk") {
+    return;
+  }
+  if (ENTRY_GROUPED.has(s)) {
+    activeGroup.value = urlGroup.value || (wordGroups.value[0]?.key ?? "");
+    return;
+  }
+  if (s === "talk") {
     activeGroup.value = wordGroups.value[0]?.key ?? "";
   }
 });
@@ -337,8 +364,8 @@ const playStage = computed(() => {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h6a4 4 0 0 0 0-8h-4a4 4 0 0 1 0-8h6"/></svg>
         </button>
       </template>
-      <!-- 词群切换（l11：颜色 / 动物）：紧凑放右上角，不占整行。
-           手动切换后记住选择（不再被玩法的默认组覆盖） -->
+      <!-- 页内词群切换（仅 song/talk 保留：入口未拆，页内需要切颜色/动物）。
+           learn/quiz/memory/speak 已按词群拆成独立入口，URL 锁群，不再显示切换器 -->
       <template v-if="showGroupSwitch" #right>
         <div class="group-switch">
           <button
@@ -346,7 +373,7 @@ const playStage = computed(() => {
             :key="g.value"
             class="group-switch__btn"
             :class="{ on: activeGroup === g.value }"
-            @click="groupPicked = true; activeGroup = g.value"
+            @click="activeGroup = g.value"
           >{{ g.label }}</button>
         </div>
       </template>
@@ -358,7 +385,6 @@ const playStage = computed(() => {
       :activities="menuActs"
       :progress="lessonProgress"
       @open-song="openSong"
-      @open-learn="openLearn"
       @open-activity="openSound"
     />
 

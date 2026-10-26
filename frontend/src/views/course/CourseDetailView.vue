@@ -14,7 +14,7 @@ import { useRoute, useRouter } from "vue-router";
 import PageShell from "../../components/ui/PageShell.vue";
 import GamePath from "../../components/game/GamePath.vue";
 import LessonMenu from "../../components/lesson/LessonMenu.vue";
-import { activityKeys, getLesson as getLocalLesson, type Lesson } from "../../data/lessons";
+import { activityKeys, actDisplayName, getLesson as getLocalLesson, splitActKey, type Lesson } from "../../data/lessons";
 import type { QuestAct } from "../../composables/useQuest";
 import { useContentStore } from "../../stores/content";
 import { useProgressStore } from "../../stores/progress";
@@ -79,13 +79,15 @@ const activities = computed<(QuestAct & { stars?: number })[]>(() => {
   if (!l) return [];
   const p = progress.progress[l.id];
   return activityKeys(l).map((key) => {
-    const m = ACT_META[key] || { name: key, tone: "blue", icon: Music };
+    // 词群入口化：key 可能是复合键（learn:colors），图标/色调按裸玩法查，
+    // 显示名用 actDisplayName（学单词·颜色）
+    const m = ACT_META[splitActKey(key).act] || { name: key, tone: "blue", icon: Music };
     return {
       key,
-      name: m.name,
+      name: actDisplayName(key, l),
       tone: m.tone,
       icon: m.icon,
-      game: key,
+      game: splitActKey(key).act,
       stars: (p?.[key as keyof typeof p] as number) || 0,
     } as QuestAct & { stars?: number };
   });
@@ -103,7 +105,10 @@ const lessonProgress = computed(() => {
 });
 
 function openActivity(key: string) {
-  void router.push({ path: `/course/${lessonId.value}/${key === "learn" ? "learn" : key === "quiz" ? "hear" : key}` });
+  // 词群入口化：复合键（learn:colors）跳裸玩法路径 + ?group= 锁群
+  const { act, group } = splitActKey(key);
+  const path = `/course/${lessonId.value}/${act === "quiz" ? "hear" : act}`;
+  void router.push(group ? { path, query: { group } } : { path });
 }
 </script>
 
