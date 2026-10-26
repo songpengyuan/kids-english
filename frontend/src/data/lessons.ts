@@ -248,10 +248,12 @@ export function activityKeys(lesson: Pick<Lesson, "phrases" | "words" | "wordGro
   // 词群入口化（2026-10-25）：配了 wordGroups 的课，词驱动玩法按群展开成
   // 独立入口/关卡（learn:colors），入口名 =「学单词·颜色」。公共玩法
   // （song/match/order）不拆——song 已按群分轨在页内切，match 的颜色配对
-  // 本来就是跨群交叉，order/talk 的句子是全课混合。
+  // 本来就是跨群交叉，order 的句子是全课混合。
+  // 2026-10-26：talk（亲子对话）也从页内切换升级为独立入口（talk:colors /
+  // talk:animals），与学单词等一致——孩子练哪组词就进哪组对话，玩法内不再区分。
   const groups = lesson.wordGroups ?? [];
   if (groups.length <= 1) return base;
-  const GROUPED = new Set(["learn", "quiz", "memory", "speak"]);
+  const GROUPED = new Set(["learn", "quiz", "memory", "speak", "talk"]);
   const out: string[] = [];
   for (const key of base) {
     if (GROUPED.has(key)) {
@@ -310,7 +312,7 @@ export function migrateLegacyActivityKeys(
 ): Record<string, unknown> | null {
   const groups = lesson.wordGroups ?? [];
   if (groups.length <= 1) return null;
-  const GROUPED = ["learn", "quiz", "memory", "speak"];
+  const GROUPED = ["learn", "quiz", "memory", "speak", "talk"];
   const out: Record<string, unknown> | null = {};
   for (const act of GROUPED) {
     const legacy = stored[act];

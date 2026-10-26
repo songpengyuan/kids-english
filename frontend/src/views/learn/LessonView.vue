@@ -195,21 +195,20 @@ const playPct = ref(0);
 const playTotal = ref(0);
 
 /* ---------- 词群（l11 颜色 / 动物） ----------
- * 词群入口化（2026-10-25）：配 wordGroups 的课，learn/quiz/memory/speak 在
- * 菜单/地图展开成独立入口（学单词·颜色 / 学单词·动物），入口即锁群——
- * 玩法内不再有切换器，URL 带群（?group= 或闯关 step=learn:colors）。
- * 仅剩两类玩法保留页内切换：
- *  - song：两首歌按词群分轨（页内切轨按钮 + 右上角切换器）
- *  - talk：句子按词群分段（l11 一段 19 轮太长，页内可切）
+ * 词群入口化（2026-10-25）：配 wordGroups 的课，词驱动玩法在菜单/地图展开成
+ * 独立入口（学单词·颜色 / 学单词·动物），入口即锁群——玩法内不再有切换器，
+ * URL 带群（?group= 或闯关 step=learn:colors）。
+ * 2026-10-26：talk（亲子对话）也升级为独立入口（亲子对话·颜色 / 亲子对话·动物）。
+ * 仅剩 song 保留页内切换：两首歌按词群分轨（页内切轨按钮 + 右上角切换器）。
  * 连一连（颜色×动物交叉配对）、拼句子（全课混合句子）与词群无关。 */
-const ENTRY_GROUPED = new Set(["learn", "quiz", "memory", "speak"]);
-const INNER_GROUPED = new Set(["song", "talk"]);
+const ENTRY_GROUPED = new Set(["learn", "quiz", "memory", "speak", "talk"]);
+const INNER_GROUPED = new Set(["song"]);
 /** 分组后的词表（[{key,name,words}]）；无 wordGroups 的课是空数组 */
 const wordGroups = computed(() => (lesson.value ? wordGroupsOf(lesson.value) : []));
 /** 当前选中的词群 key（空串 = 该课没有分组） */
 const activeGroup = ref("");
 const groupTabs = computed(() => wordGroups.value.map((g) => ({ value: g.key, label: g.name })));
-/** 玩法内保留切换器：只剩 song/talk（入口未拆分、页内需要切） */
+/** 玩法内保留切换器：只剩 song（两首歌按词群分轨；其余玩法已入口化拆分） */
 const showGroupSwitch = computed(
   () => wordGroups.value.length > 1 && INNER_GROUPED.has(stage.value)
 );
@@ -224,7 +223,8 @@ const urlGroup = computed(() => {
 });
 /** 当前玩法该用哪些词：
  *  - 无分组课（大多数）：永远全部词；
- *  - 分组课：词类玩法（learn/quiz/memory/speak）与保留页内切换的 song/talk 用当前组；
+ *  - 分组课：已入口化的词驱动玩法（learn/quiz/memory/speak/talk）与
+ *    保留页内切换的 song 用当前组（talk 拆入口后由 URL 锁群，同 learn）；
  *  - match（连一连，颜色×动物交叉配对）、order（拼句子，全课句子）与词群无关 → 全部词。 */
 const playWords = computed(() => {
   if (wordGroups.value.length === 0) return lesson.value?.words ?? [];
@@ -250,10 +250,10 @@ watch(activeGroup, () => {
 });
 
 /** 进玩法时选词群：
- *  - learn/quiz/memory/speak：入口已锁群（URL 带群），URL 没有才默认第一组；
+ *  - learn/quiz/memory/speak/talk：入口已锁群（URL 带群），URL 没有才默认第一组；
  *  - song：跟**第一轨**的词群（l11 第一轨是 Brown Bear 动物歌，课程主打歌
- *    不该藏在切换后面）；talk：默认第一组（页内可切）。
- *  song/talk 页内手动切换直接改 activeGroup，不经过本 watch（stage 没变）。 */
+ *    不该藏在切换后面）。song 页内手动切换直接改 activeGroup，不经过本 watch
+ *    （stage 没变）。 */
 watch(stage, (s) => {
   const firstTrack = lesson.value?.song.group;
   if (s === "song" && firstTrack && wordGroups.value.some((g) => g.key === firstTrack)) {
@@ -262,10 +262,6 @@ watch(stage, (s) => {
   }
   if (ENTRY_GROUPED.has(s)) {
     activeGroup.value = urlGroup.value || (wordGroups.value[0]?.key ?? "");
-    return;
-  }
-  if (s === "talk") {
-    activeGroup.value = wordGroups.value[0]?.key ?? "";
   }
 });
 
@@ -345,8 +341,8 @@ const playStage = computed(() => {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h6a4 4 0 0 0 0-8h-4a4 4 0 0 1 0-8h6"/></svg>
         </button>
       </template>
-      <!-- 页内词群切换（仅 song/talk 保留：入口未拆，页内需要切颜色/动物）。
-           learn/quiz/memory/speak 已按词群拆成独立入口，URL 锁群，不再显示切换器 -->
+      <!-- 页内词群切换（仅 song 保留：两首歌按词群分轨；其余玩法已入口化拆分，
+           learn/quiz/memory/speak/talk 由 URL 锁群，不再显示切换器） -->
       <template v-if="showGroupSwitch" #right>
         <div class="group-switch">
           <button

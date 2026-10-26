@@ -135,7 +135,7 @@ describe("LessonResult 闯关结算", () => {
     expect(w.text()).not.toContain("重玩可拿满 3 星");
   });
 
-  it("自由练习结算轻量化（2026-10-26）：不挂贝壳奖励，只有「回菜单继续学」单按钮", () => {
+  it("自由练习结算轻量化（2026-10-26）：不挂贝壳奖励，只有「继续学」单按钮", () => {
     const w = mount(LessonResult, {
       props: { mode: "free", stars: 2, streakJustHit: false, streakDays: 0 },
       global: { stubs: { BaseButton: btnStub, ChestReward: true } },
@@ -143,11 +143,11 @@ describe("LessonResult 闯关结算", () => {
     expect(w.findComponent({ name: "ChestReward" }).exists()).toBe(false);
     const btns = w.findAll("button");
     expect(btns).toHaveLength(1);
-    expect(btns[0].text()).toContain("回菜单继续学");
+    expect(btns[0].text()).toContain("继续学");
     expect(w.text()).not.toContain("再选一个玩法");
   });
 
-  it("自由练习轻量结算：点「回菜单继续学」上抛 toMenu", async () => {
+  it("自由练习轻量结算：点「继续学」上抛 toMenu", async () => {
     const w = mount(LessonResult, {
       props: { mode: "free", stars: 3, streakJustHit: false, streakDays: 0 },
       global: { stubs: { BaseButton: btnStub, ChestReward: true } },
@@ -157,7 +157,7 @@ describe("LessonResult 闯关结算", () => {
   });
 });
 
-/** 自由结算轻量化（2026-10-26）：完成即停，底部只留「回菜单继续学」一个动作，
+/** 自由结算轻量化（2026-10-26）：完成即停，底部只留「继续学」一个动作，
  *  不再并列"换组再练"等出口（下一步回课程菜单自己选，菜单排序即学习路径）。 */
 describe("LessonResult 自由结算单按钮", () => {
   const btnStub = { template: "<button><slot /></button>" };
@@ -169,6 +169,6 @@ describe("LessonResult 自由结算单按钮", () => {
     });
     expect(w.text()).not.toContain("组再练");
     expect(w.findAll("button")).toHaveLength(1);
-    expect(w.findAll("button")[0].text()).toContain("回菜单继续学");
+    expect(w.findAll("button")[0].text()).toContain("继续学");
   });
 });

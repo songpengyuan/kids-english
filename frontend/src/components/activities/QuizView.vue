@@ -117,8 +117,11 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
         @click="onPick(opt)"
       >
         <div class="pic">
+          <!-- 颜色词（l11 听音选图等）：统一显示颜色圆圈，不用 emoji/图片
+               （2026-10-26：颜色词的 emoji 有的是水果🍊不是圆，孩子易误解成"看图选水果"） -->
+          <span v-if="opt.color" class="quiz-color-dot" :style="{ background: opt.color }"></span>
           <img
-            v-if="!imgFail[opt.id] && opt.image"
+            v-else-if="!imgFail[opt.id] && opt.image"
             loading="lazy"
             decoding="async"
             :src="opt.image || undefined"
@@ -207,6 +210,15 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
   width: 78%;
   height: 78%;
   object-fit: contain;
+  pointer-events: none;
+}
+/* 颜色词选项：色圆（与 WordCard/连一一连一致，颜色即"图片"） */
+.quiz-color-dot {
+  width: clamp(44px, 11vh, 84px);
+  height: clamp(44px, 11vh, 84px);
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  box-shadow: inset 0 -4px 8px rgba(0, 0, 0, 0.15);
   pointer-events: none;
 }
 .pic .ph {
