@@ -65,9 +65,20 @@ export function useMatchSession(
     groupIdx.value = 0;
   });
 
-  /** colorMode：wordId → color（色值单源是课时数据的 word.color） */
+  /** colorMode：wordId → 颜色名（伪卡的 en，朗读用）。
+   *  色值单源是课时数据的 word.color（hex）：colorPairs.color 存的是颜色**名**
+   *  （"red"），渲染色值要在 words 里按英文名查颜色词的 hex（见 hexOf）。 */
   function colorOf(wordId: string): string | null {
     return colorPairs.value?.find((p) => p.wordId === wordId)?.color ?? null;
+  }
+
+  /** colorMode：wordId → 可渲染 hex。颜色名 → 颜色词（en === 名 && 带 color）的 hex；
+   *  查不到（数据缺该颜色词）返回 null，组件兜底灰。 */
+  function hexOf(wordId: string): string | null {
+    const name = colorOf(wordId);
+    if (!name) return null;
+    const colorWord = words.value.find((w) => w.en === name && w.color);
+    return colorWord?.color ?? null;
   }
 
   const curGroup = computed(() => groups.value[groupIdx.value] || []);
@@ -105,11 +116,11 @@ export function useMatchSession(
     Object.keys(matchFrom).forEach((k) => delete matchFrom[k]);
     Object.keys(pairMap).forEach((k) => delete pairMap[k]);
     if (colorMode.value) {
-      // 颜色配对：左列颜色圆（伪对象），右列动物图，无中间单词列
+      // 颜色配对：左列颜色圆（伪对象，color = 可渲染 hex），右列动物图，无中间单词列
       const shuffled = shuffleWith(g);
       leftImgs.value = shuffled.map((w) => ({
         id: `c-${w.id}`, en: colorOf(w.id) ?? "", matchId: w.id,
-        color: colorOf(w.id), lessonId: w.lessonId,
+        color: hexOf(w.id), lessonId: w.lessonId,
       }));
       rightImgs.value = shuffled;
       midWords.value = [];
@@ -151,6 +162,7 @@ export function useMatchSession(
   return {
     colorMode,
     colorOf,
+    hexOf,
     groups,
     groupIdx,
     groupCount,

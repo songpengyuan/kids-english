@@ -53,26 +53,43 @@ describe("useMatchSession", () => {
     expect(onWrong).toHaveBeenCalledWith({ id: a.id, side: "img" }, { id: b.id, side: "word" });
   });
 
-  it("颜色模式：左列是颜色伪卡（matchId 指回动物 id）、无中间列、组内只含配对词", () => {
+  it("颜色模式：左列是颜色伪卡（matchId 指回动物 id、color 为可渲染 hex）、无中间列、组内只含配对词", () => {
+    // 真实数据契约：colorPairs.color 是颜色**名**，hex 单源在颜色词的 word.color
     const cps = [
-      { color: "#e53935", wordId: "a" },
-      { color: "#fdd835", wordId: "b" },
+      { color: "red", wordId: "a" },
+      { color: "yellow", wordId: "b" },
     ];
-    const { s } = setup(cps);
+    const list = [
+      ...words,
+      { id: "red", en: "red", lessonId: "l4", color: "#e53935" },
+      { id: "yellow", en: "yellow", lessonId: "l4", color: "#fdd835" },
+    ];
+    const { s } = setup(cps, list);
     expect(s.colorMode.value).toBe(true);
     s.setupGroup(s.curGroup.value);
     expect(s.curGroup.value.every((w) => cps.some((p) => p.wordId === w.id))).toBe(true);
     expect(s.midWords.value).toHaveLength(0);
     expect(s.leftImgs.value.every((w) => w.matchId && w.id.startsWith("c-"))).toBe(true);
     expect(s.rightImgs.value.length + s.leftImgs.value.length).toBe(s.curGroup.value.length * 2);
+    // 伪卡 color 是解析后的 hex（回归：曾把颜色名直接当色值渲染 → 线上左列全白灰）
+    expect(s.leftImgs.value.find((w) => w.matchId === "a")!.color).toBe("#e53935");
+    expect(s.leftImgs.value.find((w) => w.matchId === "b")!.color).toBe("#fdd835");
+    // en 仍是颜色名（朗读/aria-label 用，不是 hex）
+    expect(s.leftImgs.value.find((w) => w.matchId === "a")!.en).toBe("red");
   });
 
   it("颜色模式配对：颜色伪卡 ↔ 动物图经 matchId 命中", () => {
+    // 同样走真实契约（颜色名 → 颜色词 hex）
     const cps = [
-      { color: "#e53935", wordId: "a" },
-      { color: "#fdd835", wordId: "b" },
+      { color: "red", wordId: "a" },
+      { color: "yellow", wordId: "b" },
     ];
-    const { s, onMatched } = setup(cps);
+    const list = [
+      ...words,
+      { id: "red", en: "red", lessonId: "l4", color: "#e53935" },
+      { id: "yellow", en: "yellow", lessonId: "l4", color: "#fdd835" },
+    ];
+    const { s, onMatched } = setup(cps, list);
     s.setupGroup(s.curGroup.value);
     const animal = s.rightImgs.value[0];
     const colorCard = s.leftImgs.value.find((w) => w.matchId === animal.id)!;
@@ -80,6 +97,13 @@ describe("useMatchSession", () => {
     expect(s.matched.has(colorCard.id)).toBe(true);
     expect(s.matched.has(animal.id)).toBe(true);
     expect(onMatched).toHaveBeenCalledWith(animal);
+  });
+
+  it("颜色模式：颜色名查不到对应颜色词时伪卡 color 兜底 null（组件渲染灰）", () => {
+    const cps = [{ color: "red", wordId: "a" }];
+    const { s } = setup(cps, words); // words 里没有颜色词 "red" → hexOf 查不到
+    s.setupGroup(s.curGroup.value);
+    expect(s.leftImgs.value[0].color).toBeNull();
   });
 
   it("counterText：多组带组号，单组只显示进度", () => {

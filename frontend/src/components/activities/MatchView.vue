@@ -193,15 +193,6 @@ const transitioning = ref(false);
 let pendingWord: string | null = null;
 let pendingSide: Side | null = null; // pendingWord 所在侧，供连错时精确定位要标红的卡
 
-/** 颜色词 id → 色值：以课时数据为单源（颜色词的 word.color 十六进制）。
- *  曾在这里维护过一份组件本地色表，与数据漂移过两处（white/brown 色值不一致）；
- *  引用完整性由 validate-data.mjs 把关：colorPairs.color 必须是带 color 的本课单词。 */
-const hexById = computed<Record<string, string>>(() => {
-  const m: Record<string, string> = {};
-  for (const w of props.words) if (w.color) m[w.id] = w.color;
-  return m;
-});
-
 /** 组内配对进度 → 顶栏进度条（多邻国式：连线逐对推进）；对数同步上报显示 x/y */
 watch(
   [doneCount, totalPairs],
@@ -572,11 +563,12 @@ onBeforeUnmount(() => {
           }"
           @pointerdown="onCardDown(w, colorMode ? 'word' : 'img', $event)"
         >
-          <!-- 颜色配对模式：左列渲染纯色圆 -->
+          <!-- 颜色配对模式：左列渲染纯色圆（伪卡的 color 已由会话层解析为可渲染 hex：
+               colorPairs.color 存颜色名，hex 单源是课时数据颜色词的 word.color） -->
           <span
             v-if="w.color"
             class="color-dot"
-            :style="{ background: hexById[w.color] || '#ccc' }"
+            :style="{ background: w.color || '#ccc' }"
             :aria-label="w.en"
           />
           <template v-else>
