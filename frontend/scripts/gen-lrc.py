@@ -53,6 +53,7 @@ ALIGN_LESSONS = [
     ("l10", "/lessons/l10/song.mp3", None, None),
     ("l11", "/lessons/l11/brown-bear.mp3", None, None),
     ("l11#Colors Song", "/lessons/l11/song.mp3", None, "Colors Song"),
+    ("l12", "/lessons/l12/song.mp3", None, None),
 ]
 
 # 仅核查/修正 song-timings.json 的课（其余只产 LRC）

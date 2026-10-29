@@ -1012,5 +1012,169 @@
         "name": "Animals"
       }
     ]
+  },
+  {
+    "id": "l12",
+    "order": "12",
+    "title": "The Wheels on the Bus",
+    "titleZh": "公交车轮子转呀转",
+    "emoji": "🚌",
+    "tone": "orange",
+    "type": "official",
+    "date": "2026-10-29",
+    "stageStyle": "cards",
+    "song": {
+      "audio": "/lessons/l12/song.mp3",
+      "video": "/lessons/l12/song.mp4",
+      "scene": "stage",
+      "group": null,
+      "lyrics": [
+        "The wheels on the bus go round and round",
+        "Round and round, round and round",
+        "The wheels on the bus go round and round",
+        "All through the town",
+        "",
+        "The wipers on the bus go swish, swish, swish",
+        "Swish, swish, swish, swish, swish, swish",
+        "The wipers on the bus go swish, swish, swish",
+        "All through the town",
+        "",
+        "The horn on the bus goes beep, beep, beep",
+        "Beep, beep, beep, beep, beep, beep",
+        "The horn on the bus goes beep, beep, beep",
+        "All through the town",
+        "",
+        "The doors on the bus open and shut",
+        "Open and shut, open and shut",
+        "The doors on the bus open and shut",
+        "All through the town",
+        "",
+        "The people on the bus go up and down",
+        "Up and down, up and down",
+        "The people on the bus go up and down",
+        "All through the town",
+        "",
+        "The babies on the bus go wah, wah, wah",
+        "Wah, wah, wah, wah, wah, wah",
+        "The babies on the bus go wah, wah, wah",
+        "All through the town",
+        "",
+        "The mommies on the bus go shh, shh, shh",
+        "Shh, shh, shh, shh, shh, shh",
+        "The mommies on the bus go shh, shh, shh",
+        "All through the town",
+        "",
+        "The daddies on the bus go snore, snore, snore",
+        "Snore, snore, snore, snore, snore, snore",
+        "The daddies on the bus go snore, snore, snore",
+        "All through the town"
+      ],
+      "timings": null,
+      "tracks": []
+    },
+    "words": [
+      {
+        "id": "bus",
+        "en": "bus",
+        "zh": "公交车",
+        "emoji": "🚌",
+        "image": "/lessons/l12/words/bus.webp",
+        "audio": "/lessons/l12/audio/bus.mp3"
+      },
+      {
+        "id": "wheel",
+        "en": "wheel",
+        "zh": "轮子",
+        "emoji": "🛞",
+        "image": "/lessons/l12/words/wheel.webp",
+        "audio": "/lessons/l12/audio/wheel.mp3"
+      },
+      {
+        "id": "wiper",
+        "en": "wiper",
+        "zh": "雨刷",
+        "emoji": "💦",
+        "image": "/lessons/l12/words/wiper.webp",
+        "audio": "/lessons/l12/audio/wiper.mp3"
+      },
+      {
+        "id": "horn",
+        "en": "horn",
+        "zh": "喇叭",
+        "emoji": "📢",
+        "image": "/lessons/l12/words/horn.webp",
+        "audio": "/lessons/l12/audio/horn.mp3"
+      },
+      {
+        "id": "door",
+        "en": "door",
+        "zh": "车门",
+        "emoji": "🚪",
+        "image": "/lessons/l12/words/door.webp",
+        "audio": "/lessons/l12/audio/door.mp3"
+      },
+      {
+        "id": "driver",
+        "en": "driver",
+        "zh": "司机",
+        "emoji": "👨‍✈️",
+        "image": "/lessons/l12/words/driver.webp",
+        "audio": "/lessons/l12/audio/driver.mp3"
+      },
+      {
+        "id": "people",
+        "en": "people",
+        "zh": "人们",
+        "emoji": "👫",
+        "image": "/lessons/l12/words/people.webp",
+        "audio": "/lessons/l12/audio/people.mp3"
+      },
+      {
+        "id": "baby",
+        "en": "baby",
+        "zh": "宝宝",
+        "emoji": "👶",
+        "image": "/lessons/l12/words/baby.webp",
+        "audio": "/lessons/l12/audio/baby.mp3"
+      },
+      {
+        "id": "mommy",
+        "en": "mommy",
+        "zh": "妈妈",
+        "emoji": "👩",
+        "image": "/lessons/l12/words/mommy.webp",
+        "audio": "/lessons/l12/audio/mommy.mp3"
+      },
+      {
+        "id": "daddy",
+        "en": "daddy",
+        "zh": "爸爸",
+        "emoji": "👨",
+        "image": "/lessons/l12/words/daddy.webp",
+        "audio": "/lessons/l12/audio/daddy.mp3"
+      }
+    ],
+    "phrases": [
+      {
+        "en": "The wheels on the bus go round and round.",
+        "zh": "公交车上的轮子转呀转。",
+        "audio": "/lessons/l12/audio/ph-1.mp3"
+      },
+      {
+        "en": "The wipers on the bus go swish, swish, swish.",
+        "zh": "公交车上的雨刷唰唰唰。",
+        "audio": "/lessons/l12/audio/ph-2.mp3"
+      },
+      {
+        "en": "The horn on the bus goes beep, beep, beep.",
+        "zh": "公交车上的喇叭哔哔哔。",
+        "audio": "/lessons/l12/audio/ph-3.mp3"
+      },
+      {
+        "en": "The doors on the bus open and shut.",
+        "zh": "公交车上的门开开关关。",
+        "audio": "/lessons/l12/audio/ph-4.mp3"
+      }
+    ]
   }
 ]
