@@ -23,6 +23,8 @@ export interface PlayableSong {
   tone: Tone;
   src: string;
   lyrics?: string[];
+  /** 逐行中文翻译（与 lyrics 等长；歌词页英文下方显示） */
+  lyricsZh?: string[];
 }
 
 /** 歌曲播放列表（有 audio 的课）。
@@ -40,6 +42,7 @@ export const SONG_LIST: PlayableSong[] = lessons
       tone: l.tone ?? "blue",
       src: l.song.audio!,
       lyrics: l.song.lyrics,
+      lyricsZh: l.song.lyricsZh || [],
     };
     const extras = (l.song.tracks || [])
       .filter((t) => t.audio)
@@ -52,6 +55,7 @@ export const SONG_LIST: PlayableSong[] = lessons
         tone: l.tone ?? "blue",
         src: t.audio!,
         lyrics: t.lyrics || [],
+        lyricsZh: t.lyricsZh || [],
       }));
     return [first, ...extras];
   });
@@ -81,6 +85,14 @@ export const usePlayerStore = defineStore("player", () => {
     if (s.lyrics?.length) return s.lyrics;
     const lesson = lessons.find((l) => l.id === s.id);
     return lesson?.song?.lyrics ?? [];
+  });
+  /** 当前曲目逐行中文翻译（与 currentLyrics 等长；歌词页英文下方显示，缺省空数组） */
+  const currentLyricsZh = computed<string[]>(() => {
+    const s = currentSong.value;
+    if (!s) return [];
+    if (s.lyricsZh?.length) return s.lyricsZh;
+    const lesson = lessons.find((l) => l.id === s.id);
+    return lesson?.song?.lyricsZh ?? [];
   });
 
   /* ---------- 播放模式（2026-10-17 补上 UI 入口：状态一直有，界面上没有按键） ----------
@@ -294,6 +306,7 @@ export const usePlayerStore = defineStore("player", () => {
     currentIdx,
     currentSong,
     currentLyrics,
+    currentLyricsZh,
     playing,
     progress,
     duration,

@@ -52,6 +52,8 @@ export interface SongTrack {
   audio?: string | null;
   video?: string | null;
   lyrics?: string[];
+  /** 逐行中文翻译（与 lyrics 等长，空行对应空串；歌词页英文下方显示） */
+  lyricsZh?: string[];
   /** 所属词群（l11：colors 颜色歌 / animals Brown Bear 动物歌） */
   group?: string;
 }
@@ -64,6 +66,8 @@ export interface RawLessonSong {
   /** 所属词群：多词域课时（首例 l11：colors/animals）把这条轨道分给对应词群 */
   group?: string;
   lyrics?: string[];
+  /** 逐行中文翻译（与 lyrics 等长，空行对应空串；歌词页英文下方显示） */
+  lyricsZh?: string[];
   /** 多段音视频播放列表（一课多首童谣/课堂视频）。
    *  有 tracks 时播放器按轨道切换，旧 audio/video/lyrics 作为第一轨兼容。 */
   tracks?: SongTrack[];
@@ -141,6 +145,8 @@ export interface LessonSong {
   /** 第一轨所属词群（l11：animals） */
   group?: string;
   lyrics: string[];
+  /** 逐行中文翻译（与 lyrics 等长，空行对应空串；歌词页英文下方显示） */
+  lyricsZh: string[];
   /** 该课节奏（song-timings.json；缺失时回退比例映射） */
   timings: SongTiming | null;
   /** 多段音视频轨道（一课多首）。第一轨用顶层 audio/video/lyrics，后续在这里追加。 */
@@ -203,6 +209,8 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
     scene: lesson.song.scene || "stage",
     group: lesson.song.group,
     lyrics: lesson.song.lyrics || [],
+    // 逐行中文翻译（缺省时歌词页只显示英文）
+    lyricsZh: lesson.song.lyricsZh || [],
     // 该课的节奏与逐行时间轴（缺失时回退比例映射）
     timings: songTimingsMap[lesson.id] || null,
     // 多段音视频轨道：第一轨用顶层 audio/video/lyrics，后续在 tracks 里追加
@@ -212,6 +220,7 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
       audio: t.audio ? asset(t.audio) : null,
       video: t.video ? asset(t.video) : null,
       lyrics: t.lyrics || [],
+      lyricsZh: t.lyricsZh || [],
       group: t.group
     }))
   },

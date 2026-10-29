@@ -45,6 +45,7 @@ const allTracks = computed(() => {
     audio: props.lesson.song.audio,
     video: props.lesson.song.video,
     lyrics: props.lesson.song.lyrics,
+    lyricsZh: props.lesson.song.lyricsZh || [],
     group: props.lesson.song.group
   };
   return [first, ...(props.lesson.song.tracks || [])];
@@ -375,7 +376,7 @@ function onVideoError() {
             :class="{ blank: !line, on: i === activeLine }"
             :data-line="i"
           >
-            {{ line }}
+            {{ line }}<span v-if="curTrack.lyricsZh && curTrack.lyricsZh[i]" class="line-zh">{{ curTrack.lyricsZh[i] }}</span>
           </p>
         </template>
         <p v-else class="miss">这一段还没录入歌词</p>
@@ -618,6 +619,19 @@ function onVideoError() {
 .line.on {
   color: var(--ink);
   transform: scale(1.05);
+}
+/* 逐行中文翻译：英文下方小字，弱强调；高亮行随主体转为墨色 */
+.line-zh {
+  display: block;
+  font-size: clamp(12px, min(2.2vh, 2vw), 16px);
+  font-weight: var(--fw-mid);
+  color: var(--ink-faint);
+  opacity: 0.75;
+  line-height: 1.5;
+}
+.line.on .line-zh {
+  color: var(--ink-soft);
+  opacity: 0.9;
 }
 
 .play-btn {

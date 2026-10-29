@@ -37,6 +37,7 @@ try {
       scene: l.song.scene,
       group: l.song.group ?? null,
       lyrics: l.song.lyrics,
+      lyricsZh: l.song.lyricsZh ?? [],
       timings: l.song.timings || null,
       tracks: (l.song.tracks || []).map((t) => ({
         title: t.title,
@@ -44,6 +45,7 @@ try {
         audio: t.audio ?? null,
         video: t.video ?? null,
         lyrics: t.lyrics ?? [],
+        lyricsZh: t.lyricsZh ?? [],
         group: t.group ?? null,
       })),
     },

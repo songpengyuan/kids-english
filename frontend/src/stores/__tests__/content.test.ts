@@ -46,8 +46,9 @@ const DETAIL: LessonDetailOut = {
       scene: "sea",
       group: "animals",
       lyrics: ["A sailor went to sea, sea, sea", "To see what he could see"],
+      lyricsZh: ["水手出海去，海，海，海", "想看看他能看见什么"],
       timings: { bpm: 120, beatsPerBar: 4, duration: 10, timeline: [0, 1, 2] },
-      tracks: [{ title: "Colors Song", titleZh: "颜色歌", audio: "/lessons/l11/song.mp3", video: null, lyrics: [], group: "colors" }],
+      tracks: [{ title: "Colors Song", titleZh: "颜色歌", audio: "/lessons/l11/song.mp3", video: null, lyrics: [], lyricsZh: [], group: "colors" }],
     },
     words: [
       { id: "seahorse", en: "seahorse", zh: "海马", emoji: "🐴", image: "/lessons/l4/words/seahorse.png", audio: "/lessons/l4/audio/seahorse.mp3", group: "animals" },
@@ -62,7 +63,7 @@ const DETAIL: LessonDetailOut = {
 type Tone = components["schemas"]["LessonOut"]["tone"];
 type LessonType = components["schemas"]["LessonOut"]["type"];
 function briefLesson(id: string, title: string, titleZh: string, tone: Tone, type: LessonType = "official", lyrics: string[] = []): LessonDetailOut {
-  return { ok: true, lesson: { id, title, titleZh, emoji: "", tone, type, song: { lyrics, scene: "stage", tracks: [] }, words: [], phrases: [] } };
+  return { ok: true, lesson: { id, title, titleZh, emoji: "", tone, type, song: { lyrics, lyricsZh: [], scene: "stage", tracks: [] }, words: [], phrases: [] } };
 }
 
 describe("content store · 契约", () => {

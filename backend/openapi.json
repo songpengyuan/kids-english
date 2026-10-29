@@ -2373,6 +2373,14 @@
             "title": "Lyrics",
             "default": []
           },
+          "lyricsZh": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lyricszh",
+            "default": []
+          },
           "timings": {
             "anyOf": [
               {
@@ -2441,6 +2449,14 @@
             },
             "type": "array",
             "title": "Lyrics",
+            "default": []
+          },
+          "lyricsZh": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lyricszh",
             "default": []
           },
           "group": {

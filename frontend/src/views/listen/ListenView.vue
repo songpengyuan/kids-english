@@ -212,7 +212,7 @@ onMounted(() => {
                 class="pl-line"
                 :class="{ on: i === activeLine }"
                 :data-line="i"
-              >{{ line }}</p>
+              >{{ line }}<span v-if="player.currentLyricsZh[i]" class="pl-zh">{{ player.currentLyricsZh[i] }}</span></p>
             </template>
             <p v-else class="pl-line on">🎵</p>
           </div>
@@ -475,6 +475,21 @@ onMounted(() => {
   background: var(--brand-soft);
   font-weight: var(--fw-strong);
   opacity: 1;
+}
+/* 歌词行的逐行中文翻译：英文下方一行小字，低强调不抢英文主体；
+ * 高亮行内中文用品牌色但保持浅淡，一眼能分清"唱的是哪句 / 这句什么意思"。 */
+.pl-zh {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  line-height: 1.4;
+  color: var(--ink-soft);
+  opacity: 0.85;
+}
+.pl-line.on .pl-zh {
+  color: var(--brand);
+  opacity: 0.9;
 }
 /* 播放模式行：随机 + 循环三档。
  * 做成"图标 + 中文"的胶囊而不是纯图标：模式是抽象概念，只有图标时

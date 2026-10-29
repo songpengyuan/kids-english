@@ -143,6 +143,8 @@ class SongTrackOut(BaseModel):
     audio: str | None = None
     video: str | None = None
     lyrics: list[str] = []
+    # 逐行中文翻译（与 lyrics 等长；歌词页英文下方显示）
+    lyricsZh: list[str] = []
     # 所属词群（l11：colors 颜色歌 / animals 动物歌）
     group: str | None = None
 
@@ -154,6 +156,8 @@ class SongOut(BaseModel):
     # 第一轨所属词群 + 多段音视频轨道（一课多首）
     group: str | None = None
     lyrics: list[str] = []
+    # 逐行中文翻译（与 lyrics 等长；歌词页英文下方显示）
+    lyricsZh: list[str] = []
     timings: TimingOut | None = None
     tracks: list[SongTrackOut] = []
 

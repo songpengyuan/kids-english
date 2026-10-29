@@ -926,6 +926,11 @@ export interface components {
              * @default []
              */
             lyrics: string[];
+            /**
+             * Lyricszh
+             * @default []
+             */
+            lyricsZh: string[];
             timings?: components["schemas"]["TimingOut"] | null;
             /**
              * Tracks
@@ -951,6 +956,11 @@ export interface components {
              * @default []
              */
             lyrics: string[];
+            /**
+             * Lyricszh
+             * @default []
+             */
+            lyricsZh: string[];
             /** Group */
             group?: string | null;
         };

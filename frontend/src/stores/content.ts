@@ -39,6 +39,8 @@ function toLesson(raw: LessonOut): Lesson {
       scene: song.scene ?? "stage",
       group: song.group ?? undefined,
       lyrics: song.lyrics ?? [],
+      // 逐行中文翻译（远端 content API 已透传；旧后端缺省时退回空数组，歌词页只显示英文）
+      lyricsZh: song.lyricsZh ?? [],
       timings: song.timings ?? null,
       tracks: (song.tracks ?? []).map((t) => ({
         title: t.title ?? "",
@@ -48,6 +50,7 @@ function toLesson(raw: LessonOut): Lesson {
         audio: t.audio ?? null,
         video: t.video ?? null,
         lyrics: t.lyrics ?? [],
+        lyricsZh: t.lyricsZh ?? [],
         group: t.group ?? undefined,
       })),
     },
