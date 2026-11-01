@@ -2,7 +2,7 @@
  * 进度存储的共享契约：类型 + 存储格式（load 迁移 / 合并口径）。
  *
  * 持久化文档顶层（localStorage key 见 KEY）：
- * stars: { [lessonId]: { learn: 0-3, quiz: 0-3, memory: 0-3, match: 0-3, speak: 0-3, order: 0-3, song: 0|1, talk: 0|1 } }
+ * stars: { [lessonId]: { learn: 0-3, quiz: 0-3, memory: 0-3, match: 0-3, speak: 0-3, order: 0-3, spinner: 0-3, song: 0|1, talk: 0|1 } }
  * words: { [lessonId]: { [wordId]: { seen, correct, wrong, lastAt } } }  ← 单词级掌握度
  * _daily: { date, durationSec, activities }                              ← 今日学情统计
  * _last: 最近进入的课时 id（首页「继续学习」入口）
@@ -43,6 +43,7 @@ export interface LessonProgress {
   match?: number;
   speak?: number;
   order?: number;
+  spinner?: number;
   song?: number;
   talk?: number;
   completed?: string[];

@@ -85,6 +85,7 @@ export const appRoutes: RouteRecordRaw[] = [
         { path: "/course/:id/order", name: "lesson-order", component: LessonView, meta: { title: "拼句子", stage: "order" } },
         { path: "/course/:id/song", name: "lesson-song", component: LessonView, meta: { title: "唱童谣", stage: "song" } },
         { path: "/course/:id/talk", name: "lesson-talk", component: LessonView, meta: { title: "亲子对话", stage: "talk" } },
+        { path: "/course/:id/spinner", name: "lesson-spinner", component: LessonView, meta: { title: "转盘", stage: "spinner" } },
         // 本课闯关玩法（地图点关卡直达）：URL 归属课程域——课时是主资源，
         // 玩法是课时内的行为（2026-10-25 从 /game/quest/:id 迁入，旧地址不留兼容）
         {

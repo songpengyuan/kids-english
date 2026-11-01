@@ -18,7 +18,7 @@ import { activityKeys, actDisplayName, getLesson as getLocalLesson, splitActKey,
 import type { QuestAct } from "../../composables/useQuest";
 import { useContentStore } from "../../stores/content";
 import { useProgressStore } from "../../stores/progress";
-import { BookOpen, Headphones, Layers, Link2, MessageCircle, Mic, Music, PenLine } from "@lucide/vue";
+import { BookOpen, Headphones, Layers, Link2, MessageCircle, Mic, Music, PenLine, RotateCw } from "@lucide/vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -73,6 +73,7 @@ const ACT_META: Record<string, { name: string; tone: string; icon: unknown }> = 
   speak: { name: "跟读", tone: "pink", icon: Mic },
   order: { name: "拼句子", tone: "teal", icon: PenLine },
   talk: { name: "亲子对话", tone: "teal", icon: MessageCircle },
+  spinner: { name: "转盘", tone: "orange", icon: RotateCw },
 };
 const activities = computed<(QuestAct & { stars?: number })[]>(() => {
   const l = lesson.value;

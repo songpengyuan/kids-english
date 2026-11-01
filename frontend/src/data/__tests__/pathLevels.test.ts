@@ -215,6 +215,10 @@ describe("nextLevelAfter（总地图：玩法→玩法，跳过宝箱关）", ()
   });
 
   it("最后一课最后一个玩法后无下一关", () => {
-    expect(nextLevelAfter(`${LAST_LESSON.id}-talk`, LEVELS)).toBeNull();
+    // 末课末玩法动态取（不同课收尾玩法可能是 talk / spinner…），不写死 actKey
+    const lastPlay = LEVELS.filter(
+      (l) => l.lessonId === LAST_LESSON.id && l.actKey !== "chest"
+    ).pop()!;
+    expect(nextLevelAfter(lastPlay.id, LEVELS)).toBeNull();
   });
 });

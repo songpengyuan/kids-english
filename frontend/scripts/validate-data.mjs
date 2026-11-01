@@ -105,6 +105,11 @@ try {
     }
     // 学单词玩法样式枚举：写错值会静默回退默认样式，孩子看到的是错的玩法
     check(l.stageStyle === "cards" || l.stageStyle === "dialog", `课时 ${l.id} stageStyle 非法：${l.stageStyle}（cards | dialog）`);
+    // 转盘开关（spinner）：只能是布尔或缺省；开启时至少 2 个词才能成扇区（一轮遍历全词表）
+    if (l.spinner !== undefined) {
+      check(typeof l.spinner === "boolean", `课时 ${l.id} spinner 非法：${l.spinner}（须布尔或缺省）`);
+      check(l.spinner === false || l.words.length >= 2, `课时 ${l.id} 开启转盘但词表不足 2 个词（无法成局）`);
+    }
     // 颜色词的色值格式（WordCard 色点 / 连一连色圆都靠它渲染，错值静默变 #ccc）
     for (const w of l.words || []) {
       if (w.color) check(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(w.color), `课时 ${l.id} 单词 ${w.id} 的 color 不是合法色值：${w.color}（须 #rgb / #rrggbb）`);

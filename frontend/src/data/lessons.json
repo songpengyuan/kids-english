@@ -1143,6 +1143,7 @@
         "穿过整个小镇"
       ]
     },
+    "spinner": true,
     "words": [
       {
         "id": "bus",
@@ -1152,25 +1153,11 @@
         "image": "/lessons/l12/words/bus.webp"
       },
       {
-        "id": "wheel",
-        "en": "wheel",
+        "id": "wheels",
+        "en": "wheels",
         "zh": "轮子",
-        "emoji": "🛞",
-        "image": "/lessons/l12/words/wheel.webp"
-      },
-      {
-        "id": "wiper",
-        "en": "wiper",
-        "zh": "雨刷",
-        "emoji": "💦",
-        "image": "/lessons/l12/words/wiper.webp"
-      },
-      {
-        "id": "horn",
-        "en": "horn",
-        "zh": "喇叭",
-        "emoji": "📢",
-        "image": "/lessons/l12/words/horn.webp"
+        "emoji": "⭕⭕",
+        "image": "/lessons/l12/words/wheels.webp"
       },
       {
         "id": "door",
@@ -1180,57 +1167,80 @@
         "image": "/lessons/l12/words/door.webp"
       },
       {
-        "id": "driver",
-        "en": "driver",
-        "zh": "司机",
-        "emoji": "👨‍✈️",
-        "image": "/lessons/l12/words/driver.webp"
+        "id": "wipers",
+        "en": "wipers",
+        "zh": "雨刮器",
+        "emoji": "🧼",
+        "image": "/lessons/l12/words/wipers.webp"
+      },
+      {
+        "id": "horn",
+        "en": "horn",
+        "zh": "喇叭",
+        "emoji": "📢",
+        "image": "/lessons/l12/words/horn.webp"
       },
       {
         "id": "people",
         "en": "people",
         "zh": "人们",
-        "emoji": "👫",
+        "emoji": "🙋",
         "image": "/lessons/l12/words/people.webp"
       },
       {
-        "id": "baby",
-        "en": "baby",
+        "id": "babies",
+        "en": "babies",
         "zh": "宝宝",
         "emoji": "👶",
-        "image": "/lessons/l12/words/baby.webp"
+        "image": "/lessons/l12/words/babies.webp"
       },
       {
-        "id": "mommy",
-        "en": "mommy",
-        "zh": "妈妈",
-        "emoji": "👩",
-        "image": "/lessons/l12/words/mommy.webp"
+        "id": "mommies",
+        "en": "mommies",
+        "zh": "妈妈们",
+        "emoji": "🤱",
+        "image": "/lessons/l12/words/mommies.webp"
       },
       {
-        "id": "daddy",
-        "en": "daddy",
-        "zh": "爸爸",
+        "id": "daddies",
+        "en": "daddies",
+        "zh": "爸爸们",
         "emoji": "👨",
-        "image": "/lessons/l12/words/daddy.webp"
+        "image": "/lessons/l12/words/daddies.webp"
       }
     ],
     "phrases": [
       {
         "en": "The wheels on the bus go round and round.",
-        "zh": "公交车上的轮子转呀转。"
+        "zh": "公交车的轮子转呀转"
       },
       {
-        "en": "The wipers on the bus go swish, swish, swish.",
-        "zh": "公交车上的雨刷唰唰唰。"
+        "en": "The door on the bus goes open and shut.",
+        "zh": "公交车的门开了又关"
       },
       {
-        "en": "The horn on the bus goes beep, beep, beep.",
-        "zh": "公交车上的喇叭哔哔哔。"
+        "en": "The wipers on the bus go swish swish swish.",
+        "zh": "公交车雨刷刷刷刷"
       },
       {
-        "en": "The doors on the bus open and shut.",
-        "zh": "公交车上的门开开关关。"
+        "en": "The horn on the bus goes beep beep beep.",
+        "zh": "公交车喇叭哔哔哔"
+      },
+      {
+        "en": "The people on the bus go up and down.",
+        "zh": "车上乘客上上下下"
+      },
+      {
+        "en": "The babies on the bus go, \"Wah wah wah.\"",
+        "zh": "小宝宝哇哇大哭"
+      },
+      {
+        "en": "The mommies on the bus go, \"Shhh shhh shhh.\"",
+        "zh": "妈妈轻轻嘘嘘嘘"
+      },
+      {
+        "en": "The daddies on the bus go, \"Shhh shhh shhh.\"",
+        "zh": "爸爸轻轻嘘嘘嘘"
       }
     ]
   }

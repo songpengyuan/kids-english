@@ -66,7 +66,7 @@ export function createCourseProgress(opts: {
 
   /**
    * "学完"判定（新口径）：该课全部玩法都玩过 **且星级达标**——
-   * song/talk 需 ≥1 分，其余玩法（learn/quiz/memory/match/speak/order）需 ≥2 星
+   * song/talk 需 ≥1 分，其余玩法（learn/quiz/memory/match/speak/order/spinner）需 ≥2 星
    *（玩法 key/顺序统一由 activityKeys 提供）。
    * 旧的"玩过 ≥3 种玩法"口径会让 1 星的课也显示"全部通关"，语义失真。
    * @param keys 该课的玩法 key 列表（data/lessons 的 activityKeys 提供）

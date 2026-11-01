@@ -648,6 +648,8 @@ export interface components {
             colorPairs?: components["schemas"]["ColorPairOut"][] | null;
             /** Wordgroups */
             wordGroups?: components["schemas"]["WordGroupOut"][] | null;
+            /** Spinner */
+            spinner?: boolean | null;
         };
         /** LessonSummaryOut */
         LessonSummaryOut: {

@@ -114,6 +114,9 @@ export interface RawLesson {
   /** 词群（如 颜色 / 动物）：词表按群分组展示与练习。
    *  nameZh 供入口/关卡用中文名（学单词·颜色）；name 是玩法内切换器时代的英文显示名（Colors） */
   wordGroups?: { key: string; name: string; nameZh?: string }[];
+  /** 转盘复习玩法：开启后追加一个随机点读转盘——指针随机停到本课某词，自动朗读
+   *  图+英文，一轮遍历全部词后结算给星；不判对错。缺省 = 不启用（ADR-007 可缺省回退） */
+  spinner?: boolean;
 }
 
 /** 单词（映射后：补课时归属 + 资源路径化） */
@@ -175,6 +178,8 @@ export interface Lesson {
   /** 词群（如 l11：颜色 / 动物）：词表按这两个部分分组展示与练习。
    *  nameZh 供入口/关卡用中文名（学单词·颜色）；name 是玩法内切换器时代的英文显示名（Colors） */
   wordGroups?: { key: string; name: string; nameZh?: string }[];
+  /** 转盘复习玩法（随机点读一轮后结算；见 RawLesson.spinner） */
+  spinner?: boolean;
 }
 
 
@@ -251,9 +256,11 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
  * 曾经这里把 song 排在最后，而菜单/闯关玩法却按 song 打头；
  * 结果同一课出现两条“关卡顺序”，地图的「从这里开始」与下一关推进对不上。
  */
-export function activityKeys(lesson: Pick<Lesson, "phrases" | "words" | "wordGroups">): string[] {
+export function activityKeys(lesson: Pick<Lesson, "phrases" | "words" | "wordGroups" | "spinner">): string[] {
   const base = ["song", "learn", "quiz", "memory", "match", "speak"];
   if (lesson.phrases?.length) base.push("order", "talk");
+  // 转盘复习（spinner）：随机点读收尾，放在序列最后；不按词群拆分（一轮遍历全词表）
+  if (lesson.spinner) base.push("spinner");
   // 词群入口化（2026-10-25）：配了 wordGroups 的课，词驱动玩法按群展开成
   // 独立入口/关卡（learn:colors），入口名 =「学单词·颜色」。公共玩法
   // （song/match/order）不拆——song 已按群分轨在页内切，match 的颜色配对
@@ -339,6 +346,7 @@ export const ACT_NAMES: Record<string, string> = {
   speak: "跟我读",
   order: "拼句子",
   talk: "亲子对话",
+  spinner: "转盘",
   song: "学童谣", // 菜单/地图既有 UI 口径（曾独立写"学童谣"，入口统一后从 ACT_NAMES 来，保持一致）
   chest: "开宝箱",
 };

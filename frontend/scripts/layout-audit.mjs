@@ -106,6 +106,10 @@ const PAGES = [
   { name: "song", q: "#/course/l4/song" },
   { name: "talk", q: "#/course/l4/talk" },
   { name: "quest", q: "#/course/l4/game/quest?step=learn" },
+  // l12 新课样本：目录 + 学单词；spinner 是本轮新增的转盘玩法（独立组件，需全视口回归）
+  { name: "l12-menu", q: "#/course/l12?view=menu" },
+  { name: "l12-learn", q: "#/course/l12/learn" },
+  { name: "l12-spinner", q: "#/course/l12/spinner" },
   { name: "review", q: "#/course/review" },
   { name: "listen", q: "#/listen" },
   { name: "me", q: "#/me" },

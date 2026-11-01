@@ -1,7 +1,7 @@
 /**
  * 游戏模式关卡路径数据（多邻国式）。
  *
- * 把每个课程展开成"多个关卡"：课程的玩法序列（activityKeys：song/learn/quiz/memory/match/speak/[order/talk]）
+ * 把每个课程展开成"多个关卡"：课程的玩法序列（activityKeys：song/learn/quiz/memory/match/speak/[order/talk]/[spinner]）
  * 即关卡序列——每个玩法 = 一关，点关卡直接开玩（/course/:id/game/quest?step=<玩法>）。
  * 课内线性解锁：每课第一关总是可玩，同课前关完成解锁下一关；课程之间相互独立。
  *
@@ -46,6 +46,7 @@ export const ACT_EMOJI: Record<string, string> = {
   order: "✏️",
   talk: "💬",
   song: "🎵",
+  spinner: "🎡",
   chest: "🎁",
 };
 

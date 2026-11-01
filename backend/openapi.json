@@ -1793,6 +1793,17 @@
               }
             ],
             "title": "Wordgroups"
+          },
+          "spinner": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spinner"
           }
         },
         "type": "object",

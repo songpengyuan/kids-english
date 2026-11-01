@@ -17,6 +17,7 @@ import MatchView from "../../components/activities/MatchView.vue";
 import SongView from "../../components/activities/SongView.vue";
 import SpeakView from "../../components/activities/SpeakView.vue";
 import TalkView from "../../components/activities/TalkView.vue";
+import SpinnerView from "../../components/activities/SpinnerView.vue";
 import HeaderBar from "../../components/layout/HeaderBar.vue";
 import LessonResult from "../../components/lesson/LessonResult.vue";
 import LessonMenu from "../../components/lesson/LessonMenu.vue";
@@ -31,7 +32,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useViewport } from "../../composables/useViewport";
 import { useQuest, type QuestAct } from "../../composables/useQuest";
 import { useLessonFlow, type LessonStage } from "../../composables/useLessonFlow";
-import { BookOpen, Headphones, Layers, Link2, MessageCircle, Mic, Music, PenLine } from "@lucide/vue";
+import { BookOpen, Headphones, Layers, Link2, MessageCircle, Mic, Music, PenLine, RotateCw } from "@lucide/vue";
 
 const progress = useProgressStore();
 const streak = useStreakStore();
@@ -82,6 +83,8 @@ const ACT_META: Record<string, Omit<QuestAct, "key">> = {
   speak: { name: "跟我读", icon: Mic, tone: "pink", game: "speak", desc: "按住麦克风读单词" },
   order: { name: "拼句子", icon: PenLine, tone: "teal", game: "order", desc: "把单词拼成句子" },
   talk: { name: "亲子对话", icon: MessageCircle, tone: "teal", game: "talk", desc: "和爸爸妈妈练口语" },
+  // 转盘：六色已被八种玩法占满，复用 learn 的 orange（同为看图点读复习类，暖色同族）
+  spinner: { name: "转盘", icon: RotateCw, tone: "orange", game: "spinner", desc: "转一转读出指到的单词" },
 };
 const activities = computed<QuestAct[]>(() => {
   const l = lesson.value;
@@ -288,6 +291,7 @@ const STAGE_BINDINGS: Record<
   order: { component: OrderView, props: (c) => ({ lesson: c.lesson }) },
   song: { component: SongView, props: (c) => ({ lesson: c.lesson, group: c.group }) },
   talk: { component: TalkView, props: (c) => ({ lesson: c.lesson, words: c.words }) },
+  spinner: { component: SpinnerView, props: (c) => ({ words: c.words }) },
 };
 /** 当前玩法的渲染描述（menu/result 阶段为 null，模板据此落到菜单/结算分支） */
 const playStage = computed(() => {

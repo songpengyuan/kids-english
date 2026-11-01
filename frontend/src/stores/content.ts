@@ -72,6 +72,7 @@ function toLesson(raw: LessonOut): Lesson {
     // 契约里可能为 null（其他课不配）；转成前端可选字段
     colorPairs: raw.colorPairs ?? undefined,
     wordGroups: raw.wordGroups ?? undefined,
+    spinner: raw.spinner ?? undefined,
   };
 }
 

@@ -31,6 +31,8 @@ try {
     type: l.type,
     date: l.date || null,
     stageStyle: l.stageStyle ?? "cards",
+    // 转盘复习玩法开关（spinner）；非转盘课为 undefined，JSON.stringify 自动省略
+    spinner: l.spinner,
     song: {
       audio: l.song.audio,
       video: l.song.video,

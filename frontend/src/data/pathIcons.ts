@@ -1,7 +1,7 @@
 /**
  * 游戏模式矢量图标（lucide 风格 24×24 stroke path）。
  * 统一用矢量 icon 取代 emoji 表情：
- *  - 玩法图标：learn/quiz/memory/match/speak/order/talk/song
+ *  - 玩法图标：learn/quiz/memory/match/speak/order/talk/song/spinner
  *  - 课程图标：l4（波浪·水手）/ l5（号角·音乐人）等，按课时 id 取用。
  */
 
@@ -48,6 +48,11 @@ export const ICON_PATHS: Record<string, string[]> = {
     "M9 18V5l12-2v13",
     "M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z",
     "M21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z",
+  ],
+  // 转盘复习：顺时针旋转箭头（RotateCw）
+  spinner: [
+    "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8",
+    "M21 3v5h-5",
   ],
   // 课程：水手出海去（波浪）
   "l4": [

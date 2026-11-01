@@ -206,6 +206,8 @@ class LessonOut(BaseModel):
     # 颜色配对 / 词群（l11 Brown Bear）；其他课为 null
     colorPairs: list[ColorPairOut] | None = None
     wordGroups: list[WordGroupOut] | None = None
+    # 转盘复习玩法（随机点读一轮后结算、不判对错）；其他课为 null
+    spinner: bool | None = None
 
 
 class LessonSummaryOut(BaseModel):
