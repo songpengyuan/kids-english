@@ -140,17 +140,7 @@ const finished = computed(() => idx.value >= queue.value.length);
           >
             <div class="sector-pos">
               <span class="sector-label" :class="{ hit: visited.has(w.id) }" :style="labelStyle(i)">
-                <img
-                  v-if="!imgFail[w.id] && w.image"
-                  class="sector-img"
-                  loading="lazy"
-                  decoding="async"
-                  :src="w.image"
-                  :alt="w.en"
-                  @error="imgFail[w.id] = true"
-                />
-                <span v-else class="sector-emoji">{{ w.emoji }}</span>
-                <span class="sector-word">{{ w.en }}</span>
+                {{ w.en }}
               </span>
             </div>
           </div>
@@ -246,38 +236,33 @@ const finished = computed(() => idx.value >= queue.value.length);
 }
 .sector-pos {
   position: absolute;
-  top: 13%;
+  top: 7%;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   justify-content: center;
 }
+/* 扇区只放单词胶囊（词图由下方当前词卡大图呈现）：
+   9 个 40° 扇区在 300px 圆盘上空间有限，小图+文字必然互相重叠；
+   胶囊沿外沿一圈排布，白底保证在深浅交替扇区上可读。 */
 .sector-label {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
-  width: 92px;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--card-bg);
   color: var(--ink);
-}
-.sector-img {
-  width: clamp(28px, 7vw, 44px);
-  height: clamp(28px, 7vw, 44px);
-  object-fit: contain;
-}
-.sector-emoji {
-  font-size: clamp(22px, 5.5vw, 34px);
-  line-height: 1;
-}
-.sector-word {
   font-size: var(--fs-small);
   font-weight: var(--fw-mid);
-  max-width: 88px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
   white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
-.sector-label.hit .sector-word { color: var(--ok-dark); }
+.sector-label.hit {
+  background: var(--ok);
+  color: var(--white);
+}
 
 .hub {
   position: absolute;
@@ -391,10 +376,8 @@ const finished = computed(() => idx.value >= queue.value.length);
   .spinner-head { margin-bottom: var(--gap-xs); }
   .board { gap: var(--gap-xs); }
   .wheel-wrap { width: min(42vw, 38vh, 220px); }
-  .sector-label { width: 76px; gap: 1px; }
-  .sector-img { width: clamp(22px, 6vh, 32px); height: clamp(22px, 6vh, 32px); }
-  .sector-emoji { font-size: clamp(18px, 5vh, 26px); }
-  .sector-word { font-size: 12px; max-width: 72px; }
+  .sector-pos { top: 6%; }
+  .sector-label { padding: 1px 6px; font-size: 11px; }
   .hub { width: 46px; height: 46px; border-width: 2px; }
   .hub-ico { width: 22px; height: 22px; }
   .current {
