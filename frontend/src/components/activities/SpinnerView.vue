@@ -140,7 +140,17 @@ const finished = computed(() => idx.value >= queue.value.length);
           >
             <div class="sector-pos">
               <span class="sector-label" :class="{ hit: visited.has(w.id) }" :style="labelStyle(i)">
-                {{ w.en }}
+                <img
+                  v-if="!imgFail[w.id] && w.image"
+                  class="sector-img"
+                  loading="lazy"
+                  decoding="async"
+                  :src="w.image"
+                  :alt="w.en"
+                  @error="imgFail[w.id] = true"
+                />
+                <span v-else class="sector-emoji">{{ w.emoji }}</span>
+                <span class="sector-word">{{ w.en }}</span>
               </span>
             </div>
           </div>
@@ -236,33 +246,40 @@ const finished = computed(() => idx.value >= queue.value.length);
 }
 .sector-pos {
   position: absolute;
-  top: 7%;
+  top: 9%;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   justify-content: center;
 }
-/* 扇区只放单词胶囊（词图由下方当前词卡大图呈现）：
-   9 个 40° 扇区在 300px 圆盘上空间有限，小图+文字必然互相重叠；
-   胶囊沿外沿一圈排布，白底保证在深浅交替扇区上可读。 */
+/* 扇区：教材小图在上、单词在下，紧凑排在外沿一圈。
+   外移到 top:9%（半径更大、圆周间隔更宽）+ 小图收到 30px，
+   避免 9 个扇区图文互相重叠（旧版 top:13%、图 44px、标签宽 92px 必挤）。 */
 .sector-label {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--card-bg);
-  color: var(--ink);
-  font-size: var(--fs-small);
-  font-weight: var(--fw-mid);
-  line-height: 1.25;
-  white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-}
-.sector-label.hit {
-  background: var(--ok);
+  gap: 1px;
   color: var(--white);
+  line-height: 1.1;
 }
+.sector-img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  border-radius: 7px;
+}
+.sector-emoji {
+  font-size: 24px;
+  line-height: 1;
+}
+.sector-word {
+  font-size: 11px;
+  font-weight: var(--fw-mid);
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.sector-label.hit .sector-word { color: var(--ok); }
 
 .hub {
   position: absolute;
@@ -376,8 +393,10 @@ const finished = computed(() => idx.value >= queue.value.length);
   .spinner-head { margin-bottom: var(--gap-xs); }
   .board { gap: var(--gap-xs); }
   .wheel-wrap { width: min(42vw, 38vh, 220px); }
-  .sector-pos { top: 6%; }
-  .sector-label { padding: 1px 6px; font-size: 11px; }
+  .sector-pos { top: 8%; }
+  .sector-img { width: 24px; height: 24px; border-radius: 4px; }
+  .sector-emoji { font-size: 17px; }
+  .sector-word { font-size: 9px; }
   .hub { width: 46px; height: 46px; border-width: 2px; }
   .hub-ico { width: 22px; height: 22px; }
   .current {
