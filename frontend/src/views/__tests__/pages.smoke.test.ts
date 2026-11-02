@@ -150,8 +150,8 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   it("课程详情 game 视图（本课卡片列表：8 玩法卡 + 1 宝箱卡，序号本课内）", async () => {
     const w = await mountPage(CourseDetailView, "/course/l10", { view: "game" });
-    // 标题显示本课课程名 + 玩法名
-    expect(w.text()).toContain("丛林里散步");
+    // 顶栏标题显示本课英文名（课程详情顶栏不再显示中文 titleZh）
+    expect(w.text()).toContain("Walking In The Jungle");
     expect(w.text()).toContain("学单词");
     // 只画本课 9 行（8 玩法卡 + 宝箱奖励卡），序号本课内 1..8
     const rows = w.findAll(".lll-row");

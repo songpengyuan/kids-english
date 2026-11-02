@@ -121,7 +121,7 @@ function openActivity(key: string) {
     @back="goBack"
   >
     <template #title>
-      <span>{{ lesson?.emoji }} {{ lesson?.titleZh || "课程" }}</span>
+      <span>{{ lesson?.emoji }} {{ lesson?.title || "课程" }}</span>
     </template>
     <!-- 右上角：地图 / 卡片目录 切换 -->
     <template #right>
