@@ -258,6 +258,10 @@ watch(activeGroup, () => {
  *    不该藏在切换后面）。song 页内手动切换直接改 activeGroup，不经过本 watch
  *    （stage 没变）。 */
 watch(stage, (s) => {
+  // 换玩法 = 新开一局：先清掉上一关残留的进度/总量；新玩法挂载后立即重新上报。
+  // （song 等不发 total 的玩法若沿用旧值，顶部会错误摆出上一关的圆点）
+  playPct.value = 0;
+  playTotal.value = 0;
   const firstTrack = lesson.value?.song.group;
   if (s === "song" && firstTrack && wordGroups.value.some((g) => g.key === firstTrack)) {
     activeGroup.value = firstTrack;
@@ -317,14 +321,12 @@ const playStage = computed(() => {
       @back="back"
     >
       <template #title>
+        <!-- 本局进度圆点：只反映当前这一步数（答题/配对/拼句/转动）；
+             课程完成度由地图/卡片目录表达，不在局内顶栏重复 -->
         <LessonProgressHeader
           v-if="isPlay"
-          :activities="activities"
-          :stage="stage"
           :play-pct="playPct"
           :play-total="playTotal"
-          :current-key="stage"
-          :has-stars="(k) => showStars(k) > 0"
         />
         <button
           v-else
