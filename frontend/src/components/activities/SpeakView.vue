@@ -19,20 +19,26 @@ const progress = useProgressStore();
  * 跟我读：双模式会话（ASR 自动打分 / 录音回放 + 家长判定）在 useSpeechSession 里，
  * 这里只做音效、掌握度落库与渲染。
  */
-const session = useSpeechSession(computed(() => props.words), {
-  onCorrect: (w) => {
-    sfxCorrect();
-    // 撒花只在关卡完成时（useLessonFlow）触发，单个词读对只用音效+触感反馈
-    speak(w.en, { lessonId: w.lessonId, wordId: w.id });
-    progress.recordWord(w.lessonId, w.id, { correct: 1 }); // SRS 进一级
+const session = useSpeechSession(
+  computed(() => props.words),
+  {
+    onCorrect: (w) => {
+      sfxCorrect();
+      // 撒花只在关卡完成时（useLessonFlow）触发，单个词读对只用音效+触感反馈
+      speak(w.en, { lessonId: w.lessonId, wordId: w.id });
+      progress.recordWord(w.lessonId, w.id, { correct: 1 }); // SRS 进一级
+    },
+    onWrong: (w) => {
+      sfxWrong();
+      progress.recordWord(w.lessonId, w.id, { wrong: 1 }); // 打回 stage 0 → 复习队列
+    },
+    // 完成一次真实张口尝试即计"今日开口"（鼓励向，retry/录音也计；不影响星级）
+    onSpeakAttempt: () => progress.addSpeakAttempt(),
   },
-  onWrong: (w) => {
-    sfxWrong();
-    progress.recordWord(w.lessonId, w.id, { wrong: 1 }); // 打回 stage 0 → 复习队列
-  },
-  // 完成一次真实张口尝试即计"今日开口"（鼓励向，retry/录音也计；不影响星级）
-  onSpeakAttempt: () => progress.addSpeakAttempt(),
-});
+  // 跟我读：ASR 自动打分模式也并行录一份本机回放（仅内存、不上传不入库）；
+  // TalkView 不传此开关，保持其原有行为
+  { captureVoice: true }
+);
 
 // 进入跟读页就预请求麦克风权限（在用户手势链外的 mount 阶段，部分浏览器会拒绝；
 // 但至少能提前暴露权限状态，避免孩子点麦克风时才弹窗卡住）
@@ -68,6 +74,12 @@ const {
   retry,
 } = session;
 
+/**
+ * 主卡后方可见的待读卡层数（最多 2 张）：当前这张在最前，后面还有几张就露几层，
+ * 直观表达"跟读一个少一个"；最后一张（idx=total-1）时为 0。纯装饰、不响应点击。
+ */
+const backCount = computed(() => Math.min(2, Math.max(0, total.value - idx.value - 1)));
+
 /** 词进度 → 顶栏进度条（多邻国式：跟读逐词有进度）；词总数同步上报显示 x/y */
 watch(
   [idx, total],
@@ -94,13 +106,22 @@ function next() {
     />
 
     <div class="word-zone">
-      <div class="pic anim-pop" data-haptic @click="hearExample">
-        <img
-          v-if="!imgFailed && cur.image"
-          :src="cur.image || undefined"
-          @error="imgFailed = true"
-        />
-        <span v-else class="fallback-emoji">{{ cur.emoji }}</span>
+      <div class="deck" :key="cur.id">
+        <span
+          v-for="n in backCount"
+          :key="`back-${n}`"
+          class="deck-back"
+          :class="`layer-${n}`"
+          aria-hidden="true"
+        ></span>
+        <div class="pic anim-pop" data-haptic @click="hearExample">
+          <img
+            v-if="!imgFailed && cur.image"
+            :src="cur.image || undefined"
+            @error="imgFailed = true"
+          />
+          <span v-else class="fallback-emoji">{{ cur.emoji }}</span>
+        </div>
       </div>
       <div class="word-text">
         <button class="word" @click="hearExample">{{ cur.en }}</button>
@@ -144,9 +165,19 @@ function next() {
 
     <!-- 反馈 -->
     <SafeBottom v-if="status === 'feedback'" class="feedback anim-fade-up" :gap="28">
+      <!-- 本机录音回放（ASR / record 通用；无原生控件，仅承载播放，不显示进度条） -->
+      <audio v-if="recUrl" ref="recAudio" :src="recUrl" class="replay"></audio>
+      <!-- 非 record 待判定态：轻量手动重放；record 待判定态用下方醒目大圆喇叭，避免重复入口 -->
+      <button
+        v-if="recUrl && !(mode === 'record' && grade === '')"
+        class="replay-chip"
+        @click="replayRec"
+        aria-label="再听一遍自己的发音"
+      >
+        <Volume2 class="k-ico" />再听一遍
+      </button>
       <template v-if="mode === 'record' && grade === ''">
-        <!-- 停止录音已自动回放一次；这里只保留一个醒目的二次回放入口（无进度条，小朋友无需看到） -->
-        <audio ref="recAudio" :src="recUrl" class="replay"></audio>
+        <!-- 停止录音已自动回放一次；这里只保留一个醒目的二次回放入口 -->
         <!-- 大圆喇叭：想再听一次自己的发音就点它 -->
         <button class="replay-btn anim-pop" @click="replayRec" aria-label="再听一遍">
           <Volume2 class="k-ico" />
@@ -218,24 +249,54 @@ function next() {
   flex: none;
   min-height: 0;
 }
+/* 牌垛容器：主卡在最前，后方叠 1–2 张纯装饰待读卡，表达"跟读一个少一个" */
+.deck {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.deck-back {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  pointer-events: none;
+}
+.deck-back.layer-1 {
+  transform: translate(-4px, calc(var(--gap-xs) * -0.6));
+  opacity: 0.9;
+}
+.deck-back.layer-2 {
+  transform: translate(4px, calc(var(--gap-xs) * -1.2));
+  opacity: 0.75;
+}
 .pic {
   /* 同时受高和宽约束：iPad 横屏不至于过大，手机竖屏也不会占满整屏 */
+  position: relative;
+  z-index: 1;
   width: clamp(110px, min(40vh, 30vw), 300px);
   height: clamp(110px, min(40vh, 30vw), 300px);
   flex: none;
   background: var(--card-bg);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-hard);
+  /* 贴纸描边 + 实心厚度阴影，多邻国式"厚卡" */
+  box-shadow: var(--sticker), var(--shadow-hard);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--fs-emoji-xl);
   cursor: pointer;
-  transition: transform 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
   overflow: hidden;
 }
+/* 按压下沉：立体厚度随按下"变薄"，给孩子实体按钮的手感 */
 .pic:active {
-  transform: scale(0.94);
+  transform: translateY(var(--press)) scale(0.98);
+  box-shadow: var(--sticker), var(--shadow-soft);
 }
 .pic img {
   width: 80%;
@@ -408,8 +469,30 @@ function next() {
   font-weight: var(--fw-strong);
   font-size: var(--fs-small);
 }
-.replay.big {
-  height: 44px;
+/* 轻量手动重放胶囊：ASR 反馈 / record 判定后，想再听自己发音时点这里 */
+.replay-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap-min);
+  padding: 4px 16px;
+  border: 1.5px solid var(--line);
+  background: var(--card-bg);
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+  font-weight: var(--fw-strong);
+  font-size: var(--fs-small);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.replay-chip .k-ico {
+  width: 20px;
+  height: 20px;
+}
+.replay-chip:active {
+  transform: translateY(1px);
 }
 
 .feedback {
@@ -493,6 +576,14 @@ function next() {
   .pic {
     width: 76px;
     height: 76px;
+  }
+  /* 矮屏横屏：空间紧张，隐藏纯装饰牌垛层，优先保证主卡与按钮可达 */
+  .deck-back {
+    display: none;
+  }
+  .replay-chip {
+    min-height: 36px;
+    padding: 4px 12px;
   }
   .mic {
     width: 58px;

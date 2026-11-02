@@ -9,7 +9,7 @@
  * 便于单测与复用。
  */
 import { computed, nextTick, onBeforeUnmount, ref, type Ref } from "vue";
-import { speak } from "../services/speech";
+import { speak, stopSpeaking } from "../services/speech";
 import {
   asrSupported,
   createRecorder,
@@ -41,7 +41,22 @@ export interface SpeechSessionHooks {
   onSpeakAttempt?: (word: Word) => void;
 }
 
-export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks = {}) {
+export interface SpeechSessionOptions {
+  /**
+   * ASR 自动打分模式是否也并行录下孩子声音、用于本机回放（不上传、不入库）。
+   * 默认 false：亲子对话 TalkView 不传，保持"仅 record 降级模式录音"的现状；
+   * 跟我读 SpeakView 传 true，让桌面/Android 等支持识别的设备也能自动重放 + 手动重放。
+   * record 降级模式无论此开关如何都照常录音（家长判定本身依赖回放）。
+   */
+  captureVoice?: boolean;
+}
+
+export function useSpeechSession(
+  words: Ref<Word[]>,
+  hooks: SpeechSessionHooks = {},
+  options: SpeechSessionOptions = {}
+) {
+  const captureVoice = options.captureVoice === true;
   const mode = ref<SpeechMode>(asrSupported() ? "asr" : "record");
   const idx = ref(0);
   const status = ref<SpeechStatus>("idle");
@@ -73,12 +88,57 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
     if (ok && attempts.value === 1) firstAttemptOk.value++;
   }
 
+  /* ---------- 本机录音回放资源管理（仅内存 ObjectURL，不入库、不上传） ---------- */
+  function ensureRecorder() {
+    if (!recorder) recorder = createRecorder();
+    return recorder;
+  }
+  /** 暂停当前回放并释放上一条 ObjectURL */
+  function clearRecordingUrl() {
+    if (recAudio.value) {
+      recAudio.value.pause?.();
+      recAudio.value.currentTime = 0;
+    }
+    if (recUrl.value) {
+      URL.revokeObjectURL(recUrl.value);
+      recUrl.value = "";
+    }
+  }
+  /** 采用新录音 url：先释放旧的，再挂上本次的 */
+  function adoptRecordingUrl(url: string | null) {
+    clearRecordingUrl();
+    recUrl.value = url ?? "";
+  }
+  /** 停止并行录音并采用结果 url（非空才保留用于回放） */
+  async function stopCaptureRecorder(): Promise<string | null> {
+    if (!recorder) return null;
+    try {
+      const url = await recorder.stop();
+      adoptRecordingUrl(url);
+      return url;
+    } catch {
+      return null;
+    }
+  }
+  /** 静默丢弃一次并行录音（没出声 / 降级 / 重试）：停录、清 url，不回放、不计数 */
+  async function stopCaptureRecorderSilent() {
+    if (!recorder) return;
+    try {
+      await recorder.stop();
+    } catch {
+      /* 可能本就未启动，忽略 */
+    }
+    clearRecordingUrl();
+  }
+
   /* ---------- ASR 主路径 ---------- */
-  function startAsr() {
+  async function startAsr() {
     if (recognizer) {
       recognizer.abort();
       recognizer = null;
     }
+    // 新一轮尝试先清掉上一条回放与残留录音，避免旧声音/旧按钮残留
+    await stopCaptureRecorderSilent();
     status.value = "listening";
     grade.value = "";
     heard.value = "";
@@ -88,16 +148,26 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
       fallbackToRecord("语音识别不可用");
       return;
     }
+    // captureVoice 开启且设备支持时，与识别并行录一份仅本机回放的声音（不参与打分、不上传）
+    if (captureVoice && canRecord) {
+      try {
+        await ensureRecorder().start();
+      } catch {
+        /* 录音不可用不阻塞 ASR 打分，只是没有回放源 */
+      }
+    }
     const my = recognizer;
-    my.onFinish((err: string | null, alternatives: string[]) => {
-      if (recognizer !== my) return; // 已被新的尝试取代
+    my.onFinish(async (err: string | null, alternatives: string[]) => {
+      if (recognizer !== my) return; // 已被新的尝试取代（新一轮已自行收尾旧录音）
       recognizer = null;
       if (err === "not-allowed" || err === "service-not-allowed") {
         micBlocked.value = true;
+        await stopCaptureRecorderSilent();
         fallbackToRecord("麦克风权限被拒绝");
         return;
       }
       if (err === "network") {
+        await stopCaptureRecorderSilent();
         fallbackToRecord("识别服务连不上，已改用录音模式");
         return;
       }
@@ -107,6 +177,7 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
         heard.value = "";
         markAttempt(false);
         hooks.onWrong?.(cur.value);
+        await stopCaptureRecorderSilent(); // 没出声：丢弃并行录音，不回放、不计数
         return;
       }
       // 正常结束（err 为 null 或 aborted）
@@ -123,6 +194,11 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
       } else {
         markAttempt(true);
         hooks.onCorrect?.(cur.value, attempts.value === 1);
+      }
+      // 并行录音收尾：拿到非空声音才挂上回放并自动播一次；空录音不显示回放按钮
+      if (captureVoice && recorder) {
+        const url = await stopCaptureRecorder();
+        if (url) autoReplay();
       }
     });
     my.start();
@@ -160,30 +236,28 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
     recTimer = setTimeout(() => stopRecord(), 5000);
   }
 
-  function stopRecord() {
+  async function stopRecord() {
     if (recTimer) { clearTimeout(recTimer); recTimer = null; }
     if (!recorder) return;
-    recorder.stop().then((url: string | null) => {
-      if (!url) return;
-      // 录到了声音 = 一次张口尝试（家长后续"读对了/再试一次"只是二次确认，不重复计）
-      hooks.onSpeakAttempt?.(cur.value);
-      if (recUrl.value) URL.revokeObjectURL(recUrl.value);
-      recUrl.value = url;
-      grade.value = ""; // 等家长判定
-      status.value = "feedback";
-      // 停止录音后自动回放一次自己的发音（家长判定前先听一遍）
-      autoReplay();
-    });
+    const url = await recorder.stop();
+    if (!url) return; // 空录音：保持 listening，沿用原语义让孩子再点一次
+    // 录到了声音 = 一次张口尝试（家长后续"读对了/再试一次"只是二次确认，不重复计）
+    hooks.onSpeakAttempt?.(cur.value);
+    adoptRecordingUrl(url);
+    grade.value = ""; // 等家长判定
+    status.value = "feedback";
+    // 停止录音后自动回放一次自己的发音（家长判定前先听一遍）
+    autoReplay();
   }
 
-  /** 自动回放：等 <audio> 元素渲染并挂上 src 后再播一次 */
+  /** 自动回放：等 <audio> 元素渲染并挂上 src 后再播一次（先掐断示范 TTS，避免人声叠加） */
   function autoReplay() {
     nextTick(() => {
       const a = recAudio.value;
-      if (a) {
-        a.currentTime = 0;
-        a.play().catch(() => {});
-      }
+      if (!a) return;
+      stopSpeaking();
+      a.currentTime = 0;
+      a.play().catch(() => {});
     });
   }
 
@@ -192,24 +266,26 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
    * .input-bar）都只接了 @click —— 键面写着"按住"、实际是点击切换。
    * 键面必须等于行为，所以统一按点击语义描述（对孩子也更友好：长按更难控制）。 */
   function startMic() {
-    if (mode.value === "asr") startAsr();
-    else startRecord();
+    // 开始说话前先掐断示范 TTS：避免把示范人声录进孩子录音，也避免示范音与回放抢声道
+    stopSpeaking();
+    if (mode.value === "asr") void startAsr();
+    else void startRecord();
   }
   function stopMic() {
     if (mode.value === "asr") {
       if (recognizer) recognizer.stop();
       return;
     }
-    stopRecord();
+    void stopRecord();
   }
 
-  /** 复读：重播本词录音（读完不满意再听一遍） */
+  /** 复读：重播本词录音（读完不满意再听一遍）；先掐断示范音再从头播 */
   function replayRec() {
     const a = recAudio.value;
-    if (a) {
-      a.currentTime = 0;
-      a.play().catch(() => {});
-    }
+    if (!a) return;
+    stopSpeaking();
+    a.currentTime = 0;
+    a.play().catch(() => {});
   }
 
   /** 家长判定（录音模式） */
@@ -228,6 +304,9 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
   function retry() {
     status.value = "idle";
     grade.value = "";
+    // 不满意重来：丢弃上一条并行录音与回放，避免旧声音被重播
+    void stopCaptureRecorderSilent();
+    clearRecordingUrl();
   }
 
   /** 下一个词；返回 true = 本关结束（用 stars 上报） */
@@ -239,10 +318,7 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
     grade.value = "";
     heard.value = "";
     imgFailed.value = false;
-    if (recUrl.value) {
-      URL.revokeObjectURL(recUrl.value);
-      recUrl.value = "";
-    }
+    clearRecordingUrl(); // 释放上一条录音 ObjectURL 并停掉回放，不让旧词声音串到下一词
     return false;
   }
 
@@ -252,7 +328,7 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
     if (recTimer) clearTimeout(recTimer);
     recTimer = null;
     if (recognizer) recognizer.abort();
-    if (recUrl.value) URL.revokeObjectURL(recUrl.value);
+    clearRecordingUrl();
     if (recorder && recorder.release) recorder.release();
   }
   onBeforeUnmount(cleanup);

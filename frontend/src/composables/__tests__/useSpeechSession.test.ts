@@ -15,7 +15,7 @@ vi.mock("../../utils/speechScore", () => ({
   gradeScore: vi.fn(),
   scorePronunciation: vi.fn(),
 }));
-vi.mock("../../services/speech", () => ({ speak: vi.fn() }));
+vi.mock("../../services/speech", () => ({ speak: vi.fn(), stopSpeaking: vi.fn() }));
 vi.mock("../../utils/speakSession", () => ({ speakStars: () => 3 }));
 
 import { createRecorder, createWordRecognizer, asrSupported, scorePronunciation, gradeScore } from "../../utils/speechScore";
@@ -198,5 +198,125 @@ describe("useSpeechSession · onSpeakAttempt 开口旁路计数（鼓励向，�
     s.stopMic();
     await flush();
     expect(onSpeakAttempt).not.toHaveBeenCalled();
+  });
+});
+
+describe("useSpeechSession · ASR 并行录音本机回放（captureVoice）", () => {
+  let finishCb: ((err: string | null, alt: string[]) => void) | null = null;
+  const recognizerStub = {
+    start: vi.fn(),
+    stop: vi.fn(),
+    abort: vi.fn(),
+    onFinish: vi.fn((cb: (err: string | null, alt: string[]) => void) => {
+      finishCb = cb;
+    }),
+  };
+  function flush() {
+    return new Promise((r) => setTimeout(r, 0));
+  }
+  function makeRecorder(stopUrl: string | null) {
+    return {
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockResolvedValue(stopUrl),
+      release: vi.fn(),
+    };
+  }
+  function makeFakeAudio() {
+    const play = vi.fn().mockResolvedValue(undefined);
+    const el = { currentTime: 0, play, pause: vi.fn() } as unknown as HTMLAudioElement;
+    return { play, el };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    finishCb = null;
+    vi.mocked(asrSupported).mockReturnValue(true);
+    vi.mocked(createWordRecognizer).mockReturnValue(recognizerStub as never);
+    vi.mocked(scorePronunciation).mockReturnValue({ score: 0.9, heard: "foot" });
+    vi.mocked(gradeScore).mockReturnValue("perfect");
+  });
+
+  it("captureVoice=true：ASR 正常且录到声音 → 并行启动录音、非空 url 自动回放一次、开口计数不重复", async () => {
+    const recorderMock = makeRecorder("blob:asr-rec");
+    vi.mocked(createRecorder).mockReturnValue(recorderMock as never);
+    const { play, el } = makeFakeAudio();
+    const onSpeakAttempt = vi.fn();
+    const s = useSpeechSession(ref([word]), { onSpeakAttempt }, { captureVoice: true });
+    s.recAudio.value = el;
+
+    s.startMic();
+    await flush();
+    expect(recorderMock.start).toHaveBeenCalledTimes(1); // 与识别并行录音
+    finishCb!(null, ["foot"]);
+    await flush();
+    await flush();
+
+    expect(recorderMock.stop).toHaveBeenCalledTimes(1);
+    expect(s.recUrl.value).toBe("blob:asr-rec");
+    expect(play).toHaveBeenCalledTimes(1); // 自动回放一次
+    expect(onSpeakAttempt).toHaveBeenCalledTimes(1); // ASR 计一次，并行录音不重复计
+  });
+
+  it("captureVoice 默认 false：ASR 不启动录音、无回放（TalkView 行为零变化的回归保护）", async () => {
+    const recorderMock = makeRecorder("blob:should-not-be-used");
+    vi.mocked(createRecorder).mockReturnValue(recorderMock as never);
+    const { play, el } = makeFakeAudio();
+    const s = useSpeechSession(ref([word])); // 不传第三参
+    s.recAudio.value = el;
+
+    s.startMic();
+    await flush();
+    expect(recorderMock.start).not.toHaveBeenCalled();
+    finishCb!(null, ["foot"]);
+    await flush();
+    expect(s.recUrl.value).toBe("");
+    expect(play).not.toHaveBeenCalled();
+  });
+
+  it("captureVoice=true 但录音为空 → 不回放、recUrl 清空，打分与开口计数照常", async () => {
+    const recorderMock = makeRecorder(null);
+    vi.mocked(createRecorder).mockReturnValue(recorderMock as never);
+    const { play, el } = makeFakeAudio();
+    const onSpeakAttempt = vi.fn();
+    const s = useSpeechSession(ref([word]), { onSpeakAttempt }, { captureVoice: true });
+    s.recAudio.value = el;
+
+    s.startMic();
+    await flush();
+    finishCb!(null, ["foot"]);
+    await flush();
+    await flush();
+
+    expect(s.recUrl.value).toBe("");
+    expect(play).not.toHaveBeenCalled();
+    expect(onSpeakAttempt).toHaveBeenCalledTimes(1);
+    expect(s.status.value).toBe("feedback");
+  });
+
+  it("next() 推进到下一词：释放上一条 ObjectURL 并清空 recUrl，旧声音不串到新词", async () => {
+    const recorderMock = makeRecorder("blob:old");
+    vi.mocked(createRecorder).mockReturnValue(recorderMock as never);
+    const revoke = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    try {
+      const { el } = makeFakeAudio();
+      const word2: Word = { id: "w2", en: "hand", zh: "手", emoji: "✋", lessonId: "l1" };
+      const s = useSpeechSession(ref([word, word2]), {}, { captureVoice: true });
+      s.recAudio.value = el;
+
+      s.startMic();
+      await flush();
+      finishCb!(null, ["foot"]);
+      await flush();
+      await flush();
+      expect(s.recUrl.value).toBe("blob:old");
+
+      const ended = s.next();
+      expect(ended).toBe(false);
+      expect(revoke).toHaveBeenCalledWith("blob:old");
+      expect(s.recUrl.value).toBe("");
+      expect(s.idx.value).toBe(1);
+    } finally {
+      revoke.mockRestore();
+    }
   });
 });

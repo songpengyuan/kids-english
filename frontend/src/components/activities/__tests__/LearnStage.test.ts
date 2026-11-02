@@ -9,7 +9,7 @@ import { describe, expect, it, vi, beforeEach, beforeAll, afterEach } from "vite
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 
-vi.mock("../../../services/speech", () => ({ speak: vi.fn() }));
+vi.mock("../../../services/speech", () => ({ speak: vi.fn(), stopSpeaking: vi.fn() }));
 vi.mock("../../../services/effects", () => ({
   sfxTap: vi.fn(),
   sfxCorrect: vi.fn(),
