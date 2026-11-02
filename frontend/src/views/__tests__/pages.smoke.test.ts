@@ -148,19 +148,23 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   /* ---------- 课程域 ---------- */
 
-  it("课程详情 game 视图（本课地图，只服务本课关卡）", async () => {
+  it("课程详情 game 视图（本课卡片列表：8 玩法卡 + 1 宝箱卡，序号本课内）", async () => {
     const w = await mountPage(CourseDetailView, "/course/l10", { view: "game" });
-    // 标题显示本课课程名 + 关卡列表（唱童谣/学单词…）
+    // 标题显示本课课程名 + 玩法名
     expect(w.text()).toContain("丛林里散步");
     expect(w.text()).toContain("学单词");
-    // 只画本课 9 关（8 玩法 + 宝箱），序号本课内 1..9
-    const nodes = w.findAll(".gp-level");
-    expect(nodes).toHaveLength(9);
-    expect(nodes[0].attributes("aria-label")).toContain("第1关");
-    expect(nodes[8].attributes("aria-label")).toContain("第9关");
+    // 只画本课 9 行（8 玩法卡 + 宝箱奖励卡），序号本课内 1..8
+    const rows = w.findAll(".lll-row");
+    expect(rows).toHaveLength(9);
+    expect(rows[0].find("button").attributes("aria-label")).toContain("第1关");
+    // 末行为宝箱奖励卡（不再是第 9 个玩法关，无“第N关”序号）
+    expect(rows[rows.length - 1].find("button").attributes("aria-label")).toContain("宝箱");
     expect(w.html()).not.toContain("第22关");
-    // 地图自持滚动容器（本课地图曾漏写 overflow，底部关卡被裁掉且滚不动）
-    expect(w.find(".game-path-scroll").exists()).toBe(true);
+    // 玩法全开放：非宝箱行不得出现锁标记（锁仅保留给未达标宝箱）
+    const playRows = rows.filter((r) => !r.classes("lll-row--chest"));
+    expect(playRows.some((r) => r.find(".st-locked").exists())).toBe(false);
+    // 卡片列表自持纵向滚动容器
+    expect(w.find(".lll-scroll").exists()).toBe(true);
     expect(errors).toEqual([]);
   });
 

@@ -3,16 +3,15 @@
  * 课程详情页（#/course/:id 课时本位，?view=game|menu 切地图/卡片）——统一入口。
  *
  * 两个视图共用同一个 header（标题/返回/资源 badges），右上角切换：
- *  - game：本课闯关地图（孩子主入口，默认）
+ *  - game：本课关卡卡片列表（孩子主入口，默认；2026-11 由蛇形地图重设计为大卡列表）
  *  - menu：学习卡片目录（家长陪练视角，按玩法选）
  *
- * 点卡片里的玩法仍跳到独立玩法路由（/course/:id/learn 等），
- * 做完回此页（默认落地图视图）。
+ * 点玩法卡跳闯关玩法页（/course/:id/game/quest?step=），做完回此页（默认落列表视图）。
  */
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import PageShell from "../../components/ui/PageShell.vue";
-import GamePath from "../../components/game/GamePath.vue";
+import LessonLevelList from "../../components/game/LessonLevelList.vue";
 import LessonMenu from "../../components/lesson/LessonMenu.vue";
 import { activityKeys, actDisplayName, getLesson as getLocalLesson, splitActKey, type Lesson } from "../../data/lessons";
 import type { QuestAct } from "../../composables/useQuest";
@@ -148,8 +147,8 @@ function openActivity(key: string) {
       </div>
     </template>
 
-    <!-- 地图视图 -->
-    <GamePath v-if="lesson && view === 'game'" :lesson="lesson" />
+    <!-- 本课关卡卡片列表（game 视图；全站总地图 #/game 仍走 GamePath，不受影响） -->
+    <LessonLevelList v-if="lesson && view === 'game'" :lesson="lesson" />
 
     <!-- 卡片目录视图 -->
     <div v-else-if="view === 'menu'" class="menu-wrap">
