@@ -228,7 +228,8 @@
 |------|------|------|
 | `BottomNav` | `components/layout/BottomNav.vue` | 底部三 tab（学习 / 磨耳朵 / 我的），三个都是 `<button>`。中间位**恒为磨耳朵入口**（全站唯一入口），整格只有一种行为 = 进/留在 `/listen`；**只有图标随播放状态变**：没在播 → 🎧，正在播 → 三根跳动的声波条（`--brand` 色，`prefers-reduced-motion` 下退化为静态高矮波）。**中间位不放播放/暂停键** |
 | `SafeBottom` | `components/layout/SafeBottom.vue` | 底部安全距离共用容器 |
-| `HeaderBar` | `components/layout/HeaderBar.vue` | **全站唯一子页面顶栏**；返回钮 `--tap-min` 正圆 + 标题占中列（flex 分配，装不下省略号）+ 右侧 `showBadges` 徽章或 `#right` 插槽。标题**不再绝对居中**：右侧簇宽的页面（课程详情 3 徽章+切换 ≈192px）在 390px 下绝对居中必然重叠，flex 中列让重叠在结构上不可能发生 |
+| `HeaderBar` | `components/layout/HeaderBar.vue` | **全站唯一子页面顶栏**；返回钮 `--tap-min` 正圆 + 标题占中列（flex 分配，装不下省略号）+ 右侧 `showBadges` 徽章或 `#right` 插槽。标题**不再绝对居中**：右侧簇宽的页面（课程详情 3 徽章+切换 ≈192px）在 390px 下绝对居中必然重叠，flex 中列让重叠在结构上不可能发生。**玩法局（`isPlay`）不出徽章**（星/贝壳/火焰是累计总量，局内数值不变，且其中两枚是按钮会把孩子带离本局；奖励反馈放在 `menu` / `result`）。不出徽章时右侧簇补一个 `--tap-min` 宽的占位，中列才不会偏右 26px |
+| `LessonProgressHeader` | `components/lesson/LessonProgressHeader.vue` | 玩法局顶栏中列：`playTotal >= MIN_DOTS` → 逐个点亮的圆点；**不足则显示弱化玩法名**（`label`）。**这条判断只在这里**，页面不再抄一份 `playTotal > 1`、也不再列举"哪些玩法没步数"的 stage 名单——玩法发不发 `emit("total")` 就是唯一真源，加新玩法模板一行都不用动 |
 
 ### 9.2 通用 UI（③ 层）
 
@@ -444,6 +445,9 @@ token，却够不到 768 拿不到播放页双栏。按 ListenView 注释里的�
 - ❌ **在 `overflow: auto` 的 flex 容器上写 `justify-content: flex-end`**（想让"消息/列表沉底"）——flex 的经典陷阱：内容一超出就被顶到起始边**之上**，`scrollHeight` 仍等于 `clientHeight`、`scrollTop` 恒为 0，**永远滚不回去**。亲子对话 5 条消息时首条落在 -766px，家长问句再也看不到。要沉底就给首个子项 `margin-top: auto`（内容超出时余量归零，溢出方向变回向下）
 - ❌ 用**脱离路由的全局状态**决定导航可见性（`showNav` 曾因 `nowPlaying` 残留，在 `/course` 上整条底栏消失）——可见性判断必须有路径锚点
 - ❌ 键面写"按住…"却只接 `@click`（点击切换）——键面必须等于行为。`LearnStage` / `TalkView` 的麦克风键与 `useSpeechSession` 注释都曾写"按住说话，松开停止"，实际是点一下开始、再点一下结束
+- ❌ **在玩法局顶栏挂全局徽章**（星/贝壳/火焰）——它们是累计总量，局内数值根本不变（星星只在玩法 `done` 时写），而其中两枚是**按钮**，孩子答题中点一下就被带离本局。奖励反馈放在 `menu` / `result`
+- ❌ **在页面模板里列举 stage 名单判断"这个玩法有没有步数"**（`stage === 'learn' || stage === 'song'`）——这是"哪些玩法发 `total`"的缓存副本，加一个无步数玩法就静默漏掉、中列变空白。真源是玩法发不发 `emit("total")`，判断归 `LessonProgressHeader` 一处
+- ❌ 把同一个阈值抄成两份（曾 `playTotal > 1` 在 `LessonView` 模板与 `LessonProgressHeader` 内部各一份）——改阈值必漏一处
 
 ## 14. 守卫（把规范变成会失败的检查）
 

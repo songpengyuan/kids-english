@@ -196,6 +196,11 @@ const isPlay = computed(() => stage.value !== "menu" && stage.value !== "result"
 const playPct = ref(0);
 /** 本局总量（题数/页数/对数/词数/轮数）与已完成量 → 顶栏显示 x/y，孩子知道一共要做多少 */
 const playTotal = ref(0);
+/** 顶栏中列的弱化玩法名（无步数玩法用，如唱童谣）：取路由 meta.title（学单词/唱童谣…）。
+ *  ⚠️ 这里**不再列举 stage 名单**判断"有没有步数"——真源是各玩法发不发 total，
+ *  判断归 LessonProgressHeader 自己（MIN_DOTS）。页面列名单一加玩法就漏一项，
+ *  而且和本文件"加玩法 = 注册表加一行，模板不动"的契约相冲突。 */
+const stageLabel = computed(() => (route.meta.title as string) ?? "");
 
 /* ---------- 词群（l11 颜色 / 动物） ----------
  * 词群入口化（2026-10-25）：配 wordGroups 的课，词驱动玩法在菜单/地图展开成
@@ -323,20 +328,18 @@ const playStage = computed(() => {
       @back="back"
     >
       <template #title>
-        <!-- 本局进度圆点：只反映当前这一步数（答题/配对/拼句/转动）；
+        <!-- 本局进度：有步数 → 圆点；无步数玩法（唱童谣等）→ 弱化玩法名。
+             两者都是 LessonProgressHeader 内部一条规则（MIN_DOTS）的输出，
+             页面只负责把名字递进去，不判断"哪个玩法没步数"。
              课程完成度由地图/卡片目录表达，不在局内顶栏重复 -->
         <LessonProgressHeader
-          v-if="isPlay && playTotal > 1"
+          v-if="isPlay"
           :play-pct="playPct"
           :play-total="playTotal"
+          :label="stageLabel"
         />
-        <!-- 无步数玩法（学单词浏览 / 唱童谣）不画点：中列放弱化玩法名，避免空白失衡 -->
-        <span
-          v-else-if="isPlay && (stage === 'learn' || stage === 'song')"
-          class="hdr-play-name"
-        >{{ route.meta.title }}</span>
         <button
-          v-else-if="!isPlay"
+          v-else
           class="hdr-title-tap"
           role="button"
           tabindex="0"
@@ -464,14 +467,6 @@ const playStage = computed(() => {
   font-weight: var(--fw-mid);
   color: var(--ink-faint);
   letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-/* 无步数玩法中列弱化名：小一号、软色、常规中粗，不与圆点页的强标题争视觉 */
-.hdr-play-name {
-  font-size: var(--fs-small);
-  font-weight: var(--fw-mid);
-  color: var(--ink-soft);
-  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 .mode-fab {
