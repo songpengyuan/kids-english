@@ -58,7 +58,7 @@ function goStreak() {
       <PathIcon v-else name="back" />
     </button>
     <div class="hdr-title"><slot name="title" /></div>
-    <div class="hdr-right">
+    <div class="hdr-right" :class="{ 'no-badges': !showBadges }">
       <!-- 全局数字徽章：星 / 贝壳（进宝藏罐）/ 连击（进连击日历） -->
       <template v-if="showBadges">
         <div class="badge star-badge" title="我的星星总数">
@@ -166,6 +166,13 @@ function goStreak() {
   /* 窄屏徽章簇收紧一档：390 下 3 徽章 + 切换按钮的页面（课程详情）给标题多让 12px */
   gap: var(--gap-xs);
   margin-left: auto;
+}
+/* 不出徽章的页面（玩法局）给右侧簇一个与返回键等宽的 min-width：
+ * 右侧宽度为 0 时中列会吃满剩余空间，中心比视口中心右移 --tap-min/2
+ * （390 下 ≈26px），顶栏圆点看着偏右、和返回键不对称。
+ * 出徽章的页面右侧本来就 ≥ --tap-min，不需要占位。 */
+.hdr-right.no-badges {
+  min-width: var(--tap-min);
 }
 @media (min-width: 600px) {
   .hdr-right {
