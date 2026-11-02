@@ -30,6 +30,8 @@ const session = useSpeechSession(computed(() => props.words), {
     sfxWrong();
     progress.recordWord(w.lessonId, w.id, { wrong: 1 }); // 打回 stage 0 → 复习队列
   },
+  // 完成一次真实张口尝试即计"今日开口"（鼓励向，retry/录音也计；不影响星级）
+  onSpeakAttempt: () => progress.addSpeakAttempt(),
 });
 
 // 进入跟读页就预请求麦克风权限（在用户手势链外的 mount 阶段，部分浏览器会拒绝；

@@ -10,6 +10,7 @@
  */
 import { describe, expect, it, vi, beforeEach, beforeAll, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 
 vi.mock("../../../services/speech", () => ({ speak: vi.fn(), speakText: vi.fn(), stopSpeaking: vi.fn() }));
 vi.mock("../../../services/effects", () => ({
@@ -79,6 +80,7 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    setActivePinia(createPinia()); // TalkView 内 useProgressStore 记录开口尝试次数
   });
   afterEach(() => {
     vi.useRealTimers();

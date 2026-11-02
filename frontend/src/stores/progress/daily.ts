@@ -11,6 +11,8 @@ export interface DailyStatsDomain {
   dailyLog: ComputedRef<Record<string, DailySnapshot>>;
   addDailyActivity: (durationSec: number) => void;
   addListenActivity: (durationSec: number) => void;
+  /** 记录一次真实张口尝试（轻跟读 / 跟我读 / 亲子对话的有效语音尝试），鼓励向、不计对错 */
+  addSpeakAttempt: () => void;
   recentDays: (n?: number) => { date: string; durationSec: number; activities: number; mastered: number; listenSec?: number }[];
 }
 
@@ -27,7 +29,7 @@ export function createDailyStats(opts: {
   const todayStats = computed<DailyStats>(() => {
     const d = progress._daily;
     if (d && d.date === today()) return d;
-    return { date: today(), durationSec: 0, activities: 0, listenSec: 0 };
+    return { date: today(), durationSec: 0, activities: 0, listenSec: 0, speakAttempts: 0 };
   });
 
   /**
@@ -88,6 +90,22 @@ export function createDailyStats(opts: {
     }
   }
 
+  /**
+   * 开口尝试计数（鼓励向）：孩子完成一次真实语音尝试 +1，不区分 perfect/retry；
+   * 不并入 durationSec/activities/listenSec，纯本地学情，也不写 _dailyLog 趋势快照。
+   */
+  function addSpeakAttempt() {
+    const t = today();
+    const d = progress._daily;
+    const cur =
+      d && d.date === t
+        ? d
+        : { date: t, durationSec: 0, activities: 0, listenSec: 0, speakAttempts: 0 };
+    cur.speakAttempts = (cur.speakAttempts ?? 0) + 1;
+    progress._daily = cur;
+    save();
+  }
+
   /** 最近 n 天的每日快照（含今天），按日期升序 —— 家长报告趋势用 */
   function recentDays(n = 7): { date: string; durationSec: number; activities: number; mastered: number; listenSec?: number }[] {
     const log = progress._dailyLog || {};
@@ -99,5 +117,5 @@ export function createDailyStats(opts: {
 
   const dailyLog = computed(() => progress._dailyLog || {});
 
-  return { todayStats, dailyLog, addDailyActivity, addListenActivity, recentDays };
+  return { todayStats, dailyLog, addDailyActivity, addListenActivity, addSpeakAttempt, recentDays };
 }

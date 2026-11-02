@@ -34,6 +34,11 @@ export interface SpeechSessionHooks {
   onFallback?: (reason: string) => void;
   /** 麦克风不可用 */
   onMicError?: () => void;
+  /**
+   * 完成一次真实张口尝试（ASR 正常结果 perfect/good/retry；record 拿到非空录音）。
+   * 鼓励向旁路：不判对错、不影响首次通过率星级；no-speech/network/权限拒绝/家长二次判定不触发。
+   */
+  onSpeakAttempt?: (word: Word) => void;
 }
 
 export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks = {}) {
@@ -110,6 +115,8 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
       const g = gradeScore(score) as SpeechGrade;
       grade.value = g;
       status.value = "feedback";
+      // 正常完成一次识别（含 retry）= 一次张口尝试，统一先计鼓励分，再按对错走星级 hook
+      hooks.onSpeakAttempt?.(cur.value);
       if (g === "retry") {
         markAttempt(false);
         hooks.onWrong?.(cur.value);
@@ -158,6 +165,8 @@ export function useSpeechSession(words: Ref<Word[]>, hooks: SpeechSessionHooks =
     if (!recorder) return;
     recorder.stop().then((url: string | null) => {
       if (!url) return;
+      // 录到了声音 = 一次张口尝试（家长后续"读对了/再试一次"只是二次确认，不重复计）
+      hooks.onSpeakAttempt?.(cur.value);
       if (recUrl.value) URL.revokeObjectURL(recUrl.value);
       recUrl.value = url;
       grade.value = ""; // 等家长判定

@@ -111,6 +111,8 @@ const todayMin = computed(() => Math.round((progress.todayStats.durationSec || 0
 const listenMin = computed(() => Math.round((progress.todayStats.listenSec || 0) / 60));
 /** 纯学习时长 = 总 - 磨耳朵（相减而不是各自取整，避免「学习 + 磨耳朵 ≠ 今天」） */
 const learnMin = computed(() => Math.max(0, todayMin.value - listenMin.value));
+/** 今日开口次数（鼓励向本地学情；为 0 时不在今日卡展示，避免空数字打击孩子） */
+const speakCount = computed(() => progress.todayStats.speakAttempts ?? 0);
 
 /** 今日目标完成度：复习完成率与新学一关，各占一半 */
 const goalPct = computed(() => {
@@ -190,7 +192,7 @@ function sayEntry(name: string, path: string) {
       <span class="today-bar">
         <span class="today-fill" :style="{ width: goalPct + '%' }" />
       </span>
-      <span class="today-sub">学习 {{ learnMin }} 分 · 磨耳朵 {{ listenMin }} 分</span>
+      <span class="today-sub">学习 {{ learnMin }} 分 · 磨耳朵 {{ listenMin }} 分<template v-if="speakCount > 0"> · 开口 {{ speakCount }} 次</template></span>
     </section>
 
     <!-- ③ 主行动：一页只有一个 -->

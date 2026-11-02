@@ -60,6 +60,11 @@ export interface DailyStats {
   listenSec?: number;
   /** 今日完成的玩法数 */
   activities: number;
+  /**
+   * 今日真实张口尝试次数（鼓励向：完成一次语音识别/录音尝试即 +1，不区分读对与否）。
+   * 纯本地学情：不进云端 meta、不进每日趋势快照（_dailyLog），旧数据缺省按 0 读。
+   */
+  speakAttempts?: number;
 }
 
 /** 每日快照：掌握度趋势曲线的数据点 */

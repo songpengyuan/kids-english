@@ -5,6 +5,8 @@ import Pager from "./Pager.vue";
 import { celebrate, bigCelebrate, sfxCorrect, sfxWrong } from "../../services/effects";
 import { useLearnSession } from "../../composables/useLearnSession";
 import { useSpeechSession } from "../../composables/useSpeechSession";
+import { useWhisperPrompt } from "../../composables/useWhisperPrompt";
+import { useProgressStore } from "../../stores/progress";
 import { speak } from "../../services/speech";
 import type { Word, Phrase } from "../../data/lessons";
 import { Check, Mic, MousePointerClick, Square, Volume2 } from "@lucide/vue";
@@ -26,6 +28,7 @@ const props = defineProps<{
   phrases?: Phrase[];
 }>();
 const emit = defineEmits(["done", "progress", "total"]);
+const progress = useProgressStore();
 
 const {
   stageEl,
@@ -110,9 +113,32 @@ const session = useSpeechSession(computed(() => props.words), {
   onWrong: () => {
     if (props.dialog) sfxWrong();
   },
+  // 仅 dialog 亲子对话计开口；cards 点读卡的轻跟读由独立 composable 计数，避免重复
+  onSpeakAttempt: () => {
+    if (props.dialog) progress.addSpeakAttempt();
+  },
 });
 /** 解构会话状态/方法（模板中 ref 自动解包；total/stars 与 cards 冲突用别名） */
 const { idx: dlgIdx, cur, status, grade, heard, mode, micBlocked, stars: dlgStars, recAudio, recUrl, startMic, stopMic, parentJudge, retry, next } = session;
+
+/* cards 点读卡轻跟读：可选鼓励练习（仅 ASR 支持设备渲染；不影响点读覆盖率星级与完成门槛） */
+const {
+  visible: whisperVisible,
+  phase: whisperPhase,
+  praiseKind: whisperPraise,
+  listening: whisperListening,
+  toggle: whisperToggle,
+} = useWhisperPrompt(computed(() => props.words), {
+  onAttempt: () => progress.addSpeakAttempt(),
+});
+/** 轻跟读反馈文案（idle 为空，不占位） */
+const whisperFeedback = computed(() => {
+  if (whisperPhase.value === "demo") return "先听示范，再跟我读";
+  if (whisperPhase.value === "listening") return "跟着读出来～";
+  if (whisperPraise.value === "good") return "说得棒！";
+  if (whisperPraise.value === "soft") return "没关系，再跟试试";
+  return "";
+});
 
 /** 轮次切换 → 自动播家长问句（孩子先听 What's that? 再回答） */
 let questionTimer: ReturnType<typeof setTimeout> | null = null;
@@ -288,6 +314,21 @@ const listening = computed(() => status.value === "listening");
 
     <!-- 贴底操作区：统一底部安全容器（Home 条防遮挡 + 呼吸间距） -->
     <SafeBottom class="next-zone" :gap="24">
+      <!-- cards 轻跟读：可选鼓励练习，不阻塞点读与完成键；不支持 ASR 的设备整块不渲染 -->
+      <div v-if="!dialog && whisperVisible" class="whisper-bar">
+        <button
+          type="button"
+          class="whisper-btn"
+          :class="{ listening: whisperListening }"
+          aria-label="点一下跟我说单词，再点一下停止"
+          @click="whisperToggle"
+        >
+          <Mic v-if="!whisperListening" class="k-ico" />
+          <Square v-else class="k-ico" />
+          <span>{{ whisperListening ? "我在听…" : whisperPhase === "demo" ? "先听我读" : "跟我说" }}</span>
+        </button>
+        <span v-if="whisperFeedback" class="whisper-fb" aria-live="polite">{{ whisperFeedback }}</span>
+      </div>
       <Pager v-if="!dialog" :page="page" :total="total" hide-dots @prev="gotoPrev" @next="gotoNext" @go="gotoPage" />
       <BaseButton class="next" variant="green" :disabled="!canFinish" @click="finish">
         <template v-if="canFinish"><Check class="k-ico" />我都会啦</template>
@@ -616,5 +657,47 @@ const listening = computed(() => status.value === "listening");
   display: flex;
   flex-direction: column;
   gap: var(--gap-s);
+}
+
+/* cards 轻跟读：次级描边胶囊，绿色主完成键保持最高视觉优先级；仅 ASR 支持设备渲染 */
+.whisper-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.whisper-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px; /* 次级触控目标 ≥36px */
+  padding: 6px 16px;
+  border-radius: var(--radius-s);
+  border: 1.5px solid var(--line);
+  background: var(--card-bg);
+  color: var(--brand-dark);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-strong);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.whisper-btn.listening {
+  border-color: var(--brand);
+}
+.whisper-btn .k-ico {
+  width: 16px;
+  height: 16px;
+}
+.whisper-fb {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-strong);
+  color: var(--ink-soft);
+}
+/* 矮屏优先保证网格与完成键可见，隐藏可选的轻跟读条（主路径不受影响） */
+@media (max-height: 480px) {
+  .whisper-bar {
+    display: none;
+  }
 }
 </style>

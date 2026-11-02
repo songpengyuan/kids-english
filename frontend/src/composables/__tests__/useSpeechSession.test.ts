@@ -8,7 +8,7 @@ import { useSpeechSession } from "../useSpeechSession";
 import type { Word } from "../../data/lessons";
 
 vi.mock("../../utils/speechScore", () => ({
-  asrSupported: () => false, // 强制 record 模式
+  asrSupported: vi.fn(() => false), // 强制 record 模式（新 describe 内可切 true 测 ASR 分支）
   recorderSupported: () => true,
   createRecorder: vi.fn(),
   createWordRecognizer: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock("../../utils/speechScore", () => ({
 vi.mock("../../services/speech", () => ({ speak: vi.fn() }));
 vi.mock("../../utils/speakSession", () => ({ speakStars: () => 3 }));
 
-import { createRecorder } from "../../utils/speechScore";
+import { createRecorder, createWordRecognizer, asrSupported, scorePronunciation, gradeScore } from "../../utils/speechScore";
 
 const word: Word = {
   id: "w1",
@@ -102,5 +102,101 @@ describe("useSpeechSession · 录音自动回放", () => {
 
     expect(fakeAudio.currentTime).toBe(0);
     expect(play).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("useSpeechSession · onSpeakAttempt 开口旁路计数（鼓励向，不影响星级）", () => {
+  let finishCb: ((err: string | null, alt: string[]) => void) | null = null;
+  const recognizerStub = {
+    start: vi.fn(),
+    stop: vi.fn(),
+    abort: vi.fn(),
+    onFinish: vi.fn((cb: (err: string | null, alt: string[]) => void) => {
+      finishCb = cb;
+    }),
+  };
+  function flush() {
+    return new Promise((r) => setTimeout(r, 0));
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    finishCb = null;
+    vi.mocked(asrSupported).mockReturnValue(true);
+    vi.mocked(createWordRecognizer).mockReturnValue(recognizerStub as never);
+    vi.mocked(scorePronunciation).mockReturnValue({ score: 0.9, heard: "foot" });
+    vi.mocked(gradeScore).mockReturnValue("perfect");
+  });
+
+  it("ASR 正常识别 perfect 计 1 次开口", async () => {
+    const onSpeakAttempt = vi.fn();
+    const s = useSpeechSession(ref([word]), { onSpeakAttempt });
+    s.startMic();
+    await flush();
+    finishCb!(null, ["foot"]);
+    await flush();
+    expect(onSpeakAttempt).toHaveBeenCalledTimes(1);
+  });
+
+  it("ASR retry（发音没说准）仍计 1 次开口尝试：鼓励多说，不计入惩罚、不重复判定", async () => {
+    vi.mocked(gradeScore).mockReturnValue("retry");
+    const onSpeakAttempt = vi.fn();
+    const s = useSpeechSession(ref([word]), { onSpeakAttempt });
+    s.startMic();
+    await flush();
+    finishCb!(null, ["fot"]);
+    await flush();
+    expect(onSpeakAttempt).toHaveBeenCalledTimes(1);
+  });
+
+  it("no-speech（没出声）、network、权限拒绝都不计开口", async () => {
+    const onSpeakAttempt = vi.fn();
+    const s = useSpeechSession(ref([word]), { onSpeakAttempt });
+    s.startMic();
+    await flush();
+    finishCb!("no-speech", []);
+    await flush();
+    finishCb!("network", []);
+    await flush();
+    finishCb!("not-allowed", []);
+    await flush();
+    expect(onSpeakAttempt).not.toHaveBeenCalled();
+  });
+
+  it("record 拿到非空录音计 1 次；家长判定不重复计", async () => {
+    const onSpeakAttempt = vi.fn();
+    vi.mocked(createRecorder).mockReturnValue({
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockResolvedValue("blob:rec-url"),
+      release: vi.fn(),
+    } as never);
+    const s = useSpeechSession(ref([word]), { onSpeakAttempt });
+    s.mode.value = "record";
+    const play = vi.fn().mockResolvedValue(undefined);
+    s.recAudio.value = { currentTime: 0, play } as unknown as HTMLAudioElement;
+
+    s.startMic();
+    await flush();
+    s.stopMic();
+    await flush();
+    expect(onSpeakAttempt).toHaveBeenCalledTimes(1);
+    s.parentJudge(true); // 二次确认，不重复计数
+    expect(onSpeakAttempt).toHaveBeenCalledTimes(1);
+  });
+
+  it("record 空录音（无 url）不计开口", async () => {
+    const onSpeakAttempt = vi.fn();
+    vi.mocked(createRecorder).mockReturnValue({
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockResolvedValue(null),
+      release: vi.fn(),
+    } as never);
+    const s = useSpeechSession(ref([word]), { onSpeakAttempt });
+    s.mode.value = "record";
+    s.startMic();
+    await flush();
+    s.stopMic();
+    await flush();
+    expect(onSpeakAttempt).not.toHaveBeenCalled();
   });
 });

@@ -184,6 +184,37 @@ describe("progress store · 掌握度与每日快照", () => {
     expect(days[0].date).toBe("2026-09-27");
     expect(days[0].listenSec).toBe(300);
   });
+
+  it("开口尝试次数单独累加：不并入时长/玩法数，跨天重置，且不写趋势快照", () => {
+    const p = useProgressStore();
+    expect(p.todayStats.speakAttempts ?? 0).toBe(0);
+    p.addDailyActivity(60);
+    p.addSpeakAttempt();
+    p.addSpeakAttempt();
+    p.addSpeakAttempt();
+    expect(p.todayStats.speakAttempts).toBe(3);
+    // 不污染既有口径
+    expect(p.todayStats.durationSec).toBe(60);
+    expect(p.todayStats.activities).toBe(1);
+    // 开口次数不进入家长趋势曲线快照
+    expect("speakAttempts" in p.recentDays()[0]).toBe(false);
+    // 跨天自动重置：新一天第一次开口从 0 重新累计，不继承昨天的 3
+    vi.setSystemTime(new Date("2026-09-28T09:00:00"));
+    p.addSpeakAttempt();
+    expect(p.todayStats.speakAttempts).toBe(1);
+  });
+
+  it("旧本地数据缺少 speakAttempts 字段时按 0 读取，补写不报错", () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({ _daily: { date: "2026-09-27", durationSec: 10, activities: 1, listenSec: 0 } })
+    );
+    setActivePinia(createPinia());
+    const p = useProgressStore();
+    expect(p.todayStats.speakAttempts ?? 0).toBe(0);
+    p.addSpeakAttempt();
+    expect(p.todayStats.speakAttempts).toBe(1);
+  });
 });
 
 describe("progress store · 星数统计（新增玩法）", () => {

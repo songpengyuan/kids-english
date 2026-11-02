@@ -48,6 +48,7 @@ import { speak, speakText, stopSpeaking } from "../../services/speech";
 import { hapticTap } from "../../services/haptics";
 import { sfxCorrect, sfxWrong, bigCelebrate } from "../../services/effects";
 import { useSpeechSession } from "../../composables/useSpeechSession";
+import { useProgressStore } from "../../stores/progress";
 import { talkQa } from "../../utils/talkQa";
 import type { Lesson, Word, Phrase } from "../../data/lessons";
 import { Check, MessageCircle, Mic, Square, Volume2 } from "@lucide/vue";
@@ -58,6 +59,7 @@ import LessonFooter from "./LessonFooter.vue";
 
 const props = defineProps<{ lesson: Lesson; words?: Word[] }>();
 const emit = defineEmits(["done", "progress", "total"]);
+const progress = useProgressStore();
 
 /** 本轮词表：LessonView 按词群传入（l11 颜色/动物各一段）；无分组课时等于全课词表 */
 const words = computed(() => (props.words?.length ? props.words : props.lesson.words ?? []));
@@ -123,6 +125,8 @@ const session = useSpeechSession(words, {
     // 最后一轮的庆祝交给 finish()（「我都会啦」），这里不再放一次
   },
   onWrong: () => sfxWrong(),
+  // 完成一次真实张口尝试即计"今日开口"（鼓励向，不影响首次通过率星级）
+  onSpeakAttempt: () => progress.addSpeakAttempt(),
 });
 /** 解构会话状态/方法（模板中 ref 自动解包） */
 const { idx: dlgIdx, cur, status, grade, heard, mode, micBlocked, stars, progressText, total, recAudio, recUrl, startMic, stopMic, parentJudge, retry, next } = session;

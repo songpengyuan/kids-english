@@ -83,6 +83,8 @@ export function createCloudSync(progress: ProgressMap): CloudSyncDomain {
                 durationSec: Math.max(local.durationSec ?? 0, cloudDaily.durationSec ?? 0),
                 activities: Math.max(local.activities ?? 0, cloudDaily.activities ?? 0),
                 listenSec: Math.max(local.listenSec ?? 0, cloudDaily.listenSec ?? 0),
+                // 开口次数是纯本地学情：云端无此字段，合并时保留本地值，不被重建对象清掉
+                speakAttempts: local.speakAttempts ?? 0,
               };
             }
           }
@@ -123,8 +125,16 @@ export function createCloudSync(progress: ProgressMap): CloudSyncDomain {
       if (!isLessonKey(id)) continue;
       data[id] = progress[id];
     }
+    // 上报白名单：speakAttempts 是纯本地学情，后端 meta schema 无此字段，绝不随 PUT 发出
     const meta = {
-      _daily: progress._daily ?? null,
+      _daily: progress._daily
+        ? {
+            date: progress._daily.date,
+            durationSec: progress._daily.durationSec,
+            activities: progress._daily.activities,
+            listenSec: progress._daily.listenSec ?? 0,
+          }
+        : null,
       _last: progress._last ?? null,
       _dailyLog: progress._dailyLog ?? {},
     };
