@@ -313,10 +313,12 @@ const playStage = computed(() => {
 
 <template>
   <div class="lesson view" v-if="lesson">
+    <!-- 玩法局不挂星/贝壳/火焰徽章（2026-11 口径：数据看「我的」页，局内顶栏只留本局进度，
+         避免抢注意力；菜单 menu 与结算 result 仍保留徽章做奖励反馈） -->
     <HeaderBar
       show-back
       :close="isPlay"
-      :show-badges="!showGroupSwitch"
+      :show-badges="!isPlay"
       :back-label="questMode ? '返回闯关地图' : stage === 'menu' ? '返回地图' : '返回本课菜单'"
       @back="back"
     >
@@ -324,12 +326,17 @@ const playStage = computed(() => {
         <!-- 本局进度圆点：只反映当前这一步数（答题/配对/拼句/转动）；
              课程完成度由地图/卡片目录表达，不在局内顶栏重复 -->
         <LessonProgressHeader
-          v-if="isPlay"
+          v-if="isPlay && playTotal > 1"
           :play-pct="playPct"
           :play-total="playTotal"
         />
+        <!-- 无步数玩法（学单词浏览 / 唱童谣）不画点：中列放弱化玩法名，避免空白失衡 -->
+        <span
+          v-else-if="isPlay && (stage === 'learn' || stage === 'song')"
+          class="hdr-play-name"
+        >{{ route.meta.title }}</span>
         <button
-          v-else
+          v-else-if="!isPlay"
           class="hdr-title-tap"
           role="button"
           tabindex="0"
@@ -457,6 +464,14 @@ const playStage = computed(() => {
   font-weight: var(--fw-mid);
   color: var(--ink-faint);
   letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+/* 无步数玩法中列弱化名：小一号、软色、常规中粗，不与圆点页的强标题争视觉 */
+.hdr-play-name {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  color: var(--ink-soft);
+  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 .mode-fab {
