@@ -347,8 +347,9 @@ const playStage = computed(() => {
           @click="sayTitle"
           @keydown.enter.prevent="sayTitle"
         >
-          <span class="hdr-zh">{{ lesson.emoji }} {{ lesson.titleZh || lesson.title }}</span>
-          <span v-if="lesson.titleZh && lesson.title" class="hdr-en">{{ lesson.title }}</span>
+          <!-- 顶栏只显示英文课名（主标题层级由外层 .hdr-title 提供）；点按朗读英文标题。
+               中文译名不再出现在顶栏；答题进行中中列是进度点/弱化玩法名，不渲染本课名块 -->
+          <span class="hdr-title-main">{{ lesson.emoji }} {{ lesson.title || "课程" }}</span>
         </button>
       </template>
       <!-- 卡片目录模式：右上角切到闯关地图（孩子主入口） -->
@@ -456,17 +457,9 @@ const playStage = computed(() => {
 .hdr-title-tap:active {
   background: var(--btn-plain-bg);
 }
-.hdr-zh {
-  font-size: var(--fs-title);
-  font-weight: var(--fw-strong);
-  color: var(--ink);
-  white-space: nowrap;
-}
-.hdr-en {
-  font-size: var(--fs-small);
-  font-weight: var(--fw-mid);
-  color: var(--ink-faint);
-  letter-spacing: 0.02em;
+/* 课名单行：字号/字重/颜色继承外层 .hdr-title 的主标题规格（单一真源，不在内层重复声明）；
+   这里只锁定单行，超长交给外层 nowrap + ellipsis 安全截断，绝不挤压右侧徽章簇 */
+.hdr-title-main {
   white-space: nowrap;
 }
 .mode-fab {
