@@ -14,7 +14,7 @@
 | `wordGroups[]`（≥2 组） | 词群切换：词表按 `word.group` 归组，`learn/quiz/memory/speak/song/talk` 六个玩法只玩当前组的词（LessonView 顶部切换） | 无分组 = 平铺全词表 | 组闭包（词的 group 必须登记、每组非空、并集=全部词） |
 | `song.tracks[]` + `group` | 一课多轨音视频：学童谣/磨耳朵按轨切换；`track.group` 把轨道分给对应词群 | 单轨 = 顶层 `song.audio/video/lyrics` | 轨道须有 title + audio/video 至少其一；group 须在 wordGroups 登记；文件真实存在 |
 | `word.color`（十六进制） | 词卡显示**小色点**替代大图（WordCard），连一连色圆的取色来源（MatchView.hexById） | 无 color = 正常显示词图 | 色值格式 `#rgb/#rrggbb` |
-| `spinner: true` | 追加「转盘 spinner」收尾玩法：点按钮转盘旋转，顶部指针停到本课某词后自动朗读图+英文，一轮遍历全词表后结算；**不判对错**，每词只记 `seen` | 缺省/`false` = 不启用转盘 | 必须为布尔；开启时词表非空 |
+| `spinner: true` | 追加「转盘 spinner」收尾玩法：点按钮转盘旋转，顶部指针停到本课某词后**不自动朗读**，先让孩子点麦克风自己发音；完成一次录音后才进入下一词，一轮遍历全词表后结算；**不判对错**，每词记 `seen`，录音计一次今日开口尝试；喇叭仅作自愿示范 | 缺省/`false` = 不启用转盘 | 必须为布尔；开启时词表非空 |
 
 ## 二、玩法级变体（每玩法一行）
 
@@ -28,7 +28,7 @@
 | speak 跟我读 | `words[]` | — | 按麦克风跟读打分 |
 | order 拼句子 | `phrases[].en` | — | 把短语拆词拼回 |
 | talk 亲子对话 | `phrases[]` | `wordGroups` → 按词群分段对话；问答由 `utils/talkQa` 按当前词从 phrases 推导 | 全词轮次、固定问答 |
-| spinner 转盘复习 | `words[]` | —（随机点读收尾，不按词群拆分，一轮遍历全词表） | 转盘随机停词 → 自动朗读；一轮转完全部词后满分 3 星，无对错判定 |
+| spinner 转盘复习 | `words[]` | —（随机复习收尾，不按词群拆分，一轮遍历全词表） | 转盘随机停词 → 孩子先录音发音，完成后点「下一转」；一轮转完全部词后满分 3 星，无对错判定；麦克风不可用时可直接继续 |
 
 星级口径（非变体，全局规则）：song/talk 结算封顶 1 星，其余 0-3 星；「全部通关」= 全玩法玩过且 song/talk ≥1、其余 ≥2 星（`isCompleted`）。
 

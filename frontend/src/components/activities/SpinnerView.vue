@@ -2,14 +2,16 @@
 /**
  * 转盘复习（spinner）—— 登记表外首例代码事件（见 docs/ACTIVITY-VARIANTS.md）。
  *
- * 玩法口径（2026-11-01 教材 Day 6 拓展游戏 App 化）：
+ * 玩法口径（2026-11-02 调整：先开口、后推进）：
  *  · 点「转一转」→ 转盘高速旋转减速，顶部固定指针停到本课某词；
- *  · 停下自动朗读该词图 + 英文，记一次 seen（**不判对错**，纯点读复习）；
+ *  · 停下**不主动朗读**：先展示词图，让孩子自己点麦克风大声读出来；
+ *  · 孩子完成一次录音（计一次今日开口尝试）后，才出现「下一转」，进入下一词；
  *  · 一轮内每个词恰好转到一次（洗牌队列依次取，不重复）；
- *  · 9 词全部转到后按完成度结算，满分 3 星。
+ *  · 9 词全部读完后按完成度结算，满分 3 星（纯复习、不判对错）。
+ *  · 右上角小喇叭是自愿示范：孩子想先听标准发音时可点，默认不自动播。
  *
  * 舞台契约（与其他玩法一致）：emit done / progress / total；
- * 发音走 speak(word.en, { lessonId, wordId })，缺失预生成 mp3 时回退浏览器 TTS。
+ * 示范发音走 speak(word.en, { lessonId, wordId })，缺失预生成 mp3 时回退浏览器 TTS。
  */
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { speak } from "../../services/speech";
@@ -17,9 +19,17 @@ import { sfxCorrect, sfxTap } from "../../services/effects";
 import { celebrate } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import { shuffleWith } from "../../utils/quizSession";
+import { createRecorder, recorderSupported } from "../../utils/speechScore";
 import type { Word } from "../../data/lessons";
 import StageHead from "./StageHead.vue";
-import { RotateCw, Volume2 } from "@lucide/vue";
+import {
+  RotateCw,
+  Volume2,
+  Mic,
+  Square,
+  ChevronRight,
+  ThumbsUp,
+} from "@lucide/vue";
 
 const props = defineProps<{ words: Word[] }>();
 const emit = defineEmits(["done", "progress", "total"]);
@@ -31,24 +41,39 @@ watch(total, () => emit("total", total.value), { immediate: true });
 
 /** 一轮访问队列（洗牌：同一轮内每个词只出现一次）；扇区视觉顺序仍按 words 原始顺序 */
 const queue = ref<Word[]>(shuffleWith(props.words));
-const idx = ref(0);
+/** 已完成（孩子读完并点下一转）的词数；转盘目标 = queue[doneCount] */
+const doneCount = ref(0);
 const current = ref<Word | null>(null);
 const visited = ref<Set<string>>(new Set());
 const rotation = ref(0);
 const spinning = ref(false);
 const imgFail = ref<Record<string, boolean>>({});
 
+/** 本词录音状态：idle 待开口 / listening 录音中 / done 已完成一次录音 */
+type MicPhase = "idle" | "listening" | "done";
+const micPhase = ref<MicPhase>("idle");
+const micBlocked = ref(false);
+const canRecord = recorderSupported();
+
+let recorder: ReturnType<typeof createRecorder> | null = null;
 let settleTimer: ReturnType<typeof setTimeout> | null = null;
 let spinTimer: ReturnType<typeof setTimeout> | null = null;
+let recTimer: ReturnType<typeof setTimeout> | null = null;
+
 onBeforeUnmount(() => {
   if (settleTimer) clearTimeout(settleTimer);
   if (spinTimer) clearTimeout(spinTimer);
+  if (recTimer) clearTimeout(recTimer);
+  if (recorder) recorder.release();
 });
 
 const seg = computed(() => (total.value ? 360 / total.value : 360));
-/** 已转到数量 → 顶栏进度 0-100 */
-const pct = computed(() => Math.round((idx.value / total.value) * 100));
+/** 已完成数量 → 顶栏进度 0-100（孩子读完一词才推进一格） */
+const pct = computed(() => Math.round((doneCount.value / total.value) * 100));
 watch(pct, (v) => emit("progress", v));
+
+const finished = computed(() => doneCount.value >= queue.value.length);
+const isLast = computed(() => doneCount.value + 1 >= queue.value.length);
 
 /** 圆盘交替底色（奇偶扇区）：品牌浅底 / 卡片底，模板内联 var()，无硬编码色值 */
 const wheelBg = computed(() => {
@@ -73,8 +98,9 @@ function labelStyle(i: number) {
 }
 
 function spin() {
-  if (spinning.value || idx.value >= queue.value.length) return;
-  const target = queue.value[idx.value];
+  if (spinning.value || finished.value) return;
+  const target = queue.value[doneCount.value];
+  if (!target) return;
   const i = props.words.findIndex((w) => w.id === target.id);
   if (i < 0) return;
   sfxTap();
@@ -93,33 +119,89 @@ function spin() {
     current.value = target;
     visited.value.add(target.id);
     progress.recordWord(target.lessonId, target.id, { seen: 1 });
-    speak(target.en, { lessonId: target.lessonId, wordId: target.id });
-    sfxCorrect();
-    idx.value++;
-
-    if (idx.value >= queue.value.length) {
-      // 一轮遍历完成：稍作停留让孩子看完最后一词，再结算（满分 3 星，无对错）
-      settleTimer = setTimeout(() => {
-        celebrate();
-        emit("done", 3);
-      }, 1300);
-    }
+    // 停下不主动发音：重置到待开口，等孩子自己点麦克风
+    micPhase.value = "idle";
+    micBlocked.value = false;
   }, 1900);
 }
 
+/** 点一下开始录，再点一下结束；最多 5 秒自动收尾，避免孩子忘记停止 */
+async function onMicTap() {
+  if (micPhase.value === "listening") {
+    await stopListening();
+    return;
+  }
+  if (!canRecord) {
+    micBlocked.value = true;
+    return;
+  }
+  try {
+    if (!recorder) recorder = createRecorder();
+    await recorder.start();
+    micPhase.value = "listening";
+    micBlocked.value = false;
+    if (recTimer) clearTimeout(recTimer);
+    recTimer = setTimeout(() => void stopListening(), 5000);
+  } catch {
+    micBlocked.value = true;
+    micPhase.value = "idle";
+  }
+}
+
+async function stopListening() {
+  if (recTimer) {
+    clearTimeout(recTimer);
+    recTimer = null;
+  }
+  if (!recorder) {
+    micPhase.value = "idle";
+    return;
+  }
+  const url = await recorder.stop();
+  if (url) {
+    // 仅用于判定"是否真的录到声音"，不在转盘回放；立即释放 ObjectURL，不入库不上传
+    URL.revokeObjectURL(url);
+    micPhase.value = "done";
+    progress.addSpeakAttempt();
+    sfxCorrect();
+  } else {
+    micPhase.value = "idle";
+  }
+}
+
+/** 孩子读完 → 进入下一词；最后一词读完 → 结算（满分 3 星，无对错） */
+function advance() {
+  if (!current.value) return;
+  sfxTap();
+  doneCount.value++;
+  current.value = null;
+  micPhase.value = "idle";
+  if (doneCount.value >= queue.value.length) {
+    settleTimer = setTimeout(() => {
+      celebrate();
+      emit("done", 3);
+    }, 900);
+  }
+}
+
+/** 自愿示范：想先听标准发音时点喇叭，默认不自动播 */
 function replay() {
   if (current.value) speak(current.value.en, { lessonId: current.value.lessonId, wordId: current.value.id });
 }
 
-const finished = computed(() => idx.value >= queue.value.length);
+const micLabel = computed(() => {
+  if (micPhase.value === "listening") return "正在录…再点一下结束";
+  if (micPhase.value === "done") return "读完啦，点下一转";
+  return "点麦克风，大声读出来";
+});
 </script>
 
 <template>
   <div class="spinner view">
-    <StageHead class="spinner-head" :right-text="`已转 ${idx} / ${total}`">
+    <StageHead class="spinner-head" :right-text="`已说 ${doneCount} / ${total}`">
       <template #tip>
         <RotateCw class="k-ico tip-ico" />
-        转一转，读出指针指到的单词
+        转一转，先自己大声读出指针指到的单词
       </template>
     </StageHead>
 
@@ -173,20 +255,59 @@ const finished = computed(() => idx.value >= queue.value.length);
             <span v-else class="current-emoji">{{ current.emoji }}</span>
           </div>
           <div class="current-text">
-            <button class="current-speak" @click="replay" aria-label="再听一遍">
-              <Volume2 class="k-ico" />
-            </button>
-            <span class="current-en">{{ current.en }}</span>
+            <div class="current-row">
+              <button class="current-speak" @click="replay" aria-label="想听示范再点喇叭">
+                <Volume2 class="k-ico" />
+              </button>
+              <span class="current-en">{{ current.en }}</span>
+            </div>
             <span class="current-zh">{{ current.zh }}</span>
           </div>
         </template>
         <span v-else class="current-hint">点下面的按钮，开始转盘游戏</span>
       </div>
 
-      <button class="spin-btn" :disabled="spinning || finished" data-haptic @click="spin">
-        <RotateCw :class="{ spinning: spinning }" class="btn-ico" />
-        {{ spinning ? "转动中…" : finished ? "完成啦" : "转一转" }}
-      </button>
+      <!-- 控制区：未停词 → 转一转；停词后 → 麦克风 + 下一转 -->
+      <div class="control-zone">
+        <template v-if="current && !finished">
+          <!-- 麦克风不可用：不阻塞，提示直接读 + 可继续 -->
+          <div v-if="micBlocked || !canRecord" class="mic-blocked">
+            <p class="blocked-tip">🎤 麦克风不可用，看着词大声读出来就好</p>
+            <button class="next-btn" data-haptic @click="advance">
+              {{ isLast ? "完成" : "下一转" }}<ChevronRight class="k-ico" />
+            </button>
+          </div>
+
+          <template v-else>
+            <div class="mic-row">
+              <button
+                class="mic"
+                :class="{ live: micPhase === 'listening' }"
+                :aria-label="micPhase === 'listening' ? '结束录音' : '开始说话'"
+                @click="onMicTap"
+              >
+                <Square v-if="micPhase === 'listening'" class="k-ico" />
+                <Mic v-else class="k-ico" />
+              </button>
+              <button
+                v-if="micPhase === 'done'"
+                class="next-btn"
+                data-haptic
+                @click="advance"
+              >
+                <ThumbsUp class="k-ico" />
+                {{ isLast ? "完成" : "下一转" }}<ChevronRight class="k-ico" />
+              </button>
+            </div>
+            <p class="mic-label">{{ micLabel }}</p>
+          </template>
+        </template>
+
+        <button class="spin-btn" :disabled="spinning || finished" data-haptic @click="spin">
+          <RotateCw :class="{ spinning: spinning }" class="btn-ico" />
+          {{ spinning ? "转动中…" : finished ? "完成啦" : "转一转" }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -335,6 +456,11 @@ const finished = computed(() => idx.value >= queue.value.length);
   gap: 2px;
   min-width: 0;
 }
+.current-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-s);
+}
 .current-speak {
   border: none;
   background: var(--brand-soft);
@@ -360,6 +486,91 @@ const finished = computed(() => idx.value >= queue.value.length);
 .current-hint {
   color: var(--ink-faint);
   font-weight: var(--fw-mid);
+}
+
+/* 控制区 */
+.control-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
+  min-height: 84px;
+  justify-content: center;
+}
+.mic-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-m);
+}
+.mic {
+  width: 68px;
+  height: 68px;
+  flex: none;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: radial-gradient(
+      circle at 35% 30%,
+      rgba(255, 255, 255, 0.42),
+      rgba(255, 255, 255, 0) 62%
+    ),
+    var(--orange);
+  color: var(--on-tone);
+  box-shadow: 0 6px 0 var(--orange-dark), 0 10px 18px rgba(0, 0, 0, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.mic .k-ico { width: 30px; height: 30px; }
+.mic:active,
+.mic.live {
+  transform: translateY(5px);
+  box-shadow: 0 1px 0 var(--orange-dark);
+}
+.mic.live {
+  animation: mic-pulse 1s infinite;
+}
+@keyframes mic-pulse {
+  0%,
+  100% { outline: 5px solid rgba(255, 159, 67, 0.32); }
+  50% { outline: 12px solid rgba(255, 159, 67, 0.14); }
+}
+.mic-label {
+  margin: 0;
+  font-weight: var(--fw-strong);
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+}
+.next-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: var(--ok);
+  color: var(--white);
+  font-weight: var(--fw-strong);
+  font-size: var(--fs-btn);
+  border-radius: var(--radius-pill);
+  padding: var(--gap-s) var(--gap-l);
+  cursor: pointer;
+  box-shadow: var(--shadow-hard);
+}
+.next-btn .k-ico { width: 20px; height: 20px; }
+.next-btn:active { transform: translateY(1px); }
+.mic-blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-s);
+}
+.blocked-tip {
+  margin: 0;
+  text-align: center;
+  font-weight: var(--fw-mid);
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
 }
 
 .spin-btn {
@@ -407,6 +618,10 @@ const finished = computed(() => idx.value >= queue.value.length);
   }
   .current-art { width: 50px; height: 50px; }
   .current-speak { width: 30px; height: 30px; }
+  .control-zone { min-height: 56px; gap: 4px; }
+  .mic { width: 52px; height: 52px; }
+  .mic .k-ico { width: 24px; height: 24px; }
+  .next-btn { padding: 6px var(--gap-m); }
   .spin-btn { padding: 6px var(--gap-m); }
   .btn-ico { width: 18px; height: 18px; }
 }
