@@ -6,6 +6,7 @@
     "emoji": "🎺",
     "tone": "orange",
     "date": "2026-09-16",
+    "spinner": true,
     "song": {
       "audio": "/lessons/l5/song.mp3",
       "video": "/lessons/l5/song.mp4",
@@ -162,6 +163,7 @@
     "emoji": "🌊",
     "tone": "blue",
     "date": "2026-09-18",
+    "spinner": true,
     "song": {
       "audio": "/lessons/l4/song.mp3",
       "video": "/lessons/l4/song.mp4",
@@ -338,6 +340,7 @@
     "emoji": "👆",
     "tone": "teal",
     "date": "2026-10-10",
+    "spinner": true,
     "song": {
       "audio": "/lessons/l9/song.mp3",
       "video": "/lessons/l9/song.mp4",
@@ -504,6 +507,7 @@
     "emoji": "🐒",
     "tone": "green",
     "date": "2026-10-14",
+    "spinner": true,
     "song": {
       "audio": "/lessons/l10/song.mp3",
       "video": "/lessons/l10/song.mp4",
@@ -694,6 +698,7 @@
     "emoji": "🐻",
     "tone": "orange",
     "date": "2026-10-21",
+    "spinner": true,
     "song": {
       "title": "Brown Bear Song",
       "audio": "/lessons/l11/brown-bear.mp3",

@@ -7,7 +7,7 @@
  *  · 停下**不主动朗读**：先展示词图，让孩子自己点麦克风大声读出来；
  *  · 孩子完成一次录音（计一次今日开口尝试）后，才出现「下一转」，进入下一词；
  *  · 一轮内每个词恰好转到一次（洗牌队列依次取，不重复）；
- *  · 9 词全部读完后按完成度结算，满分 3 星（纯复习、不判对错）。
+ *  · 全部词读完后按完成度结算，满分 3 星（纯复习、不判对错）。
  *  · 右上角小喇叭是自愿示范：孩子想先听标准发音时可点，默认不自动播。
  *
  * 舞台契约（与其他玩法一致）：emit done / progress / total；
@@ -38,6 +38,8 @@ const progress = useProgressStore();
 
 const total = computed(() => props.words.length);
 watch(total, () => emit("total", total.value), { immediate: true });
+/** 词数较多时只保留双色扇区，避免 19 词在小圆盘上图文挤成一团；当前词卡承担详情 */
+const dense = computed(() => total.value > 12);
 
 /** 一轮访问队列（洗牌：同一轮内每个词只出现一次）；扇区视觉顺序仍按 words 原始顺序 */
 const queue = ref<Word[]>(shuffleWith(props.words));
@@ -206,7 +208,7 @@ const micLabel = computed(() => {
     </StageHead>
 
     <div class="board view-body">
-      <div class="wheel-wrap">
+      <div class="wheel-wrap" :class="{ dense }">
         <!-- 顶部固定指针 -->
         <div class="pointer" aria-hidden="true" />
         <div
@@ -401,6 +403,14 @@ const micLabel = computed(() => {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 .sector-label.hit .sector-word { color: var(--ok); }
+
+/* 多词课时（如 19 词的 l11）：圆盘外沿只保留双色交替，图文详情由下方当前词卡展示 */
+.wheel-wrap.dense .sector-img,
+.wheel-wrap.dense .sector-word { display: none; }
+.wheel-wrap.dense .sector-emoji {
+  font-size: 15px;
+  opacity: 0.82;
+}
 
 .hub {
   position: absolute;

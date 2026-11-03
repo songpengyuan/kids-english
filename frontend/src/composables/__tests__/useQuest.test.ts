@@ -4,7 +4,7 @@
  *
  * 锁死三件事——这三件都是"把总地图直接挪进课程"暴露出来的真实 bug：
  *  1. 关卡序号是本课内的（l4 第 1 关…第 7 关），不是全站累计的「第 8 关」；
- *  2. 「下一关」只在本课内推进，本课最后一个玩法（talk）之后为 null；
+ *  2. 「下一关」只在本课内推进，本课最后一个玩法（spinner）之后为 null；
  *  3. 从本课地图点进去的单关，序号/下一关与地图节点顺序一致（song 打头）。
  */
 import { describe, expect, it } from "vitest";
@@ -81,12 +81,16 @@ describe("useQuest 作用域", () => {
 
     const speak = await boot("/game/quest/l4?step=speak");
     speak.bootFromQuery();
-    expect(speak.nextLevel.value).toMatchObject({ lessonId: "l4", actKey: "order", name: "拼句子" });
+    expect(speak.nextLevel.value).toMatchObject({ lessonId: "l4", actKey: "talk", name: "亲子对话" });
   });
 
-  it("本课最后一个玩法（talk）之后没有下一关（不会跨到下一课）", async () => {
+  it("本课最后一个玩法（spinner）之后没有下一关（不会跨到下一课）", async () => {
     const talk = await boot("/game/quest/l4?step=talk");
-    expect(talk.bootFromQuery()).toBe(7);
-    expect(talk.nextLevel.value).toBeNull();
+    expect(talk.bootFromQuery()).toBe(6);
+    expect(talk.nextLevel.value).toMatchObject({ lessonId: "l4", actKey: "spinner", name: "转盘" });
+
+    const spinner = await boot("/game/quest/l4?step=spinner");
+    expect(spinner.bootFromQuery()).toBe(7);
+    expect(spinner.nextLevel.value).toBeNull();
   });
 });

@@ -9,6 +9,7 @@
     "type": "official",
     "date": "2026-09-18",
     "stageStyle": "cards",
+    "spinner": true,
     "song": {
       "audio": "/lessons/l4/song.mp3",
       "video": "/lessons/l4/song.mp4",
@@ -251,6 +252,7 @@
     "type": "official",
     "date": "2026-09-16",
     "stageStyle": "cards",
+    "spinner": true,
     "song": {
       "audio": "/lessons/l5/song.mp3",
       "video": "/lessons/l5/song.mp4",
@@ -460,6 +462,7 @@
     "type": "official",
     "date": "2026-10-10",
     "stageStyle": "cards",
+    "spinner": true,
     "song": {
       "audio": "/lessons/l9/song.mp3",
       "video": "/lessons/l9/song.mp4",
@@ -644,6 +647,7 @@
     "type": "official",
     "date": "2026-10-14",
     "stageStyle": "cards",
+    "spinner": true,
     "song": {
       "audio": "/lessons/l10/song.mp3",
       "video": "/lessons/l10/song.mp4",
@@ -856,6 +860,7 @@
     "type": "official",
     "date": "2026-10-21",
     "stageStyle": "cards",
+    "spinner": true,
     "song": {
       "audio": "/lessons/l11/brown-bear.mp3",
       "video": "/lessons/l11/brown-bear.mp4",
