@@ -16,7 +16,7 @@ const phrases = computed(() => orderSentences(props.lesson));
 const {
   sentenceIdx, bank, slots, lock, solved, total,
   cur, stars, emptyCount,
-  pick, takeBack, next,
+  pick, takeBack, revealAnswer, next,
 } = useOrderSession(phrases, {
   onWrong: () => sfxWrong(),
   // 拼对：音效 + 完整朗读这句
@@ -90,6 +90,18 @@ watch(
           aria-hidden="true"
         ></span>
       </div>
+
+      <!-- 兜底：孩子卡住时一键摆出正确句子（不计错、不影响星级，复用拼对音效与朗读） -->
+      <button
+        v-if="!solved"
+        class="answer-btn"
+        :disabled="lock"
+        data-haptic
+        aria-label="显示正确答案"
+        @click="revealAnswer"
+      >
+        看答案
+      </button>
 
       <!-- 待选单词块 -->
       <div v-if="!solved" class="bank">
@@ -198,6 +210,28 @@ watch(
   margin-bottom: var(--gap-m);
 }
 .listen-btn:active { transform: scale(0.95); }
+/* 兜底「看答案」：次要灰、小字，弱化处理不与 Listen / Next 主操作抢视觉；
+ * 拼错 800ms 回滚锁定期间置灰禁用（与全站禁用态 token 一致） */
+.answer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--btn-plain-bg);
+  color: var(--ink-soft);
+  font-weight: var(--fw-mid);
+  font-size: var(--fs-small);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.answer-btn:active { transform: scale(0.95); }
+.answer-btn:disabled {
+  background: var(--btn-off-bg);
+  color: var(--btn-off-ink);
+  cursor: default;
+}
 .next-btn {
   display: block;
   margin: var(--gap-m) auto 0;

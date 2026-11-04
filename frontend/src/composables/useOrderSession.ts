@@ -88,6 +88,21 @@ export function useOrderSession(phrases: Ref<OrderPhrase[]>, options: UseOrderSe
     bank.value.push(w);
   }
 
+  /**
+   * 兜底「看答案」：孩子卡住时按正确词序直接摆出本句并进入完成态，保证能继续过关。
+   * - 终态与亲手拼对一致：lock + solved，并复用 onSolved（组件配音效 + 朗读）；
+   * - 不计入 wrongCount，因此不改变既有星级公式（0 错 3 星 / ≤2 错 2 星），
+   *   低龄以「不挫败、能往下走」为先；锁定/已完成时幂等，不重复触发回调。
+   */
+  function revealAnswer() {
+    if (lock.value || solved.value || !cur.value) return;
+    slots.value = [...targetWords.value];
+    bank.value = [];
+    lock.value = true;
+    solved.value = true;
+    options.onSolved?.(cur.value!);
+  }
+
   /** 进入下一句；最后一句返回 true（组件据此 emit done） */
   function next(): boolean {
     solved.value = false;
@@ -111,6 +126,7 @@ export function useOrderSession(phrases: Ref<OrderPhrase[]>, options: UseOrderSe
     emptyCount,
     pick,
     takeBack,
+    revealAnswer,
     next,
   };
 }

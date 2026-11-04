@@ -84,4 +84,42 @@ describe("useOrderSession", () => {
     expect(s.slots.value).toHaveLength(0);
     expect(s.bank.value).toContain("What");
   });
+
+  it("revealAnswer：按正确词序摆出、清空词库、进入 solved/lock 并触发 onSolved", () => {
+    const onSolved = vi.fn();
+    const s = useOrderSession(ref(phrases), { onSolved });
+    s.revealAnswer();
+    expect(s.slots.value).toEqual(S1);
+    expect(s.bank.value).toHaveLength(0);
+    expect(s.solved.value).toBe(true);
+    expect(s.lock.value).toBe(true);
+    expect(onSolved).toHaveBeenCalledTimes(1);
+    expect(onSolved).toHaveBeenCalledWith(phrases[0]);
+  });
+
+  it("revealAnswer 不计错误：wrongCount 不增、星级不因此下降（看答案不扣分）", () => {
+    const s = useOrderSession(ref(phrases));
+    expect(s.stars.value).toBe(3);
+    s.revealAnswer();
+    expect(s.wrongCount.value).toBe(0);
+    expect(s.stars.value).toBe(3);
+  });
+
+  it("revealAnswer 幂等：已完成后再次调用不重复触发 onSolved", () => {
+    const onSolved = vi.fn();
+    const s = useOrderSession(ref(phrases), { onSolved });
+    s.revealAnswer();
+    s.revealAnswer();
+    expect(onSolved).toHaveBeenCalledTimes(1);
+  });
+
+  it("revealAnswer 后 next 仍正常推进：下一句重置槽位并给出打乱词库", () => {
+    const s = useOrderSession(ref(phrases));
+    s.revealAnswer();
+    expect(s.next()).toBe(false);
+    expect(s.sentenceIdx.value).toBe(1);
+    expect(s.slots.value).toHaveLength(0);
+    expect([...s.bank.value].sort()).toEqual([...S2].sort());
+    expect(s.solved.value).toBe(false);
+  });
 });

@@ -26,7 +26,7 @@
 | memory 翻牌记忆 | `words[]`（≥4） | — | 翻牌配对图↔词 |
 | match 连一连 | `words[]` | `colorPairs[]` 传入 → **颜色配对模式**：左列色圆 ↔ 右列图（色值取颜色词的 `word.color`） | 图 ↔ 词连线；另有练习方式「认字/听力」切换（localStorage 用户偏好，非课数据） |
 | speak 跟我读 | `words[]` | — | 按麦克风跟读打分 |
-| order 拼句子 | `words[]`（序列解锁另需 `phrases[]` 非空，与 talk 同块） | `utils/orderSentences` 按词规则生成短句：颜色 `It's X.` / 动词 `I can X.` / 形容词 `I'm X.` / 复数 `I see X.` / 不可数 `I see the X.` / 单数 `It's a/an X.`；只收 2–4 词、非问句、英文去重，多词头衔跳过；总开关 `ORDER_ACTIVITY_ENABLED` | 词表造不出句时回退 phrases 中 ≤4 词陈述句；排序/星级契约（0 错 3 星、≤2 错 2 星）由 `useOrderSession` 提供，与素材来源无关 |
+| order 拼句子 | `words[]`（序列解锁另需 `phrases[]` 非空，与 talk 同块） | `utils/orderSentences` 按词规则生成短句：颜色 `It's X.` / 动词 `I can X.` / 形容词 `I'm X.` / 复数 `I see X.` / 不可数 `I see the X.` / 单数 `It's a/an X.`；只收 2–4 词、非问句、英文去重，多词头衔跳过；总开关 `ORDER_ACTIVITY_ENABLED`；内置「看答案」兜底按钮（`useOrderSession.revealAnswer`）：卡住时一键按正确词序摆出并进入完成态，复用拼对音效与朗读 | 词表造不出句时回退 phrases 中 ≤4 词陈述句；排序/星级契约（0 错 3 星、≤2 错 2 星）由 `useOrderSession` 提供，与素材来源无关；「看答案」不计 `wrongCount`、不额外影响星级，仅作不卡关的兜底 |
 | talk 亲子对话 | `phrases[]` | `wordGroups` → 按词群分段对话；问答由 `utils/talkQa` 按当前词从 phrases 推导 | 全词轮次、固定问答 |
 | spinner 转盘复习 | `words[]` | —（随机复习收尾，不按词群拆分，一轮遍历全词表） | 转盘随机停词 → 孩子先录音发音，完成后点「下一转」；一轮转完全部词后满分 3 星，无对错判定；麦克风不可用时可直接继续 |
 
