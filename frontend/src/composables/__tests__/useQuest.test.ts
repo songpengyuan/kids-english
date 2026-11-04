@@ -74,23 +74,23 @@ describe("useQuest 作用域", () => {
     expect(quiz.questLevel.value).toBe(3);
   });
 
-  it("下一关在本课内推进：song → learn，speak → talk", async () => {
+  it("下一关在本课内推进：song → learn，speak → order", async () => {
     const song = await boot("/course/l4/game/quest?step=song");
     song.bootFromQuery();
     expect(song.nextLevel.value).toMatchObject({ lessonId: "l4", actKey: "learn", name: "学单词" });
 
     const speak = await boot("/game/quest/l4?step=speak");
     speak.bootFromQuery();
-    expect(speak.nextLevel.value).toMatchObject({ lessonId: "l4", actKey: "talk", name: "亲子对话" });
+    expect(speak.nextLevel.value).toMatchObject({ lessonId: "l4", actKey: "order", name: "拼句子" });
   });
 
   it("本课最后一个玩法（spinner）之后没有下一关（不会跨到下一课）", async () => {
     const talk = await boot("/game/quest/l4?step=talk");
-    expect(talk.bootFromQuery()).toBe(6);
+    expect(talk.bootFromQuery()).toBe(7);
     expect(talk.nextLevel.value).toMatchObject({ lessonId: "l4", actKey: "spinner", name: "转盘" });
 
     const spinner = await boot("/game/quest/l4?step=spinner");
-    expect(spinner.bootFromQuery()).toBe(7);
+    expect(spinner.bootFromQuery()).toBe(8);
     expect(spinner.nextLevel.value).toBeNull();
   });
 });

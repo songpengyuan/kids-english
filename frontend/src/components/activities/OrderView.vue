@@ -3,13 +3,15 @@ import { computed, watch } from "vue";
 import { speak } from "../../services/speech";
 import { sfxCorrect, sfxTap, sfxWrong } from "../../services/effects";
 import type { Lesson } from "../../data/lessons";
+import { orderSentences } from "../../utils/orderSentences";
 import { useOrderSession } from "../../composables/useOrderSession";
 import StageHead from "./StageHead.vue";
 
 const props = defineProps<{ lesson: Lesson }>();
 const emit = defineEmits(["done", "progress", "total"]);
 
-const phrases = computed(() => props.lesson.phrases || []);
+/** 题目 = 按本课单词生成的 2–4 词亲子式短句（不再直接喂教材整句歌词） */
+const phrases = computed(() => orderSentences(props.lesson));
 
 const {
   sentenceIdx, bank, slots, lock, solved, total,

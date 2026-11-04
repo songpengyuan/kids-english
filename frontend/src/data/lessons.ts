@@ -247,11 +247,11 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
 }));
 
 /**
- * 拼句子（order）临时下线开关：
- * 保留 OrderView、路由与 phrases 数据，只从菜单/闯关/地图序列隐藏；
- * 恢复玩法时把开关改回 true，无需重建数据或组件。
+ * 拼句子（order）开关：题目由 utils/orderSentences 按本课单词生成 2–4 词亲子短句
+ * （It's X. / I can X. / I see X. / It's a/an X. 等），位于 speak 之后、talk 之前；
+ * true 时进入菜单 / 闯关 / 地图序列。组件与路由始终保留。
  */
-const ORDER_ACTIVITY_ENABLED = false;
+const ORDER_ACTIVITY_ENABLED = true;
 
 /**
  * 一课的全部玩法 key（按课时菜单/闯关序列顺序）。
@@ -259,7 +259,7 @@ const ORDER_ACTIVITY_ENABLED = false;
  * 由数据层给出统一口径，避免 PracticeView / GamePath / LessonView 各写一份。
  *
  * ⚠️ **顺序即课程内闯关关卡顺序**：必须与 LessonView 的 `activities` 编排一致
- * （童谣打头建立兴趣 → 学单词 → 听音选图 → 连一连 → 跟我读 → 亲子对话）。
+ * （童谣打头建立兴趣 → 学单词 → 听音选图 → 连一连 → 跟我读 → 拼句子 → 亲子对话）。
  * 曾经这里把 song 排在最后，而菜单/闯关玩法却按 song 打头；
  * 结果同一课出现两条“关卡顺序”，地图的「从这里开始」与下一关推进对不上。
  */
@@ -274,7 +274,7 @@ export function activityKeys(lesson: Pick<Lesson, "phrases" | "words" | "wordGro
   // 词群入口化（2026-10-25）：配了 wordGroups 的课，词驱动玩法按群展开成
   // 独立入口/关卡（learn:colors），入口名 =「学单词·颜色」。公共玩法
   // （song/match）不拆——song 已按群分轨在页内切，match 的颜色配对
-  // 本来就是跨群交叉；order 句子为全课混合，且当前已临时下线。
+  // 本来就是跨群交叉；order 句子由全课词表生成、全课混合，不按词群拆分。
   // 2026-10-26：talk（亲子对话）也从页内切换升级为独立入口（talk:colors /
   // talk:animals），与学单词等一致——孩子练哪组词就进哪组对话，玩法内不再区分。
   const groups = lesson.wordGroups ?? [];

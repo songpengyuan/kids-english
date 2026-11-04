@@ -148,16 +148,16 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   /* ---------- 课程域 ---------- */
 
-  it("课程详情 game 视图（本课卡片列表：8 玩法卡 + 1 宝箱卡，序号本课内）", async () => {
+  it("课程详情 game 视图（本课卡片列表：9 玩法卡 + 1 宝箱卡，序号本课内）", async () => {
     const w = await mountPage(CourseDetailView, "/course/l10", { view: "game" });
     // 顶栏标题显示本课英文名（课程详情顶栏不再显示中文 titleZh）
     expect(w.text()).toContain("Walking In The Jungle");
     expect(w.text()).toContain("学单词");
-    // 只画本课 9 行（8 玩法卡 + 宝箱奖励卡），序号本课内 1..8
+    // 只画本课 10 行（9 玩法卡 + 宝箱奖励卡），玩法卡序号本课内 1..9
     const rows = w.findAll(".lll-row");
-    expect(rows).toHaveLength(9);
+    expect(rows).toHaveLength(10);
     expect(rows[0].find("button").attributes("aria-label")).toContain("第1关");
-    // 末行为宝箱奖励卡（不再是第 9 个玩法关，无“第N关”序号）
+    // 末行为宝箱奖励卡（不是玩法关，无“第N关”序号）
     expect(rows[rows.length - 1].find("button").attributes("aria-label")).toContain("宝箱");
     expect(w.html()).not.toContain("第22关");
     // 玩法全开放：非宝箱行不得出现锁标记（锁仅保留给未达标宝箱）
