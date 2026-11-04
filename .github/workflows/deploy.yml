@@ -105,8 +105,9 @@ jobs:
           git diff --exit-code -- backend/seed/lessons.json
 
       - name: Build
-        # 自定义域名（zelab.cn）部署在根路径，必须用 build:root（BASE_PATH=/）；
-        # 无自定义域名走 GitHub Pages 子路径时改回 GH_REPO=... pnpm build:ci
+        # BASE_PATH=/：华为云把站点服务在 zelab.cn 根路径（/app/ 是 SPA 内路由），
+        # rsync 上传的就是这份产物；Pages 旁路发同一份（CNAME 已删、不绑自定义域名，
+        # Pages 默认 URL 下资源路径会 404——旁路仅作产物留存，不对外服务）。
         run: |
           pnpm build:root
         working-directory: frontend

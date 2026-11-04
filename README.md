@@ -2,7 +2,7 @@
 
 面向 5 岁孩子的儿童英语学习 Web 应用。每节课围绕一首童谣展开六步练习（看图学词 → 听音选图 → 连一连 → 跟我读 → 唱童谣 → 亲子对话），点图片/点单词都会朗读发音，答对有彩带和星星奖励。参考多邻国的即时反馈与激励节奏设计。
 
-线上：**https://zelab.cn/app/**（GitHub Pages + 华为云双线部署）。
+线上：**https://zelab.cn/app/**（华为云单线部署；GitHub Pages 仅作构建产物旁路，**不对外服务**）。
 
 > **日常使用**看本文档。**架构、远端同步、排错**看 [DEVELOPMENT.md](./DEVELOPMENT.md)（16 章，含布局走查、调试深链、排错清单）。
 > **设计规范**看 [frontend/DESIGN_SYSTEM.md](./frontend/DESIGN_SYSTEM.md)（设计 token、响应式断点、组件契约、CI 守卫）。
@@ -121,7 +121,9 @@ frontend/public/lessons/<课时id>/
 
 > 断点记法：**改"值"用 600，改"结构"用 768 + landscape**。600 是 iPad/手机的宽窄分界（与 `useViewport.isNarrow` 同刀口，iPad mini 竖屏 744 也算平板）；768+landscape 才是允许分栏/加列的结构档。详见 DESIGN_SYSTEM §11.4。
 
-部署由 `.github/workflows/deploy.yml` 单 workflow 做双线：GitHub Pages（zelab.cn）+ rsync 到华为云 `110.41.61.4`（前端静态 + 后端代码同步、`requirements.txt` 有变化才装依赖、重启 systemd 后健康探测）。
+部署由 `.github/workflows/deploy.yml` 单 workflow 完成：rsync 到华为云 `110.41.61.4`（前端静态 + 后端代码同步、`requirements.txt` 有变化才装依赖、重启 systemd 后健康探测）；GitHub Pages 同步发一份产物但**不绑自定义域名**（CNAME 已删，2026-10-26）。
+
+> ⚠️ **域名 DNS 只准指向华为云**（当前阿里云解析 A 记录均 → 110.41.61.4）。zelab.cn 有 ICP 备案，接入商是华为云——DNS 指向 GitHub Pages 等境外主机会导致接入核查失败/取消接入。不要为"双线容灾"把域名解析加回 GitHub。
 
 服务器侧的定时任务是**版本化的**（`backend/deploy/*.cron`，安装到 `/etc/cron.d/`，可以用 `diff` 校验是否与仓库漂移）——这是刻意的：`crontab -e` 改的是一份服务器上不透明的表，机器挂了就再也说不清当时跑的是什么。
 
