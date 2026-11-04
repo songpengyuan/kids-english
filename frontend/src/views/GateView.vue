@@ -85,6 +85,14 @@ async function submit() {
       </form>
 
       <p class="gate__foot">本设备 7 天内免重复输入</p>
+
+      <!-- ICP 备案（管局抽查可能直达 /app/ 任意路由，不能只挂在根落地页） -->
+      <a
+        class="gate__beian"
+        href="https://beian.miit.gov.cn/"
+        target="_blank"
+        rel="noopener"
+      >豫ICP备2026054893号</a>
     </div>
   </PageShell>
 </template>
@@ -139,5 +147,16 @@ async function submit() {
   margin: var(--gap-l) 0 0;
   font-size: var(--fs-small);
   color: var(--ink-faint);
+}
+/* 备案号：与根落地页同号同链接（footer 语义），入口页里保持安静的一行 */
+.gate__beian {
+  margin: var(--gap-m) 0 0;
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+  text-decoration: none;
+}
+.gate__beian:hover {
+  color: var(--ink-soft);
+  text-decoration: underline;
 }
 </style>

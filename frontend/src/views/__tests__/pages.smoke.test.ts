@@ -129,6 +129,12 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     const w = await mountPage(GateView, "/gate");
     expect(w.text()).toContain("丞丞学英语"); // 品牌区
     expect(w.find("input").attributes("placeholder")).toContain("家长口令");
+    // ICP 备案号：管局抽查可能直达 /app/ 任意路由，口令页必须悬挂（与根落地页同号同链接）
+    const beian = w.find(".gate__beian");
+    expect(beian.exists()).toBe(true);
+    expect(beian.text()).toContain("豫ICP备2026054893号");
+    expect(beian.attributes("href")).toBe("https://beian.miit.gov.cn/");
+    expect(beian.attributes("target")).toBe("_blank");
     expect(errors).toEqual([]);
   });
 
