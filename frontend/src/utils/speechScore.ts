@@ -191,21 +191,66 @@ interface RecorderLike {
   release: () => void;
 }
 
+/**
+ * 本机回放电平增益：孩子离麦远、说话轻时，原始录音回放偏小。
+ * 只作用于"本机内存回放"的录音轨（不上传、不入库、不参与 ASR 打分）；
+ * 先用压缩器压动态、再轻抬增益，做到小声听得清、大声不破音。
+ */
+const RECORD_GAIN = 1.6;
+
 export function createRecorder(): RecorderLike {
-  let stream: MediaStream | null = null;
+  let micStream: MediaStream | null = null;
+  let recordStream: MediaStream | null = null;
+  let audioCtx: AudioContext | null = null;
+  let comp: DynamicsCompressorNode | null = null;
+  let gainNode: GainNode | null = null;
+  let dest: MediaStreamAudioDestinationNode | null = null;
   let mr: MediaRecorder | null = null;
   let chunks: Blob[] = [];
+
+  /** 取麦克风流；优先 Web Audio 压限 + 增益链，环境不支持时回退裸流（功能不退化） */
+  async function openCapture(): Promise<MediaStream> {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+    try {
+      const Ctor =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctor) return micStream;
+      audioCtx = new Ctor();
+      if (audioCtx.state === "suspended") await audioCtx.resume();
+      const src = audioCtx.createMediaStreamSource(micStream);
+      comp = audioCtx.createDynamicsCompressor();
+      comp.threshold.value = -24;
+      comp.knee.value = 20;
+      comp.ratio.value = 6;
+      comp.attack.value = 0.003;
+      comp.release.value = 0.25;
+      gainNode = audioCtx.createGain();
+      gainNode.gain.value = RECORD_GAIN;
+      dest = audioCtx.createMediaStreamDestination();
+      src.connect(comp);
+      comp.connect(gainNode);
+      gainNode.connect(dest);
+      recordStream = dest.stream;
+      return recordStream;
+    } catch {
+      // Web Audio 链构建失败：直接录原始麦克风流，保证录音/回放基本可用
+      recordStream = micStream;
+      return recordStream;
+    }
+  }
+
   return {
     async ensureMic() {
-      if (!stream) {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      }
-      return stream;
+      if (!recordStream) recordStream = await openCapture();
+      return recordStream;
     },
     async start() {
       await this.ensureMic();
       chunks = [];
-      mr = new MediaRecorder(stream!);
+      mr = new MediaRecorder(recordStream!);
       mr.ondataavailable = (e) => e.data.size && chunks.push(e.data);
       mr.start();
     },
@@ -220,8 +265,15 @@ export function createRecorder(): RecorderLike {
       });
     },
     release() {
-      if (stream) stream.getTracks().forEach((t) => t.stop());
-      stream = null;
-    }
+      if (recordStream && recordStream !== micStream) recordStream.getTracks().forEach((t) => t.stop());
+      if (micStream) micStream.getTracks().forEach((t) => t.stop());
+      micStream = null;
+      recordStream = null;
+      if (audioCtx) {
+        void audioCtx.close().catch(() => {});
+        audioCtx = null;
+        comp = gainNode = dest = null;
+      }
+    },
   };
 }
