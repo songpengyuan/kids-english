@@ -208,6 +208,28 @@ describe("LearnStage dialog 亲子口语对话卡（l10）· 逐轮对话 + 录�
     expect(wrapper.find(".dlg-round").text()).toContain("第 1 / 3 轮");
   });
 
+  it("录音结束后、家长判定前可反复点「再听一遍」重放本机声音", async () => {
+    const stop = vi.fn().mockResolvedValue("blob:rec-url");
+    vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);
+    const wrapper = mount(LearnStage, {
+      props: { words: dlgWords, dialog: true, phrases: dlgPhrases },
+      global: { plugins: [createPinia()] },
+    });
+    const mic = wrapper.find(".mic-btn");
+    await mic.trigger("click");
+    await flush();
+    await mic.trigger("click"); // 停止录音 → 先自动回放一次
+    await flush();
+    // 家长判定按钮旁始终保留手动重放入口，随时可再听
+    expect(wrapper.find(".dlg-replay").exists()).toBe(true);
+    const play = vi.mocked(HTMLMediaElement.prototype.play);
+    play.mockClear();
+    await wrapper.find(".dlg-replay").trigger("click");
+    expect(play).toHaveBeenCalled();
+    await wrapper.find(".dlg-replay").trigger("click");
+    expect(play).toHaveBeenCalledTimes(2);
+  });
+
   it("三轮全部通过 → 「我都会啦」可点，完成记 3 星", async () => {
     const stop = vi.fn().mockResolvedValue("blob:rec-url");
     vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);

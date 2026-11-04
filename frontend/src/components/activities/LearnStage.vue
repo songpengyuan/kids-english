@@ -119,7 +119,7 @@ const session = useSpeechSession(computed(() => props.words), {
   },
 });
 /** 解构会话状态/方法（模板中 ref 自动解包；total/stars 与 cards 冲突用别名） */
-const { idx: dlgIdx, cur, status, grade, heard, mode, micBlocked, stars: dlgStars, recAudio, recUrl, startMic, stopMic, parentJudge, retry, next } = session;
+const { idx: dlgIdx, cur, status, grade, heard, mode, micBlocked, stars: dlgStars, recAudio, recUrl, startMic, stopMic, replayRec, parentJudge, retry, next } = session;
 
 /* cards 点读卡轻跟读：可选鼓励练习（仅 ASR 支持设备渲染；不影响点读覆盖率星级与完成门槛） */
 const {
@@ -275,6 +275,11 @@ const listening = computed(() => status.value === "listening");
             <template v-else>
               <audio ref="recAudio" :src="recUrl ?? undefined" class="dlg-audio" />
               <p class="dlg-heard">听一下孩子说的，判定这轮是否通过</p>
+              <div v-if="recUrl" class="dlg-replay-row">
+                <button class="dlg-replay" @click="replayRec" aria-label="再听一遍孩子的发音">
+                  <Volume2 class="k-ico" />再听一遍
+                </button>
+              </div>
               <div class="dlg-judge">
                 <template v-if="grade === 'retry'">
                   <BaseButton variant="green" @click="retry()">再试一次</BaseButton>
@@ -623,6 +628,35 @@ const listening = computed(() => status.value === "listening");
 .dlg-pass {
   width: auto;
   min-width: 160px;
+}
+.dlg-replay-row {
+  display: flex;
+  justify-content: center;
+  margin: var(--gap-xs) 0 var(--gap-s);
+}
+.dlg-replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap-min);
+  padding: 4px 16px;
+  border: 1.5px solid var(--line);
+  background: var(--card-bg);
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+  font-weight: var(--fw-strong);
+  font-size: var(--fs-small);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s;
+}
+.dlg-replay .k-ico {
+  width: 20px;
+  height: 20px;
+}
+.dlg-replay:active {
+  transform: translateY(1px);
 }
 .dlg-audio {
   display: none;

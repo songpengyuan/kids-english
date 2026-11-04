@@ -163,6 +163,26 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     expect(wrapper.find(".stage-head .prog").text()).toBe("1 / 3");
   });
 
+  it("录音结束后、判定前可反复点「再听一遍」重放本机声音", async () => {
+    const stop = vi.fn().mockResolvedValue("blob:rec-url");
+    vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);
+    const wrapper = mount(TalkView, { props: { lesson } });
+    const bar = wrapper.find(".input-bar");
+    await bar.trigger("click");
+    await flush();
+    await bar.trigger("click"); // 停止录音 → 先自动回放一次
+    await flush();
+    // 判定按钮之外始终保留手动重放入口，家长可随时再听
+    expect(wrapper.find(".ci-replay").exists()).toBe(true);
+    const play = vi.mocked(HTMLMediaElement.prototype.play);
+    play.mockClear();
+    await wrapper.find(".ci-replay").trigger("click");
+    expect(play).toHaveBeenCalled();
+    // 连点第二次仍然从头播，不依赖"读对/没读准"判定
+    await wrapper.find(".ci-replay").trigger("click");
+    expect(play).toHaveBeenCalledTimes(2);
+  });
+
   it("三轮全部通过 → 完成按钮可用，emit done(3 星)", async () => {
     const stop = vi.fn().mockResolvedValue("blob:rec-url");
     vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);

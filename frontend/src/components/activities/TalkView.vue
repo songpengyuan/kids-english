@@ -129,7 +129,7 @@ const session = useSpeechSession(words, {
   onSpeakAttempt: () => progress.addSpeakAttempt(),
 });
 /** 解构会话状态/方法（模板中 ref 自动解包） */
-const { idx: dlgIdx, cur, status, grade, heard, mode, micBlocked, stars, progressText, total, recAudio, recUrl, startMic, stopMic, parentJudge, retry, next } = session;
+const { idx: dlgIdx, cur, status, grade, heard, mode, micBlocked, stars, progressText, total, recAudio, recUrl, startMic, stopMic, replayRec, parentJudge, retry, next } = session;
 
 /**
  * 推进到下一轮：切索引 → status/grade 归位（下一轮回到"等你说"）。
@@ -325,6 +325,11 @@ function finish() {
         <template v-else>
           <audio ref="recAudio" :src="recUrl ?? undefined" class="ci-audio" />
           <p class="ci-hint">听一下孩子说的，判定这轮是否通过</p>
+          <div v-if="recUrl" class="ci-replay-row">
+            <button class="ci-replay" @click="replayRec" aria-label="再听一遍孩子的发音">
+              <Volume2 class="k-ico" />再听一遍
+            </button>
+          </div>
           <div class="ci-judge">
             <template v-if="grade === 'retry'">
               <BaseButton variant="green" @click="retry()">再试一次</BaseButton>
@@ -607,6 +612,35 @@ function finish() {
 .ci-pass {
   width: auto;
   min-width: min(60%, 220px);
+}
+.ci-replay-row {
+  display: flex;
+  justify-content: center;
+  margin: var(--gap-xs) 0 var(--gap-s);
+}
+.ci-replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap-min);
+  padding: 4px 16px;
+  border: 1.5px solid var(--line);
+  background: var(--card-bg);
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+  font-weight: var(--fw-strong);
+  font-size: var(--fs-small);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s;
+}
+.ci-replay .k-ico {
+  width: 20px;
+  height: 20px;
+}
+.ci-replay:active {
+  transform: translateY(1px);
 }
 .ci-audio {
   display: none;
