@@ -148,6 +148,12 @@ function speakWithTTS(text: string, { rate = 0.85, lang = "en-US" }: { rate?: nu
       return;
     }
     const seq = ++ttsSeq; // 本请求的版本号：后到的请求会让先到的作废
+    // 立即结算上一条挂起的朗读 Promise（已被本请求取代，不留 12s 超时悬挂）
+    if (settleTts) {
+      const prev = settleTts;
+      settleTts = null;
+      prev(false);
+    }
     let settled = false;
     const done = (ok: boolean) => {
       if (!settled) {
@@ -159,7 +165,6 @@ function speakWithTTS(text: string, { rate = 0.85, lang = "en-US" }: { rate?: nu
     const doneRef = done;
     settleTts = done; // 注册结算：stopSpeaking 掐断时立即 resolve，不用等超时
 
-    window.speechSynthesis.cancel(); // 打断上一条（Chrome 异步，真正生效靠下面的延迟 + seq 校验）
     const u = new SpeechSynthesisUtterance(text);
     curUtter = u;
     const v = pickVoice(lang);
@@ -173,14 +178,25 @@ function speakWithTTS(text: string, { rate = 0.85, lang = "en-US" }: { rate?: nu
     u.onerror = () => {
       if (seq === ttsSeq) done(false);
     };
-    // Chrome 竞态规避：cancel 后延迟一拍再 speak；这期间若来了新请求（seq 变了），本请求放弃
-    window.setTimeout(() => {
-      if (seq !== ttsSeq) {
-        done(false);
-        return;
-      }
+
+    // iOS Safari 硬约束：speechSynthesis.speak 必须处在用户手势的**同步调用链**里，
+    // 过一个 setTimeout 再发就会静默失败（"点了 Listen 不发音"的元凶）。
+    // 所以空闲时直接同步 speak（无上一条可打断，也没有 Chrome cancel 竞态）；
+    // 只在真的要打断上一条时才走 cancel + 60ms 延迟（Chrome 的 cancel 是异步的，
+    // 立刻 speak 会被吞——那时页面早已解锁过语音，iOS 也不依赖手势链了）。
+    const idle = !window.speechSynthesis.speaking && !window.speechSynthesis.pending;
+    if (idle) {
       window.speechSynthesis.speak(u);
-    }, 60);
+    } else {
+      window.speechSynthesis.cancel(); // 打断上一条
+      window.setTimeout(() => {
+        if (seq !== ttsSeq) {
+          done(false);
+          return;
+        }
+        window.speechSynthesis.speak(u);
+      }, 60);
+    }
     // 兜底：个别环境（Safari 首次、切后台）onend 可能不来，超时放行避免链条卡死
     window.setTimeout(() => done(true), 12000);
   });

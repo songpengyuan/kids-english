@@ -20,11 +20,20 @@ vi.hoisted(() => {
   (w.window as any).__ttsCaptured = captured;
   (w.window as any).speechSynthesis = {
     getVoices: () => voices,
-    cancel: vi.fn(),
+    // speaking/pending 要模拟真实浏览器：speak 期间为 true（决定 speakWithTTS
+    // 走"同步发"还是"cancel+延迟"分支），cancel 中断当前发声
+    speaking: false,
+    pending: false,
+    cancel: vi.fn(function (this: any) {
+      (w.window as any).speechSynthesis.speaking = false;
+      (w.window as any).speechSynthesis.pending = false;
+    }),
     speak: (u: any) => {
       captured.push({ u, at: captured.length });
+      (w.window as any).speechSynthesis.speaking = true;
       // 模拟浏览器异步播完（5ms 后触发 onend）
       setTimeout(() => {
+        (w.window as any).speechSynthesis.speaking = false;
         try {
           u.onend?.();
         } catch {
@@ -109,14 +118,17 @@ describe("speech: Chrome 竞态（点了 A 却听到 B）回归", () => {
   });
   afterEach(() => setSoundOn(true));
 
-  it("快速连点：先到的请求作废，最终只有后到的发声", async () => {
+  it("快速连点：后到的请求接管，先到的被 cancel 掐断", async () => {
+    const cancelSpy = vi.spyOn(globalThis.window.speechSynthesis as any, "cancel");
     const pA = speakZh("旧内容");
     const pB = speakZh("新内容");
     await Promise.all([pA, pB]);
-    // 等两个 60ms 延迟发声窗口都走完
     await new Promise((r) => setTimeout(r, 140));
-    expect(cap().filter((x) => x.u.text === "旧内容")).toHaveLength(0);
+    // 旧内容先同步发出（iOS Safari 要求 speak 在手势同步链内，过 setTimeout 就哑火），
+    // 随即被新请求 cancel 中断，用户最终听到的是新内容
+    expect(cap().filter((x) => x.u.text === "旧内容")).toHaveLength(1);
     expect(cap().filter((x) => x.u.text === "新内容")).toHaveLength(1);
+    expect(cancelSpy).toHaveBeenCalled();
   });
 
   it("stopSpeaking 立即结算挂起的朗读 Promise（不等 12s 超时兜底）", async () => {
@@ -129,11 +141,12 @@ describe("speech: Chrome 竞态（点了 A 却听到 B）回归", () => {
     expect(result).toBe("resolved");
   });
 
-  it("停止后再点：旧内容绝不再补发（延迟窗口被作废）", async () => {
+  it("停止后再点：延迟窗口里绝无补发", async () => {
     speakZh("旧内容");
     stopSpeaking();
+    const n = cap().length; // 旧内容同步发出过一次，已被 stopSpeaking 掐断
     await new Promise((r) => setTimeout(r, 100)); // 越过 60ms 延迟窗口
-    expect(cap().filter((x) => x.u.text === "旧内容")).toHaveLength(0);
+    expect(cap().length).toBe(n); // 没有任何补发冒出来
   });
 });
 

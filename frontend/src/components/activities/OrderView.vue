@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onScopeDispose, ref, watch } from "vue";
 import { speak } from "../../services/speech";
 import { sfxCorrect, sfxTap, sfxWrong } from "../../services/effects";
 import type { Lesson, Word } from "../../data/lessons";
@@ -51,17 +51,25 @@ const stars = computed(() => (wrongCount.value === 0 ? 3 : wrongCount.value <= 2
 
 watch(total, () => emit("total", total.value), { immediate: true });
 
-/** 进题自动朗读完整句（与听音选图同节奏），350ms 延迟避免与上题朗读打架 */
+/** 进题自动朗读完整句（与听音选图同节奏），350ms 延迟避免与上题朗读打架。
+ *  句柄必须可清理：重进题先掐上一条，组件卸载时清掉——否则退出玩法后
+ *  会在新页面上凭空把下一句读出来（TalkView 同款问题的教训）。 */
+let readTimer: number | null = null;
 watch(
   idx,
   () => {
+    if (readTimer !== null) clearTimeout(readTimer);
     if (!cur.value) return;
-    setTimeout(() => {
+    readTimer = window.setTimeout(() => {
+      readTimer = null;
       if (cur.value) speak(cur.value.en, { lessonId: props.lesson.id });
     }, 350);
   },
   { immediate: true }
 );
+onScopeDispose(() => {
+  if (readTimer !== null) clearTimeout(readTimer);
+});
 
 function playSentence() {
   if (cur.value) speak(cur.value.en, { lessonId: props.lesson.id });
