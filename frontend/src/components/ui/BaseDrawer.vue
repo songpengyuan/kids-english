@@ -10,7 +10,7 @@ const emit = defineEmits<{ (e: "close"): void }>();
         <div v-if="title || $slots.header" class="drawer-head">
           <slot name="header">
             <p class="drawer-title">{{ title }}</p>
-            <button class="drawer-close" @click="emit('close')">✕</button>
+            <button class="drawer-close" aria-label="关闭" @click="emit('close')">✕</button>
           </slot>
         </div>
         <div class="drawer-body">
