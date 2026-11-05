@@ -31,18 +31,20 @@ export interface OrderItem {
 
 /**
  * Wheels on the Bus 安静书：每个部件对应的拟声（实物照里每列最上面那格）。
- * 键 = word.id；只收在这张表里的词才出「The X on the bus go …」题，
+ * 键 = word.id；只收在这张表里的词才出「The X on the bus go/goes …」题，
  * bus 本身不在表内 → 它是固定语境，不出题也不进图卡池。
+ * 动词单复数由部件词决定（door/horn 单数 → goes；wheels/people 等复数 → go），
+ * 与儿歌唱法一致（"The horn on the bus goes beep"）。
  */
 const BUS_VERSE: Record<string, string> = {
-  wheels: "on the bus go round and round",
-  door: "on the bus go open and shut",
-  wipers: "on the bus go swish, swish, swish",
-  horn: "on the bus go beep, beep, beep",
-  people: "on the bus go up and down",
-  babies: "on the bus go wah, wah, wah",
-  mommies: "on the bus go shh, shh, shh",
-  daddies: "on the bus go shh, shh, shh",
+  wheels: "round and round",
+  door: "open and shut",
+  wipers: "swish, swish, swish",
+  horn: "beep, beep, beep",
+  people: "up and down",
+  babies: "wah, wah, wah",
+  mommies: "shh, shh, shh",
+  daddies: "shh, shh, shh",
 };
 
 /** 动作词：用 I can X.（避免把 listen 名词化成 It's a listen.） */
@@ -100,13 +102,15 @@ export function orderSentences(
   const words = lesson.words || [];
   const imaged = words.filter((w) => w.image);
 
-  // Wheels on the Bus 安静书：走专属歌词句型 "The [部件] on the bus go [拟声]."
+  // Wheels on the Bus 安静书：走专属歌词句型 "The [部件] on the bus go/goes [拟声]."
   if (lesson.id === "l12") {
     for (const w of imaged) {
-      const action = BUS_VERSE[w.id];
-      if (!action) continue; // bus 等非映射词不进题
+      const ono = BUS_VERSE[w.id];
+      if (!ono) continue; // bus 等非映射词不进题
+      // 主语单复数决定动词：The wheels … go ｜ The door/horn … goes（与儿歌一致）
+      const verb = isPluralNoun(w) ? "go" : "goes";
       const before = "The ";
-      const after = ` ${action}.`;
+      const after = ` on the bus ${verb} ${ono}.`;
       const en = before + w.en.trim() + after;
       if (seen.has(en.toLowerCase())) continue;
       seen.add(en.toLowerCase());

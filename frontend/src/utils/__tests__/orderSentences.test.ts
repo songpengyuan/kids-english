@@ -104,5 +104,12 @@ describe("orderSentences 看图填空题目", () => {
     // bus 是固定语境：既不是任何题的 target，也不出现在图卡池
     expect(out.every((o) => o.target.en !== "bus")).toBe(true);
     expect(out.every((o) => o.candidates.every((c) => c.en !== "bus"))).toBe(true);
+    // 动词按主语单复数变位（与儿歌唱法一致）：复数 go，单数 goes
+    const door = out.find((o) => o.target.en === "door")!;
+    expect(door.en).toBe("The door on the bus goes open and shut.");
+    const horn = out.find((o) => o.target.en === "horn")!;
+    expect(horn.en).toBe("The horn on the bus goes beep, beep, beep.");
+    expect(out.filter((o) => o.en.includes(" go ")).map((o) => o.target.en).sort())
+      .toEqual(["babies", "daddies", "mommies", "people", "wheels", "wipers"]);
   });
 });
