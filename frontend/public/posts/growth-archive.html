@@ -56,6 +56,7 @@
         backdrop-filter: saturate(1.4) blur(12px);
       }
       .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--ink); }
+      .brand:hover { text-decoration: none; color: var(--ink); }
       .brand .mark {
         width: 32px; height: 32px; flex: none; display: grid; place-items: center;
         border-radius: 10px; background: linear-gradient(135deg, var(--teal), var(--violet));
@@ -106,11 +107,7 @@
     <div class="bg" aria-hidden="true"></div>
 
     <header>
-      <a class="back" href="/">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6" /></svg>
-        返回首页
-      </a>
-      <div class="brand">
+      <a class="brand" href="/">
         <span class="mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <path d="M9.9 7.2 C13.5 7.2 15.6 10 15.6 13.5 C15.6 17.3 13 20 9.8 20 C6.6 20 4.2 17.3 4.2 13.6 C4.2 10 6.3 7.2 9.9 7.2 Z" fill="#0d1330" />
@@ -120,7 +117,7 @@
           </svg>
         </span>
         闲思杂记
-      </div>
+      </a>
     </header>
 
     <article>
