@@ -118,3 +118,30 @@ onMounted(() => {
   </router-view>
   <BottomNav v-if="showNav" />
 </template>
+
+<style>
+/* ===== 全局无障碍兜底（2026-11-05 a11y 走查） =====
+ * 1. 键盘焦点环：鼠标点击不出现、Tab 导航才出现的 :focus-visible 轮廓。
+ *    之前只有 GamePath / SpeakText 各自实现，其余可聚焦元素键盘不可辨；
+ *    这里对所有元素兜底（组件自己的 :focus-visible 规则更具体时优先）。
+ * 2. 减弱动态效果：系统开启 prefers-reduced-motion 时，把 CSS 动画/过渡
+ *    压到近零——星空、波浪、摇摆等装饰性循环动效全部停摆。
+ *    布局与逻辑不受影响：JS 序列走 setTimeout/rAF，不依赖 CSS 动画事件；
+ *    WordCard 的 animationend 在 0.01ms 后照常触发。
+ */
+:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+</style>
