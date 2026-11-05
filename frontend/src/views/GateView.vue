@@ -75,7 +75,6 @@ async function submit() {
             <circle cx="12.4" cy="9.7" r=".8" fill="#FFFFFF" />
           </svg>
         </span>
-        <h1 class="gate__name">闲思杂记</h1>
         <p class="gate__slogan">请输入家长口令进入</p>
       </div>
 
@@ -159,15 +158,8 @@ async function submit() {
   width: 34px;
   height: 34px;
 }
-.gate__name {
-  margin: var(--gap-s) 0 var(--gap-xs);
-  font-size: var(--fs-title);
-  font-weight: var(--fw-strong);
-  color: var(--night-ink);
-  letter-spacing: 3px;
-}
 .gate__slogan {
-  margin: 0;
+  margin: var(--gap-s) 0 0;
   font-size: var(--fs-small);
   color: var(--night-ink-faint);
 }
