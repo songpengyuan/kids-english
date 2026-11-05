@@ -157,6 +157,7 @@ const emptyDesc = computed(() =>
             miss: wrongPicks.has(opt.lessonId + ':' + opt.id)
           }"
           :disabled="picked !== null"
+          :aria-label="opt.en"
           @click="pick(opt)"
         >
           <img v-if="opt.image" :src="opt.image || undefined" :alt="opt.en" />
