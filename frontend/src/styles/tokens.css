@@ -329,6 +329,25 @@
    * 用绝对值而不是"比 --z-floating 大 1"——模态是另一个层级体系，不该和内容层联动。 */
   --z-mask: 100;
 
+  /* ---------- 深空夜色（对外落地页 + 门禁页专用，固定深色，不随主题切换） ----------
+   * 与 public/index.html 落地页同家族：深海军蓝星空底 + 青绿/紫极光 + teal 主按钮。
+   * 门禁页 /gate 是备案门面，与落地页视觉统一，故色板收敛到这里，组件只引用 var()。 */
+  --night: #0b1026;
+  --night-2: #121a3d;
+  --night-card: rgba(22, 30, 64, 0.72);
+  --night-line: rgba(255, 255, 255, 0.1);
+  --night-teal: #2dd4bf;
+  --night-teal-deep: #14b8a6;
+  --night-teal-soft: #5eead4;
+  --night-violet: #8b5cf6;
+  --night-ink: #eef1fb;
+  --night-ink-soft: #aab4d4;
+  --night-ink-faint: #7b86a8;
+  --night-on-teal: #083344;
+  --night-danger: #fca5a5;
+  --night-input-border: rgba(255, 255, 255, 0.12);
+  --night-input-bg: rgba(255, 255, 255, 0.05);
+
   font-family:
     "Baloo 2", "ZCOOL KuaiLe", "Chalkboard SE", "Comic Sans MS", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;

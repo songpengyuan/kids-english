@@ -127,7 +127,8 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   it("应用口令页", async () => {
     const w = await mountPage(GateView, "/gate");
-    expect(w.text()).toContain("丞丞学英语"); // 品牌区
+    expect(w.text()).toContain("闲思杂记"); // 品牌区（对外中性站名，与落地页一致）
+    expect(w.text()).not.toContain("丞丞"); // 合规：门禁页不暴露孩子真名
     expect(w.find("input").attributes("placeholder")).toContain("家长口令");
     // ICP 备案号：管局抽查可能直达 /app/ 任意路由，口令页必须悬挂（与根落地页同号同链接）
     const beian = w.find(".gate__beian");

@@ -2,14 +2,11 @@
 /**
  * 应用入口口令页（#/gate）—— 备案域名下的家长口令门禁。
  *
- * 设计（2026-10 统一）：原先是"DeepSeek 极简风"（写死 #fff 白底 + 冷灰阶
- * #1a1a1a/#999/#f5f5f5），与全站的暖色系统完全不同，且**不跟随主题**——
- * 家长在暗色模式下打开会突然闪一片白。现在改为：
- *   · 骨架用 PageShell（bare + center，本页无顶栏、内容垂直居中）；
- *   · 颜色全部走 token（--ink / --ink-soft / --ink-faint / --brand / --card-bg），
- *     亮暗两套自动跟随；
- *   · 输入框用全局 .field，主按钮用全局 .k-btn（全站同一个"进入"按钮）。
- * 版式仍是原来的居中单列（品牌区在卡外、表单在卡内），这是入口页应有的克制。
+ * 视觉（2026-11 与对外落地页统一）：与 public/index.html 落地页同一家族——
+ * 深空夜色贴纸风（深海军蓝星空底 + 青绿/紫极光 + 星点）、巨嘴鸟品牌标、
+ * teal 主按钮、毛玻璃贴纸卡。对外品牌统一为「闲思杂记」，不再出现孩子真名
+ * （备案审核/任意访客直达 /gate 时都不应暴露未成年人姓名）。
+ * 本站字体已全站引入站酷快乐体，无需额外 @font-face。
  */
 import { ref } from "vue";
 import { useRouter } from "vue-router";
@@ -60,25 +57,40 @@ async function submit() {
 <template>
   <PageShell bare center>
     <div class="gate">
-      <!-- 品牌区（卡外，入口页的门面） -->
+      <div class="gate__inner">
+      <!-- 品牌区（与落地页顶栏一致：巨嘴鸟 mark + 中性站名，不出现孩子真名） -->
       <div class="gate__brand">
-        <span class="gate__mark">📚</span>
-        <h1 class="gate__name">丞丞学英语</h1>
-        <p class="gate__slogan">每天 10 分钟 · 快乐学英语</p>
+        <span class="gate__mark" aria-hidden="true">
+          <!-- 巨嘴鸟（原创·夜色剪影）：深蓝剪影 + 琥珀喙 + 白点眼 -->
+          <svg viewBox="0 0 24 24" fill="none">
+            <defs>
+              <linearGradient id="gateBeak" x1="14.5" y1="7.5" x2="23.5" y2="12.5" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#FFD34D" />
+                <stop offset="1" stop-color="#FF9F1C" />
+              </linearGradient>
+            </defs>
+            <path d="M9.9 7.2 C13.5 7.2 15.6 10 15.6 13.5 C15.6 17.3 13 20 9.8 20 C6.6 20 4.2 17.3 4.2 13.6 C4.2 10 6.3 7.2 9.9 7.2 Z" fill="#0d1330" />
+            <path d="M5 17.6 L2.6 20 L6.2 18.9 Z" fill="#0d1330" />
+            <path d="M14.4 7.6 C18.4 5.4 23.2 6.2 23.6 9.2 C23.9 11.5 21.8 13.4 17.9 14 L14.1 12.5 Z" fill="url(#gateBeak)" />
+            <circle cx="12.4" cy="9.7" r=".8" fill="#FFFFFF" />
+          </svg>
+        </span>
+        <h1 class="gate__name">闲思杂记</h1>
+        <p class="gate__slogan">请输入家长口令进入</p>
       </div>
 
-      <!-- 表单（卡内） -->
-      <form class="card gate__form" @submit.prevent="submit">
+      <!-- 表单（深色毛玻璃贴纸卡） -->
+      <form class="gate__form" @submit.prevent="submit">
         <input
           v-model="pass"
-          class="field"
+          class="gate__input"
           type="password"
           placeholder="请输入家长口令"
           maxlength="20"
           inputmode="numeric"
           autocomplete="off"
         />
-        <button class="k-btn gate__btn" type="submit" :disabled="busy">
+        <button class="gate__btn" type="submit" :disabled="busy">
           {{ busy ? "进入中…" : "进入" }}
         </button>
         <p v-if="error" class="gate__error">{{ error }}</p>
@@ -93,17 +105,40 @@ async function submit() {
         target="_blank"
         rel="noopener"
       >豫ICP备2026054893号</a>
+      </div>
     </div>
   </PageShell>
 </template>
 
 <style scoped>
+/* 深空夜色：与落地页 .bg 同族——深海军蓝渐变 + 星点 + 青绿/紫极光。
+   gate 是备案门面，固定深色，不跟随亮/暗主题（与落地页保持一致）。 */
 .gate {
+  width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap-l) var(--gap-m) calc(var(--gap-l) + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(1.5px 1.5px at 22% 18%, rgba(255, 255, 255, 0.9) 50%, transparent 51%),
+    radial-gradient(1px 1px at 68% 9%, rgba(255, 255, 255, 0.7) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 84% 30%, rgba(255, 255, 255, 0.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 41% 38%, rgba(255, 255, 255, 0.45) 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 9% 52%, rgba(255, 255, 255, 0.6) 50%, transparent 51%),
+    radial-gradient(ellipse 70% 55% at 85% -10%, rgba(139, 92, 246, 0.22), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 8% 0%, rgba(45, 212, 191, 0.16), transparent 70%),
+    linear-gradient(180deg, var(--night) 0%, var(--night-2) 52%, var(--night) 100%);
+  color: var(--night-ink);
+  box-sizing: border-box;
+}
+.gate__inner {
   width: 100%;
   max-width: 340px;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   text-align: center;
 }
 
@@ -112,51 +147,105 @@ async function submit() {
   margin-bottom: var(--gap-l);
 }
 .gate__mark {
-  font-size: var(--fs-emoji-xl);
-  line-height: 1;
+  width: 60px;
+  height: 60px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--night-teal), var(--night-violet));
+  box-shadow: 0 6px 22px rgba(45, 212, 191, 0.35);
+}
+.gate__mark svg {
+  width: 34px;
+  height: 34px;
 }
 .gate__name {
   margin: var(--gap-s) 0 var(--gap-xs);
   font-size: var(--fs-title);
   font-weight: var(--fw-strong);
-  color: var(--ink);
-  letter-spacing: 1px;
+  color: var(--night-ink);
+  letter-spacing: 3px;
 }
 .gate__slogan {
   margin: 0;
   font-size: var(--fs-small);
-  color: var(--ink-faint);
+  color: var(--night-ink-faint);
 }
 
-/* ---------- 表单 ---------- */
+/* ---------- 表单：深色毛玻璃贴纸卡 ---------- */
 .gate__form {
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: var(--gap-s);
+  padding: 22px 20px;
+  background: var(--night-card);
+  border: 1.5px solid var(--night-line);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.gate__input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--night-ink);
+  background: var(--night-input-bg);
+  border: 1.5px solid var(--night-input-border);
+  border-radius: 14px;
+  outline: none;
+  transition: border-color 0.18s;
+}
+.gate__input::placeholder {
+  color: var(--night-ink-faint);
+}
+.gate__input:focus {
+  border-color: var(--night-teal);
 }
 .gate__btn {
   width: 100%;
+  padding: 13px 20px;
+  font-size: 16px;
+  font-family: inherit;
+  font-weight: var(--fw-mid);
+  color: var(--night-on-teal);
+  background: var(--night-teal);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 5px 0 rgba(20, 184, 166, 0.4), 0 14px 30px rgba(45, 212, 191, 0.28);
+  transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+}
+.gate__btn:hover:not(:disabled) {
+  background: var(--night-teal-soft);
+  transform: translateY(-2px);
+}
+.gate__btn:disabled {
+  opacity: 0.7;
+  cursor: default;
 }
 .gate__error {
   margin: 0;
-  color: var(--red);
+  color: var(--night-danger);
   font-size: var(--fs-small);
   font-weight: var(--fw-mid);
 }
 .gate__foot {
   margin: var(--gap-l) 0 0;
   font-size: var(--fs-small);
-  color: var(--ink-faint);
+  color: var(--night-ink-faint);
 }
 /* 备案号：与根落地页同号同链接（footer 语义），入口页里保持安静的一行 */
 .gate__beian {
   margin: var(--gap-m) 0 0;
   font-size: var(--fs-small);
-  color: var(--ink-faint);
+  color: var(--night-ink-faint);
   text-decoration: none;
 }
 .gate__beian:hover {
-  color: var(--ink-soft);
+  color: var(--night-ink-soft);
   text-decoration: underline;
 }
 </style>
