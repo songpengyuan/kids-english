@@ -3,8 +3,9 @@
  * useLrc 纯函数测试：LRC 解析 / 当前行索引 / LRC↔歌词行映射。
  * useLrc() 本体的 fetch 拉取由 ListenView/SongView 集成验证，这里不测。
  */
-import { describe, expect, it } from "vitest";
-import { parseLrc, activeLrcIndex, lrcUrlOf, mapLrcToLyrics } from "../useLrc";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { ref } from "vue";
+import { parseLrc, activeLrcIndex, lrcUrlOf, mapLrcToLyrics, useLrc } from "../useLrc";
 
 describe("parseLrc", () => {
   it("解析 [mm:ss.xx] 行级时间标签", () => {
@@ -85,5 +86,85 @@ describe("mapLrcToLyrics", () => {
   it("行数碰巧相同但内容换过（首尾文本不一致）→ null", () => {
     const lrc = [{ t: 1, text: "old first" }, { t: 2, text: "old last" }];
     expect(mapLrcToLyrics(lrc, ["new first", "new last"])).toBeNull();
+  });
+
+  it("LRC 为空数组 → null（不产生映射）", () => {
+    expect(mapLrcToLyrics([], ["a", "b"])).toBeNull();
+  });
+});
+
+describe("useLrc composable（fetch 拉取 + 缓存 + 竞态守卫）", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** 等 fetch promise 链与 watch 回调走完 */
+  async function flush() {
+    await new Promise((r) => setTimeout(r, 0));
+  }
+
+  it("拉取成功 → 解析出行；换回同一 url 时走缓存不再发请求", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () => "[00:01.00]alpha\n[00:05.00]beta\n",
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const src = ref<string | null>(null);
+    const lines = useLrc(src);
+
+    src.value = "/lessons/lx/a.mp3";
+    await flush();
+    expect(lines.value?.map((l) => l.text)).toEqual(["alpha", "beta"]);
+
+    src.value = "/lessons/lx/b.mp3"; // 未缓存的另一个 url
+    await flush();
+    src.value = "/lessons/lx/a.mp3"; // 回到已缓存 url
+    await flush();
+    expect(fetchMock).toHaveBeenCalledTimes(2); // a.mp3 第二次没再请求
+    expect(lines.value?.map((l) => l.text)).toEqual(["alpha", "beta"]);
+  });
+
+  it("404 / fetch 抛错 / src 为空 → lines 为 null（调用方走兜底）", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, text: async () => "" })));
+    const src = ref<string | null>(null);
+    const lines = useLrc(src);
+    src.value = "/lessons/lx/missing.mp3";
+    await flush();
+    expect(lines.value).toBeNull();
+
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new TypeError("network down");
+    }));
+    src.value = "/lessons/lx/broken.mp3";
+    await flush();
+    expect(lines.value).toBeNull();
+
+    src.value = null;
+    await flush();
+    expect(lines.value).toBeNull();
+  });
+
+  it("快速切换音频：旧请求晚到不污染新结果（序号守卫）", async () => {
+    let resolveSlow!: (v: { ok: boolean; text: () => Promise<string> }) => void;
+    const fetchMock = vi.fn((url: string) =>
+      url.includes("slow")
+        ? new Promise((resolve) => {
+            resolveSlow = resolve;
+          })
+        : Promise.resolve({ ok: true, text: async () => "[00:02.00]fast\n" })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const src = ref<string | null>(null);
+    const lines = useLrc(src);
+
+    src.value = "/lessons/lx/slow.mp3";
+    await flush();
+    src.value = "/lessons/lx/fast.mp3";
+    await flush();
+    expect(lines.value?.[0]?.text).toBe("fast");
+
+    resolveSlow({ ok: true, text: async () => "[00:09.00]late\n" }); // 旧请求这时才回来
+    await flush();
+    expect(lines.value?.[0]?.text).toBe("fast"); // 仍是被守卫的新结果
   });
 });

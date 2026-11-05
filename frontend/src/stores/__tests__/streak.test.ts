@@ -190,4 +190,56 @@ describe("streak store", () => {
     expect(s.history).toEqual({});
     expect(s.streak).toBe(3);
   });
+
+  it("markReview(0) 不产生进度，也不误判达标", () => {
+    const s = useStreakStore();
+    s.syncReviewGoal(5);
+    expect(s.markReview(0)).toBe(false);
+    expect(s.reviewed).toBe(0);
+    expect(s.history["2026-09-27"].reviewed).toBe(0);
+  });
+
+  it("syncReviewGoal(NaN) 按无到期词兜底 → 目标 0 且标记已同步", () => {
+    const s = useStreakStore();
+    s.syncReviewGoal(NaN);
+    expect(s.reviewGoal).toBe(0);
+    expect(s.day.goalSynced).toBe(true);
+  });
+
+  it("markActivity() 等价于首次通关新学（自由练习兼容路径）", () => {
+    const s = useStreakStore();
+    s.syncReviewGoal(0);
+    expect(s.markActivity()).toBe(true);
+    expect(s.newLevels).toBe(1);
+    expect(s.todayDone).toBe(true);
+  });
+
+  it("reset() 清空内存与 localStorage", () => {
+    const s = useStreakStore();
+    completeGoal(s);
+    expect(s.streak).toBe(1);
+    s.reset();
+    expect(s.streak).toBe(0);
+    expect(s.last).toBeNull();
+    expect(s.history).toEqual({});
+    expect(s.todayDone).toBe(false);
+    expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it("持久化数据里的 day 是昨天的 → 读回时按今天清零，连击保留", () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        last: "2026-09-26",
+        streak: 2,
+        day: { date: "2026-09-26", reviewed: 5, newLevels: 1, reviewGoal: 5, goalSynced: true },
+        history: {},
+      })
+    );
+    const s = useStreakStore();
+    expect(s.day.date).toBe("2026-09-27");
+    expect(s.reviewed).toBe(0);
+    expect(s.streak).toBe(2); // 历史连击保留
+    expect(s.todayDone).toBe(false); // 不拿昨天的进度瞬间达标
+  });
 });

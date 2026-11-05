@@ -32,6 +32,7 @@ describe("fmtDuration", () => {
     expect(fmtDuration(600)).toBe("10:00");
     expect(fmtDuration(NaN)).toBe("0:00");
     expect(fmtDuration(-3)).toBe("0:00");
+    expect(fmtDuration(Infinity)).toBe("0:00");
   });
 });
 
@@ -109,5 +110,57 @@ describe("useAudioTransport", () => {
     expect(t.duration.value).toBe(0);
     expect(t.currentTime.value).toBe(0);
     expect(t.loop.value).toBe(true);
+  });
+
+  it("play：成功 → playing=true；被拒（自动播放策略）→ 回落 false", async () => {
+    const ok = fakeAudio();
+    const t1 = setup(ok);
+    t1.play();
+    await ok.play.mock.results[0].value; // 等播放承诺落定
+    expect(t1.playing.value).toBe(true);
+
+    const bad = fakeAudio();
+    bad.play = vi.fn(() => Promise.reject(new Error("autoplay policy")));
+    const t2 = setup(bad);
+    t2.play();
+    await new Promise((r) => setTimeout(r, 0)); // 等 .catch 走完
+    expect(t2.playing.value).toBe(false);
+  });
+
+  it("pause：暂停音频并立即置 playing=false", () => {
+    const audio = fakeAudio();
+    const t = setup(audio);
+    t.pause();
+    expect(audio.pause).toHaveBeenCalled();
+    expect(t.playing.value).toBe(false);
+  });
+
+  it("handleLoadedMeta：流式音频 duration=Infinity 兜底为 0（进度条不出 NaN%）", () => {
+    const audio = fakeAudio();
+    audio.duration = Infinity;
+    const t = setup(audio);
+    t.handleLoadedMeta();
+    expect(t.duration.value).toBe(0);
+    expect(t.playedPct.value).toBe("0%");
+  });
+
+  it("handleTimeUpdate：拖动中不回写 currentTime（不被播放进度打断拖动）", () => {
+    const audio = fakeAudio();
+    const t = setup(audio);
+    t.handleTimeUpdate(); // currentTime=0
+    t.seeking.value = true;
+    audio.currentTime = 80;
+    t.handleTimeUpdate();
+    expect(t.currentTime.value).toBe(0); // 拖动中保持拖动值
+    t.seeking.value = false;
+    t.handleTimeUpdate();
+    expect(t.currentTime.value).toBe(80); // 松手后恢复同步
+  });
+
+  it("handleEnded：循环模式下 audio 缺失也不崩（onLoopRestart 照常上报）", () => {
+    const onLoopRestart = vi.fn();
+    const t = setup(null, { onLoopRestart });
+    expect(() => t.handleEnded()).not.toThrow();
+    expect(onLoopRestart).toHaveBeenCalledTimes(1);
   });
 });
