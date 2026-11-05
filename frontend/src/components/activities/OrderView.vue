@@ -26,15 +26,26 @@ const errKey = ref<string | null>(null);
 const total = computed(() => items.value.length);
 const cur = computed(() => items.value[idx.value]);
 
-/** 选项：正确词图 + 最多 2 个本课其他词图作干扰 */
+/** 选项：正确答案始终在场 + 从图卡池随机抽 2 张干扰，整体洗牌排布。
+ *  为什么不直接 shuffle(池).slice(0,3)：l12 安静书的图卡池有 8 张部件，
+ *  裁前 3 会以 5/8 概率把正确答案裁掉——孩子对着「The ___ on the bus go
+ *  round and round.」找不到可点的轮子图（2026-11-06 走查实测踩中）。 */
 const options = computed<Word[]>(() => {
-  const t = cur.value?.target;
+  const t = cur.value;
   if (!t) return [];
-  const distractors = (props.lesson.words || [])
-    .filter((w) => w.image && w.id !== t.id)
-    .slice(0, 2);
-  return [...distractors, t];
+  const distractors = shuffle(t.candidates.filter((w) => w.id !== t.target.id)).slice(0, 2);
+  return shuffle([t.target, ...distractors]);
 });
+
+/**  Fisher–Yates 洗牌：每次进题随机抽干扰、随机排图卡，避免孩子靠背位置答题 */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 const stars = computed(() => (wrongCount.value === 0 ? 3 : wrongCount.value <= 2 ? 2 : 1));
 
@@ -300,4 +311,19 @@ function finishEmpty() {
   box-shadow: 0 4px 14px color-mix(in srgb, var(--brand) 35%, transparent);
 }
 .next-btn:active { transform: scale(0.95); }
+
+/* 手机矮横屏（≤480px 高）：压缩纵向链条——槽与图卡缩小、间距收紧，
+ * 头部 + Listen + 句子条 + 看答案 + 三张图卡要一屏装下
+ * （layout-audit 实测 phone SE/14 横屏图卡被底边裁掉 40-48px） */
+@media (max-height: 480px) {
+  .order-head { margin-bottom: var(--gap-xs); }
+  .board { gap: var(--gap-xs); padding: var(--gap-xs) var(--gap-s); }
+  .listen-btn { padding: 5px 12px; font-size: var(--fs-small); }
+  .sentence { padding: var(--gap-xs) var(--gap-m); }
+  .frame { font-size: var(--fs-body); }
+  .pic-slot { width: 56px; height: 56px; }
+  .pic-card { width: 76px; height: 76px; padding: 5px; }
+  .answer-btn { padding: 5px 12px; }
+  .next-btn { padding: 9px 28px; }
+}
 </style>

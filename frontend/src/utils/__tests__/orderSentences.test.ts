@@ -18,8 +18,8 @@ function w(id: string, en: string, extra: Partial<Word> = {}): Word {
   return { id, en, zh: id, emoji: "🐾", image: `/words/${id}.png`, lessonId: "lt", ...extra };
 }
 
-function lesson(words: Word[], phrases: Pick<Lesson, "phrases">["phrases"] = []): Pick<Lesson, "words" | "phrases"> {
-  return { words, phrases };
+function lesson(words: Word[], phrases: Pick<Lesson, "phrases">["phrases"] = [], id = "lt"): Pick<Lesson, "id" | "words" | "phrases"> {
+  return { id, words, phrases };
 }
 
 describe("orderSentences 看图填空题目", () => {
@@ -86,11 +86,23 @@ describe("orderSentences 看图填空题目", () => {
   });
 
   it("真实六课每课都能产出至少一道看图填空题", () => {
-    const lessons = realLessons as unknown as Pick<Lesson, "words" | "phrases">[];
+    const lessons = realLessons as unknown as Pick<Lesson, "id" | "words" | "phrases">[];
     expect(lessons.length).toBeGreaterThan(0);
     for (const l of lessons) {
       const out = orderSentences(l);
-      expect(out.length, `课 ${(l as { id?: string }).id} 没出图填空题`).toBeGreaterThan(0);
+      expect(out.length, `课 ${l.id} 没出图填空题`).toBeGreaterThan(0);
     }
+  });
+
+  it("l12 Wheels on the Bus 走安静书专属句型：The [部件] on the bus go [拟声]", () => {
+    const l = realLessons.find((x: { id: string }) => x.id === "l12") as unknown as Pick<Lesson, "id" | "words" | "phrases">;
+    const out = orderSentences(l);
+    const wheels = out.find((o) => o.target.en === "wheels")!;
+    expect(wheels.en).toBe("The wheels on the bus go round and round.");
+    expect(wheels.before).toBe("The ");
+    expect(wheels.after).toBe(" on the bus go round and round.");
+    // bus 是固定语境：既不是任何题的 target，也不出现在图卡池
+    expect(out.every((o) => o.target.en !== "bus")).toBe(true);
+    expect(out.every((o) => o.candidates.every((c) => c.en !== "bus"))).toBe(true);
   });
 });

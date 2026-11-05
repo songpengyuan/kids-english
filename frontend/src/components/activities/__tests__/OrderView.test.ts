@@ -59,7 +59,11 @@ describe("OrderView 看图填空", () => {
   it("点错图 → 抖动标记、不进下一句、图卡仍在", async () => {
     const v = mountView();
     await flushPromises();
-    await cardByAlt(v, "bus")!.trigger("click");
+    // 图卡已随机打乱、干扰随机抽：任意一张不是正确答案(wipers)的卡都算点错
+    const wrongCard = v.findAll(".pic-card").find(
+      (c) => c.find("img").attributes("alt") !== "wipers"
+    )!;
+    await wrongCard.trigger("click");
     expect(v.findAll(".pic-card").length).toBeGreaterThan(0);
     expect(v.find(".next-btn").exists()).toBe(false);
     expect(v.find(".pic-card.wrong").exists()).toBe(true);
@@ -94,5 +98,32 @@ describe("OrderView 看图填空", () => {
     // 第二题 target=bus（It's a ___）：仍有三张图卡
     expect(v.findAll(".pic-card")).toHaveLength(3);
     expect(v.find(".pic-slot img").exists()).toBe(false);
+  });
+
+  it("l12 图卡池大于 3 张时正确答案也必须始终在选项里（回归：slice(0,3) 会裁掉 target）", async () => {
+    // 安静书实景：8 个部件全部带图 → 图卡池 8 张，若直接洗牌取前 3，
+    // 每题有 5/8 概率正确答案根本不在场，孩子无图可点（2026-11-06 走查实测踩中）
+    const parts = ["wheels", "door", "wipers", "horn", "people", "babies", "mommies", "daddies"];
+    const l12 = {
+      id: "l12",
+      words: [w("bus", "bus"), ...parts.map((p) => w(p, p))],
+    } as unknown as Lesson;
+    const v = mount(OrderView, {
+      props: { lesson: l12 },
+      global: { stubs: { "router-link": true } },
+    });
+    await flushPromises();
+    for (const part of parts) {
+      const alts = v.findAll(".pic-card").map((c) => c.find("img").attributes("alt"));
+      expect(alts, `题「${part}」的选项里必须有它自己的图`).toContain(part);
+      // 用「看答案」过关进下一题
+      await v.find(".answer-btn").trigger("click");
+      await flushPromises();
+      const next = v.find(".next-btn");
+      if (await next.exists()) {
+        await next.trigger("click");
+        await flushPromises();
+      }
+    }
   });
 });

@@ -1,32 +1,49 @@
 /**
  * 拼句子（order）题目：看图填空。
  *
- * 2026-11-05 起改为「图片填空」（参考孩子的 The Wheels on the Bus 安静书）：
- * 句子框架（It's / I can / I see the …）印死成文字，只把本课实义名词位置留空，
- * 底部放本课词图卡，孩子点正确的图填进去。不再让孩子点文字单词块排序。
+ * 2026-11-05 改为「图片填空」，两套题源：
  *
- * 难度档与亲子对话一致（一词一句）：
- *   颜色 It's X. ｜ 动词 I can X. ｜ 形容词 I'm X.
- *   复数 I see X. ｜ 不可数 I see the X. ｜ 单数可数 It's a/an X.
- * 不产出问句、不产出 5 词以上长句。X 一定是一个带图的本课实义词（target），
- * before/after 是 X 两侧印出来的框架文字，OrderView 据此渲染空槽。
+ * 1) 唱游课专属（The Wheels on the Bus 安静书）：句型固定为
+ *      "The [部件] on the bus go [拟声]."
+ *    空槽里放部件图（轮子/车门/雨刮/喇叭/乘客/宝宝/妈妈/爸爸），
+ *    "on the bus go …" 整段印死；校车 bus 是固定语境，不出题也不当图卡。
+ * 2) 其余课通用模板：颜色 It's X. ｜ 动词 I can X. ｜ 形容词 I'm X.
+ *    复数 I see X. ｜ 不可数 I see the X. ｜ 单数 It's a/an X.
  *
  * 纯函数、不依赖 Vue，便于单测。
  */
 import type { Lesson, Word } from "../data/lessons";
 
 export interface OrderItem {
-  /** 完整句（拼对后朗读用），如 "I see the wipers." */
+  /** 完整句（拼对后朗读用），如 "The wheels on the bus go round and round." */
   en: string;
   /** OrderView 当前不渲染中文；留空串 */
   zh: string;
-  /** 空槽之前印出来的框架文字，如 "I see the " */
+  /** 空槽之前印出来的框架文字，如 "The " */
   before: string;
-  /** 空槽之后印出来的框架文字，如 "." */
+  /** 空槽之后印出来的框架文字，如 " on the bus go round and round." */
   after: string;
   /** 要填空的目标词（带词图） */
   target: Word;
+  /** 本题可选图卡池（已含正确 target）；组件负责洗牌后取前几张 */
+  candidates: Word[];
 }
+
+/**
+ * Wheels on the Bus 安静书：每个部件对应的拟声（实物照里每列最上面那格）。
+ * 键 = word.id；只收在这张表里的词才出「The X on the bus go …」题，
+ * bus 本身不在表内 → 它是固定语境，不出题也不进图卡池。
+ */
+const BUS_VERSE: Record<string, string> = {
+  wheels: "on the bus go round and round",
+  door: "on the bus go open and shut",
+  wipers: "on the bus go swish, swish, swish",
+  horn: "on the bus go beep, beep, beep",
+  people: "on the bus go up and down",
+  babies: "on the bus go wah, wah, wah",
+  mommies: "on the bus go shh, shh, shh",
+  daddies: "on the bus go shh, shh, shh",
+};
 
 /** 动作词：用 I can X.（避免把 listen 名词化成 It's a listen.） */
 const VERBS = new Set(["listen", "look", "run", "jump", "sing", "dance", "clap", "point", "wave", "walk"]);
@@ -73,26 +90,44 @@ function frameForWord(w: Word): { before: string; after: string } | null {
 }
 
 /**
- * 生成一课的看图填空题目：逐词造句，每道题 = 框架文字 + 一个带图目标词。
- * 图片填空必须有可点的词图，因此只收词表里造得出句、且带图片的词。
- * 词表不足时不再用教材整句兜底（整句没有对应词图，无法做成图卡填空）。
+ * 生成一课的看图填空题目：每道题 = 框架文字 + 一个带图目标词 + 图卡池。
  */
 export function orderSentences(
-  lesson: Pick<Lesson, "words" | "phrases">
+  lesson: Pick<Lesson, "id" | "words" | "phrases">
 ): OrderItem[] {
   const out: OrderItem[] = [];
   const seen = new Set<string>();
+  const words = lesson.words || [];
+  const imaged = words.filter((w) => w.image);
 
-  for (const w of lesson.words || []) {
+  // Wheels on the Bus 安静书：走专属歌词句型 "The [部件] on the bus go [拟声]."
+  if (lesson.id === "l12") {
+    for (const w of imaged) {
+      const action = BUS_VERSE[w.id];
+      if (!action) continue; // bus 等非映射词不进题
+      const before = "The ";
+      const after = ` ${action}.`;
+      const en = before + w.en.trim() + after;
+      if (seen.has(en.toLowerCase())) continue;
+      seen.add(en.toLowerCase());
+      // 图卡池只在部件里选，bus 本身不出现（它是固定语境）
+      const candidates = imaged.filter((o) => BUS_VERSE[o.id]);
+      out.push({ en, zh: "", before, after, target: w, candidates });
+    }
+    return out;
+  }
+
+  // 其余课：通用封闭模板（It's a X / I see X …）
+  for (const w of words) {
     const f = frameForWord(w);
     if (!f) continue;
-    if (!w.image) continue; // 图卡填空必须有图
+    if (!w.image) continue;
     const en = f.before + w.en.trim() + f.after;
     const key = en.toLowerCase();
     if (seen.has(key)) continue;
     if (en.includes("?")) continue;
     seen.add(key);
-    out.push({ en, zh: "", before: f.before, after: f.after, target: w });
+    out.push({ en, zh: "", before: f.before, after: f.after, target: w, candidates: imaged });
   }
 
   return out;
