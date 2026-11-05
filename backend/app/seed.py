@@ -1,63 +1,19 @@
-"""课程内容种子：从 server/seed/lessons.json 导入（幂等 upsert）。"""
-import json
-from pathlib import Path
+"""课程内容种子 —— 已废弃（2026-11-05 课程内容改纯前端）。
 
-from .db import connect
+课程内容自 2026-11-05 起由前端 src/data/lessons（lessons.ts）直接提供，
+不再走后端：/api/v1/content 路由已下线、lessons 表不再导入内容。
+本文件保留空壳（seed_lessons 恒返回 0），避免历史调用方
+（main.py 启动流程、测试 fixture）import 失败。
 
-SEED_FILE = Path(__file__).resolve().parent.parent / "seed" / "lessons.json"
+backend/seed/lessons.json 文件本体保留：它仍是前端 export-lessons
+脚本的生成物（课程种子漂移检查用），以后若要恢复服务端内容分发，
+可直接在这个通道上重新实现导入逻辑。
+"""
 
 
 def seed_lessons(force: bool = False) -> int:
-    """导入课程内容到 lessons 表；返回导入/更新数量。force=True 时全量覆盖。"""
-    if not SEED_FILE.exists():
-        return 0
-    data = json.loads(SEED_FILE.read_text(encoding="utf-8"))
-    conn = connect()
-    n = 0
-    try:
-        for lesson in data:
-            existing = conn.execute(
-                "SELECT content_json FROM lessons WHERE id=?", (lesson["id"],)
-            ).fetchone()
-            if existing and not force:
-                # 内容未变则跳过（避免刷新 updated_at 造成噪音）
-                if existing["content_json"] == json.dumps(lesson, ensure_ascii=False):
-                    continue
-            conn.execute(
-                """INSERT INTO lessons (id, order_no, title, title_zh, emoji, tone, type, date, content_json)
-                   VALUES (?,?,?,?,?,?,?,?,?)
-                   ON CONFLICT(id) DO UPDATE SET
-                     order_no=excluded.order_no, title=excluded.title, title_zh=excluded.title_zh,
-                     emoji=excluded.emoji, tone=excluded.tone, type=excluded.type, date=excluded.date,
-                     content_json=excluded.content_json, updated_at=datetime('now')""",
-                (
-                    lesson["id"],
-                    int(lesson.get("order", 0) or 0),
-                    lesson["title"],
-                    lesson["titleZh"],
-                    lesson.get("emoji"),
-                    lesson.get("tone"),
-                    lesson.get("type"),
-                    lesson.get("date"),
-                    json.dumps(lesson, ensure_ascii=False),
-                ),
-            )
-            n += 1
-        # 清理已从种子移除的课时（如 2026-10-25 下线的加餐 l6/l7/l8）：
-        # upsert 只会新增/更新，被下线的课会残留在表里继续被 /content/lessons 吐出。
-        seed_ids = [l["id"] for l in data]
-        placeholders = ",".join("?" for _ in seed_ids)
-        stale = [
-            r["id"]
-            for r in conn.execute(
-                f"SELECT id FROM lessons WHERE id NOT IN ({placeholders})", seed_ids
-            ).fetchall()
-        ]
-        for lid in stale:
-            conn.execute("DELETE FROM lessons WHERE id=?", (lid,))
-        if stale:
-            print(f"已清理种子外的陈旧课时: {', '.join(stale)}")
-        conn.commit()
-    finally:
-        conn.close()
-    return n
+    """历史接口：课程内容已改纯前端，不再导入；恒返回 0。
+
+    保留 force 参数以兼容旧调用签名。
+    """
+    return 0

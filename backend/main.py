@@ -1,6 +1,7 @@
 """kids-english 后端 API 入口（FastAPI）。
 
-启动时自动建表并导入课程种子（server/seed/lessons.json，幂等）。
+启动时自动建表。课程内容自 2026-11-05 起改纯前端（lessons.ts 直供），
+不再导入课程种子，/api/v1/content 路由已下线。
 环境变量（server/.env，不入库）：
   XF_APPID / XF_API_KEY / XF_API_SECRET  讯飞评测凭据
   KIDS_JWT_SECRET                        JWT 签名密钥（生产必填，缺失/默认值拒绝启动）
@@ -16,7 +17,7 @@ from fastapi.responses import JSONResponse
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
-from app.api import auth, children, content, evaluation, events, progress, recordings, rewards  # noqa: E402
+from app.api import auth, children, evaluation, events, progress, recordings, rewards  # noqa: E402
 from app.db import connect, init_db, schema_version  # noqa: E402
 from app.ratelimit import hit  # noqa: E402
 from app.schemas import PongOut  # noqa: E402
@@ -76,7 +77,6 @@ async def rate_limit(request, call_next):
 
 app.include_router(auth.router)
 app.include_router(children.router)
-app.include_router(content.router)
 app.include_router(progress.router)
 app.include_router(rewards.router)
 app.include_router(evaluation.router)

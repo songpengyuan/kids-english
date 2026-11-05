@@ -75,7 +75,6 @@ class TestAuth:
 
     def test_me_requires_token(self):
         assert client.get("/api/v1/auth/me").status_code == 401
-        assert client.get("/api/v1/content/lessons").status_code == 401
 
 
 class TestGate:
@@ -179,32 +178,9 @@ class TestChildren:
         ).status_code == 404
 
 
-class TestContent:
-    def test_lessons_seeded(self):
-        token = _auth()
-        r = client.get("/api/v1/content/lessons", headers={"Authorization": f"Bearer {token}"}).json()
-        assert r["ok"] is True
-        ids = [l["id"] for l in r["lessons"]]
-        assert "l4" in ids  # seed 至少含现有课程
-
-    def test_lesson_detail_full(self):
-        token = _auth()
-        r = client.get("/api/v1/content/lessons/l4", headers={"Authorization": f"Bearer {token}"}).json()
-        assert r["ok"] is True
-        lesson = r["lesson"]
-        assert lesson["id"] == "l4"
-        assert len(lesson["words"]) > 0
-        assert lesson["song"]["lyrics"]
-        assert lesson["song"]["timings"] is not None  # 时间轴已随 seed 入库
-
-    def test_lesson_not_found_404(self):
-        token = _auth()
-        assert client.get(
-            "/api/v1/content/lessons/zzz", headers={"Authorization": f"Bearer {token}"}
-        ).status_code == 404
-
-
 class TestProgress:
+    """课程内容 2026-11-05 改纯前端，/api/v1/content 路由与 TestContent 用例随之移除；
+    进度仍按课程 id 作为 JSON 键存储，不依赖 lessons 表有内容。"""
     def test_put_then_get_roundtrip(self):
         token = _auth()
         client.post(
