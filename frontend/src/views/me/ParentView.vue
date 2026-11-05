@@ -194,7 +194,7 @@ function pickChild(id: number) {
             <span class="kid__avatar">{{ c.avatar || "👶" }}</span>
             <span>{{ c.name }}</span>
           </button>
-          <button class="kid-edit" title="编辑名字" @click="startEditChild(c)">
+          <button class="kid-edit" title="编辑名字" aria-label="编辑名字" @click="startEditChild(c)">
             <Pencil class="k-ico" />
           </button>
         </div>
