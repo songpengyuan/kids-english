@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>吃饭习惯养成 · 闲思杂记</title>
+    <meta name="description" content="吃饭习惯养成：从追着喂到自己吃，零食定点、沙漏收桌、让孩子上手的实战。" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-119-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+4e00, U+4e2d, U+65b0, U+65e5, U+6708-6709, U+70b9, U+7684, U+7f51, U+ff0c, U+ff0e, U+ff1a;
+      }
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-latin-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2191, U+2193, U+2212, U+FEFF;
+      }
+      :root {
+        --ink: #eef1fb;
+        --ink-soft: #aab4d4;
+        --ink-faint: #7b86a8;
+        --line: rgba(255, 255, 255, 0.1);
+        --night: #0b1026;
+        --night-2: #121a3d;
+        --card: rgba(22, 30, 64, 0.72);
+        --teal: #2dd4bf;
+        --teal-deep: #14b8a6;
+        --violet: #8b5cf6;
+        --amber: #fbbf24;
+        --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: "ZCOOL KuaiLe", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background: var(--night);
+        line-height: 1.9;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a { color: var(--teal); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 6px; }
+
+      .bg {
+        position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+        background:
+          radial-gradient(1.5px 1.5px at 22% 18%, rgba(255,255,255,0.9) 50%, transparent 51%),
+          radial-gradient(1px 1px at 68% 9%, rgba(255,255,255,0.75) 50%, transparent 51%),
+          radial-gradient(1.2px 1.2px at 84% 30%, rgba(255,255,255,0.6) 50%, transparent 51%),
+          radial-gradient(ellipse 70% 55% at 85% -10%, rgba(139, 92, 246, 0.22), transparent 70%),
+          radial-gradient(ellipse 60% 50% at 8% 0%, rgba(45, 212, 191, 0.16), transparent 70%),
+          linear-gradient(180deg, var(--night) 0%, var(--night-2) 52%, var(--night) 100%);
+      }
+
+      header {
+        position: sticky; top: 0; z-index: 10;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px clamp(20px, 5vw, 48px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(11, 16, 38, 0.72);
+        -webkit-backdrop-filter: saturate(1.4) blur(12px);
+        backdrop-filter: saturate(1.4) blur(12px);
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--ink); }
+      .brand:hover { text-decoration: none; color: var(--ink); }
+      .brand .mark {
+        width: 32px; height: 32px; flex: none;
+        display: grid; place-items: center; border-radius: 10px;
+        background: linear-gradient(135deg, var(--teal), var(--violet));
+        color: #0b1026;
+      }
+      .brand .mark svg { width: 17px; height: 17px; }
+      .back {
+        display: inline-flex; align-items: center; gap: 6px;
+        color: var(--ink-soft); font-size: 14px;
+        border: 1px solid var(--line); border-radius: 12px; padding: 6px 14px;
+        transition: color .18s, border-color .18s;
+      }
+      .back:hover { color: var(--teal); border-color: var(--teal); text-decoration: none; }
+      .back svg { width: 14px; height: 14px; }
+
+      article {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 48px) 60px;
+      }
+      .article-card {
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        border-radius: 18px;
+        padding: clamp(28px, 5vw, 48px);
+        box-shadow: var(--shadow-card);
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+      }
+      .article-card .date {
+        font-size: 13px; color: var(--ink-faint); letter-spacing: 1px;
+      }
+      .article-card h1 {
+        margin-top: 10px; font-size: clamp(26px, 5vw, 36px); line-height: 1.3;
+        background: linear-gradient(120deg, #ffffff 15%, var(--teal) 55%, var(--violet) 95%);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; color: transparent;
+      }
+      .article-card .meta {
+        margin-top: 14px; font-size: 14px; color: var(--ink-soft);
+        display: flex; gap: 14px; flex-wrap: wrap;
+      }
+      .article-card .meta span {
+        display: inline-flex; align-items: center; gap: 5px;
+        border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px;
+        font-size: 12px;
+      }
+      .article-card hr {
+        margin: 28px 0; border: 0; border-top: 1px dashed var(--line);
+      }
+      .article-card p {
+        margin-bottom: 18px; color: var(--ink-soft); font-size: 16px;
+      }
+      .article-card p strong { color: var(--ink); }
+
+      footer {
+        border-top: 1px solid var(--line);
+        background: rgba(8, 12, 28, 0.6);
+        padding: 24px clamp(20px, 5vw, 48px) 32px;
+        text-align: center; font-size: 13px; color: var(--ink-faint);
+      }
+      footer a { color: var(--ink-faint); }
+      footer a:hover { color: var(--teal); }
+    </style>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+
+    <header>
+      <a class="brand" href="/">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M9.9 7.2 C13.5 7.2 15.6 10 15.6 13.5 C15.6 17.3 13 20 9.8 20 C6.6 20 4.2 17.3 4.2 13.6 C4.2 10 6.3 7.2 9.9 7.2 Z" fill="#0d1330" />
+            <path d="M5 17.6 L2.6 20 L6.2 18.9 Z" fill="#0d1330" />
+            <path d="M14.4 7.6 C18.4 5.4 23.2 6.2 23.6 9.2 C23.9 11.5 21.8 13.4 17.9 14 L14.1 12.5 Z" fill="#FFB347" />
+            <circle cx="12.4" cy="9.7" r=".8" fill="#FFFFFF" />
+          </svg>
+        </span>
+        闲思杂记
+      </a>
+    </header>
+
+    <article>
+      <div class="article-card">
+        <div class="date">2026 年 11 月 · 第 5 篇</div>
+        <h1>吃饭习惯养成</h1>
+        <div class="meta">
+          <span>育儿心得</span>
+          <span>餐桌战争</span>
+        </div>
+        <hr />
+<p><strong>最狼狈的画面对谁都不陌生：</strong>大人端着碗跟在孩子身后，孩子骑着滑板车，一口追到阳台，一口追到卧室。我们家最离谱的一次，一顿饭从六点半喂到八点，饭热了三遍。妈妈说算了算了，我说不行，这仗必须打——输给一个四岁小孩的饭碗，以后每一仗都难打。</p>
+<p><strong>第一刀砍零食。</strong>不是戒掉，是定点定量。以前饼干糖果散落在客厅各个角落，伸手就有，正餐当然没有吸引力。改造后：零食收进玄关柜的高层，每天下午四点半一次，由他自己挑两样，饭前一小时绝不松口。饿，是最好的调味料——这话不温柔，但真实。</p>
+<p><strong>第二刀定规矩：二十分钟收桌。</strong>开饭前一起摆碗筷（仪式感能让他坐下来），沙漏放桌上。二十分钟到了，饭菜收走，中间不催不吼不喂。第一次执行他哭了，以为我们不吃就不给他；第二次他试探着玩饭，到点照样收；第三次开始，他扒饭的速度肉眼可见地快了。规矩只需要被严格执行三次，孩子就会当真。</p>
+<p><strong>第三刀最管用：让他上手。</strong>洗菜、剥豆子、打鸡蛋（打散两颗蛋这件事他现在做得比我稳）、端自己的碗。参与做饭的孩子对这顿饭有所有权——那天他自己拌的黄瓜，齁咸，他全部吃完了，还添了一次。孩子不吃你做的饭，但会吃自己"做"的饭。</p>
+<p><strong>喂饭的坑我们踩了三年，最后总结成一条铁律：</strong>不喂最后一口。追着补的那一口，补的不是营养，是大人的焦虑。他吃没吃饱，他的肚子说了算，这顿没吃饱，下顿自然补上。孩子饿不着，但真的会被喂坏——喂坏的不是胃，是"吃饭是我自己的事"这个意识。</p>
+<p><strong>还有一关：统一战线。</strong>规矩刚立起来那周，奶奶来看孙子，进门先塞了块饼干，饭桌上又追着加了半碗饭——“孩子瘦”。我的处理不是争对错，而是开小会：跟老人讲清楚我们的沙漏和零食柜，请他们只在周末“特殊供应”。老人不是不讲理，是不知道新规矩。全家一个口径，规矩才立得住；一个喂饭一个收桌，孩子立马学会钻空子。</p>
+<p style="color: var(--ink-faint); font-size: 14px; margin-top: 28px;">—— 现在他会主动报菜名："今天我要自己拌黄瓜。"</p>
+      </div>
+    </article>
+
+    <footer>
+      <div>闲思杂记 · zelab.cn · 个人非经营性站点</div>
+      <div style="margin-top: 6px;">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">豫ICP备2026054893号</a>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>情绪管理小技巧 · 闲思杂记</title>
+    <meta name="description" content="情绪管理小技巧：先命名再共情后讲理，情绪脸谱卡与平静角的用法。" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-119-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+4e00, U+4e2d, U+65b0, U+65e5, U+6708-6709, U+70b9, U+7684, U+7f51, U+ff0c, U+ff0e, U+ff1a;
+      }
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-latin-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2191, U+2193, U+2212, U+FEFF;
+      }
+      :root {
+        --ink: #eef1fb;
+        --ink-soft: #aab4d4;
+        --ink-faint: #7b86a8;
+        --line: rgba(255, 255, 255, 0.1);
+        --night: #0b1026;
+        --night-2: #121a3d;
+        --card: rgba(22, 30, 64, 0.72);
+        --teal: #2dd4bf;
+        --teal-deep: #14b8a6;
+        --violet: #8b5cf6;
+        --amber: #fbbf24;
+        --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: "ZCOOL KuaiLe", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background: var(--night);
+        line-height: 1.9;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a { color: var(--teal); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 6px; }
+
+      .bg {
+        position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+        background:
+          radial-gradient(1.5px 1.5px at 22% 18%, rgba(255,255,255,0.9) 50%, transparent 51%),
+          radial-gradient(1px 1px at 68% 9%, rgba(255,255,255,0.75) 50%, transparent 51%),
+          radial-gradient(1.2px 1.2px at 84% 30%, rgba(255,255,255,0.6) 50%, transparent 51%),
+          radial-gradient(ellipse 70% 55% at 85% -10%, rgba(139, 92, 246, 0.22), transparent 70%),
+          radial-gradient(ellipse 60% 50% at 8% 0%, rgba(45, 212, 191, 0.16), transparent 70%),
+          linear-gradient(180deg, var(--night) 0%, var(--night-2) 52%, var(--night) 100%);
+      }
+
+      header {
+        position: sticky; top: 0; z-index: 10;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px clamp(20px, 5vw, 48px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(11, 16, 38, 0.72);
+        -webkit-backdrop-filter: saturate(1.4) blur(12px);
+        backdrop-filter: saturate(1.4) blur(12px);
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--ink); }
+      .brand:hover { text-decoration: none; color: var(--ink); }
+      .brand .mark {
+        width: 32px; height: 32px; flex: none;
+        display: grid; place-items: center; border-radius: 10px;
+        background: linear-gradient(135deg, var(--teal), var(--violet));
+        color: #0b1026;
+      }
+      .brand .mark svg { width: 17px; height: 17px; }
+      .back {
+        display: inline-flex; align-items: center; gap: 6px;
+        color: var(--ink-soft); font-size: 14px;
+        border: 1px solid var(--line); border-radius: 12px; padding: 6px 14px;
+        transition: color .18s, border-color .18s;
+      }
+      .back:hover { color: var(--teal); border-color: var(--teal); text-decoration: none; }
+      .back svg { width: 14px; height: 14px; }
+
+      article {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 48px) 60px;
+      }
+      .article-card {
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        border-radius: 18px;
+        padding: clamp(28px, 5vw, 48px);
+        box-shadow: var(--shadow-card);
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+      }
+      .article-card .date {
+        font-size: 13px; color: var(--ink-faint); letter-spacing: 1px;
+      }
+      .article-card h1 {
+        margin-top: 10px; font-size: clamp(26px, 5vw, 36px); line-height: 1.3;
+        background: linear-gradient(120deg, #ffffff 15%, var(--teal) 55%, var(--violet) 95%);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; color: transparent;
+      }
+      .article-card .meta {
+        margin-top: 14px; font-size: 14px; color: var(--ink-soft);
+        display: flex; gap: 14px; flex-wrap: wrap;
+      }
+      .article-card .meta span {
+        display: inline-flex; align-items: center; gap: 5px;
+        border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px;
+        font-size: 12px;
+      }
+      .article-card hr {
+        margin: 28px 0; border: 0; border-top: 1px dashed var(--line);
+      }
+      .article-card p {
+        margin-bottom: 18px; color: var(--ink-soft); font-size: 16px;
+      }
+      .article-card p strong { color: var(--ink); }
+
+      footer {
+        border-top: 1px solid var(--line);
+        background: rgba(8, 12, 28, 0.6);
+        padding: 24px clamp(20px, 5vw, 48px) 32px;
+        text-align: center; font-size: 13px; color: var(--ink-faint);
+      }
+      footer a { color: var(--ink-faint); }
+      footer a:hover { color: var(--teal); }
+    </style>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+
+    <header>
+      <a class="brand" href="/">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M9.9 7.2 C13.5 7.2 15.6 10 15.6 13.5 C15.6 17.3 13 20 9.8 20 C6.6 20 4.2 17.3 4.2 13.6 C4.2 10 6.3 7.2 9.9 7.2 Z" fill="#0d1330" />
+            <path d="M5 17.6 L2.6 20 L6.2 18.9 Z" fill="#0d1330" />
+            <path d="M14.4 7.6 C18.4 5.4 23.2 6.2 23.6 9.2 C23.9 11.5 21.8 13.4 17.9 14 L14.1 12.5 Z" fill="#FFB347" />
+            <circle cx="12.4" cy="9.7" r=".8" fill="#FFFFFF" />
+          </svg>
+        </span>
+        闲思杂记
+      </a>
+    </header>
+
+    <article>
+      <div class="article-card">
+        <div class="date">2026 年 11 月 · 第 2 篇</div>
+        <h1>情绪管理小技巧</h1>
+        <div class="meta">
+          <span>知识沉淀</span>
+          <span>接住情绪</span>
+        </div>
+        <hr />
+<p><strong>积木塔倒了，他哭到整个楼道都听得见。</strong>四岁半那年最典型：搭了半小时的塔塌了，他从兴奋瞬间跌进崩溃，一边哭一边把积木往地上砸。我的第一反应是那句全天下爸爸都会说的话："再搭一个不就好了？"——错。这句话在他耳朵里等于"你的难过不重要"。</p>
+<p><strong>后来学到的方法：先命名，再共情，最后才讲理。</strong>顺序不能乱。蹲下来，先替他把情绪说出来："积木塔倒了，你特别生气，也特别难过，对不对？"他哭声顿了一下，点头——情绪被说中的那一刻，孩子的激烈程度会肉眼可见地下降。然后才轮到"我们看看哪里不稳，下次怎么搭"。情绪没被接住之前讲道理，道理会顺着眼泪流走。</p>
+<p><strong>情绪要先有名字，才好管理。</strong>我们做了一组情绪脸谱卡贴在冰箱上：生气、难过、害怕、委屈、着急。有一天他从幼儿园回来跟我说"爸爸我今天有点委屈"，第一次用词准确的时候我差点没绷住——能说出来的情绪，就已经被驯服了一半。说不出来的，就只能用摔东西和打滚来表达。</p>
+<p><strong>平静角，不是罚站角。</strong>客厅角落有个小垫子加一篮子软东西：捏捏乐、绘本、他的小猴子玩偶。区别在用法：罚站角是"你做错了，去那儿待着"，平静角是"你看起来很难受，要不要去那儿缓缓？我也陪你去"。地点一样，姿态完全不同。情绪不是错误，是信号。</p>
+<p><strong>最后一条，是给我自己的。</strong>有天加班回来又累又饿，他磨磨蹭蹭不肯洗澡，我吼了一嗓子，音量把自己都吓到了。他愣愣看着我，没哭，就是愣着。我蹲下去道歉："爸爸刚才吼你，是爸爸自己没管好情绪，对不起。"他伸手摸了摸我的头："下次你生气就去平静角吧。"情绪管理的第一课，原来是先管住大人自己。</p>
+<p><strong>接住情绪不等于没有边界。</strong>我们家的话术是：“生气可以，跺脚可以，不可以打人；难过可以，哭可以，不可以摔东西。”情绪永远被接纳，行为的底线始终在。他现在生气时会自己跺两下脚，然后自己走去平静角——愤怒找到了出口，桌上的碗和地板上的积木就都安全了。</p>
+<p style="color: var(--ink-faint); font-size: 14px; margin-top: 28px;">—— 平静角的垫子最近多了一个位置，全家人都能坐。</p>
+      </div>
+    </article>
+
+    <footer>
+      <div>闲思杂记 · zelab.cn · 个人非经营性站点</div>
+      <div style="margin-top: 6px;">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">豫ICP备2026054893号</a>
+      </div>
+    </footer>
+  </body>
+</html>

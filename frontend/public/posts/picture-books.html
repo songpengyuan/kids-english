@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>绘本推荐清单 · 闲思杂记</title>
+    <meta name="description" content="私藏绘本推荐：五本 3-6 岁反复翻看百遍的经典绘本与共读心得。" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-119-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+4e00, U+4e2d, U+65b0, U+65e5, U+6708-6709, U+70b9, U+7684, U+7f51, U+ff0c, U+ff0e, U+ff1a;
+      }
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-latin-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2191, U+2193, U+2212, U+FEFF;
+      }
+      :root {
+        --ink: #eef1fb;
+        --ink-soft: #aab4d4;
+        --ink-faint: #7b86a8;
+        --line: rgba(255, 255, 255, 0.1);
+        --night: #0b1026;
+        --night-2: #121a3d;
+        --card: rgba(22, 30, 64, 0.72);
+        --teal: #2dd4bf;
+        --teal-deep: #14b8a6;
+        --violet: #8b5cf6;
+        --amber: #fbbf24;
+        --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: "ZCOOL KuaiLe", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background: var(--night);
+        line-height: 1.9;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a { color: var(--teal); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 6px; }
+
+      .bg {
+        position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+        background:
+          radial-gradient(1.5px 1.5px at 22% 18%, rgba(255,255,255,0.9) 50%, transparent 51%),
+          radial-gradient(1px 1px at 68% 9%, rgba(255,255,255,0.75) 50%, transparent 51%),
+          radial-gradient(1.2px 1.2px at 84% 30%, rgba(255,255,255,0.6) 50%, transparent 51%),
+          radial-gradient(ellipse 70% 55% at 85% -10%, rgba(139, 92, 246, 0.22), transparent 70%),
+          radial-gradient(ellipse 60% 50% at 8% 0%, rgba(45, 212, 191, 0.16), transparent 70%),
+          linear-gradient(180deg, var(--night) 0%, var(--night-2) 52%, var(--night) 100%);
+      }
+
+      header {
+        position: sticky; top: 0; z-index: 10;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px clamp(20px, 5vw, 48px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(11, 16, 38, 0.72);
+        -webkit-backdrop-filter: saturate(1.4) blur(12px);
+        backdrop-filter: saturate(1.4) blur(12px);
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--ink); }
+      .brand:hover { text-decoration: none; color: var(--ink); }
+      .brand .mark {
+        width: 32px; height: 32px; flex: none;
+        display: grid; place-items: center; border-radius: 10px;
+        background: linear-gradient(135deg, var(--teal), var(--violet));
+        color: #0b1026;
+      }
+      .brand .mark svg { width: 17px; height: 17px; }
+      .back {
+        display: inline-flex; align-items: center; gap: 6px;
+        color: var(--ink-soft); font-size: 14px;
+        border: 1px solid var(--line); border-radius: 12px; padding: 6px 14px;
+        transition: color .18s, border-color .18s;
+      }
+      .back:hover { color: var(--teal); border-color: var(--teal); text-decoration: none; }
+      .back svg { width: 14px; height: 14px; }
+
+      article {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 48px) 60px;
+      }
+      .article-card {
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        border-radius: 18px;
+        padding: clamp(28px, 5vw, 48px);
+        box-shadow: var(--shadow-card);
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+      }
+      .article-card .date {
+        font-size: 13px; color: var(--ink-faint); letter-spacing: 1px;
+      }
+      .article-card h1 {
+        margin-top: 10px; font-size: clamp(26px, 5vw, 36px); line-height: 1.3;
+        background: linear-gradient(120deg, #ffffff 15%, var(--teal) 55%, var(--violet) 95%);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; color: transparent;
+      }
+      .article-card .meta {
+        margin-top: 14px; font-size: 14px; color: var(--ink-soft);
+        display: flex; gap: 14px; flex-wrap: wrap;
+      }
+      .article-card .meta span {
+        display: inline-flex; align-items: center; gap: 5px;
+        border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px;
+        font-size: 12px;
+      }
+      .article-card hr {
+        margin: 28px 0; border: 0; border-top: 1px dashed var(--line);
+      }
+      .article-card p {
+        margin-bottom: 18px; color: var(--ink-soft); font-size: 16px;
+      }
+      .article-card p strong { color: var(--ink); }
+
+      footer {
+        border-top: 1px solid var(--line);
+        background: rgba(8, 12, 28, 0.6);
+        padding: 24px clamp(20px, 5vw, 48px) 32px;
+        text-align: center; font-size: 13px; color: var(--ink-faint);
+      }
+      footer a { color: var(--ink-faint); }
+      footer a:hover { color: var(--teal); }
+    </style>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+
+    <header>
+      <a class="brand" href="/">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M9.9 7.2 C13.5 7.2 15.6 10 15.6 13.5 C15.6 17.3 13 20 9.8 20 C6.6 20 4.2 17.3 4.2 13.6 C4.2 10 6.3 7.2 9.9 7.2 Z" fill="#0d1330" />
+            <path d="M5 17.6 L2.6 20 L6.2 18.9 Z" fill="#0d1330" />
+            <path d="M14.4 7.6 C18.4 5.4 23.2 6.2 23.6 9.2 C23.9 11.5 21.8 13.4 17.9 14 L14.1 12.5 Z" fill="#FFB347" />
+            <circle cx="12.4" cy="9.7" r=".8" fill="#FFFFFF" />
+          </svg>
+        </span>
+        闲思杂记
+      </a>
+    </header>
+
+    <article>
+      <div class="article-card">
+        <div class="date">2026 年 11 月 · 第 2 篇</div>
+        <h1>绘本推荐清单</h1>
+        <div class="meta">
+          <span>育儿心得</span>
+          <span>3-6 岁书单</span>
+        </div>
+        <hr />
+<p><strong>《好饿的毛毛虫》，艾瑞·卡尔。</strong>如果只能留一本，我留它。书页上那些圆洞洞，是全世界的孩子都拒绝不了的机关——我们家那本，毛毛虫钻过的每个洞都被他手指抠得发亮。从周一吃到周日，星期六那页十样食物排开，他非要我一样样"点名"：苹果、梨、李子、草莓……数数、星期、食物，全在这本里了。两岁读到五岁，玩法一直在升级：先认食物，后来数洞洞，最近开始问我"毛毛虫为什么要变蝴蝶"。</p>
+<p><strong>《Brown Bear, Brown Bear, What Do You See?》，还是卡尔的书。</strong>这本是我们英语启蒙的起点。整本书就是一问一答："Brown bear, brown bear, what do you see? I see a red bird looking at me." 句式重复到魔性，他听第三遍就能抢答，第五遍开始自己翻页考我。后来在小区里散步，他看到狗就冒出一句 "I see a dog looking at me!"——一本书能让娃主动开口，值回全部书价。</p>
+<p><strong>《猜猜我有多爱你》。</strong>睡前读物天花板。小兔子说"我爱你有这么多"，大兔子把手臂张得更开。读完这本书的那段时间，我们家睡前多了个仪式：他张开手臂比划"我爱你从这里到门口"，我回"我爱你从这里到郑州东站"。爱要用多少来比，孩子真懂，而且永远想赢你一点。</p>
+<p><strong>《大卫，不可以》。</strong>翻开全是"熊孩子"现场：踩着书够桌子、把浴室玩成水帘洞。他第一次看就咯咯笑到停不下来——大概是在大卫身上看到了自己。但这本真正的杀招在最后一页：妈妈抱着大卫说"大卫乖，我爱你"。规矩可以有，妈妈的爱不减，这个顺序我服气。训完话的晚上读这本，比说一百句"爸爸还是爱你的"都管用。</p>
+<p><strong>《小蓝和小黄》，李欧·李奥尼。</strong>整本书就是蓝黄两团色块追逐玩耍，抱在一起变成了绿色。抽象得不像幼儿绘本，但五岁以下的孩子偏偏就吃这套——颜色认知、友谊，还有"我变了颜色妈妈还认得我吗"的小小哲学。他看完那天，我们拿颜料做了次蓝加黄实验，绿色的颜料糊了半个桌面，值。</p>
+<p>选书说到底就一条：孩子伸手要翻的那本，就是当下最对的那本。书单只是地图，孩子才是司机。</p>
+<p style="color: var(--ink-faint); font-size: 14px; margin-top: 28px;">—— 书单会接着长，读一次记一次。</p>
+      </div>
+    </article>
+
+    <footer>
+      <div>闲思杂记 · zelab.cn · 个人非经营性站点</div>
+      <div style="margin-top: 6px;">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">豫ICP备2026054893号</a>
+      </div>
+    </footer>
+  </body>
+</html>

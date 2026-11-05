@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>屏幕时间管理 · 闲思杂记</title>
+    <meta name="description" content="屏幕时间管理：沙漏可视化、内容白名单、全家设备篮，三条硬规矩的由来。" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-119-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+4e00, U+4e2d, U+65b0, U+65e5, U+6708-6709, U+70b9, U+7684, U+7f51, U+ff0c, U+ff0e, U+ff1a;
+      }
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-latin-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2191, U+2193, U+2212, U+FEFF;
+      }
+      :root {
+        --ink: #eef1fb;
+        --ink-soft: #aab4d4;
+        --ink-faint: #7b86a8;
+        --line: rgba(255, 255, 255, 0.1);
+        --night: #0b1026;
+        --night-2: #121a3d;
+        --card: rgba(22, 30, 64, 0.72);
+        --teal: #2dd4bf;
+        --teal-deep: #14b8a6;
+        --violet: #8b5cf6;
+        --amber: #fbbf24;
+        --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: "ZCOOL KuaiLe", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background: var(--night);
+        line-height: 1.9;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a { color: var(--teal); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 6px; }
+
+      .bg {
+        position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+        background:
+          radial-gradient(1.5px 1.5px at 22% 18%, rgba(255,255,255,0.9) 50%, transparent 51%),
+          radial-gradient(1px 1px at 68% 9%, rgba(255,255,255,0.75) 50%, transparent 51%),
+          radial-gradient(1.2px 1.2px at 84% 30%, rgba(255,255,255,0.6) 50%, transparent 51%),
+          radial-gradient(ellipse 70% 55% at 85% -10%, rgba(139, 92, 246, 0.22), transparent 70%),
+          radial-gradient(ellipse 60% 50% at 8% 0%, rgba(45, 212, 191, 0.16), transparent 70%),
+          linear-gradient(180deg, var(--night) 0%, var(--night-2) 52%, var(--night) 100%);
+      }
+
+      header {
+        position: sticky; top: 0; z-index: 10;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px clamp(20px, 5vw, 48px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(11, 16, 38, 0.72);
+        -webkit-backdrop-filter: saturate(1.4) blur(12px);
+        backdrop-filter: saturate(1.4) blur(12px);
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--ink); }
+      .brand:hover { text-decoration: none; color: var(--ink); }
+      .brand .mark {
+        width: 32px; height: 32px; flex: none;
+        display: grid; place-items: center; border-radius: 10px;
+        background: linear-gradient(135deg, var(--teal), var(--violet));
+        color: #0b1026;
+      }
+      .brand .mark svg { width: 17px; height: 17px; }
+      .back {
+        display: inline-flex; align-items: center; gap: 6px;
+        color: var(--ink-soft); font-size: 14px;
+        border: 1px solid var(--line); border-radius: 12px; padding: 6px 14px;
+        transition: color .18s, border-color .18s;
+      }
+      .back:hover { color: var(--teal); border-color: var(--teal); text-decoration: none; }
+      .back svg { width: 14px; height: 14px; }
+
+      article {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 48px) 60px;
+      }
+      .article-card {
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        border-radius: 18px;
+        padding: clamp(28px, 5vw, 48px);
+        box-shadow: var(--shadow-card);
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+      }
+      .article-card .date {
+        font-size: 13px; color: var(--ink-faint); letter-spacing: 1px;
+      }
+      .article-card h1 {
+        margin-top: 10px; font-size: clamp(26px, 5vw, 36px); line-height: 1.3;
+        background: linear-gradient(120deg, #ffffff 15%, var(--teal) 55%, var(--violet) 95%);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; color: transparent;
+      }
+      .article-card .meta {
+        margin-top: 14px; font-size: 14px; color: var(--ink-soft);
+        display: flex; gap: 14px; flex-wrap: wrap;
+      }
+      .article-card .meta span {
+        display: inline-flex; align-items: center; gap: 5px;
+        border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px;
+        font-size: 12px;
+      }
+      .article-card hr {
+        margin: 28px 0; border: 0; border-top: 1px dashed var(--line);
+      }
+      .article-card p {
+        margin-bottom: 18px; color: var(--ink-soft); font-size: 16px;
+      }
+      .article-card p strong { color: var(--ink); }
+
+      footer {
+        border-top: 1px solid var(--line);
+        background: rgba(8, 12, 28, 0.6);
+        padding: 24px clamp(20px, 5vw, 48px) 32px;
+        text-align: center; font-size: 13px; color: var(--ink-faint);
+      }
+      footer a { color: var(--ink-faint); }
+      footer a:hover { color: var(--teal); }
+    </style>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+
+    <header>
+      <a class="brand" href="/">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M9.9 7.2 C13.5 7.2 15.6 10 15.6 13.5 C15.6 17.3 13 20 9.8 20 C6.6 20 4.2 17.3 4.2 13.6 C4.2 10 6.3 7.2 9.9 7.2 Z" fill="#0d1330" />
+            <path d="M5 17.6 L2.6 20 L6.2 18.9 Z" fill="#0d1330" />
+            <path d="M14.4 7.6 C18.4 5.4 23.2 6.2 23.6 9.2 C23.9 11.5 21.8 13.4 17.9 14 L14.1 12.5 Z" fill="#FFB347" />
+            <circle cx="12.4" cy="9.7" r=".8" fill="#FFFFFF" />
+          </svg>
+        </span>
+        闲思杂记
+      </a>
+    </header>
+
+    <article>
+      <div class="article-card">
+        <div class="date">2026 年 11 月 · 第 3 篇</div>
+        <h1>屏幕时间管理</h1>
+        <div class="meta">
+          <span>知识沉淀</span>
+          <span>屏幕与规则</span>
+        </div>
+        <hr />
+<p><strong>冲突的起点是一条动画片。</strong>本来约定看一集，二十分钟，播完自动关。结果"再看一集"的哭闹戏码天天上演，他哭得撕心裂肺，我关得提心吊胆，最后往往妥协成三集——孩子的谈判技巧是天生的，眼泪是核武器。</p>
+<p><strong>第一个有效招：把时间"看得见"。</strong>"二十分钟"对五岁孩子是句空话，他不懂分针走一格是什么概念。换成一个沙漏加一个计时器，响了他自己过去关电视。头两天还是会赖，第四次开始，音乐一停他自己关——因为规则是他看着走完的，不是大人临时宣布的。可视化不是形式感，是把"跟爸爸妈妈对抗"变成"跟约定合作"。</p>
+<p><strong>第二个有效招：内容白名单。</strong>我们家的屏幕时间不搞自由浏览，清单就三样：英文儿歌视频、我给他写的那个英语小应用、周末一集动画片。清单是全家开会定的，他也投了票。白名单的好处是省掉了"这个能不能看"的每一次讨价还价——清单之外，没有菜单。</p>
+<p><strong>第三个有效招，也是最难的一条：大人先守约。</strong>有天晚饭后我在沙发上刷手机，他凑过来说："爸爸，你的屏幕时间超过了。"全家人笑作一团，我脸上挂不住，但确实没话说。现在我们有个"全家设备篮"，八点以后所有人的手机都进去，包括我的。孩子不听你怎么说，看你怎么活。</p>
+<p><strong>踩过的坑记两条。</strong>一是"再看五分钟"这种口头缓期，说了就是教他讨价还价，五分钟会变成二十五分钟；二是千万别把屏幕时间当奖励——"表现好就给你看平板"等于亲手把屏幕抬高成硬通货，孩子会为了它表演好行为。屏幕就是个工具，给它立规矩，别给它发勋章。</p>
+<p><strong>少下来的时间得有去处。</strong>屏幕时间从一小时压到二十分钟，空出来的四十分钟如果没人管，孩子一定闹着要回来。我们用“替代节目单”接住它：楼下骑车、拼图、撕纸，还有我陪他玩的那套“公交车刷卡”游戏——窗帘是车门，抱枕是投币箱。屏幕争夺战的本质不是孩子爱屏幕，是屏幕之外没人陪他玩。这点想通了，仗就赢了一半。</p>
+<p style="color: var(--ink-faint); font-size: 14px; margin-top: 28px;">—— 设备篮在电视柜上，八点准时开工收纳。</p>
+      </div>
+    </article>
+
+    <footer>
+      <div>闲思杂记 · zelab.cn · 个人非经营性站点</div>
+      <div style="margin-top: 6px;">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">豫ICP备2026054893号</a>
+      </div>
+    </footer>
+  </body>
+</html>

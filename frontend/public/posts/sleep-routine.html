@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>作息调整实战 · 闲思杂记</title>
+    <meta name="description" content="作息调整实战：从十点半熬到八点半入睡，两周半的操作流程与破功预警。" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-119-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+4e00, U+4e2d, U+65b0, U+65e5, U+6708-6709, U+70b9, U+7684, U+7f51, U+ff0c, U+ff0e, U+ff1a;
+      }
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-latin-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2191, U+2193, U+2212, U+FEFF;
+      }
+      :root {
+        --ink: #eef1fb;
+        --ink-soft: #aab4d4;
+        --ink-faint: #7b86a8;
+        --line: rgba(255, 255, 255, 0.1);
+        --night: #0b1026;
+        --night-2: #121a3d;
+        --card: rgba(22, 30, 64, 0.72);
+        --teal: #2dd4bf;
+        --teal-deep: #14b8a6;
+        --violet: #8b5cf6;
+        --amber: #fbbf24;
+        --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: "ZCOOL KuaiLe", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background: var(--night);
+        line-height: 1.9;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a { color: var(--teal); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 6px; }
+
+      .bg {
+        position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+        background:
+          radial-gradient(1.5px 1.5px at 22% 18%, rgba(255,255,255,0.9) 50%, transparent 51%),
+          radial-gradient(1px 1px at 68% 9%, rgba(255,255,255,0.75) 50%, transparent 51%),
+          radial-gradient(1.2px 1.2px at 84% 30%, rgba(255,255,255,0.6) 50%, transparent 51%),
+          radial-gradient(ellipse 70% 55% at 85% -10%, rgba(139, 92, 246, 0.22), transparent 70%),
+          radial-gradient(ellipse 60% 50% at 8% 0%, rgba(45, 212, 191, 0.16), transparent 70%),
+          linear-gradient(180deg, var(--night) 0%, var(--night-2) 52%, var(--night) 100%);
+      }
+
+      header {
+        position: sticky; top: 0; z-index: 10;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px clamp(20px, 5vw, 48px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(11, 16, 38, 0.72);
+        -webkit-backdrop-filter: saturate(1.4) blur(12px);
+        backdrop-filter: saturate(1.4) blur(12px);
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--ink); }
+      .brand:hover { text-decoration: none; color: var(--ink); }
+      .brand .mark {
+        width: 32px; height: 32px; flex: none;
+        display: grid; place-items: center; border-radius: 10px;
+        background: linear-gradient(135deg, var(--teal), var(--violet));
+        color: #0b1026;
+      }
+      .brand .mark svg { width: 17px; height: 17px; }
+      .back {
+        display: inline-flex; align-items: center; gap: 6px;
+        color: var(--ink-soft); font-size: 14px;
+        border: 1px solid var(--line); border-radius: 12px; padding: 6px 14px;
+        transition: color .18s, border-color .18s;
+      }
+      .back:hover { color: var(--teal); border-color: var(--teal); text-decoration: none; }
+      .back svg { width: 14px; height: 14px; }
+
+      article {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 48px) 60px;
+      }
+      .article-card {
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        border-radius: 18px;
+        padding: clamp(28px, 5vw, 48px);
+        box-shadow: var(--shadow-card);
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+      }
+      .article-card .date {
+        font-size: 13px; color: var(--ink-faint); letter-spacing: 1px;
+      }
+      .article-card h1 {
+        margin-top: 10px; font-size: clamp(26px, 5vw, 36px); line-height: 1.3;
+        background: linear-gradient(120deg, #ffffff 15%, var(--teal) 55%, var(--violet) 95%);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; color: transparent;
+      }
+      .article-card .meta {
+        margin-top: 14px; font-size: 14px; color: var(--ink-soft);
+        display: flex; gap: 14px; flex-wrap: wrap;
+      }
+      .article-card .meta span {
+        display: inline-flex; align-items: center; gap: 5px;
+        border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px;
+        font-size: 12px;
+      }
+      .article-card hr {
+        margin: 28px 0; border: 0; border-top: 1px dashed var(--line);
+      }
+      .article-card p {
+        margin-bottom: 18px; color: var(--ink-soft); font-size: 16px;
+      }
+      .article-card p strong { color: var(--ink); }
+
+      footer {
+        border-top: 1px solid var(--line);
+        background: rgba(8, 12, 28, 0.6);
+        padding: 24px clamp(20px, 5vw, 48px) 32px;
+        text-align: center; font-size: 13px; color: var(--ink-faint);
+      }
+      footer a { color: var(--ink-faint); }
+      footer a:hover { color: var(--teal); }
+    </style>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+
+    <header>
+      <a class="brand" href="/">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M9.9 7.2 C13.5 7.2 15.6 10 15.6 13.5 C15.6 17.3 13 20 9.8 20 C6.6 20 4.2 17.3 4.2 13.6 C4.2 10 6.3 7.2 9.9 7.2 Z" fill="#0d1330" />
+            <path d="M5 17.6 L2.6 20 L6.2 18.9 Z" fill="#0d1330" />
+            <path d="M14.4 7.6 C18.4 5.4 23.2 6.2 23.6 9.2 C23.9 11.5 21.8 13.4 17.9 14 L14.1 12.5 Z" fill="#FFB347" />
+            <circle cx="12.4" cy="9.7" r=".8" fill="#FFFFFF" />
+          </svg>
+        </span>
+        闲思杂记
+      </a>
+    </header>
+
+    <article>
+      <div class="article-card">
+        <div class="date">2026 年 11 月 · 第 4 篇</div>
+        <h1>作息调整实战</h1>
+        <div class="meta">
+          <span>育儿心得</span>
+          <span>睡觉这门课</span>
+        </div>
+        <hr />
+<p><strong>先交代惨状。</strong>上幼儿园前，我们家孩子的睡觉时间是十点半左右——不是定的，是熬出来的。他精力旺盛得像装了发电机，我们下班晚，晚饭吃得晚，一晃就十点。九月入园后第一周，早上七点半叫他起床，那个眼神像在质问我"你是谁"。老师第三天发来善意提醒：孩子午睡翻来覆去，早上打哈欠。得，认命，调作息。</p>
+<p><strong>第一次尝试：直接提前一小时。失败。</strong>八点半把他按到床上，他在黑暗里瞪眼到十点，还顺带把我耗得没了脾气。生物钟不是开关，是旋钮。改成每三天提前十五分钟，给身体留出"被骗过去"的时间。两周半，稳稳落到了八点半上床。</p>
+<p><strong>真正的骨架是"睡前程序"。</strong>顺序焊死：洗澡、收玩具、两本绘本（他选一本我选一本）、关大灯、开小夜灯、拍背五分钟。顺序固定之后，神奇的事发生了：每做一步，他自己就知道"哦，要睡觉了"，到关大灯那步，眼皮已经在打架。程序比催促好用一百倍——催促是大人着急，程序是让孩子自己走到终点。</p>
+<p><strong>两个差点破功的地方。</strong>一是我加班回家晚，八点四十进门，他听到钥匙声从床上弹起来。后来跟妈妈约好：晚归那天，睡前故事视频电话补一晚，第二天照常。二是周末，"反正明天不上学，再玩会儿吧"——就一次，周一早上全部还回来。现在周末也守点，最多宽限到九点。</p>
+<p><strong>一个意外的收获。</strong>我们把睡前程序画成贴纸表贴在门上，做完一项他贴一颗星星。有天晚上反过来是他催我："爸爸快点，今天星星还没集齐。"催睡觉的人换了。作息这件事，最后赢的不是父母的意志力，是流程的惯性。</p>
+<p><strong>还有一个隐形变量：白天放电量。</strong>下雨天窝在家里没出门的傍晚，晚上八点半上床准会翻腾到九点；下午在楼下疯跑两小时的晚上，十分钟就睡熟。运动量就是睡眠的定金。现在我们家下午四点后必安排一场户外，傍晚只玩安静游戏——放电要放在白天，别欠到床上再还。</p>
+<p><strong>想抄作业的就一句话：先固定程序，再慢慢挪时间，中间别心软。</strong></p>
+<p style="color: var(--ink-faint); font-size: 14px; margin-top: 28px;">—— 记录时他刚被流程"骗"去睡觉，小夜灯还亮着。</p>
+      </div>
+    </article>
+
+    <footer>
+      <div>闲思杂记 · zelab.cn · 个人非经营性站点</div>
+      <div style="margin-top: 6px;">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">豫ICP备2026054893号</a>
+      </div>
+    </footer>
+  </body>
+</html>
