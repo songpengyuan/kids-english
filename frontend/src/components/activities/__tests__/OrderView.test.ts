@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 /**
- * 拼句子（OrderView）行为：
- * - 进页显示第一句的中文提示 + 打乱单词块
- * - 按正确顺序点单词拼完一句 → 自动读英文 → 立刻切换到下一句
- * - 拼错 → 整组弹回，句子不变
- * - 全部拼完 → emit done
+ * 拼句子 OrderView（2026-11-05 起为「看图填空」）：
+ * - 进页显示框架句子 + 一组词图卡（不再有点文字单词块）
+ * - 点对正确图 → 句子空槽出现该图、朗读整句、显示 Next
+ * - 点错图 → 抖动一下、不锁、仍停留在当前句
+ * - 看答案 → 直接把正确图填进空槽
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
@@ -20,14 +20,15 @@ vi.mock("../../../stores/progress", () => ({
 }));
 
 import OrderView from "../OrderView.vue";
-import type { Lesson } from "../../../data/lessons";
+import type { Lesson, Word } from "../../../data/lessons";
+
+function w(id: string, en: string): Word {
+  return { id, en, zh: id, emoji: "🐾", image: `/${id}.png`, lessonId: "l-test" } as Word;
+}
 
 const lesson = {
   id: "l-test",
-  phrases: [
-    { en: "I see a cat", zh: "我看见一只猫" },
-    { en: "It is red", zh: "它是红色的" },
-  ],
+  words: [w("wipers", "wipers"), w("bus", "bus"), w("cat", "cat")],
 } as unknown as Lesson;
 
 beforeEach(() => {
@@ -41,57 +42,57 @@ function mountView() {
   });
 }
 
-describe("OrderView", () => {
-  it("进页显示听句子按钮和打乱单词", () => {
-    const w = mountView();
-    expect(w.text()).toContain("Listen");
-    // 4 个单词块
-    const chips = w.findAll(".word-chip");
-    expect(chips.length).toBe(4);
+function cardByAlt(w: ReturnType<typeof mountView>, alt: string) {
+  return w.findAll(".pic-card").find((c) => c.find("img").attributes("alt") === alt);
+}
+
+describe("OrderView 看图填空", () => {
+  it("进页显示 Listen、框架句子和三张词图卡", () => {
+    const v = mountView();
+    expect(v.text()).toContain("Listen");
+    expect(v.text()).toContain("I see "); // wipers 是复数 → "I see ___."
+    expect(v.findAll(".pic-card")).toHaveLength(3);
+    // 空槽此时还没有图
+    expect(v.find(".pic-slot img").exists()).toBe(false);
   });
 
-  it("句子槽按目标词数显示横线占位（不再只有一个问号），拼一个少一条", async () => {
-    const w = mountView();
-    // 第一句 "I see a cat" = 4 个词 → 4 条横线
-    expect(w.findAll(".slot-empty")).toHaveLength(4);
-    expect(w.text()).not.toContain("？");
-    // 放一个词进槽：横线 −1，实词 +1
-    await w.findAll(".word-chip")[0].trigger("click");
-    expect(w.findAll(".slot-empty")).toHaveLength(3);
-    expect(w.findAll(".slot-word")).toHaveLength(1);
+  it("点错图 → 抖动标记、不进下一句、图卡仍在", async () => {
+    const v = mountView();
+    await flushPromises();
+    await cardByAlt(v, "bus")!.trigger("click");
+    expect(v.findAll(".pic-card").length).toBeGreaterThan(0);
+    expect(v.find(".next-btn").exists()).toBe(false);
+    expect(v.find(".pic-card.wrong").exists()).toBe(true);
   });
 
-  it("拼完第一句后显示 Next 按钮，点 Next 才切到第二句", async () => {
-    const w = mountView();
+  it("点对正确图 → 空槽出现该图、朗读整句、出现 Next", async () => {
+    const v = mountView();
     await flushPromises();
-
-    const words = ["I", "see", "a", "cat"];
-    for (const target of words) {
-      const chip = w.findAll(".word-chip").find((c) => c.text() === target);
-      expect(chip, `应找到单词块 ${target}`).toBeTruthy();
-      await chip!.trigger("click");
-    }
+    await cardByAlt(v, "wipers")!.trigger("click");
     await flushPromises();
-    await new Promise((r) => setTimeout(r, 800));
-    // 拼对后显示 Next 按钮，bank 隐藏
-    expect(w.text()).toContain("Next");
-    expect(w.findAll(".word-chip")).toHaveLength(0);
-    // 点 Next
-    await w.find(".next-btn").trigger("click");
-    await flushPromises();
-    // 新句子的词出现在 bank 里
-    const bankTexts = w.findAll(".word-chip").map((c) => c.text());
-    expect(bankTexts).toContain("red");
-    expect(bankTexts).toContain("It");
+    expect(v.find(".pic-slot img").attributes("src")).toBe("/wipers.png");
+    expect(v.text()).toContain("Next");
+    expect(v.findAll(".pic-card")).toHaveLength(0);
   });
 
-  it("拼错时整组弹回，仍停留在当前句", async () => {
-    const w = mountView();
+  it("看答案 → 直接把正确图填进空槽", async () => {
+    const v = mountView();
     await flushPromises();
-    await w.findAll(".word-chip").find((c) => c.text() === "cat")!.trigger("click");
-    await w.findAll(".word-chip").find((c) => c.text() === "I")!.trigger("click");
+    await v.find(".answer-btn").trigger("click");
     await flushPromises();
-    // 还在第一句（bank 仍在）
-    expect(w.findAll(".word-chip").length).toBeGreaterThan(0);
+    expect(v.find(".pic-slot img").attributes("src")).toBe("/wipers.png");
+    expect(v.text()).toContain("Next");
+  });
+
+  it("Next 切到下一题，重新出现三张图卡", async () => {
+    const v = mountView();
+    await flushPromises();
+    await cardByAlt(v, "wipers")!.trigger("click");
+    await flushPromises();
+    await v.find(".next-btn").trigger("click");
+    await flushPromises();
+    // 第二题 target=bus（It's a ___）：仍有三张图卡
+    expect(v.findAll(".pic-card")).toHaveLength(3);
+    expect(v.find(".pic-slot img").exists()).toBe(false);
   });
 });

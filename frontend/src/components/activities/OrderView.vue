@@ -1,97 +1,129 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { speak } from "../../services/speech";
 import { sfxCorrect, sfxTap, sfxWrong } from "../../services/effects";
-import type { Lesson } from "../../data/lessons";
+import type { Lesson, Word } from "../../data/lessons";
 import { orderSentences } from "../../utils/orderSentences";
-import { useOrderSession } from "../../composables/useOrderSession";
 import StageHead from "./StageHead.vue";
 
 const props = defineProps<{ lesson: Lesson }>();
 const emit = defineEmits(["done", "progress", "total"]);
 
-/** 题目 = 按本课单词生成的 2–4 词亲子式短句（不再直接喂教材整句歌词） */
-const phrases = computed(() => orderSentences(props.lesson));
+/**
+ * 题目 = 看图填空（2026-11-05，参考孩子的 The Wheels on the Bus 安静书）：
+ * 框架文字印死（I see the ___ / It's a ___），只把本课实义词位置留空，
+ * 底部放本课词图卡，孩子点正确的图填进空槽。不再点文字单词块排序。
+ */
+const items = computed(() => orderSentences(props.lesson));
 
-const {
-  sentenceIdx, bank, slots, lock, solved, total,
-  cur, stars, emptyCount,
-  pick, takeBack, revealAnswer, next,
-} = useOrderSession(phrases, {
-  onWrong: () => sfxWrong(),
-  // 拼对：音效 + 完整朗读这句
-  onSolved: (phrase) => {
-    sfxCorrect();
-    void speak(phrase.en, { lessonId: props.lesson.id });
-  },
+const idx = ref(0);
+const solved = ref(false);
+const lock = ref(false);
+const wrongCount = ref(0);
+/** 刚点错、要抖动一下的那张图卡 id（不锁，可继续点） */
+const errKey = ref<string | null>(null);
+
+const total = computed(() => items.value.length);
+const cur = computed(() => items.value[idx.value]);
+
+/** 选项：正确词图 + 最多 2 个本课其他词图作干扰 */
+const options = computed<Word[]>(() => {
+  const t = cur.value?.target;
+  if (!t) return [];
+  const distractors = (props.lesson.words || [])
+    .filter((w) => w.image && w.id !== t.id)
+    .slice(0, 2);
+  return [...distractors, t];
 });
+
+const stars = computed(() => (wrongCount.value === 0 ? 3 : wrongCount.value <= 2 ? 2 : 1));
 
 watch(total, () => emit("total", total.value), { immediate: true });
 
-/** 横线宽度跟着词长走：孩子能看出这里是一个多长的词（"I" 短、"seahorse" 长） */
-function blankWidth(i: number): string {
-  const len = cur.value?.en.replace(/[?.!,]/g, "").trim().split(/\s+/)[slots.value.length + i]?.length ?? 2;
-  return `${Math.max(2, Math.min(9, len))}ch`;
-}
-
-function playSentence() {
-  if (cur.value) speak(cur.value.en, { lessonId: props.lesson.id });
-}
-
-function nextSentence() {
-  const last = next();
-  emit("progress", Math.round(((sentenceIdx.value + 1) / total.value) * 100));
-  if (last) {
-    // 星级按拼错次数算（stars 公式），以前写死 3 星，拼错多次也满分
-    emit("done", stars.value);
-  }
-}
-
-/** 进题主动朗读目标句（2026-10-25 用户反馈）：与听音选图同一节奏——
- *  350ms 延迟起播，避免与上一句拼对后的完整朗读/音效重叠打架 */
+/** 进题自动朗读完整句（与听音选图同节奏），350ms 延迟避免与上题朗读打架 */
 watch(
-  sentenceIdx,
+  idx,
   () => {
+    if (!cur.value) return;
     setTimeout(() => {
       if (cur.value) speak(cur.value.en, { lessonId: props.lesson.id });
     }, 350);
   },
   { immediate: true }
 );
+
+function playSentence() {
+  if (cur.value) speak(cur.value.en, { lessonId: props.lesson.id });
+}
+
+function pick(w: Word) {
+  if (lock.value || solved.value || !cur.value) return;
+  if (w.id === cur.value.target.id) {
+    lock.value = true;
+    solved.value = true;
+    sfxCorrect();
+    void speak(cur.value.en, { lessonId: props.lesson.id });
+  } else {
+    wrongCount.value++;
+    errKey.value = w.id;
+    sfxWrong();
+    // 点错也念一下孩子点到的词，让他知道自己指的是什么
+    void speak(w.en, { lessonId: props.lesson.id, wordId: w.id });
+    setTimeout(() => (errKey.value = null), 500);
+  }
+}
+
+/** 兜底：孩子卡住时直接把正确图填进去（不计错、不降星），保证能继续 */
+function revealAnswer() {
+  if (lock.value || solved.value || !cur.value) return;
+  lock.value = true;
+  solved.value = true;
+  sfxCorrect();
+  void speak(cur.value.en, { lessonId: props.lesson.id });
+}
+
+function nextSentence() {
+  emit("progress", Math.round(((idx.value + 1) / total.value) * 100));
+  if (idx.value + 1 >= total.value) {
+    emit("done", stars.value);
+    return;
+  }
+  idx.value++;
+  solved.value = false;
+  lock.value = false;
+  errKey.value = null;
+}
+
+function finishEmpty() {
+  emit("progress", 100);
+  emit("done", 0);
+}
 </script>
 
 <template>
   <div class="order view">
-    <StageHead class="order-head" :right-text="`${sentenceIdx + 1} / ${total}`">
+    <StageHead class="order-head" :right-text="`${idx + 1} / ${total}`">
       <template #tip>
-        <span class="tip-ico">✏️</span>
-        按顺序点下面的词，拼出完整的句子
+        <span class="tip-ico">🧩</span>
+        点正确的图，把句子补完整
       </template>
     </StageHead>
 
     <div v-if="cur" class="board view-body">
-      <!-- 听句子：喇叭按钮，孩子点了听英文句子 -->
       <button class="listen-btn" @click="playSentence" aria-label="Listen">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
         <span>Listen</span>
       </button>
 
-      <!-- 句子槽 -->
-      <div class="slots">
-        <span v-for="(w, i) in slots" :key="i" class="slot-word" @click="takeBack(i)">
-          {{ w }}
+      <!-- 句子：框架文字 + 中间一个图空槽 -->
+      <div class="sentence">
+        <span class="frame">{{ cur.before }}</span>
+        <span class="pic-slot" :class="{ filled: solved }">
+          <img v-if="solved" :src="cur.target.image!" :alt="cur.target.en" />
         </span>
-        <!-- 空槽位：每个待填单词画一条横线（以前只画一个"？"，看不出要拼几个词） -->
-        <span
-          v-for="n in emptyCount"
-          :key="'blank-' + n"
-          class="slot-empty"
-          :style="{ width: blankWidth(n - 1) }"
-          aria-hidden="true"
-        ></span>
+        <span class="frame">{{ cur.after }}</span>
       </div>
 
-      <!-- 兜底：孩子卡住时一键摆出正确句子（不计错、不影响星级，复用拼对音效与朗读） -->
       <button
         v-if="!solved"
         class="answer-btn"
@@ -103,31 +135,34 @@ watch(
         看答案
       </button>
 
-      <!-- 待选单词块 -->
+      <!-- 底部词图卡 -->
       <div v-if="!solved" class="bank">
         <button
-          v-for="(w, i) in bank"
-          :key="i + w"
-          class="word-chip"
+          v-for="o in options"
+          :key="o.id"
+          class="pic-card"
+          :class="{ wrong: errKey === o.id }"
           data-haptic
-          @click="sfxTap(); pick(w)"
+          @click="sfxTap(); pick(o)"
         >
-          {{ w }}
+          <img :src="o.image!" :alt="o.en" />
         </button>
       </div>
 
-      <!-- 拼对后的反馈按钮 -->
       <button v-if="solved" class="next-btn" @click="nextSentence" data-haptic>
-        {{ sentenceIdx + 1 >= total ? "Finish ✓" : "Next →" }}
+        {{ idx + 1 >= total ? "Finish ✓" : "Next →" }}
       </button>
+    </div>
+
+    <!-- 本课没有可填空的图（词表没图）：直接放行，不白屏卡死 -->
+    <div v-else class="board view-body">
+      <button class="next-btn" @click="finishEmpty" data-haptic>完成</button>
     </div>
   </div>
 </template>
 
 <style scoped>
-.order-head {
-  margin-bottom: var(--gap-s);
-}
+.order-head { margin-bottom: var(--gap-s); }
 .tip-ico { font-size: var(--fs-title); }
 
 .board {
@@ -139,62 +174,83 @@ watch(
   gap: var(--gap-l, 24px);
   padding: var(--gap-s);
 }
-.zh-hint {
-  margin: 0;
-  font-size: var(--fs-title);
-  color: var(--ink);
-  font-weight: var(--fw-mid);
-}
-.slots {
+
+/* 句子条：框架文字大而居中，中间一个虚线方槽等图 */
+.sentence {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
   justify-content: center;
-  min-height: 56px;
-  padding: 12px 16px;
-  background: var(--card-bg);
-  border: 2px dashed var(--line);
-  border-radius: var(--radius);
+  gap: 6px;
   max-width: 100%;
+  padding: var(--gap-m) var(--gap-l, 24px);
+  background: var(--card-bg);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
 }
-.slot-word {
-  padding: 6px 14px;
-  background: var(--ok);
-  color: var(--white);
+.frame {
+  font-size: var(--fs-title);
+  font-weight: var(--fw-mid);
+  color: var(--ink);
+}
+.pic-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  border: 3px dashed var(--ink-faint);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+}
+.pic-slot.filled {
+  border-style: solid;
+  border-color: var(--ok);
+  background: var(--state-ok-bg);
+}
+.pic-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   border-radius: var(--radius-s);
-  font-weight: var(--fw-strong);
-  font-size: var(--fs-body);
-  cursor: pointer;
-  position: relative;
-  transition: transform 0.1s, opacity 0.1s;
 }
-.slot-word:hover {
-  transform: scale(0.95);
-  opacity: 0.85;
-}
-.slot-word::after {
-  content: "×";
-  margin-left: 6px;
-  font-size: 0.85em;
-  opacity: 0.7;
-}
-/* 空槽位横线：宽度随目标词长度变化（模板内联 --width），与词块垂直居中对齐 */
-.slot-empty {
-  display: inline-block;
-  height: 1.5em;
-  min-width: 28px;
-  align-self: center;
-  border-bottom: 3px solid var(--ink-faint);
-  border-radius: 2px;
-  opacity: 0.55;
-}
+
+/* 底部词图卡 */
 .bank {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 14px;
   justify-content: center;
   max-width: 100%;
 }
+.pic-card {
+  width: 108px;
+  height: 108px;
+  padding: 8px;
+  background: var(--card-bg);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.pic-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.pic-card:active { transform: scale(0.95); }
+.pic-card.wrong {
+  border-color: var(--red);
+  background: var(--state-bad-bg);
+  animation: shake 0.4s;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
 .listen-btn {
   display: inline-flex;
   align-items: center;
@@ -207,11 +263,9 @@ watch(
   font-weight: var(--fw-strong);
   font-size: var(--fs-body);
   cursor: pointer;
-  margin-bottom: var(--gap-m);
 }
 .listen-btn:active { transform: scale(0.95); }
-/* 兜底「看答案」：次要灰、小字，弱化处理不与 Listen / Next 主操作抢视觉；
- * 拼错 800ms 回滚锁定期间置灰禁用（与全站禁用态 token 一致） */
+
 .answer-btn {
   display: inline-flex;
   align-items: center;
@@ -224,7 +278,6 @@ watch(
   font-weight: var(--fw-mid);
   font-size: var(--fs-small);
   cursor: pointer;
-  transition: transform 0.1s;
 }
 .answer-btn:active { transform: scale(0.95); }
 .answer-btn:disabled {
@@ -232,9 +285,10 @@ watch(
   color: var(--btn-off-ink);
   cursor: default;
 }
+
 .next-btn {
   display: block;
-  margin: var(--gap-m) auto 0;
+  margin: 0 auto;
   padding: 14px 40px;
   border: none;
   border-radius: 999px;
@@ -246,16 +300,4 @@ watch(
   box-shadow: 0 4px 14px color-mix(in srgb, var(--brand) 35%, transparent);
 }
 .next-btn:active { transform: scale(0.95); }
-.word-chip {
-  padding: 10px 18px;
-  background: var(--card-bg);
-  border: 2px solid var(--line);
-  border-radius: var(--radius);
-  font-size: var(--fs-body);
-  font-weight: var(--fw-mid);
-  color: var(--ink);
-  cursor: pointer;
-  transition: transform 0.1s;
-}
-.word-chip:active { transform: scale(0.95); }
 </style>
