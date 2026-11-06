@@ -613,7 +613,7 @@ const micLabel = computed(() => {
 @media (max-height: 480px) {
   .spinner-head { margin-bottom: var(--gap-xs); }
   .board { gap: var(--gap-xs); }
-  .wheel-wrap { width: min(42vw, 38vh, 220px); }
+  .wheel-wrap { width: min(42vw, 36vh, 220px); }
   .sector-pos { top: 8%; }
   .sector-img { width: 24px; height: 24px; border-radius: 4px; }
   .sector-emoji { font-size: 17px; }
