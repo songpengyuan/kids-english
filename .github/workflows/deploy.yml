@@ -171,9 +171,12 @@ jobs:
           echo "重启 kids-api（迁移在启动时运行；失败则服务起不来，下方探测会失败）"
           $SSH root@110.41.61.4 'systemctl restart kids-api'
 
-          # 健康校验：非 200 即让 job 失败 —— 否则 Actions 报绿、服务其实是死的
+          # 健康校验：非 200 即让 job 失败 —— 否则 Actions 报绿、服务其实是死的。
+          # 走域名 zelab.cn 探测（2026-11-06）：ICP 合规调整后 nginx 只在域名 vhost
+          # 上代理 /api，裸 IP 直连返回 404 —— 用 IP 探测连续 8 次误报部署失败
+          # （服务本身每次都重启成功了，只有这一步探错了门）。
           for i in $(seq 1 15); do
-            if curl -sf -m 5 http://110.41.61.4/api/ping >/dev/null; then
+            if curl -sf -m 5 https://zelab.cn/api/ping >/dev/null; then
               echo "✅ /api/ping 正常（第 $i 次探测）"
               exit 0
             fi
