@@ -44,7 +44,11 @@ const session = useSpeechSession(
 // 但至少能提前暴露权限状态，避免孩子点麦克风时才弹窗卡住）
 onMounted(async () => {
   try {
-    await navigator.mediaDevices.getUserMedia({ audio: true });
+    // 预热权限即可：拿到流**立刻停轨释放**——丢弃引用不会自动停轨，浏览器会
+    // 持续占用麦克风（系统指示灯常亮），退出本页也不释放，每进一次叠加一条。
+    // 权限一旦授予过，后续点麦克风时 getUserMedia 不会再弹窗。
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((t) => t.stop());
   } catch {
     // 静默失败，用户点麦克风时再处理
   }
