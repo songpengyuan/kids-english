@@ -134,13 +134,35 @@ function finishEmpty() {
         <span>Listen</span>
       </button>
 
-      <!-- 句子：框架文字 + 中间一个图空槽 -->
+      <!-- 句子：框架文字 + 中间一个图空槽（l12 安静书走 segments：句中嵌校车图、
+           拟声以彩色图形呈现——与实拍书页同构） -->
       <div class="sentence">
-        <span class="frame">{{ cur.before }}</span>
-        <span class="pic-slot" :class="{ filled: solved }">
-          <img v-if="solved" :src="cur.target.image!" :alt="cur.target.en" />
-        </span>
-        <span class="frame">{{ cur.after }}</span>
+        <template v-if="cur.segments">
+          <template v-for="(seg, i) in cur.segments" :key="i">
+            <span v-if="seg.type === 'text'" class="frame">{{ seg.text }}</span>
+            <span
+              v-else-if="seg.type === 'pic' && seg.word.id === cur.target.id"
+              class="pic-slot"
+              :class="{ filled: solved }"
+            >
+              <img v-if="solved" :src="seg.word.image!" :alt="seg.word.en" />
+            </span>
+            <span v-else-if="seg.type === 'pic'" class="pic-static">
+              <img :src="seg.word.image!" :alt="seg.word.en" />
+            </span>
+            <span v-else class="ono" :class="`ono-${seg.ono.tone}`">
+              <span class="ono-emoji">{{ seg.ono.emoji }}</span>
+              <span class="ono-text">{{ seg.ono.text }}</span>
+            </span>
+          </template>
+        </template>
+        <template v-else>
+          <span class="frame">{{ cur.before }}</span>
+          <span class="pic-slot" :class="{ filled: solved }">
+            <img v-if="solved" :src="cur.target.image!" :alt="cur.target.en" />
+          </span>
+          <span class="frame">{{ cur.after }}</span>
+        </template>
       </div>
 
       <button
@@ -233,6 +255,40 @@ function finishEmpty() {
   object-fit: contain;
   border-radius: var(--radius-s);
 }
+
+/* 句中嵌图（校车）：与图卡同风格的小方图，恒定填充不参与填空 */
+.pic-static {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--media-bg);
+  overflow: hidden;
+}
+.pic-static img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 拟声图形段：彩色词 + 表情图形（对应安静书实拍页），不参与填空 */
+.ono {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ono-emoji { font-size: var(--fs-title); }
+.ono-text { font-size: var(--fs-title); font-weight: var(--fw-strong); }
+.ono-red { color: var(--red); }
+.ono-blue { color: var(--c-blue); }
+.ono-green { color: var(--c-green); }
+.ono-orange { color: var(--c-orange); }
+.ono-purple { color: var(--c-purple); }
+.ono-gold { color: var(--c-gold); }
+.ono-faint { color: var(--ink-soft); }
 
 /* 底部词图卡 */
 .bank {
@@ -330,6 +386,9 @@ function finishEmpty() {
   .sentence { padding: var(--gap-xs) var(--gap-m); }
   .frame { font-size: var(--fs-body); }
   .pic-slot { width: 56px; height: 56px; }
+  .pic-static { width: 56px; height: 56px; }
+  .ono-emoji { font-size: var(--fs-body); }
+  .ono-text { font-size: var(--fs-body); }
   .pic-card { width: 76px; height: 76px; padding: 5px; }
   .answer-btn { padding: 5px 12px; }
   .next-btn { padding: 9px 28px; }

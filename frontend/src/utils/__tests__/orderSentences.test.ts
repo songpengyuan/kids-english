@@ -111,5 +111,14 @@ describe("orderSentences 看图填空题目", () => {
     expect(horn.en).toBe("The horn on the bus goes beep, beep, beep.");
     expect(out.filter((o) => o.en.includes(" go ")).map((o) => o.target.en).sort())
       .toEqual(["babies", "daddies", "mommies", "people", "wheels", "wipers"]);
+    // 安静书式渲染段：句中嵌校车图、拟声彩色图形段（与实拍书页同构）
+    const seg = wheels.segments!;
+    expect(seg.some((s) => s.type === "pic" && s.word.id === "bus")).toBe(true);
+    const wheelsOno = seg.find((s) => s.type === "ono")!;
+    expect(wheelsOno.ono).toMatchObject({ text: "round and round", emoji: "🌀", tone: "red" });
+    const hornOno = out.find((o) => o.target.en === "horn")!.segments!.find((s) => s.type === "ono")!;
+    expect(hornOno.ono).toMatchObject({ emoji: "🟠🟠🟠", tone: "orange" });
+    // 空槽段 = target 自己的 pic 段
+    expect(seg.filter((s) => s.type === "pic" && s.word.id === "wheels")).toHaveLength(1);
   });
 });
