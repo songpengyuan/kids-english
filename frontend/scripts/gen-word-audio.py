@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-为所有课时单词生成神经网络发音 mp3（默认音色 en-US-AriaNeural 成年女声）。
+为所有课时单词生成神经网络发音 mp3（默认音色 en-US-AnaNeural 真·8 岁童声）。
 
 用法：
     # 只补缺失的（增量，推荐）
     python3 scripts/gen-word-audio.py
 
     # 全部重新生成（换音色时用）
-    python3 scripts/gen-word-audio.py --force --voice en-US-AriaNeural
+    python3 scripts/gen-word-audio.py --force --voice en-US-AnaNeural
 
 依赖：
     pip install edge-tts
@@ -59,7 +59,7 @@ async def gen(text, out, voice, rate=None, pitch=None):
 
 async def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--voice", default="en-US-AriaNeural")  # 2026-10-25 用户试听四音色后定版：成年女声咬字最清、匹配女老师心智模型（旧默认 Ana 童声）
+    ap.add_argument("--voice", default="en-US-AnaNeural")  # 2026-11-07 用户 A/B 试听后定版：真·8 岁童声原速，儿向感优于成年女声调参版（旧默认 Aria；更早为 Ana→Aria→Ana 一个轮回）
     ap.add_argument("--rate", default=None, help="语速，如 +15%%（儿向感：TTS 提速比放慢更自然，放慢会机器人腔）")
     ap.add_argument("--pitch", default=None, help="音调，如 +12Hz（微升音调更接近念给孩子听）")
     ap.add_argument("--force", action="store_true", help="已存在的也重新生成")
