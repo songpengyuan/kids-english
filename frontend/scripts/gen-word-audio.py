@@ -48,13 +48,20 @@ def extract_items():
     return items
 
 
-async def gen(text, out, voice):
-    await edge_tts.Communicate(text, voice).save(out)
+async def gen(text, out, voice, rate=None, pitch=None):
+    kwargs = {}
+    if rate:
+        kwargs["rate"] = rate
+    if pitch:
+        kwargs["pitch"] = pitch
+    await edge_tts.Communicate(text, voice, **kwargs).save(out)
 
 
 async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--voice", default="en-US-AriaNeural")  # 2026-10-25 用户试听四音色后定版：成年女声咬字最清、匹配女老师心智模型（旧默认 Ana 童声）
+    ap.add_argument("--rate", default=None, help="语速，如 +15%%（儿向感：TTS 提速比放慢更自然，放慢会机器人腔）")
+    ap.add_argument("--pitch", default=None, help="音调，如 +12Hz（微升音调更接近念给孩子听）")
     ap.add_argument("--force", action="store_true", help="已存在的也重新生成")
     args = ap.parse_args()
 
@@ -67,11 +74,11 @@ async def main():
         os.makedirs(os.path.dirname(out), exist_ok=True)
         todo.append((f"{lid}/{wid}", en, out))
 
-    print(f"音色: {args.voice}  待生成 {len(todo)}  已存在跳过 {skip}")
+    print(f"音色: {args.voice}  语速: {args.rate or '默认'}  音调: {args.pitch or '默认'}  待生成 {len(todo)}  已存在跳过 {skip}")
     fail = 0
     for tag, en, out in todo:
         try:
-            await gen(en, out, args.voice)
+            await gen(en, out, args.voice, args.rate, args.pitch)
             print(f"  ✓ {tag} ({en})")
         except Exception as e:  # noqa: BLE001
             fail += 1
