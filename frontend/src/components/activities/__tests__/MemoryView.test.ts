@@ -152,4 +152,12 @@ describe("MemoryView 完成判定", () => {
     // 总量上报 = 全部对数（曾按 组数×组大小 算出 12 ≠ 10）
     expect((w.emitted("total")?.at(-1)?.[0] as number)).toBe(10);
   });
+  it("单词群只有 1 个词：不死循环，出 1 对并正常结算（groupSize=0 回归）", async () => {
+    // 曾经 floor(1/2)=0 → 组数 ceil(1/0)=Infinity，buildGroups 同步死循环卡死标签页
+    const w = mount(MemoryView, { props: { words: makeWords(1) } });
+    expect(w.findAll(".m-card")).toHaveLength(2);
+    await matchWord(w, "word0");
+    await vi.advanceTimersByTimeAsync(900);
+    expect(w.emitted("done")).toHaveLength(1);
+  });
 });

@@ -25,7 +25,12 @@ interface Group {
   cards: Card[];
 }
 
-const groupSize = computed(() => (props.words.length >= 8 ? 4 : Math.min(3, Math.floor(props.words.length / 2))));
+/** 组容量：≥8 词用 4 对/组；否则 3 对封顶、按词数减半。
+ *  下限必须为 1：1 个词时 floor(1/2)=0，组数 ceil(1/0)=Infinity →
+ *  buildGroups 同步死循环，标签页直接卡死（2026-11-06 审查 P0）。 */
+const groupSize = computed(() =>
+  props.words.length >= 8 ? 4 : Math.max(1, Math.min(3, Math.floor(props.words.length / 2)))
+);
 
 const groups = ref<Group[]>([]);
 const groupIdx = ref(0);
@@ -261,4 +266,15 @@ onBeforeUnmount(() => {
 }
 .m-card.wrong .inner { transform: rotateY(180deg); }
 .m-card.wrong .face { border-color: var(--red); }
+
+/* 手机矮横屏（≤480px 高）：卡高原由宽度驱动（3/4 比例，卡 110px→高 147px），
+ * 两行卡加头部会顶破底边（audit 实测 phone14/SE 横屏越界 21-28px）。
+ * 按视口高度封顶网格宽度：卡高 = 网宽×4/3 ÷4列，两行卡高 ≈ 网宽×2/3，
+ * 两行 + 头部 ≈ 100vh → 网宽 = (100vh - 头部) × 1.5（SE 横屏 ≈ 385px，
+ * 卡 ≈ 92px，比竖屏的 110px 只小一档）。 */
+@media (max-height: 480px) {
+  .grid {
+    max-width: min(480px, calc((100vh - 118px) * 1.5));
+  }
+}
 </style>
