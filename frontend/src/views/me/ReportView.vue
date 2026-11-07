@@ -25,6 +25,7 @@ import { useRouter } from "vue-router";
 import { Flame, Star } from "@lucide/vue";
 import PageShell from "../../components/ui/PageShell.vue";
 import MasteryTrend from "../../components/report/MasteryTrend.vue";
+import WeeklyActiveCard from "../../components/report/WeeklyActiveCard.vue";
 import { dueWords } from "../../utils/reviewQueue";
 import PathIcon from "../../components/PathIcon.vue";
 import ShellIcon from "../../components/ShellIcon.vue";
@@ -193,6 +194,12 @@ const weakTotal = computed(() => weakByLesson.value.reduce((s, g) => s + g.list.
           <span class="kv__v">{{ todayWords.length }} 个</span>
         </div>
       </div>
+    </section>
+
+    <!-- 每周学习时长（2026-11-07 从家长中心合并进来：报告页 = 家长的完整数据面） -->
+    <section class="card">
+      <h3 class="card-title">每周学习时长</h3>
+      <WeeklyActiveCard :days="progress.recentDays(30)" />
     </section>
 
     <!-- 掌握度趋势（间隔重复的"学会"口径） -->

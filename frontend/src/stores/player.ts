@@ -185,12 +185,61 @@ export const usePlayerStore = defineStore("player", () => {
   }
   bindAudio();
 
+  /* ---------- MediaSession（2026-11-07）：锁屏/通知栏的原生播放控制 ----------
+   * 家长在磨耳朵之外（孩子上课/自己看手机）最自然的暂停方式是锁屏键——
+   * H5 只要声明 metadata + action handlers 就能拿到系统级控件，零 UI 成本。
+   * 类型用本地最小 shim：lib.dom 的 MediaSession 类型随 TS 版本漂移，别依赖。 */
+  type MsAPI = {
+    metadata: unknown;
+    playbackState: string;
+    setActionHandler(action: string, handler: (() => void) | null): void;
+  };
+  type MediaMetadataCtor = new (init: {
+    title: string;
+    artist: string;
+    album: string;
+    artwork: { src: string; sizes: string; type: string }[];
+  }) => unknown;
+  function mediaSession(): MsAPI | null {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return null;
+    return (navigator as { mediaSession?: MsAPI }).mediaSession ?? null;
+  }
+  let mediaActionsBound = false;
+  function bindMediaSession() {
+    const ms = mediaSession();
+    if (!ms || mediaActionsBound) return;
+    mediaActionsBound = true;
+    ms.setActionHandler("play", () => {
+      if (audio.src && audio.paused) void audio.play();
+    });
+    ms.setActionHandler("pause", () => audio.pause());
+    ms.setActionHandler("previoustrack", () => prev());
+    ms.setActionHandler("nexttrack", () => next());
+  }
+  /** 当前歌的锁屏元数据（歌名 + 中文名 + 应用图标） */
+  function updateMediaMetadata() {
+    const ms = mediaSession();
+    if (!ms) return;
+    const s = currentSong.value;
+    if (!s) return;
+    const Ctor = (window as { MediaMetadata?: MediaMetadataCtor }).MediaMetadata;
+    if (!Ctor) return;
+    ms.metadata = new Ctor({
+      title: s.title,
+      artist: s.titleZh,
+      album: "丞丞ABC",
+      artwork: [{ src: `${location.origin}${import.meta.env.BASE_URL}icon-192.png`, sizes: "192x192", type: "image/png" }],
+    });
+  }
+
   /** 切到指定曲目并播放 */
   function playSong(idx: number) {
     const s = SONG_LIST[idx];
     if (!s) return;
     currentIdx.value = idx;
     audio.src = s.src;
+    bindMediaSession();
+    updateMediaMetadata();
     void audio.play();
     playing.value = true;
     startListenTimer();
@@ -216,14 +265,17 @@ export const usePlayerStore = defineStore("player", () => {
 
   function togglePlay() {
     if (!audio.src) return;
+    const ms = mediaSession();
     if (playing.value) {
       audio.pause();
       playing.value = false;
       stopListenTimer();
+      if (ms) ms.playbackState = "paused";
     } else {
       void audio.play();
       playing.value = true;
       startListenTimer();
+      if (ms) ms.playbackState = "playing";
     }
   }
 

@@ -14,10 +14,17 @@
  *   暂停**不需要**这颗键：磨耳朵列表里当前那首自带 `.sr-play`，播放页有完整 transport。
  *   也不把封面/歌名/进度塞进槽位——那是播放页的事，塞进来只会把歌名截成 "Walki…"。
  * - 我的 tab 高亮覆盖其子页：/me、/treasure、/report、/review。
- * - 玩法页（/course/:id）与播放页（歌词全屏页展开时）不渲染本组件（沉浸，见 App.vue）。
+ * - 播放小圆钮（2026-11-07 用户反馈"磨耳朵之外没法暂停"）：有歌时浮在导航上方、
+ *   磨耳朵 tab 的正上方，只做 播放/暂停 一件事；tab 本体的导航行为一毫米不动
+ *   ——与 2026-10-17 被否掉的"tab 整格换暂停键"的区别就在于那版盖住了唯一的
+ *   命中区，这版是独立键、两层命中。磨耳朵页内不显示（播放页有完整 transport，
+ *   小钮在那里反而挡 transport 上沿）。玩法页本组件不渲染（沉浸）。
+ * - MediaSession 已在 player store 接管锁屏/通知栏控制——这个小钮管的是
+ *   "亮屏时在别的 tab 想暂停"的场景。
  */
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { Pause, Play } from "@lucide/vue";
 import PathIcon from "../PathIcon.vue";
 import { speakZh } from "../../services/speech";
 import { hapticTap } from "../../services/haptics";
@@ -58,10 +65,28 @@ function goListen() {
   if (isListen.value) return;
   void router.push("/listen").catch(() => {});
 }
+
+/** 播放小圆钮：加载过歌就显示（暂停后也要能看到"继续"），磨耳朵页除外 */
+const showPlayChip = computed(() => player.currentIdx >= 0 && !isListen.value);
+function togglePlayback() {
+  hapticTap();
+  player.togglePlay();
+}
 </script>
 
 <template>
   <nav class="bottom-nav" role="tablist" aria-label="主导航">
+    <!-- 播放小圆钮：独立于 tab 的第二层命中（tab 是导航、小钮是播放/暂停），
+         锚在磨耳朵 tab 正上方——那里是"声音从哪来"的方位记忆 -->
+    <button
+      v-if="showPlayChip"
+      class="play-chip"
+      :aria-label="player.playing ? '暂停播放' : '继续播放'"
+      @click.stop="togglePlayback"
+    >
+      <Pause v-if="player.playing" class="k-ico" />
+      <Play v-else class="k-ico" />
+    </button>
     <button
       role="tab"
       class="bn-tab"
@@ -232,5 +257,33 @@ function goListen() {
 .bn-cap {
   font-size: var(--fs-small);
   font-weight: var(--fw-strong);
+}
+/* 播放小圆钮：浮在导航上沿、磨耳朵 tab（中间 1/3）正上方。
+ * 独立第二层命中——tab 是导航、小钮只做播放/暂停（2026-10-17 教训：
+ * 那版把 tab 命中区整个换成暂停键，磨耳朵唯一入口被盖住回不去；
+ * 这版两层分离，互不抢命中）。磨耳朵页内不显示（那里有完整 transport）。 */
+.play-chip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  translate: -50% 0;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-title);
+  background: var(--brand);
+  color: var(--on-tone);
+  box-shadow: var(--shadow-hard);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.play-chip:active {
+  transform: scale(0.92);
+}
+.play-chip .k-ico {
+  width: 1.1em;
+  height: 1.1em;
 }
 </style>

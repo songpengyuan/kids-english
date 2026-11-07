@@ -139,11 +139,12 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(errors).toEqual([]);
   });
 
-  it("家长中心", async () => {
+  it("家长中心（2026-11-07 瘦身：速览/周视图并入学习报告，只留管理项）", async () => {
     const w = await mountPage(ParentView, "/me/parent");
-    // 本地模式：孩子速览卡在前（孩子管理仅云模式显示）
-    expect(w.text()).toContain("完整报告");
+    // 本地模式：孩子管理卡不显示（仅云模式），报告入口在首位
     expect(w.text()).toContain("家长报告");
+    expect(w.text()).toContain("设置");
+    expect(w.text()).not.toContain("每周学习时长"); // 已并入报告页
     expect(errors).toEqual([]);
   });
 
@@ -200,15 +201,20 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
 
   /* ---------- 我的域 ---------- */
 
-  it("我的", async () => {
+  it("我的（2026-11-07 重设计：孩子荣誉 + 家长速览条，今日卡撤下）", async () => {
     const w = await mountPage(MyView, "/me");
-    // 「今日目标」已并入今日卡的进度条（原来是与今日数据重复的第二张卡），
-    // 因此断言的是合并后的口径：今天 / 目标 / 学习 / 磨耳朵。
-    expect(w.text()).toContain("今天");
-    expect(w.text()).toContain("目标");
-    expect(w.text()).toContain("学习");
-    expect(w.text()).toContain("磨耳朵");
+    // 荣誉头图三个数字 + 收藏入口 + 家长中心
+    expect(w.text()).toContain("星星");
+    expect(w.text()).toContain("贝壳");
+    expect(w.text()).toContain("连击天");
+    expect(w.text()).toContain("宝藏罐");
+    expect(w.text()).toContain("学习日历");
     expect(w.text()).toContain("家长中心");
+    // 家长速览条（只读免门禁，点击进学习报告）：今天/本周分钟
+    expect(w.find(".glance").text()).toContain("今天");
+    expect(w.find(".glance").text()).toContain("本周");
+    // 孩子语言的"目标/分钟明细"已撤到学习报告页，我的页不再出现
+    expect(w.text()).not.toContain("目标：复习");
     expect(errors).toEqual([]);
   });
 

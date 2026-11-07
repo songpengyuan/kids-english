@@ -24,7 +24,7 @@
  *     ├─ /me/calendar                   学习日历（**已合并原连击日历**，/me/streak 重定向至此）
  *     ├─ /me/treasure                   宝藏罐（图鉴 + 贴纸商店）
  *     │   └─ /me/treasure/hero/:id      英雄图鉴详情
- *     ├─ /me/report                     家长学情报告（requiresParent）
+ *     ├─ /me/report                     家长学情报告（只读免门禁，2026-11-07）
  *     └─ /me/parent                     家长中心（requiresParent）
  *
  *   父路由**不带组件**（纯路径容器）：所有页面组件都渲染在 App 顶层 router-view，
@@ -134,7 +134,9 @@ export const appRoutes: RouteRecordRaw[] = [
             { path: "hero/:id", name: "hero-detail", component: () => import("../views/me/HeroDetailView.vue"), meta: { title: "英雄图鉴" } },
           ],
         },
-        { path: "report", name: "report", component: () => import("../views/me/ReportView.vue"), meta: { title: "家长报告", requiresParent: true } },
+        // 学习报告只读不设门（2026-11-07：家长"瞄一眼"零摩擦；算术门保护的是
+        // 有操作按钮的家长中心）。入口：我的页速览条 / 家长中心。
+        { path: "report", name: "report", component: () => import("../views/me/ReportView.vue"), meta: { title: "家长报告" } },
         { path: "parent", name: "parent", component: () => import("../views/me/ParentView.vue"), meta: { title: "家长中心", requiresParent: true } },
       ],
     },

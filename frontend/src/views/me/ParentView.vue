@@ -19,23 +19,18 @@
  */
 import { computed, reactive, ref } from "vue";
 import { useProgressStore } from "../../stores/progress";
-import { useStreakStore } from "../../stores/streak";
 import { useAuthStore } from "../../stores/auth";
 import { useRouter } from "vue-router";
 import PageShell from "../../components/ui/PageShell.vue";
 import EntryRow from "../../components/ui/EntryRow.vue";
 import IconTile from "../../components/ui/IconTile.vue";
 import SoundToggle from "../../components/layout/SoundToggle.vue";
-import WeeklyActiveCard from "../../components/report/WeeklyActiveCard.vue";
 import {
   BarChart3,
-  ChevronRight,
-  Flame,
   HardDrive,
   Plus,
   Pencil,
   Shield,
-  Star,
   Volume2,
   KeyRound,
 } from "@lucide/vue";
@@ -44,7 +39,6 @@ import type { Child } from "../../types";
 import { useGateStore } from "../../stores/gate";
 
 const progress = useProgressStore();
-const streak = useStreakStore();
 const auth = useAuthStore();
 const router = useRouter();
 const gate = useGateStore();
@@ -118,11 +112,6 @@ const error = ref("");
 
 const loggedIn = computed(() => auth.family !== null);
 
-/** 孩子速览（与"我的"页今日卡同口径）：今日分钟 / 连击 / 总星 */
-const kidName = computed(() => auth.currentChild?.name ?? "丞丞");
-const kidAvatar = computed(() => auth.currentChild?.avatar ?? "🦊");
-const todayMin = computed(() => Math.round((progress.todayStats.durationSec || 0) / 60));
-
 /** 孩子编辑：编辑中的孩子 id（null = 未编辑） */
 const editingChildId = ref<number | null>(null);
 const childForm = reactive({ name: "", avatar: "", birthDate: "" });
@@ -192,38 +181,10 @@ function pickChild(id: number) {
     back-label="返回"
     @back="router.back()"
   >
-    <!-- ① 孩子速览：家长打开家长中心的第一眼（点整卡 → 完整报告） -->
-    <section class="today" @click="router.push('/me/report')">
-      <span class="today-head">
-        <span class="today-avatar" aria-hidden="true">{{ kidAvatar }}</span>
-        <span class="today-name">{{ kidName }}</span>
-        <span class="today-more">完整报告 <ChevronRight class="k-ico" /></span>
-      </span>
-      <span class="today-stats">
-        <span class="today-stat">
-          <span class="today-stat-num">{{ todayMin }}</span>
-          <span class="today-stat-label">今天(分)</span>
-        </span>
-        <span class="today-stat">
-          <span class="today-stat-num"><Flame class="k-ico" />{{ streak.streak }}</span>
-          <span class="today-stat-label">连击天数</span>
-        </span>
-        <span class="today-stat">
-          <span class="today-stat-num"><Star class="k-ico star-fill" />{{ progress.totalStars }}</span>
-          <span class="today-stat-label">总星星</span>
-        </span>
-      </span>
-    </section>
-
-    <!-- 每周学习时长（周视图）：玩法分钟（大数字/柱状）+ 磨耳朵分钟。
-         北极星的严格「主动」口径（会话来源）在服务端 daily_stats，见 PROGRESS-DATA §7 -->
-    <section class="card">
-      <h3 class="card-title">每周学习时长</h3>
-      <WeeklyActiveCard :days="progress.recentDays(30)" />
-    </section>
-
+    <!-- 2026-11-07 瘦身：孩子速览卡与每周学习时长已并入「学习报告」
+         （/me/report，只读免门禁）——家长中心只留"有按钮"的管理项 -->
     <!-- 家长报告：全页唯一的实质行动 -->
-    <EntryRow title="家长报告" desc="掌握度趋势 · 待巩固词" to="/me/report">
+    <EntryRow title="家长报告" desc="今日/每周时长 · 掌握度趋势 · 错词" to="/me/report">
       <template #icon>
         <IconTile tone="blue"><BarChart3 class="k-ico" /></IconTile>
       </template>
@@ -323,72 +284,6 @@ function pickChild(id: number) {
 </template>
 
 <style scoped>
-/* ---------- 孩子速览卡（与"我的"页今日卡同一套语言） ---------- */
-.today {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-m);
-  padding: var(--gap-m);
-  border-radius: var(--radius);
-  background: var(--brand-grad);
-  color: var(--on-tone);
-  box-shadow: var(--sticker), 0 var(--press) 0 var(--brand-deep);
-  cursor: pointer;
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-.today:active {
-  transform: translateY(calc(var(--press) - 1px)) scale(0.99);
-}
-.today-head {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-s);
-}
-.today-avatar {
-  font-size: var(--fs-emoji-l);
-  line-height: 1;
-}
-.today-name {
-  flex: 1;
-  font-size: var(--fs-title);
-  font-weight: var(--fw-strong);
-}
-.today-more {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  font-size: var(--fs-small);
-  font-weight: var(--fw-strong);
-  opacity: 0.9;
-}
-.today-stats {
-  display: flex;
-  align-items: stretch;
-  gap: var(--gap-s);
-}
-.today-stat {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: var(--gap-xs) 0;
-  border-radius: var(--radius-s);
-  background: rgba(255, 255, 255, 0.18);
-}
-.today-stat-num {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: var(--fs-title);
-  font-weight: var(--fw-strong);
-  line-height: 1.1;
-}
-.today-stat-label {
-  font-size: var(--fs-small);
-  opacity: 0.9;
-}
-
 /* ---------- 家庭卡 ---------- */
 .family {
   border-left: 4px solid var(--brand);
