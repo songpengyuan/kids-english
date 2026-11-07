@@ -31,6 +31,7 @@ import {
   BarChart3,
   ChevronRight,
   Flame,
+  HardDrive,
   Plus,
   Pencil,
   Shield,
@@ -50,6 +51,59 @@ const gate = useGateStore();
 
 /** 应用入口门禁开关（家长中心设置区；口令固定，家长只可开/关） */
 const gateMsg = ref("");
+
+/* ---------- 离线缓存面板（PWA 媒体缓存 kids-media-v1）----------
+ * 页面侧直接读 Cache API（SW 里的预算与裁剪逻辑不变）；
+ * 不支持 Cache API 的环境（旧浏览器/非安全上下文）整卡隐藏。 */
+const cacheSupported = typeof caches !== "undefined";
+const cacheLabel = ref("…");
+const cacheMsg = ref("");
+const clearing = ref(false);
+
+async function readMediaCacheSize(): Promise<number> {
+  const cache = await caches.open("kids-media-v1");
+  let total = 0;
+  for (const req of await cache.keys()) {
+    const resp = await cache.match(req, { ignoreVary: true });
+    if (!resp) continue;
+    const len = Number(resp.headers.get("Content-Length"));
+    if (len) {
+      total += len;
+      continue;
+    }
+    const cr = /\/\s*(\d+)\s*$/.exec(resp.headers.get("Content-Range") || "");
+    total += cr ? Number(cr[1]) : 0;
+  }
+  return total;
+}
+
+function fmtMB(bytes: number): string {
+  return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
+}
+
+async function refreshCacheSize() {
+  try {
+    cacheLabel.value = `${fmtMB(await readMediaCacheSize())} · 无网可播`;
+  } catch {
+    cacheLabel.value = "不可用";
+  }
+}
+
+if (cacheSupported) void refreshCacheSize();
+
+async function clearMediaCache() {
+  clearing.value = true;
+  cacheMsg.value = "";
+  try {
+    await caches.delete("kids-media-v1");
+    cacheMsg.value = "已清理，下次联网会按需重新缓存";
+    await refreshCacheSize();
+  } catch {
+    cacheMsg.value = "清理没成功，再试一次";
+  } finally {
+    clearing.value = false;
+  }
+}
 
 function toggleGate() {
   const next = !gate.enabled;
@@ -248,6 +302,20 @@ function pickChild(id: number) {
       </div>
       <p v-if="gateMsg" class="gate-msg">{{ gateMsg }}</p>
       <p class="gate-desc">进入应用前必须输入家长口令。本设备解锁后 7 天内免输。</p>
+    </section>
+
+    <!-- 离线缓存（PWA 媒体缓存）：家长可见可用量、可一键清理 -->
+    <section v-if="cacheSupported" class="card">
+      <h3 class="card-title">离线缓存</h3>
+      <div class="set-row">
+        <span class="set-label"><HardDrive class="k-ico" /> 已离线内容</span>
+        <span class="cache-size">{{ cacheLabel }}</span>
+      </div>
+      <p class="gate-desc">孩子看过的童谣视频与发音会缓存下来供无网时播放（上限约 200MB，满了自动清理最旧的）。</p>
+      <button class="cache-clear" :disabled="clearing" @click="clearMediaCache">
+        {{ clearing ? "清理中…" : "清理离线缓存" }}
+      </button>
+      <p v-if="cacheMsg" class="gate-msg">{{ cacheMsg }}</p>
     </section>
 
     <p class="foot">建议每次陪学 10~15 分钟</p>
@@ -481,5 +549,26 @@ function pickChild(id: number) {
   font-size: var(--fs-small);
   font-weight: var(--fw-mid);
   margin: 0;
+}
+
+/* ---------- 离线缓存卡 ---------- */
+.cache-size {
+  font-weight: var(--fw-strong);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.cache-clear {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 7px 18px;
+  font-size: var(--fs-small);
+  transition: color 0.2s, border-color 0.2s;
+}
+.cache-clear:hover:not(:disabled) {
+  color: var(--red);
+  border-color: var(--red);
 }
 </style>
