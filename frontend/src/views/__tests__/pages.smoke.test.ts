@@ -141,6 +141,15 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     // 收起键一下回列表
     expect(w.find(".player").exists()).toBe(true);
     expect(w.find(".song-row").exists()).toBe(false);
+    // 「去这一课」圆钮：直达当前歌所属的课程详情（多轨 id 已剥轨号）
+    const lessonBtn = w.find('.pl-bar button[aria-label="去这一课"]');
+    expect(lessonBtn.exists()).toBe(true);
+    await lessonBtn.trigger("click");
+    await flushPromises();
+    type RouteProbe = { currentRoute: { value: { path: string } } };
+    // mountPage 把 component 断言成 never（兼容各页组件类型），这里补回实例类型
+    const vm = w.vm as unknown as { $: { appContext: { config: { globalProperties: { $router: RouteProbe } } } } };
+    expect(vm.$.appContext.config.globalProperties.$router.currentRoute.value.path).toBe("/course/l5");
   });
 
   it("应用口令页", async () => {

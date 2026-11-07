@@ -35,13 +35,16 @@
  *    随机 + 循环三档（顺序播放 → 列表循环 → 单曲循环），按钮带中文标注。
  */
 import { ref, computed, watch, nextTick, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { lessons } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
 import { useLrc, activeLrcIndex, mapLrcToLyrics } from "../../composables/useLrc";
+import { hapticTap } from "../../services/haptics";
+import { speakZh } from "../../services/speech";
 import {
   Play, Pause, ChevronDown, ListMusic, Music, Film, SkipBack, SkipForward,
-  Repeat, Repeat1, Shuffle,
+  Repeat, Repeat1, Shuffle, BookOpen,
 } from "@lucide/vue";
 import BaseDrawer from "../../components/ui/BaseDrawer.vue";
 import SegmentedTabs from "../../components/ui/SegmentedTabs.vue";
@@ -52,6 +55,7 @@ import type { ListenSubTab } from "../../types";
 
 const player = usePlayerStore();
 const progStore = useProgressStore();
+const router = useRouter();
 
 /* ---------- 播放模式：单按钮三档循环（随机 → 列表循环 → 单曲循环 → 随机） ---------- */
 const modeIcon = computed(() => {
@@ -141,6 +145,16 @@ function switchTab(t: ListenSubTab) {
 }
 const showPlaylist = ref(false);
 
+/** 当前歌所属课时 id（2026-11-08「去这一课」按钮）：多轨条目的 id 是
+ *  `${lessonId}-tN`（见 player.SONG_LIST 构造），剥掉轨号后缀即课时 id */
+const currentLessonId = computed(() => player.currentSong?.id.replace(/-t\d+$/, "") ?? null);
+function goCurrentLesson() {
+  hapticTap();
+  speakZh("去看看这一课");
+  const lid = currentLessonId.value;
+  if (lid) router.push(`/course/${lid}`);
+}
+
 const videoList = computed<VideoItem[]>(() =>
   lessons
 
@@ -192,14 +206,25 @@ onMounted(() => {
          一屏三问：听的是哪首 → 唱到哪 → 我要干嘛。整页只有一颗主播放键。 -->
     <Transition name="lyrics">
       <div v-if="player.nowPlaying && player.currentSong" class="player">
-        <!-- 顶栏只剩"页面级动作"：收起 / 播放列表（transport 不放在这里） -->
+        <!-- 顶栏"页面级动作"：收起 / 去这一课 / 播放列表（transport 不放在这里） -->
         <div class="pl-bar">
           <button class="pl-chip round" aria-label="收起歌词" @click="player.closeLyrics()">
             <ChevronDown class="k-ico" />
           </button>
-          <button class="pl-chip round" aria-label="打开播放列表" @click="showPlaylist = true">
-            <ListMusic class="k-ico" />
-          </button>
+          <span class="pl-bar-right">
+            <button
+              v-if="currentLessonId"
+              class="pl-chip round"
+              aria-label="去这一课"
+              title="去这一课"
+              @click="goCurrentLesson"
+            >
+              <BookOpen class="k-ico" />
+            </button>
+            <button class="pl-chip round" aria-label="打开播放列表" @click="showPlaylist = true">
+              <ListMusic class="k-ico" />
+            </button>
+          </span>
         </div>
 
         <div class="pl-hero">
@@ -407,6 +432,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.pl-bar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-s);
 }
 .pl-chip {
   width: var(--tap-min);
