@@ -218,18 +218,17 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 播放模式：单按钮三档循环（随机 → 列表循环 → 单曲循环 → 随机）。
-             原来两个并排按钮（随机/循环）有互斥关系，孩子/家长容易点出"两个都亮"的死状态；
-             合并成一个后点一下切下一档，图标+文字即时反馈当前是哪种。 -->
-        <div class="pl-modes">
+        <!-- transport：整页唯一的主行动就是中间那颗实底播放键。
+             模式按钮收进同一行（2026-11-08 微调：原来独占一行悬在歌词与
+             transport 之间，视觉上像个孤儿元素；归位后控制簇聚拢，歌词区
+             多出一行呼吸空间）。文字标注保留——三种循环状态长得几乎一样，
+             必须靠文字区分（见样式区说明）。 -->
+        <div class="pl-transport">
           <button class="pl-mode on" :aria-label="`播放模式：${modeLabel}，点击切换`" @click="player.cycleMode()">
             <component :is="modeIcon" class="k-ico" />
             <span class="pl-mode-label">{{ modeLabel }}</span>
           </button>
-        </div>
-
-        <!-- transport：整页唯一的主行动就是中间那颗实底播放键 -->
-        <div class="pl-transport">
+          <span class="pl-transport-gap" aria-hidden="true" />
           <button class="pl-side round" aria-label="上一首" @click="player.prev()">
             <SkipBack class="k-ico" />
           </button>
@@ -253,7 +252,7 @@ onMounted(() => {
 
     <!-- ===== 列表页（无顶部 header）；非播放态显示 ===== -->
     <template v-if="!player.nowPlaying || !player.currentSong">
-      <div class="today-chip">今天磨了 <b>{{ Math.floor((progStore.todayStats.listenSec ?? 0) / 60) }}</b> 分钟</div>
+      <div class="today-chip">🎵 今天听了 <b>{{ Math.floor((progStore.todayStats.listenSec ?? 0) / 60) }}</b> 分钟啦</div>
       <!-- 顶部 tab：与学习页同款 SegmentedTabs -->
       <div class="type-tabs">
         <SegmentedTabs
@@ -491,16 +490,10 @@ onMounted(() => {
   color: var(--brand);
   opacity: 0.9;
 }
-/* 播放模式行：随机 + 循环三档。
+/* 播放模式：收进 transport 行（2026-11-08 微调，见模板注释）。
  * 做成"图标 + 中文"的胶囊而不是纯图标：模式是抽象概念，只有图标时
  * 三种循环状态（顺序/列表循环/单曲循环）长得几乎一样，必须靠文字区分。
  * 未激活时降到次级文字色、激活时品牌色 + 品牌浅底，与「当前行」那套高亮语言一致。 */
-.pl-modes {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--gap-m);
-}
 .pl-mode {
   display: inline-flex;
   align-items: center;
@@ -528,6 +521,11 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: var(--gap-l);
+}
+/* 模式胶囊与 transport 三键之间的弹性空隙：模式靠左、三键居中偏右，
+ * 视觉上是一簇控制但模式不会挤到主键 */
+.pl-transport-gap {
+  flex: 0 0 clamp(var(--gap-s), 4vw, var(--gap-l));
 }
 .pl-side {
   width: var(--tap-min);
@@ -621,11 +619,10 @@ onMounted(() => {
   .player {
     display: grid;
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
     grid-template-areas:
       "bar bar"
       "hero lyrics"
-      "modes lyrics"
       "transport lyrics"
       "progress lyrics";
     column-gap: var(--gap-l);
@@ -637,7 +634,6 @@ onMounted(() => {
     grid-area: lyrics;
     height: 100%;
   }
-  .pl-modes { grid-area: modes; }
   .pl-transport { grid-area: transport; }
   .pl-progress-row { grid-area: progress; }
 }
@@ -650,9 +646,13 @@ onMounted(() => {
     gap: var(--gap-s);
     overflow-y: auto;
   }
-  .pl-modes,
+  /* 矮横屏砍装饰：歌词/副标题/模式胶囊（模式图标与三键语义易混，干脆藏） */
+  .pl-mode,
   .pl-lyrics,
   .pl-sub {
+    display: none;
+  }
+  .pl-transport-gap {
     display: none;
   }
   .pl-hero {
