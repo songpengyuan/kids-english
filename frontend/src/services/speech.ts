@@ -16,6 +16,7 @@
  */
 import { ref } from "vue";
 import { lessons } from "../data/lessons";
+import { usePlayerStore } from "../stores/player";
 import { soundEnabled } from "./sound";
 
 /* ---------- 预生成发音注册表 ---------- */
@@ -101,6 +102,24 @@ function playAudio(src: string, { timeoutMs = 3000 }: { timeoutMs?: number } = {
     a.src = src;
     a.play().catch(() => done(false));
   });
+}
+
+/* ---------- 背景音乐门（iOS TTS 怪癖的对策，2026-11-08） ----------
+ * iOS Safari 的 WebKit 行为：speechSynthesis 一开口，正在播的 <audio> 会被
+ * 暂停（用户实测：磨耳朵放着歌，点任何 tab / 卡片——这些都会播报文案——歌就停了）。
+ * 对策：装饰性 TTS（speakZh 按钮名播报、speak 的 ttsOnly 课程名/标签）在音乐
+ * 播放期间**直接闭嘴**——播报是锦上添花，歌是孩子正在听的主内容。
+ * 两条例外（都放行）：
+ *  · 单词/口语句的 mp3 发音（学习核心反馈，且是 <audio> 元素不走 TTS）；
+ *  · mp3 缺失时的 TTS 兜底（罕见路径：发音正确性 > 背景音乐连续性）。
+ * usePlayerStore 在运行时调用（app 启动后 pinia 必已激活）；单测等无 pinia
+ * 环境抛异常 → 按允许发声处理。 */
+function musicPlaying(): boolean {
+  try {
+    return usePlayerStore().playing;
+  } catch {
+    return false;
+  }
 }
 
 /* ---------- 浏览器 TTS（回退通道）---------- */
@@ -261,6 +280,8 @@ export async function speak(
   speaking.value = true;
   try {
     if (ttsOnly) {
+      // 装饰性 TTS（课程名/标签）：音乐播放期间闭嘴（iOS TTS 会暂停歌，见 musicPlaying）
+      if (musicPlaying()) return;
       await speakWithTTS(text, { rate, lang });
       return;
     }
@@ -307,5 +328,6 @@ export interface SpeakZhOptions {
  */
 export async function speakZh(text: string, rate = 1, opts: SpeakZhOptions = {}): Promise<void> {
   if (!opts.bypassMute && !soundEnabled()) return;
+  if (musicPlaying()) return; // 背景音乐门：TTS 会暂停 iOS 上的歌（见 musicPlaying 注释）
   await speakWithTTS(text, { rate, lang: "zh-CN" });
 }

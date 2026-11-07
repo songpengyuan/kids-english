@@ -90,44 +90,14 @@ describe("BottomNav · 中间位永远是入口，图标只表达状态", () => 
     expect(player.playing).toBe(true); // 导航不动播放状态（跨 tab 续播）
   });
 
-  it("播放小圆钮（2026-11-07）：别的 tab 可见、独立于 tab 命中，点它切换播放", async () => {
+  it("悬浮播放小圆钮不复活（2026-11-08 移除：浮在内容上被误触成暂停，", async () => {
     const player = usePlayerStore();
     player.playSong(0);
     await router.push("/course");
     await router.isReady();
-
     const w = mount(BottomNav, { global: { plugins: [router] } });
-    // 有歌就显示（暂停后也要能看到"继续"）；独立于 tab 的第二层命中
-    const chip = w.find(".play-chip");
-    expect(chip.exists()).toBe(true);
-    expect(chip.attributes("aria-label")).toBe("暂停播放");
-    // tab 铁律不破：点 tab 仍然导航、播放状态不动
-    await middleTab(w).find(".bn-zone > *").trigger("click");
-    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe("/listen"));
-    expect(player.playing).toBe(true);
-  });
-
-  it("播放小圆钮：磨耳朵页内不显示（播放页已有完整 transport）", async () => {
-    const player = usePlayerStore();
-    player.playSong(0);
-    await router.push("/listen");
-    await router.isReady();
-
-    const w = mount(BottomNav, { global: { plugins: [router] } });
+    // 暂停职责已由「磨耳朵 tab 直落详情的 transport」+「锁屏 MediaSession」接管
     expect(w.find(".play-chip").exists()).toBe(false);
-  });
-
-  it("播放小圆钮：点击切换暂停/继续", async () => {
-    const player = usePlayerStore();
-    player.playSong(0);
-    await router.push("/course");
-    await router.isReady();
-
-    const w = mount(BottomNav, { global: { plugins: [router] } });
-    await w.find(".play-chip").trigger("click");
-    expect(player.playing).toBe(false);
-    expect(w.find(".play-chip").attributes("aria-label")).toBe("继续播放");
-    await w.find(".play-chip").trigger("click");
     expect(player.playing).toBe(true);
   });
 
