@@ -139,15 +139,52 @@ async function trimMediaCache() {
   }
 }
 
-/* ---------- 调试/测试通道 ---------- */
+/* ---------- 调试/测试通道 + 离线包下载 ---------- */
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "PING") {
     const pong = { type: "PONG", version: BUILD_ID, media: MEDIA_CACHE };
     // MessageChannel 传输时 event.source 为 null，必须回给 port
     if (event.ports[0]) event.ports[0].postMessage(pong);
     else event.source?.postMessage(pong);
+    return;
+  }
+  if (event.data && event.data.type === "DOWNLOAD_LESSON") {
+    const port = event.ports[0];
+    downloadAll(event.data.urls || [], port);
   }
 });
+
+/**
+ * 「下载本课离线包」：把一课的全部媒体显式拉进 MEDIA_CACHE。
+ * 在 SW 里做而不是页面里 fetch：页面切走/刷新不会中断下载。
+ * 逐个上报进度（loaded/total），结束时上报 done。
+ */
+async function downloadAll(urls, port) {
+  const post = (msg) => { try { port?.postMessage(msg); } catch { /* 页面已关 */ } };
+  let loaded = 0;
+  let fail = 0;
+  for (const url of urls) {
+    try {
+      const cache = await caches.open(MEDIA_CACHE);
+      if (await cache.match(url, { ignoreVary: true })) {
+        loaded += 1;
+        post({ type: "DOWNLOAD_PROGRESS", loaded, total: urls.length, url });
+        continue;
+      }
+      const resp = await fetch(url);
+      if (resp && resp.ok && resp.status === 200) {
+        await putMedia(url, resp);
+        loaded += 1;
+      } else {
+        fail += 1;
+      }
+    } catch {
+      fail += 1;
+    }
+    post({ type: "DOWNLOAD_PROGRESS", loaded, total: urls.length, url, fail });
+  }
+  post({ type: "DOWNLOAD_DONE", loaded, total: urls.length, fail });
+}
 
 /* ---------- fetch ---------- */
 self.addEventListener("fetch", (event) => {
@@ -248,7 +285,7 @@ async function handleMedia(req, url) {
     return resp;
   }
   if (resp && resp.ok && resp.status === 200) {
-    cache.put(url.href, resp.clone()).catch(() => {});
+    await putMedia(url.href, resp).catch(() => {});
   }
   return resp;
 }
@@ -275,7 +312,21 @@ async function cacheFullInBackground(url) {
   const cache = await caches.open(MEDIA_CACHE);
   if (await cache.match(url.href, { ignoreVary: true })) return;
   const resp = await fetch(url.href);
-  if (resp && resp.ok && resp.status === 200) await cache.put(url.href, resp);
+  if (resp && resp.ok && resp.status === 200) await putMedia(url.href, resp);
+}
+
+/**
+ * 媒体写入统一出口：存储配额满（iOS 写满会抛 QuotaExceededError）时
+ * 先裁剪媒体缓存再重试一次，而不是让这一条默默丢掉。
+ */
+async function putMedia(key, resp) {
+  const cache = await caches.open(MEDIA_CACHE);
+  try {
+    await cache.put(key, resp.clone());
+  } catch {
+    await trimMediaCache();
+    await cache.put(key, resp.clone());
+  }
 }
 
 /** 把缓存的完整响应切成 206 Range 响应（浏览器对媒体必发 Range） */
