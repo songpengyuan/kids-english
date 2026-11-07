@@ -17,7 +17,7 @@
  */
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
-import { createPinia } from "pinia";
+import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { createMemoryHistory, createRouter, type Router } from "vue-router";
 
 /** jsdom 缺的浏览器 API：必须在被测模块 import 之前补上（vi.hoisted 会提升到 import 之前） */
@@ -75,6 +75,7 @@ import CalendarView from "../me/CalendarView.vue";
 import ListenView from "../listen/ListenView.vue";
 import GateView from "../../views/GateView.vue";
 import { appRoutes } from "../../router";
+import { usePlayerStore } from "../../stores/player";
 import { lessons, activityKeys, splitActKey } from "../../data/lessons";
 
 /** jsdom 没有 ResizeObserver（LearnView/GamePath 会用到） */
@@ -88,11 +89,13 @@ class RO {
 /** 玩法 key → 路由段（历史原因：quiz 的路径段叫 hear） */
 const STAGE_PATH: Record<string, string> = { quiz: "hear" };
 
-async function mountPage(component: unknown, path: string, query: Record<string, string> = {}) {
+async function mountPage(component: unknown, path: string, query: Record<string, string> = {}, pinia?: Pinia) {
   const router: Router = createRouter({ history: createMemoryHistory(), routes: appRoutes });
   await router.push({ path, query });
   await router.isReady();
-  return mount(component as never, { global: { plugins: [createPinia(), router] } });
+  // pinia 可注入：测试需要"先播种 store 再挂载"时（如磨耳朵正在播详情），
+  // 用同一个 pinia 实例——否则播种落在无主 pinia 上，组件读到的是另一份空 store
+  return mount(component as never, { global: { plugins: [pinia ?? createPinia(), router] } });
 }
 
 describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
@@ -123,6 +126,21 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     const w = await mountPage(ListenView, "/listen");
     expect(w.find(".listen").exists()).toBe(true);
     expect(errors).toEqual([]);
+  });
+
+  it("磨耳朵：有加载过的歌时从别的 tab 切进来，直接落到正在播详情（2026-11-08）", async () => {
+    // jsdom 没有媒体实现，静音掉 play/pause 的 not-implemented 噪声
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+    // 先播种 player store 再挂载（同一个 pinia），模拟"在别的 tab 点过歌"的状态
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    usePlayerStore().playSong(0);
+    const w = await mountPage(ListenView, "/listen", {}, pinia);
+    // 详情页（歌词浮层）渲染、歌曲列表行不渲染（.listen 是页面根，恒在）；
+    // 收起键一下回列表
+    expect(w.find(".player").exists()).toBe(true);
+    expect(w.find(".song-row").exists()).toBe(false);
   });
 
   it("应用口令页", async () => {

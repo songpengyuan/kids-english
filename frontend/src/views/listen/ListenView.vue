@@ -177,6 +177,12 @@ const videoIdx = ref(-1);
  */
 onMounted(() => {
   void progStore.syncFromServer();
+  // 从其他 tab 切回来时，有加载过的歌就直接落到正在播详情（2026-11-08 用户反馈；
+  // 音乐 App 惯例）。只展开不重播：同曲 openLyrics/noNowPlaying 语义，暂停中的歌
+  // 展开后仍是暂停态。冷启动无歌（currentIdx=-1）仍是列表；想回列表点收起键一下。
+  if (player.currentIdx >= 0 && !player.nowPlaying) {
+    player.nowPlaying = true;
+  }
 });
 </script>
 
