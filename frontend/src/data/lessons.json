@@ -880,7 +880,7 @@
         "en": "bear",
         "zh": "棕熊",
         "emoji": "🐻",
-        "image": "/lessons/l11/words/bear.svg",
+        "image": "/lessons/l11/words/bear.webp",
         "group": "animals"
       },
       {
@@ -888,7 +888,7 @@
         "en": "bird",
         "zh": "小鸟",
         "emoji": "🐦",
-        "image": "/lessons/l11/words/bird.svg",
+        "image": "/lessons/l11/words/bird.webp",
         "group": "animals"
       },
       {
@@ -896,7 +896,7 @@
         "en": "duck",
         "zh": "鸭子",
         "emoji": "🦆",
-        "image": "/lessons/l11/words/duck.svg",
+        "image": "/lessons/l11/words/duck.webp",
         "group": "animals"
       },
       {
@@ -904,7 +904,7 @@
         "en": "horse",
         "zh": "小马",
         "emoji": "🐎",
-        "image": "/lessons/l11/words/horse.svg",
+        "image": "/lessons/l11/words/horse.webp",
         "group": "animals"
       },
       {
@@ -912,7 +912,7 @@
         "en": "frog",
         "zh": "青蛙",
         "emoji": "🐸",
-        "image": "/lessons/l11/words/frog.svg",
+        "image": "/lessons/l11/words/frog.webp",
         "group": "animals"
       },
       {
@@ -920,7 +920,7 @@
         "en": "cat",
         "zh": "小猫",
         "emoji": "🐱",
-        "image": "/lessons/l11/words/cat.svg",
+        "image": "/lessons/l11/words/cat.webp",
         "group": "animals"
       },
       {
@@ -928,7 +928,7 @@
         "en": "dog",
         "zh": "小狗",
         "emoji": "🐶",
-        "image": "/lessons/l11/words/dog.svg",
+        "image": "/lessons/l11/words/dog.webp",
         "group": "animals"
       },
       {
@@ -936,7 +936,7 @@
         "en": "sheep",
         "zh": "绵羊",
         "emoji": "🐑",
-        "image": "/lessons/l11/words/sheep.svg",
+        "image": "/lessons/l11/words/sheep.webp",
         "group": "animals"
       },
       {
@@ -944,7 +944,7 @@
         "en": "goldfish",
         "zh": "金鱼",
         "emoji": "🐟",
-        "image": "/lessons/l11/words/goldfish.svg",
+        "image": "/lessons/l11/words/goldfish.webp",
         "group": "animals"
       }
     ],

@@ -1044,7 +1044,7 @@
         "en": "bear",
         "zh": "棕熊",
         "emoji": "🐻",
-        "image": "/lessons/l11/words/bear.svg",
+        "image": "/lessons/l11/words/bear.webp",
         "audio": "/lessons/l11/audio/bear.mp3",
         "group": "animals"
       },
@@ -1053,7 +1053,7 @@
         "en": "bird",
         "zh": "小鸟",
         "emoji": "🐦",
-        "image": "/lessons/l11/words/bird.svg",
+        "image": "/lessons/l11/words/bird.webp",
         "audio": "/lessons/l11/audio/bird.mp3",
         "group": "animals"
       },
@@ -1062,7 +1062,7 @@
         "en": "duck",
         "zh": "鸭子",
         "emoji": "🦆",
-        "image": "/lessons/l11/words/duck.svg",
+        "image": "/lessons/l11/words/duck.webp",
         "audio": "/lessons/l11/audio/duck.mp3",
         "group": "animals"
       },
@@ -1071,7 +1071,7 @@
         "en": "horse",
         "zh": "小马",
         "emoji": "🐎",
-        "image": "/lessons/l11/words/horse.svg",
+        "image": "/lessons/l11/words/horse.webp",
         "audio": "/lessons/l11/audio/horse.mp3",
         "group": "animals"
       },
@@ -1080,7 +1080,7 @@
         "en": "frog",
         "zh": "青蛙",
         "emoji": "🐸",
-        "image": "/lessons/l11/words/frog.svg",
+        "image": "/lessons/l11/words/frog.webp",
         "audio": "/lessons/l11/audio/frog.mp3",
         "group": "animals"
       },
@@ -1089,7 +1089,7 @@
         "en": "cat",
         "zh": "小猫",
         "emoji": "🐱",
-        "image": "/lessons/l11/words/cat.svg",
+        "image": "/lessons/l11/words/cat.webp",
         "audio": "/lessons/l11/audio/cat.mp3",
         "group": "animals"
       },
@@ -1098,7 +1098,7 @@
         "en": "dog",
         "zh": "小狗",
         "emoji": "🐶",
-        "image": "/lessons/l11/words/dog.svg",
+        "image": "/lessons/l11/words/dog.webp",
         "audio": "/lessons/l11/audio/dog.mp3",
         "group": "animals"
       },
@@ -1107,7 +1107,7 @@
         "en": "sheep",
         "zh": "绵羊",
         "emoji": "🐑",
-        "image": "/lessons/l11/words/sheep.svg",
+        "image": "/lessons/l11/words/sheep.webp",
         "audio": "/lessons/l11/audio/sheep.mp3",
         "group": "animals"
       },
@@ -1116,7 +1116,7 @@
         "en": "goldfish",
         "zh": "金鱼",
         "emoji": "🐟",
-        "image": "/lessons/l11/words/goldfish.svg",
+        "image": "/lessons/l11/words/goldfish.webp",
         "audio": "/lessons/l11/audio/goldfish.mp3",
         "group": "animals"
       }
