@@ -62,6 +62,11 @@ export const appRoutes: RouteRecordRaw[] = [
     // 应用入口口令页（备案域名门禁）：未解锁时所有路由被守卫拦到这里
     { path: "/gate", name: "gate", component: GateView, meta: { title: "家长口令" } },
 
+    // 法律文档页（公开可访问，门禁豁免——注册时勾选的协议必须能被任何人打开）
+    { path: "/terms", name: "terms", component: () => import("../views/TermsView.vue"), meta: { title: "用户协议" } },
+    { path: "/privacy", name: "privacy", component: () => import("../views/TermsView.vue"), meta: { title: "隐私政策" } },
+    { path: "/children-privacy", name: "children-privacy", component: () => import("../views/TermsView.vue"), meta: { title: "儿童信息处理规则" } },
+
     // ---------- 课程域 ----------
     {
       path: "/course",

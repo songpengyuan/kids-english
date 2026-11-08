@@ -26,6 +26,28 @@ const pass = ref("");
 const error = ref("");
 const busy = ref(false);
 
+/** 注册/激活双 tab（2026-11-08 内测改造）：激活 = 老用户口令直达；
+ *  注册 = 内测口令验证 + 建家庭账号（后端 register）+ 建宝贝档案（createChild）。 */
+const tab = ref<"activate" | "register">("activate");
+const regCode = ref("");
+const regFamily = ref("");
+const regChild = ref("");
+const regPass = ref("");
+const regAgree = ref(false);
+const regError = ref("");
+const regBusy = ref(false);
+
+/** 共通收尾：恢复会话、拉内容、同步进度、进应用 */
+async function afterEnter() {
+  await auth.restore();
+  if (auth.family) {
+    content.loadFromServer();
+    await progress.flushReport();
+    progress.syncFromServer();
+  }
+  router.replace("/course");
+}
+
 async function submit() {
   error.value = "";
   if (busy.value) return;
@@ -41,15 +63,53 @@ async function submit() {
       error.value = "口令不对，再试一次";
       return;
     }
-    await auth.restore();
-    if (auth.family) {
-      content.loadFromServer();
-      await progress.flushReport();
-      progress.syncFromServer();
-    }
-    router.replace("/course");
+    await afterEnter();
   } finally {
     busy.value = false;
+  }
+}
+
+async function submitRegister() {
+  regError.value = "";
+  if (regBusy.value) return;
+  const code = regCode.value.trim();
+  const family = regFamily.value.trim();
+  const child = regChild.value.trim() || "宝贝";
+  const pwd = regPass.value.trim();
+  if (code.length < 4) {
+    regError.value = "内测口令至少 4 位";
+    return;
+  }
+  if (!family) {
+    regError.value = "给家庭起个名字（将用于登录）";
+    return;
+  }
+  if (pwd.length < 4) {
+    regError.value = "家长密码至少 4 位";
+    return;
+  }
+  if (!regAgree.value) {
+    regError.value = "请先阅读并勾选下方协议";
+    return;
+  }
+  regBusy.value = true;
+  try {
+    const ok = await gate.verify(code);
+    if (!ok) {
+      regError.value = "内测口令不对，检查一下";
+      return;
+    }
+    const registered = await auth.register(family, pwd);
+    if (!registered) {
+      regError.value = "注册没成功，换个家庭名再试";
+      return;
+    }
+    await auth.createChild(child);
+    await afterEnter();
+  } catch {
+    regError.value = "注册没成功（网络或家庭名重复），再试一次";
+  } finally {
+    regBusy.value = false;
   }
 }
 </script>
@@ -75,11 +135,29 @@ async function submit() {
             <circle cx="12.4" cy="9.7" r=".8" fill="#FFFFFF" />
           </svg>
         </span>
-        <p class="gate__slogan">请输入家长口令进入</p>
+        <p class="gate__slogan">{{ tab === "activate" ? "请输入家长口令进入" : "内测家庭注册" }}</p>
       </div>
 
-      <!-- 表单（深色毛玻璃贴纸卡） -->
-      <form class="gate__form" @submit.prevent="submit">
+      <!-- 注册/激活双 tab -->
+      <div class="gate__tabs" role="tablist">
+        <button
+          class="gate__tab"
+          :class="{ on: tab === 'activate' }"
+          role="tab"
+          :aria-selected="tab === 'activate'"
+          @click="tab = 'activate'"
+        >激活</button>
+        <button
+          class="gate__tab"
+          :class="{ on: tab === 'register' }"
+          role="tab"
+          :aria-selected="tab === 'register'"
+          @click="tab = 'register'"
+        >注册新家庭</button>
+      </div>
+
+      <!-- 激活（老路径） -->
+      <form v-if="tab === 'activate'" class="gate__form" @submit.prevent="submit">
         <input
           v-model="pass"
           class="gate__input"
@@ -93,6 +171,56 @@ async function submit() {
           {{ busy ? "进入中…" : "进入" }}
         </button>
         <p v-if="error" class="gate__error">{{ error }}</p>
+      </form>
+
+      <!-- 注册（内测新家庭） -->
+      <form v-else class="gate__form" @submit.prevent="submitRegister">
+        <input
+          v-model="regCode"
+          class="gate__input"
+          type="password"
+          placeholder="内测口令（我们发给你的）"
+          maxlength="20"
+          autocomplete="off"
+        />
+        <input
+          v-model="regFamily"
+          class="gate__input"
+          type="text"
+          placeholder="家庭名（用于登录）"
+          maxlength="20"
+          autocomplete="off"
+        />
+        <input
+          v-model="regChild"
+          class="gate__input"
+          type="text"
+          placeholder="宝贝昵称（可留空）"
+          maxlength="12"
+          autocomplete="off"
+        />
+        <input
+          v-model="regPass"
+          class="gate__input"
+          type="password"
+          placeholder="设置家长密码（至少 4 位）"
+          maxlength="20"
+          autocomplete="off"
+        />
+        <label class="gate__agree">
+          <input v-model="regAgree" type="checkbox" />
+          <span>
+            我已阅读并同意
+            <router-link class="gate__doc" to="/terms" target="_blank">《用户协议》</router-link>、
+            <router-link class="gate__doc" to="/privacy" target="_blank">《隐私政策》</router-link>
+            与
+            <router-link class="gate__doc" to="/children-privacy" target="_blank">《儿童信息处理规则》</router-link>
+          </span>
+        </label>
+        <button class="gate__btn" type="submit" :disabled="regBusy">
+          {{ regBusy ? "注册中…" : "注册并进入" }}
+        </button>
+        <p v-if="regError" class="gate__error">{{ regError }}</p>
       </form>
 
       <p class="gate__foot">本设备 7 天内免重复输入</p>
@@ -223,6 +351,52 @@ async function submit() {
   color: var(--night-danger);
   font-size: var(--fs-small);
   font-weight: var(--fw-mid);
+}
+/* ---------- 注册/激活双 tab ---------- */
+.gate__tabs {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+  background: var(--night-card);
+  border: 1.5px solid var(--night-line);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: var(--gap-s);
+}
+.gate__tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 8px 0;
+  font-size: var(--fs-small);
+  font-family: inherit;
+  color: var(--night-ink-faint);
+  transition: background 0.15s, color 0.15s;
+}
+.gate__tab.on {
+  background: var(--night-teal);
+  color: var(--night-on-teal);
+}
+.gate__agree {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: var(--fs-small);
+  color: var(--night-ink-soft);
+  line-height: 1.6;
+  text-align: left;
+}
+.gate__agree input {
+  margin-top: 3px;
+  flex: none;
+}
+.gate__doc {
+  color: var(--night-teal);
+  text-decoration: none;
+}
+.gate__doc:hover {
+  text-decoration: underline;
 }
 .gate__foot {
   margin: var(--gap-l) 0 0;
