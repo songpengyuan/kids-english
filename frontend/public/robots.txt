@@ -1,0 +1,7 @@
+# 闲思杂记（zelab.cn）——个人非经营性站点
+# 根落地页允许收录；应用（/app/）是口令门禁后的家庭内部工具，不进搜索引擎
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /assets/
+Disallow: /lessons/

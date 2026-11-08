@@ -8,8 +8,15 @@
  * 实际主体/收费模式修订，届时找专业人士过一遍。
  */
 import { computed } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import PageShell from "../components/ui/PageShell.vue";
+
+const router = useRouter();
+/** 公开页：访客多半从注册页新窗口打开，返回回 /gate；有历史则回上一页 */
+function goBack() {
+  if (window.history.length > 1) router.back();
+  else router.push("/gate");
+}
 
 const route = useRoute();
 const kind = computed(() => {
@@ -143,13 +150,23 @@ const body = computed(() => BODY[kind.value]);
 </script>
 
 <template>
-  <PageShell :title="meta.title" show-back back-label="返回">
+  <PageShell :title="meta.title" show-back back-label="返回" @back="goBack">
     <div class="doc">
       <p class="doc__updated">更新日期：{{ meta.updated }}</p>
       <section v-for="sec in body" :key="sec.h" class="doc__sec">
         <h2>{{ sec.h }}</h2>
         <p v-for="(p, i) in sec.ps" :key="i">{{ p }}</p>
       </section>
+      <!-- 备案合规：公开页任意路由都可能被抽查，备案号悬挂到底部 -->
+      <footer class="doc__footer">
+        <div>闲思杂记 · 个人非经营性站点</div>
+        <a
+          class="doc__beian"
+          href="https://beian.miit.gov.cn/"
+          target="_blank"
+          rel="noopener"
+        >豫ICP备2026054893号</a>
+      </footer>
     </div>
   </PageShell>
 </template>
@@ -177,5 +194,24 @@ const body = computed(() => BODY[kind.value]);
   color: var(--ink-soft);
   line-height: 1.85;
   font-size: 14px;
+}
+.doc__footer {
+  margin-top: 36px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: var(--fs-small);
+  line-height: 2;
+}
+.doc__beian {
+  color: var(--ink-faint);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--ink-faint);
+  padding-bottom: 1px;
+}
+.doc__beian:hover {
+  color: var(--brand);
+  border-color: var(--brand);
 }
 </style>
