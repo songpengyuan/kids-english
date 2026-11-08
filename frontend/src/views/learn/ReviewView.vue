@@ -75,7 +75,9 @@ function start() {
   finished.value = false;
   // 今日目标：复习目标 = min(5, 今天到期的词数)，到期词少了目标自动变小
   streak.syncReviewGoal(dueWords.value.length + streak.reviewed);
-  const t = seq.value[0];
+  // 注意：出题会洗牌（buildQuizQuestions 打乱词序），所以朗读必须取**当前题**的
+  // target，不能用 seq[idx] —— 否则读的是队列里那个位置的词，不是屏幕上的题。
+  const t = q.value?.target;
   if (t) speak(t.en, { lessonId: t.lessonId, wordId: t.id });
 }
 
@@ -86,7 +88,8 @@ function next() {
     finished.value = true;
     bigCelebrate(); // 整轮复习完成 = 一次"关卡完成"，此时才撒花
   } else {
-    const t = seq.value[idx.value];
+    // 同上：取当前题 target（主线洗牌、错题加赛换题库后都能读对）
+    const t = q.value?.target;
     if (t) speak(t.en, { lessonId: t.lessonId, wordId: t.id });
   }
 }
