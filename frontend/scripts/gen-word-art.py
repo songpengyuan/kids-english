@@ -316,109 +316,173 @@ def referenced_images():
 
 
 # ---------------------------------------------------------------- l11 动物（原创贴纸）
-# 2026-11-08 版权清洗：替换掉"老师提供的绘本扫描件"（Brown Bear 绘本切图），
-# 全部动物改为本管线原创绘制，画风与 cat/dog/fish 一致（白描边 + INK 眼睛）。
+# 2026-11-08 版权清洗：不再使用绘本扫描件。姿态/配色仿照原扫描图（孩子熟悉），
+# 执行换成我们的扁平贴纸手法（纯色块 + 白描边 + INK 点睛），非拼贴复刻。
+
+BEAR_BROWN = "#8a5a2b"
+
+# ---------------------------------------------------------------- l11 动物（原创贴纸）
+# 2026-11-08 版权清洗：不再使用绘本扫描件。姿态/配色仿照原扫描图（孩子熟悉），
+# 执行换成我们的扁平贴纸手法（纯色块 + 白描边 + INK 点睛），非拼贴复刻。
 
 BEAR_BROWN = "#8a5a2b"
 
 def art_bear():
+    """棕熊：拱背四足站，头在左低位（仿扫描图姿态）"""
     return (
-        f'<circle cx="30" cy="30" r="13" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="5"/>'
-        f'<circle cx="70" cy="30" r="13" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="5"/>'
-        f'<circle cx="30" cy="30" r="6" fill="#f6e3cc"/>'
-        f'<circle cx="70" cy="30" r="6" fill="#f6e3cc"/>'
-        f'<circle cx="50" cy="56" r="36" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="5"/>'
-        f'<ellipse cx="50" cy="68" rx="18" ry="14" fill="#f6e3cc"/>'
-        f'<ellipse cx="50" cy="62" rx="7" ry="5" fill="{INK}"/>'
-        f'<circle cx="37" cy="48" r="4.5" fill="{INK}"/><circle cx="63" cy="48" r="4.5" fill="{INK}"/>'
-        f'<path d="M44 70q6 5 12 0" stroke="{INK}" stroke-width="3" fill="none" stroke-linecap="round"/>'
+        f'<path d="M84 82 C86 46 70 28 48 28 C26 28 14 46 16 82 Z" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
+        f'<rect x="20" y="76" width="11" height="18" rx="5" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="4"/>'
+        f'<rect x="36" y="78" width="11" height="16" rx="5" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="4"/>'
+        f'<rect x="60" y="78" width="11" height="16" rx="5" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="4"/>'
+        f'<rect x="74" y="76" width="11" height="18" rx="5" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="4"/>'
+        f'<circle cx="20" cy="64" r="14" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="29" cy="52" r="5.5" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="3.5"/>'
+        f'<ellipse cx="11" cy="68" rx="7" ry="5.5" fill="#f6e3cc"/>'
+        f'<ellipse cx="8.5" cy="66" rx="2" ry="3" fill="{INK}"/>'
+        f'<circle cx="21" cy="60" r="2.6" fill="{INK}"/>'
     )
 
 
 def art_bird():
+    """红鸟：展翅飞（仿扫描图）"""
     return (
-        f'<path d="M18 30q10-14 32-14t32 14l-6 12H24z" fill="{GREEN_D}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
-        f'<circle cx="50" cy="54" r="34" fill="{GREEN}" stroke="#ffffff" stroke-width="5"/>'
-        f'<path d="M42 56l16 0-8 12z" fill="{ORANGE}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
-        f'<circle cx="36" cy="48" r="6.5" fill="#ffffff"/><circle cx="37.5" cy="48" r="3.2" fill="{INK}"/>'
-        f'<circle cx="64" cy="48" r="6.5" fill="#ffffff"/><circle cx="62.5" cy="48" r="3.2" fill="{INK}"/>'
-        f'<path d="M42 70q8 6 16 0" stroke="{INK}" stroke-width="3" fill="none" stroke-linecap="round"/>'
-        f'<path d="M46 88v8M58 88v8" stroke="{ORANGE}" stroke-width="4.5" stroke-linecap="round"/>'
+        f'<path d="M54 42 C64 20 88 16 94 28 C88 42 72 50 58 48 Z" fill="{RED_D}" stroke="#ffffff" stroke-width="4.5" stroke-linejoin="round"/>'
+        f'<path d="M52 62 C62 74 80 78 90 72 C82 86 62 86 50 72 Z" fill="{RED_D}" stroke="#ffffff" stroke-width="4.5" stroke-linejoin="round"/>'
+        f'<path d="M72 52 L94 46 L92 62 Z" fill="{RED_D}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
+        f'<ellipse cx="50" cy="56" rx="28" ry="15" fill="{RED}" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="24" cy="50" r="10.5" fill="{RED}" stroke="#ffffff" stroke-width="5"/>'
+        f'<path d="M13 46 L3 51 L14 56 Z" fill="{INK}" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>'
+        f'<circle cx="25" cy="47" r="3" fill="#ffffff"/><circle cx="24.2" cy="47" r="1.5" fill="{INK}"/>'
+    )
+
+
+def art_cat():
+    """紫猫：卧姿，尾巴上翘（仿扫描图）"""
+    return (
+        f'<path d="M24 58 C16 38 28 26 38 32 C44 36 42 48 36 56" stroke="{PURPLE}" stroke-width="9" fill="none" stroke-linecap="round"/>'
+        f'<ellipse cx="48" cy="72" rx="30" ry="16" fill="{PURPLE}" stroke="#ffffff" stroke-width="5"/>'
+        f'<path d="M64 80l-2 10M76 78l2 10" stroke="{PURPLE}" stroke-width="6" stroke-linecap="round"/>'
+        f'<circle cx="74" cy="54" r="17" fill="{PURPLE}" stroke="#ffffff" stroke-width="5"/>'
+        f'<path d="M64 40 L62 28 L74 36 Z" fill="{PURPLE}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
+        f'<path d="M84 40 L86 28 L74 36 Z" fill="{PURPLE}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
+        f'<circle cx="68" cy="52" r="2.8" fill="{INK}"/><circle cx="80" cy="52" r="2.8" fill="{INK}"/>'
+        f'<path d="M68 60q6 5 12 0" stroke="{INK}" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+        f'<path d="M74 62q-3 6-8 5M74 62q3 6 8 5" stroke="#ffffff" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+    )
+
+
+def art_dog():
+    """白狗：立姿竖尾红项圈（仿扫描图）"""
+    return (
+        f'<path d="M22 54 C14 44 16 36 24 34" stroke="#ffffff" stroke-width="7" fill="none" stroke-linecap="round"/>'
+        f'<ellipse cx="46" cy="62" rx="27" ry="15" fill="#ffffff" stroke="{INK}" stroke-width="3.5"/>'
+        f'<rect x="28" y="72" width="9" height="20" rx="4" fill="#ffffff" stroke="{INK}" stroke-width="3.5"/>'
+        f'<rect x="42" y="74" width="9" height="18" rx="4" fill="#ffffff" stroke="{INK}" stroke-width="3.5"/>'
+        f'<rect x="56" y="74" width="9" height="18" rx="4" fill="#ffffff" stroke="{INK}" stroke-width="3.5"/>'
+        f'<rect x="66" y="72" width="9" height="20" rx="4" fill="#ffffff" stroke="{INK}" stroke-width="3.5"/>'
+        f'<circle cx="74" cy="48" r="14" fill="#ffffff" stroke="{INK}" stroke-width="3.5"/>'
+        f'<path d="M64 36 C58 26 64 20 72 24 C76 27 74 33 70 36" fill="#ffffff" stroke="{INK}" stroke-width="3.5" stroke-linejoin="round"/>'
+        f'<path d="M64 56 L80 62 L66 66 Z" fill="{RED}" stroke="{INK}" stroke-width="3" stroke-linejoin="round"/>'
+        f'<ellipse cx="88" cy="52" rx="5" ry="4" fill="{INK}"/>'
+        f'<circle cx="78" cy="44" r="2.6" fill="{INK}"/>'
+        f'<path d="M82 58q4 3 8 0" stroke="{INK}" stroke-width="2.2" fill="none" stroke-linecap="round"/>'
     )
 
 
 def art_duck():
+    """黄鸭：侧影立姿，橙扁嘴（仿扫描图）"""
     return (
-        f'<circle cx="50" cy="52" r="36" fill="{YELLOW}" stroke="#ffffff" stroke-width="5"/>'
-        f'<ellipse cx="50" cy="64" rx="17" ry="9" fill="{ORANGE}" stroke="#ffffff" stroke-width="4"/>'
-        f'<path d="M33 64h34" stroke="{ORANGE_D}" stroke-width="2.5" stroke-linecap="round"/>'
-        f'<circle cx="36" cy="44" r="6.5" fill="#ffffff"/><circle cx="37.5" cy="44" r="3.2" fill="{INK}"/>'
-        f'<circle cx="64" cy="44" r="6.5" fill="#ffffff"/><circle cx="62.5" cy="44" r="3.2" fill="{INK}"/>'
-        f'<path d="M40 84v8M60 84v8" stroke="{ORANGE}" stroke-width="4.5" stroke-linecap="round"/>'
+        f'<path d="M74 62 C84 54 86 40 78 34 C70 40 72 52 66 58 Z" fill="{YELLOW}" stroke="#ffffff" stroke-width="4.5" stroke-linejoin="round"/>'
+        f'<ellipse cx="50" cy="66" rx="29" ry="19" fill="{YELLOW}" stroke="#ffffff" stroke-width="5"/>'
+        f'<path d="M70 56 C76 66 72 76 62 78" stroke="{GOLD}" stroke-width="4" fill="none" stroke-linecap="round"/>'
+        f'<circle cx="26" cy="40" r="13" fill="{YELLOW}" stroke="#ffffff" stroke-width="5"/>'
+        f'<path d="M13 36 L1 41 L14 46 Z" fill="{ORANGE}" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round"/>'
+        f'<circle cx="23" cy="36" r="3" fill="#ffffff"/><circle cx="22.2" cy="36" r="1.5" fill="{INK}"/>'
+        f'<path d="M44 84 v10 M58 84 v10" stroke="{ORANGE}" stroke-width="4.5" stroke-linecap="round"/>'
+        f'<path d="M42 94 h6 M56 94 h6" stroke="{ORANGE}" stroke-width="3" stroke-linecap="round"/>'
     )
 
 
 def art_frog():
+    """绿蛙：侧坐大后腿（仿扫描图）"""
     return (
-        f'<circle cx="30" cy="26" r="14" fill="{GREEN}" stroke="#ffffff" stroke-width="5"/>'
-        f'<circle cx="70" cy="26" r="14" fill="{GREEN}" stroke="#ffffff" stroke-width="5"/>'
-        f'<circle cx="30" cy="26" r="6" fill="#ffffff"/><circle cx="30" cy="26" r="3" fill="{INK}"/>'
-        f'<circle cx="70" cy="26" r="6" fill="#ffffff"/><circle cx="70" cy="26" r="3" fill="{INK}"/>'
-        f'<ellipse cx="50" cy="58" rx="40" ry="30" fill="{GREEN}" stroke="#ffffff" stroke-width="5"/>'
-        f'<path d="M34 62q16 10 32 0" stroke="{INK}" stroke-width="3" fill="none" stroke-linecap="round"/>'
-        f'<path d="M42 68h16" stroke="{INK}" stroke-width="3" stroke-linecap="round"/>'
-        f'<ellipse cx="24" cy="84" rx="10" ry="6" fill="{GREEN_D}"/><ellipse cx="76" cy="84" rx="10" ry="6" fill="{GREEN_D}"/>'
+        f'<path d="M30 62 C18 62 12 74 16 84 L36 84 C28 76 28 68 34 64 Z" fill="{GREEN_D}" stroke="#ffffff" stroke-width="4.5" stroke-linejoin="round"/>'
+        f'<path d="M30 60 C34 48 44 42 56 44 C74 47 82 60 78 72 C74 82 60 86 46 84 C32 82 26 72 30 60 Z" fill="{GREEN}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
+        f'<circle cx="68" cy="46" r="8" fill="{GREEN}" stroke="#ffffff" stroke-width="4"/>'
+        f'<circle cx="68" cy="46" r="4" fill="#ffffff"/><circle cx="68" cy="46" r="2" fill="{INK}"/>'
+        f'<path d="M58 56 q12 4 20 -2" stroke="{INK}" stroke-width="2.8" fill="none" stroke-linecap="round"/>'
+        f'<path d="M58 74 q8 6 18 2" stroke="{GREEN_D}" stroke-width="5" fill="none" stroke-linecap="round"/>'
+    )
+
+
+def art_goldfish():
+    """金鱼：大尾巴（仿扫描图配色改橙）"""
+    return (
+        f'<path d="M62 50 C78 30 96 32 94 48 C92 58 78 60 62 54 Z" fill="{ORANGE}" stroke="#ffffff" stroke-width="4.5" stroke-linejoin="round"/>'
+        f'<path d="M62 56 C78 74 96 72 94 58 C92 48 78 46 62 52 Z" fill="{ORANGE_D}" stroke="#ffffff" stroke-width="4.5" stroke-linejoin="round"/>'
+        f'<path d="M38 38 C46 24 60 24 62 36 Z" fill="{GOLD}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
+        f'<ellipse cx="42" cy="54" rx="28" ry="19" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
+        f'<path d="M30 46 q6 8 0 16M40 44 q6 10 0 20" stroke="{ORANGE_D}" stroke-width="3" fill="none" stroke-linecap="round"/>'
+        f'<circle cx="24" cy="50" r="5" fill="#ffffff"/><circle cx="23" cy="50" r="2.4" fill="{INK}"/>'
+        f'<path d="M14 52 q6 4 12 2" stroke="{ORANGE_D}" stroke-width="3" fill="none" stroke-linecap="round"/>'
     )
 
 
 def art_horse():
+    """蓝马：低头吃草的整体剪影（仿扫描图姿态）——单路径避免腿变触须"""
     return (
-        # 立耳（两个尖三角）
-        f'<path d="M32 20 L25 3 L45 13 Z" fill="{PINK}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
-        f'<path d="M68 20 L75 3 L55 13 Z" fill="{PINK}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
-        # 长脸（竖椭圆）
-        f'<ellipse cx="50" cy="54" rx="27" ry="40" fill="{PINK}" stroke="#ffffff" stroke-width="5"/>'
-        # 额发：三绺从头顶垂下
-        f'<path d="M38 14 q6 14 3 26" stroke="{PINK_D}" stroke-width="8" fill="none" stroke-linecap="round"/>'
-        f'<path d="M50 12 q2 14 0 26" stroke="{PINK_D}" stroke-width="8" fill="none" stroke-linecap="round"/>'
-        f'<path d="M62 14 q-6 14 -3 26" stroke="{PINK_D}" stroke-width="8" fill="none" stroke-linecap="round"/>'
-        # 大吻部（浅色）+ 双鼻孔
-        f'<ellipse cx="50" cy="74" rx="16" ry="13" fill="#ffe3ee" stroke="#ffffff" stroke-width="4"/>'
-        f'<ellipse cx="43.5" cy="73" rx="2.6" ry="4.2" fill="{PINK_D}"/>'
-        f'<ellipse cx="56.5" cy="73" rx="2.6" ry="4.2" fill="{PINK_D}"/>'
-        f'<path d="M43 85q7 5 14 0" stroke="{INK}" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
-        # 眼睛（吻部上方两侧）
-        f'<circle cx="35" cy="47" r="5.5" fill="#ffffff"/><circle cx="36" cy="47" r="2.8" fill="{INK}"/>'
-        f'<circle cx="65" cy="47" r="5.5" fill="#ffffff"/><circle cx="64" cy="47" r="2.8" fill="{INK}"/>'
+        # 尾巴（左，垂弧）
+        f'<path d="M16 64 C8 72 8 86 15 92" stroke="{BLUE_D}" stroke-width="7" fill="none" stroke-linecap="round"/>'
+        # 四腿（实心无描边，插进身体下缘）
+        f'<rect x="26" y="66" width="10" height="27" rx="4.5" fill="{BLUE}"/>'
+        f'<rect x="38" y="68" width="10" height="25" rx="4.5" fill="{BLUE}"/>'
+        f'<rect x="55" y="68" width="10" height="25" rx="4.5" fill="{BLUE}"/>'
+        f'<rect x="66" y="66" width="10" height="27" rx="4.5" fill="{BLUE}"/>'
+        # 身体 + 颈 + 低头：一条剪影路径
+        f'<path d="M15 76 C13 52 26 36 46 36 C62 36 74 46 81 60 C86 68 90 76 88 81 '
+        f'C86 87 79 88 75 83 C72 79 70 74 65 70 C58 72 48 72 40 70 C30 76 18 78 15 76 Z" '
+        f'fill="{BLUE}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
+        # 沿颈背的鬃毛
+        f'<path d="M52 38 C66 42 76 54 80 66" stroke="{BLUE_D}" stroke-width="6" fill="none" stroke-linecap="round"/>'
+        # 耳尖
+        f'<path d="M76 56 L84 48 L86 60 Z" fill="{BLUE}" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round"/>'
+        # 眼（低头位，靠近吻部上方）
+        f'<circle cx="80" cy="74" r="2.6" fill="#ffffff"/>'
+        # 吻部/嘴
+        f'<path d="M80 84 q4 1 6 -1" stroke="{INK}" stroke-width="2.2" fill="none" stroke-linecap="round"/>'
     )
 
 
 def art_sheep():
+    """黑羊：云朵绒毛身 + 深色脸（仿扫描图）"""
+    D = "#3b3b44"
+    DD = "#2b2b33"
     return (
-        f'<circle cx="34" cy="32" r="14" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
-        f'<circle cx="64" cy="30" r="12" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
-        f'<circle cx="82" cy="42" r="11" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
-        f'<circle cx="18" cy="44" r="11" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
-        f'<circle cx="24" cy="64" r="12" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
-        f'<circle cx="76" cy="62" r="12" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
-        f'<circle cx="50" cy="54" r="30" fill="#fff6ea" stroke="#ffffff" stroke-width="5"/>'
-        f'<circle cx="40" cy="46" r="4" fill="{INK}"/><circle cx="58" cy="46" r="4" fill="{INK}"/>'
-        f'<path d="M44 56h12l-6 6z" fill="{PINK}"/>'
-        f'<path d="M42 62q8 7 16 0" stroke="{INK}" stroke-width="3" fill="none" stroke-linecap="round"/>'
-        f'<path d="M42 84l-2 8M60 84l2 8" stroke="{INK}" stroke-width="4" stroke-linecap="round"/>'
+        f'<circle cx="28" cy="52" r="15" fill="{D}" stroke="#ffffff" stroke-width="4.5"/>'
+        f'<circle cx="46" cy="44" r="17" fill="{D}" stroke="#ffffff" stroke-width="4.5"/>'
+        f'<circle cx="66" cy="50" r="15" fill="{D}" stroke="#ffffff" stroke-width="4.5"/>'
+        f'<circle cx="38" cy="68" r="15" fill="{D}" stroke="#ffffff" stroke-width="4.5"/>'
+        f'<circle cx="60" cy="68" r="14" fill="{D}" stroke="#ffffff" stroke-width="4.5"/>'
+        f'<ellipse cx="20" cy="58" rx="11" ry="13" fill="{DD}" stroke="#ffffff" stroke-width="4.5"/>'
+        f'<path d="M12 50 q-6 4 -4 10 8 2 14 -4" fill="{DD}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
+        f'<circle cx="17" cy="54" r="2.4" fill="#ffffff"/><circle cx="25" cy="54" r="2.4" fill="#ffffff"/>'
+        f'<ellipse cx="21" cy="62" rx="3" ry="2" fill="{PINK}"/>'
+        f'<rect x="30" y="80" width="7" height="14" rx="3.5" fill="{DD}"/>'
+        f'<rect x="44" y="82" width="7" height="12" rx="3.5" fill="{DD}"/>'
+        f'<rect x="56" y="80" width="7" height="14" rx="3.5" fill="{DD}"/>'
     )
 
 
 ANIMAL_ART = {
     "bear": art_bear,
     "bird": art_bird,
-    "duck": art_duck,
-    "frog": art_frog,
-    "horse": art_horse,
-    "sheep": art_sheep,
     "cat": art_cat,
     "dog": art_dog,
-    "goldfish": art_fish,
+    "duck": art_duck,
+    "frog": art_frog,
+    "goldfish": art_goldfish,
+    "horse": art_horse,
+    "sheep": art_sheep,
 }
 
 
