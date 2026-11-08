@@ -109,6 +109,8 @@ COLOR_SPECS = {
     "pink": (PINK, PINK_D, INK),
     "white": ("#ffffff", LINE, INK),
     "black": ("#3b3b44", "#2b2b33", "#ffffff"),
+    # l11 Brown→深暖棕（美洲黑熊那课的棕色词；l6 调色板没有它）
+    "brown": ("#8a5a2b", "#6e451f", "#ffffff"),
 }
 
 
@@ -313,14 +315,125 @@ def referenced_images():
     return out
 
 
+# ---------------------------------------------------------------- l11 动物（原创贴纸）
+# 2026-11-08 版权清洗：替换掉"老师提供的绘本扫描件"（Brown Bear 绘本切图），
+# 全部动物改为本管线原创绘制，画风与 cat/dog/fish 一致（白描边 + INK 眼睛）。
+
+BEAR_BROWN = "#8a5a2b"
+
+def art_bear():
+    return (
+        f'<circle cx="30" cy="30" r="13" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="70" cy="30" r="13" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="30" cy="30" r="6" fill="#f6e3cc"/>'
+        f'<circle cx="70" cy="30" r="6" fill="#f6e3cc"/>'
+        f'<circle cx="50" cy="56" r="36" fill="{BEAR_BROWN}" stroke="#ffffff" stroke-width="5"/>'
+        f'<ellipse cx="50" cy="68" rx="18" ry="14" fill="#f6e3cc"/>'
+        f'<ellipse cx="50" cy="62" rx="7" ry="5" fill="{INK}"/>'
+        f'<circle cx="37" cy="48" r="4.5" fill="{INK}"/><circle cx="63" cy="48" r="4.5" fill="{INK}"/>'
+        f'<path d="M44 70q6 5 12 0" stroke="{INK}" stroke-width="3" fill="none" stroke-linecap="round"/>'
+    )
+
+
+def art_bird():
+    return (
+        f'<path d="M50 18c14 0 24 10 24 24 0 22-14 38-34 38-6 0-11-2-14-5l6-10c-6-6-8-14-8-23 0-14 12-24 26-24z" '
+        f'fill="{GREEN}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
+        f'<path d="M74 44l16-4-12 12z" fill="{ORANGE}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
+        f'<circle cx="58" cy="36" r="7" fill="#ffffff"/><circle cx="59.5" cy="36" r="3.5" fill="{INK}"/>'
+        f'<path d="M34 58q10 8 22 4" stroke="{GREEN_D}" stroke-width="3" fill="none" stroke-linecap="round"/>'
+        f'<path d="M44 80l-2 10M58 79l2 11" stroke="{ORANGE}" stroke-width="4" stroke-linecap="round"/>'
+    )
+
+
+def art_duck():
+    return (
+        f'<circle cx="38" cy="40" r="24" fill="{YELLOW}" stroke="#ffffff" stroke-width="5"/>'
+        f'<path d="M38 62c4 18 20 24 34 20 16-5 22-20 14-32l-8 4c2 8-4 14-12 14-10 0-16-8-16-18z" '
+        f'fill="{YELLOW}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
+        f'<path d="M14 40l16-6-14-8z" fill="{ORANGE}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
+        f'<circle cx="42" cy="34" r="6" fill="#ffffff"/><circle cx="43.5" cy="34" r="3" fill="{INK}"/>'
+        f'<path d="M60 82l-2 9M74 80l3 9" stroke="{ORANGE}" stroke-width="4" stroke-linecap="round"/>'
+    )
+
+
+def art_frog():
+    return (
+        f'<circle cx="30" cy="26" r="14" fill="{GREEN}" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="70" cy="26" r="14" fill="{GREEN}" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="30" cy="26" r="6" fill="#ffffff"/><circle cx="30" cy="26" r="3" fill="{INK}"/>'
+        f'<circle cx="70" cy="26" r="6" fill="#ffffff"/><circle cx="70" cy="26" r="3" fill="{INK}"/>'
+        f'<ellipse cx="50" cy="58" rx="40" ry="30" fill="{GREEN}" stroke="#ffffff" stroke-width="5"/>'
+        f'<path d="M36 58q6 6 12 0M52 58q6 6 12 0" stroke="{INK}" stroke-width="3" fill="none" stroke-linecap="round"/>'
+        f'<path d="M42 68h16" stroke="{INK}" stroke-width="3" stroke-linecap="round"/>'
+        f'<ellipse cx="24" cy="84" rx="10" ry="6" fill="{GREEN_D}"/><ellipse cx="76" cy="84" rx="10" ry="6" fill="{GREEN_D}"/>'
+    )
+
+
+def art_horse():
+    return (
+        f'<path d="M26 20c8-6 18-4 22 4l-8 10c-6-4-14-6-20-2z" fill="{PINK}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
+        f'<circle cx="46" cy="42" r="22" fill="{PINK}" stroke="#ffffff" stroke-width="5"/>'
+        f'<path d="M60 34l24-8-8 22z" fill="{PINK_D}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
+        f'<path d="M46 62c14 2 26-2 32-10l6 8c-8 12-24 16-38 12z" fill="{PINK}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
+        f'<path d="M38 62l-4 22M56 64l2 20" stroke="{PINK_D}" stroke-width="6" stroke-linecap="round"/>'
+        f'<circle cx="44" cy="38" r="5" fill="#ffffff"/><circle cx="45" cy="38" r="2.5" fill="{INK}"/>'
+        f'<path d="M28 30q-8 4-6 14" stroke="{PINK_D}" stroke-width="8" fill="none" stroke-linecap="round"/>'
+    )
+
+
+def art_sheep():
+    return (
+        f'<circle cx="34" cy="32" r="14" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="64" cy="30" r="12" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="82" cy="42" r="11" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="18" cy="44" r="11" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="24" cy="64" r="12" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="76" cy="62" r="12" fill="{ORANGE}" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="50" cy="54" r="30" fill="#fff6ea" stroke="#ffffff" stroke-width="5"/>'
+        f'<circle cx="40" cy="46" r="4" fill="{INK}"/><circle cx="58" cy="46" r="4" fill="{INK}"/>'
+        f'<path d="M44 56h12l-6 6z" fill="{PINK}"/>'
+        f'<path d="M42 62q8 7 16 0" stroke="{INK}" stroke-width="3" fill="none" stroke-linecap="round"/>'
+        f'<path d="M42 84l-2 8M60 84l2 8" stroke="{INK}" stroke-width="4" stroke-linecap="round"/>'
+    )
+
+
+ANIMAL_ART = {
+    "bear": art_bear,
+    "bird": art_bird,
+    "duck": art_duck,
+    "frog": art_frog,
+    "horse": art_horse,
+    "sheep": art_sheep,
+    "cat": art_cat,
+    "dog": art_dog,
+    "goldfish": art_fish,
+}
+
+
 def main():
+    import json
+    lessons = json.load(open(LESSONS_JSON, encoding="utf-8"))
+    live_ids = {l["id"] for l in lessons}
     made = []
-    for wid in COLOR_SPECS:
-        made.append(("l6", wid, color_friend(wid)))
-    for n, wid in enumerate(NUM_WORDS):
-        made.append(("l7", wid, number_tile(n)))
-    for i, wid in enumerate(LETTER_ART):
-        made.append(("l8", wid, letter_tile(wid, i)))
+    # 2026-11-08：改为数据驱动——课程在 lessons.json 里才生成/自检，
+    # 加餐课（l6/l7/l8）下线后不再产出孤儿贴纸
+    if "l6" in live_ids:
+        for wid in COLOR_SPECS:
+            made.append(("l6", wid, color_friend(wid)))
+    if "l7" in live_ids:
+        for n, wid in enumerate(NUM_WORDS):
+            made.append(("l7", wid, number_tile(n)))
+    if "l8" in live_ids:
+        for i, wid in enumerate(LETTER_ART):
+            made.append(("l8", wid, letter_tile(wid, i)))
+    if "l11" in live_ids:
+        # 颜色贴纸复用 l6 的颜色小人（lessons.json 里指到 l11/words/，由本管线统一产出）
+        for wid in COLOR_SPECS:
+            made.append(("l11", wid, color_friend(wid)))
+        # 动物贴纸画在 0-100 空间，放大 4 倍居中到 512 画布
+        for wid in ANIMAL_ART:
+            made.append(("l11", wid, svg(f'<g transform="translate(56 56) scale(4.0)">{ANIMAL_ART[wid]()}</g>')))
 
     for lid, wid, content in made:
         out = os.path.join(PUBLIC, "lessons", lid, "words", f"{wid}.svg")
@@ -329,16 +442,15 @@ def main():
             fh.write(content)
     print(f"生成 {len(made)} 张单词贴纸 → public/lessons/l6|l7|l8/words/")
 
-    # 自检：生成的文件必须和课里引用的完全对上（多/少/名字不符都报错）
+    # 自检：生成的文件必须和课里引用的完全对上（多/少/名字不符都报错）。
+    # 只校验本管线生成的课（l4/l5/l9 等的词图是外部素材，不归这里管）。
     ref = referenced_images()
     mine = {}
     for lid, wid, _ in made:
         mine.setdefault(lid, set()).add(wid)
     bad = 0
-    for lid in sorted(set(ref) | set(mine)):
-        if lid not in ("l6", "l7", "l8"):
-            continue
-        want = set(ref.get(lid, {}))
+    for lid in sorted(mine):
+        want = set((ref.get(lid) or {}).keys())
         got = mine.get(lid, set())
         if want != got:
             bad += 1
