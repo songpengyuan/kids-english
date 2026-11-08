@@ -337,23 +337,24 @@ def art_bear():
 
 def art_bird():
     return (
-        f'<path d="M50 18c14 0 24 10 24 24 0 22-14 38-34 38-6 0-11-2-14-5l6-10c-6-6-8-14-8-23 0-14 12-24 26-24z" '
-        f'fill="{GREEN}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
-        f'<path d="M74 44l16-4-12 12z" fill="{ORANGE}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
-        f'<circle cx="58" cy="36" r="7" fill="#ffffff"/><circle cx="59.5" cy="36" r="3.5" fill="{INK}"/>'
-        f'<path d="M34 58q10 8 22 4" stroke="{GREEN_D}" stroke-width="3" fill="none" stroke-linecap="round"/>'
-        f'<path d="M44 80l-2 10M58 79l2 11" stroke="{ORANGE}" stroke-width="4" stroke-linecap="round"/>'
+        f'<path d="M18 30q10-14 32-14t32 14l-6 12H24z" fill="{GREEN_D}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
+        f'<circle cx="50" cy="54" r="34" fill="{GREEN}" stroke="#ffffff" stroke-width="5"/>'
+        f'<path d="M42 56l16 0-8 12z" fill="{ORANGE}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
+        f'<circle cx="36" cy="48" r="6.5" fill="#ffffff"/><circle cx="37.5" cy="48" r="3.2" fill="{INK}"/>'
+        f'<circle cx="64" cy="48" r="6.5" fill="#ffffff"/><circle cx="62.5" cy="48" r="3.2" fill="{INK}"/>'
+        f'<path d="M42 70q8 6 16 0" stroke="{INK}" stroke-width="3" fill="none" stroke-linecap="round"/>'
+        f'<path d="M46 88v8M58 88v8" stroke="{ORANGE}" stroke-width="4.5" stroke-linecap="round"/>'
     )
 
 
 def art_duck():
     return (
-        f'<circle cx="38" cy="40" r="24" fill="{YELLOW}" stroke="#ffffff" stroke-width="5"/>'
-        f'<path d="M38 62c4 18 20 24 34 20 16-5 22-20 14-32l-8 4c2 8-4 14-12 14-10 0-16-8-16-18z" '
-        f'fill="{YELLOW}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
-        f'<path d="M14 40l16-6-14-8z" fill="{ORANGE}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
-        f'<circle cx="42" cy="34" r="6" fill="#ffffff"/><circle cx="43.5" cy="34" r="3" fill="{INK}"/>'
-        f'<path d="M60 82l-2 9M74 80l3 9" stroke="{ORANGE}" stroke-width="4" stroke-linecap="round"/>'
+        f'<circle cx="50" cy="52" r="36" fill="{YELLOW}" stroke="#ffffff" stroke-width="5"/>'
+        f'<ellipse cx="50" cy="64" rx="17" ry="9" fill="{ORANGE}" stroke="#ffffff" stroke-width="4"/>'
+        f'<path d="M33 64h34" stroke="{ORANGE_D}" stroke-width="2.5" stroke-linecap="round"/>'
+        f'<circle cx="36" cy="44" r="6.5" fill="#ffffff"/><circle cx="37.5" cy="44" r="3.2" fill="{INK}"/>'
+        f'<circle cx="64" cy="44" r="6.5" fill="#ffffff"/><circle cx="62.5" cy="44" r="3.2" fill="{INK}"/>'
+        f'<path d="M40 84v8M60 84v8" stroke="{ORANGE}" stroke-width="4.5" stroke-linecap="round"/>'
     )
 
 
@@ -364,7 +365,7 @@ def art_frog():
         f'<circle cx="30" cy="26" r="6" fill="#ffffff"/><circle cx="30" cy="26" r="3" fill="{INK}"/>'
         f'<circle cx="70" cy="26" r="6" fill="#ffffff"/><circle cx="70" cy="26" r="3" fill="{INK}"/>'
         f'<ellipse cx="50" cy="58" rx="40" ry="30" fill="{GREEN}" stroke="#ffffff" stroke-width="5"/>'
-        f'<path d="M36 58q6 6 12 0M52 58q6 6 12 0" stroke="{INK}" stroke-width="3" fill="none" stroke-linecap="round"/>'
+        f'<path d="M34 62q16 10 32 0" stroke="{INK}" stroke-width="3" fill="none" stroke-linecap="round"/>'
         f'<path d="M42 68h16" stroke="{INK}" stroke-width="3" stroke-linecap="round"/>'
         f'<ellipse cx="24" cy="84" rx="10" ry="6" fill="{GREEN_D}"/><ellipse cx="76" cy="84" rx="10" ry="6" fill="{GREEN_D}"/>'
     )
@@ -372,13 +373,23 @@ def art_frog():
 
 def art_horse():
     return (
-        f'<path d="M26 20c8-6 18-4 22 4l-8 10c-6-4-14-6-20-2z" fill="{PINK}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
-        f'<circle cx="46" cy="42" r="22" fill="{PINK}" stroke="#ffffff" stroke-width="5"/>'
-        f'<path d="M60 34l24-8-8 22z" fill="{PINK_D}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>'
-        f'<path d="M46 62c14 2 26-2 32-10l6 8c-8 12-24 16-38 12z" fill="{PINK}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
-        f'<path d="M38 62l-4 22M56 64l2 20" stroke="{PINK_D}" stroke-width="6" stroke-linecap="round"/>'
-        f'<circle cx="44" cy="38" r="5" fill="#ffffff"/><circle cx="45" cy="38" r="2.5" fill="{INK}"/>'
-        f'<path d="M28 30q-8 4-6 14" stroke="{PINK_D}" stroke-width="8" fill="none" stroke-linecap="round"/>'
+        # 立耳（两个尖三角）
+        f'<path d="M32 20 L25 3 L45 13 Z" fill="{PINK}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
+        f'<path d="M68 20 L75 3 L55 13 Z" fill="{PINK}" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>'
+        # 长脸（竖椭圆）
+        f'<ellipse cx="50" cy="54" rx="27" ry="40" fill="{PINK}" stroke="#ffffff" stroke-width="5"/>'
+        # 额发：三绺从头顶垂下
+        f'<path d="M38 14 q6 14 3 26" stroke="{PINK_D}" stroke-width="8" fill="none" stroke-linecap="round"/>'
+        f'<path d="M50 12 q2 14 0 26" stroke="{PINK_D}" stroke-width="8" fill="none" stroke-linecap="round"/>'
+        f'<path d="M62 14 q-6 14 -3 26" stroke="{PINK_D}" stroke-width="8" fill="none" stroke-linecap="round"/>'
+        # 大吻部（浅色）+ 双鼻孔
+        f'<ellipse cx="50" cy="74" rx="16" ry="13" fill="#ffe3ee" stroke="#ffffff" stroke-width="4"/>'
+        f'<ellipse cx="43.5" cy="73" rx="2.6" ry="4.2" fill="{PINK_D}"/>'
+        f'<ellipse cx="56.5" cy="73" rx="2.6" ry="4.2" fill="{PINK_D}"/>'
+        f'<path d="M43 85q7 5 14 0" stroke="{INK}" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+        # 眼睛（吻部上方两侧）
+        f'<circle cx="35" cy="47" r="5.5" fill="#ffffff"/><circle cx="36" cy="47" r="2.8" fill="{INK}"/>'
+        f'<circle cx="65" cy="47" r="5.5" fill="#ffffff"/><circle cx="64" cy="47" r="2.8" fill="{INK}"/>'
     )
 
 
