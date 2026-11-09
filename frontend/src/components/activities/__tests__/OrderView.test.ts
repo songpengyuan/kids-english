@@ -126,4 +126,41 @@ describe("OrderView 看图填空", () => {
       }
     }
   });
+
+  it("图卡是「图 + 单词」混合卡，填对后空槽里也带单词", async () => {
+    const v = mountView();
+    await flushPromises();
+    // 三张卡各自有图也有单词标签
+    const words = v.findAll(".pic-card .pic-word").map((n) => n.text());
+    expect(words).toHaveLength(3);
+    expect(words).toContain("wipers");
+    // 空槽里还没词
+    expect(v.find(".pic-slot .slot-word").exists()).toBe(false);
+    await cardByAlt(v, "wipers")!.trigger("click");
+    await flushPromises();
+    expect(v.find(".pic-slot .slot-word").text()).toBe("wipers");
+  });
+
+  it("拖到空槽之外松手不算作答；点击仍是主路径可正常判定", async () => {
+    const v = mountView();
+    await flushPromises();
+    const card = cardByAlt(v, "wipers")!;
+    // jsdom 的 clientX 是只读 getter，不能走 trigger 的 props，改用 MouseEvent 派发
+    const el = card.element as HTMLElement;
+    const fire = (type: string, x: number, y: number) =>
+      el.dispatchEvent(new MouseEvent(type, { clientX: x, clientY: y, bubbles: true }));
+    // 从卡片上拖走 200px 再松手（jsdom 无 elementFromPoint，落点一律判为没命中）
+    fire("pointerdown", 100, 400);
+    fire("pointermove", 100, 200);
+    fire("pointerup", 100, 180);
+    await flushPromises();
+    expect(v.find(".pic-slot img").exists()).toBe(false);
+    expect(v.findAll(".pic-card")).toHaveLength(3);
+    expect(v.find(".next-btn").exists()).toBe(false);
+    // 之后点一下仍能作答（拖动不会把组件锁死；等过 400ms 的重复点击抑制窗口）
+    await new Promise((r) => setTimeout(r, 450));
+    await cardByAlt(v, "wipers")!.trigger("click");
+    await flushPromises();
+    expect(v.find(".pic-slot img").attributes("src")).toBe("/wipers.png");
+  });
 });

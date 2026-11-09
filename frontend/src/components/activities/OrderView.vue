@@ -92,6 +92,76 @@ function pick(w: Word) {
   }
 }
 
+/* ---------- 拖动路径（2026-11-09） ----------
+ * 点击仍是主路径（低龄最稳），拖动是补充手感：按下后移动超过 8px 才算拖，
+ * 松手落在空槽上就判定，落在别处则静默收回（不计错、不朗读）。
+ * 统一用 pointer 事件：手机触摸和鼠标同一套逻辑，键盘 Enter/Space 仍走 click。 */
+const dragWord = ref<Word | null>(null);
+const dragPos = ref({ x: 0, y: 0 });
+const dropHot = ref(false);
+let startX = 0;
+let startY = 0;
+let moved = false;
+let activeWord: Word | null = null;
+/** 拖完会补发一次 click，用时间戳压掉，避免同一次操作判两遍 */
+let ignoreClickUntil = 0;
+
+/** 手指当前位置下是不是那个空槽（jsdom 没有 elementFromPoint，兜底 false） */
+function slotUnder(x: number, y: number): boolean {
+  if (typeof document.elementFromPoint !== "function") return false;
+  const el = document.elementFromPoint(x, y);
+  return !!el && !!el.closest(".pic-slot");
+}
+
+function onCardDown(e: PointerEvent, w: Word) {
+  if (lock.value || solved.value) return;
+  activeWord = w;
+  startX = e.clientX;
+  startY = e.clientY;
+  moved = false;
+  (e.currentTarget as HTMLElement | null)?.setPointerCapture?.(e.pointerId);
+}
+
+function onCardMove(e: PointerEvent) {
+  if (!activeWord) return;
+  if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+    moved = true;
+    dragWord.value = activeWord;
+  }
+  if (!moved) return;
+  dragPos.value = { x: e.clientX, y: e.clientY };
+  dropHot.value = slotUnder(e.clientX, e.clientY);
+}
+
+function onCardUp(e: PointerEvent) {
+  const w = activeWord;
+  activeWord = null;
+  if (!w) return;
+  const wasDrag = moved;
+  moved = false;
+  dragWord.value = null;
+  dropHot.value = false;
+  if (!wasDrag) return; // 没移动 = 点按，交给 click
+  ignoreClickUntil = Date.now() + 400;
+  if (slotUnder(e.clientX, e.clientY)) {
+    sfxTap();
+    pick(w);
+  }
+}
+
+function onCardCancel() {
+  activeWord = null;
+  moved = false;
+  dragWord.value = null;
+  dropHot.value = false;
+}
+
+function onCardClick(w: Word) {
+  if (Date.now() < ignoreClickUntil) return;
+  sfxTap();
+  pick(w);
+}
+
 /** 兜底：孩子卡住时直接把正确图填进去（不计错、不降星），保证能继续 */
 function revealAnswer() {
   if (lock.value || solved.value || !cur.value) return;
@@ -124,7 +194,7 @@ function finishEmpty() {
     <StageHead class="order-head" :right-text="`${idx + 1} / ${total}`">
       <template #tip>
         <span class="tip-ico">🧩</span>
-        点正确的图，把句子补完整
+        点一下图卡，或把它拖进空槽
       </template>
     </StageHead>
 
@@ -143,9 +213,12 @@ function finishEmpty() {
             <span
               v-else-if="seg.type === 'pic' && seg.word.id === cur.target.id"
               class="pic-slot"
-              :class="{ filled: solved }"
+              :class="{ filled: solved, hot: dropHot && !solved }"
             >
-              <img v-if="solved" :src="seg.word.image!" :alt="seg.word.en" />
+              <template v-if="solved">
+                <img :src="seg.word.image!" :alt="seg.word.en" />
+                <span class="slot-word">{{ seg.word.en }}</span>
+              </template>
             </span>
             <span v-else-if="seg.type === 'pic'" class="pic-static">
               <img :src="seg.word.image!" :alt="seg.word.en" />
@@ -158,8 +231,11 @@ function finishEmpty() {
         </template>
         <template v-else>
           <span class="frame">{{ cur.before }}</span>
-          <span class="pic-slot" :class="{ filled: solved }">
-            <img v-if="solved" :src="cur.target.image!" :alt="cur.target.en" />
+          <span class="pic-slot" :class="{ filled: solved, hot: dropHot && !solved }">
+            <template v-if="solved">
+              <img :src="cur.target.image!" :alt="cur.target.en" />
+              <span class="slot-word">{{ cur.target.en }}</span>
+            </template>
           </span>
           <span class="frame">{{ cur.after }}</span>
         </template>
@@ -176,7 +252,7 @@ function finishEmpty() {
         看答案
       </button>
 
-      <!-- 底部词图卡 -->
+      <!-- 底部词图卡：图 + 单词标签（混合卡），点击或拖到空槽都算作答 -->
       <div v-if="!solved" class="bank">
         <button
           v-for="o in options"
@@ -184,10 +260,25 @@ function finishEmpty() {
           class="pic-card"
           :class="{ wrong: errKey === o.id }"
           data-haptic
-          @click="sfxTap(); pick(o)"
+          @pointerdown="onCardDown($event, o)"
+          @pointermove="onCardMove($event)"
+          @pointerup="onCardUp($event)"
+          @pointercancel="onCardCancel"
+          @click="onCardClick(o)"
         >
           <img :src="o.image!" :alt="o.en" />
+          <span class="pic-word">{{ o.en }}</span>
         </button>
+      </div>
+
+      <!-- 拖动中的浮层：跟着手指走，点击穿透（落点判定靠 elementFromPoint） -->
+      <div
+        v-if="dragWord"
+        class="drag-ghost"
+        :style="{ left: dragPos.x + 'px', top: dragPos.y + 'px' }"
+        aria-hidden="true"
+      >
+        <img :src="dragWord.image!" alt="" />
       </div>
 
       <button v-if="solved" class="next-btn" @click="nextSentence" data-haptic>
@@ -236,13 +327,21 @@ function finishEmpty() {
 }
 .pic-slot {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1px;
   width: 84px;
   height: 84px;
   border: 3px dashed var(--ink-faint);
   border-radius: var(--radius);
   background: var(--card-bg);
+  transition: border-color 0.15s, background 0.15s;
+}
+/* 拖动经过时的落点高亮：告诉孩子"松手就填这里" */
+.pic-slot.hot {
+  border-color: var(--brand);
+  background: var(--brand-soft);
 }
 .pic-slot.filled {
   border-style: solid;
@@ -251,9 +350,16 @@ function finishEmpty() {
 }
 .pic-slot img {
   width: 100%;
-  height: 100%;
+  min-height: 0;
+  flex: 1;
   object-fit: contain;
   border-radius: var(--radius-s);
+}
+.slot-word {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  line-height: 1;
+  color: var(--ink);
 }
 
 /* 句中嵌图（校车）：与图卡同风格的小方图，恒定填充不参与填空 */
@@ -290,7 +396,7 @@ function finishEmpty() {
 .ono-gold { color: var(--c-gold); }
 .ono-faint { color: var(--ink-soft); }
 
-/* 底部词图卡 */
+/* 底部词图卡（图 + 单词混合卡） */
 .bank {
   display: flex;
   flex-wrap: wrap;
@@ -299,19 +405,36 @@ function finishEmpty() {
   max-width: 100%;
 }
 .pic-card {
-  width: 108px;
-  height: 108px;
-  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 112px;
+  height: 120px;
+  padding: 6px 6px 4px;
   background: var(--card-bg);
   border: 2px solid var(--line);
   border-radius: var(--radius);
   cursor: pointer;
+  /* 拖动判定需要 pointermove 不被浏览器拿去滚页面 */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   transition: transform 0.1s, border-color 0.1s;
 }
 .pic-card img {
   width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   object-fit: contain;
+  pointer-events: none;
+}
+.pic-word {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  line-height: 1.1;
+  color: var(--ink);
   pointer-events: none;
 }
 .pic-card:active { transform: scale(0.95); }
@@ -319,6 +442,27 @@ function finishEmpty() {
   border-color: var(--red);
   background: var(--state-bad-bg);
   animation: shake 0.4s;
+}
+
+/* 拖动浮层：跟着手指，不拦截命中测试 */
+.drag-ghost {
+  position: fixed;
+  z-index: 999;
+  width: 88px;
+  height: 88px;
+  margin: -44px 0 0 -44px;
+  padding: 6px;
+  background: var(--card-bg);
+  border: 2px solid var(--brand);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  pointer-events: none;
+  opacity: 0.92;
+}
+.drag-ghost img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
@@ -378,18 +522,21 @@ function finishEmpty() {
 
 /* 手机矮横屏（≤480px 高）：压缩纵向链条——槽与图卡缩小、间距收紧，
  * 头部 + Listen + 句子条 + 看答案 + 三张图卡要一屏装下
- * （layout-audit 实测 phone SE/14 横屏图卡被底边裁掉 40-48px） */
+ * （layout-audit 实测 phone SE/14 横屏图卡被底边裁掉 40-48px）
+ * 注：SE 横屏仍有 2px 的 #app 内部滚动，HEAD 旧版同样存在，与本轮混合卡无关 */
 @media (max-height: 480px) {
   .order-head { margin-bottom: var(--gap-xs); }
   .board { gap: var(--gap-xs); padding: var(--gap-xs) var(--gap-s); }
   .listen-btn { padding: 5px 12px; font-size: var(--fs-small); }
   .sentence { padding: var(--gap-xs) var(--gap-m); }
   .frame { font-size: var(--fs-body); }
-  .pic-slot { width: 56px; height: 56px; }
+  .pic-slot { width: 60px; height: 60px; }
   .pic-static { width: 56px; height: 56px; }
   .ono-emoji { font-size: var(--fs-body); }
   .ono-text { font-size: var(--fs-body); }
-  .pic-card { width: 76px; height: 76px; padding: 5px; }
+  /* 混合卡带单词标签，矮横屏下压到 80×88 才能一屏装下 */
+  .pic-card { width: 80px; height: 88px; padding: 4px 4px 2px; gap: 0; }
+  .pic-word { font-size: var(--fs-small); line-height: 1; }
   .answer-btn { padding: 5px 12px; }
   .next-btn { padding: 9px 28px; }
 }
