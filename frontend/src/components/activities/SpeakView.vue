@@ -200,12 +200,9 @@ function next() {
       <template v-else-if="mode === 'record'">
         <p class="verdict" :class="grade">
           <span v-if="grade === 'perfect'">太棒了！</span>
-          <span v-else class="retry-hint"><RotateCcw class="k-ico" />再试一次吧，先听一遍示范</span>
+          <span v-else class="retry-hint"><RotateCcw class="k-ico" />再试一次吧，先点图听一遍</span>
         </p>
         <div class="btn-row">
-          <BaseButton variant="green" @click="hearExample">
-            <Volume2 class="k-ico" />再听示范
-          </BaseButton>
           <BaseButton v-if="grade === 'retry'" variant="orange" @click="retry">
             <Mic class="k-ico" />我再试试
           </BaseButton>
@@ -218,13 +215,10 @@ function next() {
         <p class="verdict" :class="grade">
           <span v-if="grade === 'perfect'">太棒了！发音很标准</span>
           <span v-else-if="grade === 'good'">很不错，再响亮一点就更棒啦</span>
-          <span v-else class="retry-hint"><RotateCcw class="k-ico" />再试一次吧，先听一遍示范</span>
+          <span v-else class="retry-hint"><RotateCcw class="k-ico" />再试一次吧，先点图听一遍</span>
         </p>
         <p v-if="heard" class="heard">小耳朵听到的是："{{ heard }}"</p>
         <div class="btn-row">
-          <BaseButton variant="green" @click="hearExample">
-            <Volume2 class="k-ico" />再听示范
-          </BaseButton>
           <BaseButton v-if="grade === 'retry'" variant="orange" @click="retry">
             <Mic class="k-ico" />我再试试
           </BaseButton>
