@@ -1,0 +1,93 @@
+/* ---------- 跨平台 emoji 字体（Noto Color Emoji 子集） ----------
+ * 由 frontend/scripts/build-emoji-font.py 生成，不要手改。
+ *
+ * 为什么需要：内容 emoji 在 macOS/iOS 走 Apple Color Emoji、Windows 走 Segoe UI Emoji，
+ *   两边字形与色彩风格完全不同；更麻烦的是 Unicode 15 之后的新 emoji（如 🪼 水母）
+ *   Win10 / 旧版 Win11 根本没有字形，直接渲染成豆腐块。
+ *
+ * 做法：按 unicode-range 切成多片自托管，浏览器只下载页面真正出现的码位对应的分片。
+ *   字形是 COLRv1 矢量化彩色字体，任意缩放不糊，也不依赖系统装没装对应 emoji。
+ *
+ * 授权：Noto Color Emoji 为 SIL OFL 1.1 —— 可免费商用、可自托管、可再分发。
+ * 新增 emoji 后重跑脚本即可；说明见 docs/EMOJI-FONT.md。
+ */
+@font-face {
+  font-family: "Noto Color Emoji";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-emoji/noto-emoji-1.woff2") format("woff2");
+  unicode-range: U+1F308;
+}
+
+@font-face {
+  font-family: "Noto Color Emoji";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-emoji/noto-emoji-2.woff2") format("woff2");
+  unicode-range: U+2194,U+26A0,U+2B06,U+2B07,U+3030,U+1F3B5,U+1F4AC,U+1F524,U+1F534,U+1F535,U+1F7E0,U+1F7E1,U+1F7E2,U+1F7E3,U+1F7E4,U+1F9D1,U+1F9D2;
+}
+
+@font-face {
+  font-family: "Noto Color Emoji";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-emoji/noto-emoji-3.woff2") format("woff2");
+  unicode-range: U+270F,U+1F4D6,U+1F4E2,U+1F50A,U+1F50D,U+1F6AA,U+1F9FC;
+}
+
+@font-face {
+  font-family: "Noto Color Emoji";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-emoji/noto-emoji-4.woff2") format("woff2");
+  unicode-range: U+1F0CF,U+1F381,U+1F388,U+1F389,U+1F3A4,U+1F3A7,U+1F3B4,U+1F3B9,U+1F3BA,U+1F3BB,U+1F9E9;
+}
+
+@font-face {
+  font-family: "Noto Color Emoji";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-emoji/noto-emoji-5.woff2") format("woff2");
+  unicode-range: U+1F3A1,U+1F68C;
+}
+
+@font-face {
+  font-family: "Noto Color Emoji";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-emoji/noto-emoji-6.woff2") format("woff2");
+  unicode-range: U+1F34A;
+}
+
+@font-face {
+  font-family: "Noto Color Emoji";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-emoji/noto-emoji-7.woff2") format("woff2");
+  unicode-range: U+2601,U+1F300,U+1F30A,U+1F334,U+1F338,U+1F40E,U+1F411,U+1F412,U+1F419,U+1F41A,U+1F41F,U+1F422,U+1F426,U+1F42F,U+1F431,U+1F433,U+1F434,U+1F436,U+1F438,U+1F43B,U+1F43F,U+1F981,U+1F986,U+1F988,U+1F98A,U+1F997,U+1F99C,U+1FABC;
+}
+
+@font-face {
+  font-family: "Noto Color Emoji";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-emoji/noto-emoji-8.woff2") format("woff2");
+  unicode-range: U+1F468,U+1F469,U+1F476,U+1F64B,U+1F931;
+}
+
+@font-face {
+  font-family: "Noto Color Emoji";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-emoji/noto-emoji-9.woff2") format("woff2");
+  unicode-range: U+1F442,U+1F443,U+1F446,U+1F464,U+1F4AA,U+1F60A,U+1F628,U+1F62D,U+1F92B,U+1F9B5,U+1F9B6;
+}

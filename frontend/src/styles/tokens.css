@@ -348,9 +348,12 @@
   --night-input-border: rgba(255, 255, 255, 0.12);
   --night-input-bg: rgba(255, 255, 255, 0.05);
 
+  /* "Noto Color Emoji" 必须排在系统 emoji 字体之前：它自带项目用到的全部 emoji
+   * 字形（见 styles/emoji-font.css），各端都走同一套矢量彩色字形，
+   * 不会出现 macOS 苹果风 / Windows Segoe 风两副面孔，也不会因系统缺字变豆腐块。 */
   font-family:
     "Baloo 2", "ZCOOL KuaiLe", "Chalkboard SE", "Comic Sans MS", "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Color Emoji", system-ui, sans-serif;
 }
 
 /* ===== 暗黑模式 =====

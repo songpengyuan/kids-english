@@ -199,7 +199,9 @@ self.addEventListener("fetch", (event) => {
   }
 
   const rel = relPath(url);
-  if (rel.startsWith("assets/")) {
+  // fonts/ 与哈希资源同等对待：emoji 子集与站酷快乐体分片都落壳缓存。
+  // 否则断网时 emoji 回退系统字体、中文标题回退系统黑体，观感会跳变。
+  if (rel.startsWith("assets/") || rel.startsWith("fonts/")) {
     event.respondWith(cacheFirst(req, url.href));
     return;
   }
