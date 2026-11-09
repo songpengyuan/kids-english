@@ -98,6 +98,18 @@ describe("SpeakView 跟我读：反馈态用点图听示范，不另给按钮", 
     expect(wrapper.findAll("button").some((b) => b.text().includes("我再试试"))).toBe(true);
   });
 
+  it("孩子的录音播完 → 自动再播一次标准发音", async () => {
+    const wrapper = mount(SpeakView, { props: { words } });
+    await recordOnce(wrapper);
+    vi.mocked(speak).mockClear();
+    const audio = wrapper.find(".replay");
+    expect(audio.exists()).toBe(true);
+    // 模拟录音回放自然播完
+    audio.element.dispatchEvent(new Event("ended"));
+    await flush();
+    expect(speak).toHaveBeenCalledWith("bus", { lessonId: "l12", wordId: "bus" });
+  });
+
   it("反馈态点主卡图片即重播示范（图片就是听示范的入口）", async () => {
     const wrapper = mount(SpeakView, { props: { words } });
     await recordOnce(wrapper);

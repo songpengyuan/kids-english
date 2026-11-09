@@ -49,6 +49,12 @@ export interface SpeechSessionOptions {
    * record 降级模式无论此开关如何都照常录音（家长判定本身依赖回放）。
    */
   captureVoice?: boolean;
+  /**
+   * 孩子的录音播完之后再播一次标准音（"先听自己、再听老师"，让孩子自己听出差别）。
+   * 自动回放与手动「再听一遍」都走这条；由调用方决定播什么
+   * （跟我读播单词、亲子对话播整句答句）。
+   */
+  afterReplay?: () => void;
 }
 
 export function useSpeechSession(
@@ -57,6 +63,7 @@ export function useSpeechSession(
   options: SpeechSessionOptions = {}
 ) {
   const captureVoice = options.captureVoice === true;
+  const afterReplay = options.afterReplay;
   const mode = ref<SpeechMode>(asrSupported() ? "asr" : "record");
   const idx = ref(0);
   const status = ref<SpeechStatus>("idle");
@@ -250,6 +257,21 @@ export function useSpeechSession(
     autoReplay();
   }
 
+  /** 孩子的录音播完后接标准音：只保留一个监听，避免连点重放时叠着播两遍 */
+  let replayEndHandler: (() => void) | null = null;
+  function queueAfterReplay() {
+    const a = recAudio.value;
+    if (!a || !afterReplay) return;
+    if (replayEndHandler) a.removeEventListener("ended", replayEndHandler);
+    const h = () => {
+      a.removeEventListener("ended", h);
+      if (replayEndHandler === h) replayEndHandler = null;
+      afterReplay();
+    };
+    replayEndHandler = h;
+    a.addEventListener("ended", h);
+  }
+
   /** 自动回放：等 <audio> 元素渲染并挂上 src 后再播一次（先掐断示范 TTS，避免人声叠加） */
   function autoReplay() {
     nextTick(() => {
@@ -258,6 +280,7 @@ export function useSpeechSession(
       stopSpeaking();
       a.currentTime = 0;
       a.play().catch(() => {});
+      queueAfterReplay();
     });
   }
 
@@ -279,13 +302,15 @@ export function useSpeechSession(
     void stopRecord();
   }
 
-  /** 复读：重播本词录音（读完不满意再听一遍）；先掐断示范音再从头播 */
+  /** 复读：重播本词录音（读完不满意再听一遍）；先掐断示范音再从头播，
+   *  播完同样接一次标准音（家长可对照听） */
   function replayRec() {
     const a = recAudio.value;
     if (!a) return;
     stopSpeaking();
     a.currentTime = 0;
     a.play().catch(() => {});
+    queueAfterReplay();
   }
 
   /** 家长判定（录音模式） */

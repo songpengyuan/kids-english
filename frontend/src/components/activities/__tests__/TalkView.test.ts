@@ -143,24 +143,46 @@ describe("TalkView 亲子对话（微信聊天式 · 逐轮对话 + 录音）", 
     expect(speak).toHaveBeenCalledWith("What's that?");
   });
 
-  it("判定「没读准」→ 再试一次 → 回输入框，轮次不变", async () => {
+  it("判定「没读准」→ 自动重新开录（不用再点一次说话），轮次不变", async () => {
+    const start = vi.fn().mockResolvedValue(undefined);
+    const stop = vi.fn().mockResolvedValue("blob:rec-url");
+    vi.mocked(createRecorder).mockReturnValue({ start, stop, release: vi.fn() } as never);
+    const wrapper = mount(TalkView, { props: { lesson } });
+    const bar = wrapper.find(".input-bar");
+    await bar.trigger("click"); // 第一次录音
+    await flush();
+    await bar.trigger("click"); // 结束 → 等家长判定
+    await flush();
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(wrapper.find(".ci-judge .k-btn-orange").exists()).toBe(true);
+    await wrapper.find(".ci-judge .k-btn-orange").trigger("click"); // 没读准
+    await flush();
+    // 判定面板先收起（不再停在"再试一次"等孩子点麦克风）
+    expect(wrapper.find(".ci-judge").exists()).toBe(false);
+    // 350ms 后自动开始第二次录音
+    await vi.advanceTimersByTimeAsync(400);
+    expect(start).toHaveBeenCalledTimes(2);
+    expect(wrapper.find(".input-bar").classes()).toContain("talking");
+    // 轮次不变、没有发出孩子消息（录音中的"……"占位气泡不算）
+    expect(wrapper.find(".stage-head .prog").text()).toBe("1 / 3");
+    expect(wrapper.findAll(".msg-row.kid .msg-pic").length).toBe(0);
+  });
+
+  it("孩子录音播完 → 自动再播一次标准答句（先听自己、再听标准）", async () => {
     const stop = vi.fn().mockResolvedValue("blob:rec-url");
     vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);
     const wrapper = mount(TalkView, { props: { lesson } });
     const bar = wrapper.find(".input-bar");
     await bar.trigger("click");
     await flush();
-    await bar.trigger("click");
+    await bar.trigger("click"); // 结束录音 → 自动回放孩子声音
     await flush();
-    await wrapper.find(".ci-judge .k-btn-orange").trigger("click"); // 没读准 → retry
+    vi.mocked(speakText).mockClear();
+    const audio = wrapper.find(".ci-audio");
+    expect(audio.exists()).toBe(true);
+    audio.element.dispatchEvent(new Event("ended")); // 回放播完
     await flush();
-    expect(wrapper.find(".ci-judge .k-btn-green").text()).toContain("再试一次");
-    await wrapper.find(".ci-judge .k-btn-green").trigger("click"); // 再试 → 回输入框
-    await flush();
-    expect(wrapper.find(".input-bar").exists()).toBe(true);
-    // 未通过不发孩子消息
-    expect(wrapper.findAll(".msg-row.kid").length).toBe(0);
-    expect(wrapper.find(".stage-head .prog").text()).toBe("1 / 3");
+    expect(speakText).toHaveBeenCalledWith("It's a frog.");
   });
 
   it("录音结束后、判定前可反复点「再听一遍」重放本机声音", async () => {

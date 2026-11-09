@@ -68,6 +68,8 @@ const phrases = computed<Phrase[]>(() => props.lesson.phrases ?? []);
 const curQa = computed(() => (cur.value ? talkQa(cur.value, props.lesson) : null));
 
 /* ---------- 微信聊天式消息流 ---------- */
+/** 自动重开录制 / 家长问句的两个定时器（离开页面要清） */
+let autoRecTimer: ReturnType<typeof setTimeout> | null = null;
 interface ChatMsg {
   id: number;
   role: "parent" | "kid";
@@ -113,21 +115,26 @@ const ADVANCE_MS = 420;
 /** 正在推进（挡住"读对了/没读准"的重复点击，避免同一轮推两条孩子消息） */
 const advancing = ref(false);
 
-const session = useSpeechSession(words, {
-  onCorrect: (w) => {
-    passedIds.value = new Set(passedIds.value).add(w.id);
-    sfxCorrect();
-    // 孩子"发消息"：大图 + 答句 + 识别文本
-    pushKid(w, heard.value || undefined);
-    if (!allPassed.value) {
-      advance(); // 通过一轮 → 立刻进入下一轮（不留"太棒了"的展示态）
-    }
-    // 最后一轮的庆祝交给 finish()（「我都会啦」），这里不再放一次
+const session = useSpeechSession(
+  words,
+  {
+    onCorrect: (w) => {
+      passedIds.value = new Set(passedIds.value).add(w.id);
+      sfxCorrect();
+      // 孩子"发消息"：大图 + 答句 + 识别文本
+      pushKid(w, heard.value || undefined);
+      if (!allPassed.value) {
+        advance(); // 通过一轮 → 立刻进入下一轮（不留"太棒了"的展示态）
+      }
+      // 最后一轮的庆祝交给 finish()（「我都会啦」），这里不再放一次
+    },
+    onWrong: () => sfxWrong(),
+    // 完成一次真实张口尝试即计"今日开口"（鼓励向，不影响首次通过率星级）
+    onSpeakAttempt: () => progress.addSpeakAttempt(),
   },
-  onWrong: () => sfxWrong(),
-  // 完成一次真实张口尝试即计"今日开口"（鼓励向，不影响首次通过率星级）
-  onSpeakAttempt: () => progress.addSpeakAttempt(),
-});
+  // 孩子的录音播完后补一遍标准答句：先听自己说的、再听该怎么说
+  { afterReplay: () => playAnswer(cur.value) }
+);
 /** 解构会话状态/方法（模板中 ref 自动解包） */
 const { idx: dlgIdx, cur, status, grade, heard, mode, micBlocked, stars, progressText, total, recAudio, recUrl, startMic, stopMic, replayRec, parentJudge, retry, next } = session;
 
@@ -176,6 +183,8 @@ onMounted(() => queueParentQuestion(320));
 // 离开玩法页时清掉：过去 ~180ms 后问句还会在新页面上响一声
 onBeforeUnmount(() => {
   if (questionTimer) clearTimeout(questionTimer);
+  // 自动重录的定时器也要清：否则退出页面后麦克风会在新页面上被拉起
+  if (autoRecTimer) clearTimeout(autoRecTimer);
 });
 
 /** 点家长消息气泡重听那句问句（气泡里存的就是当时发出的文本） */
@@ -209,6 +218,26 @@ const gradeOk = computed(
 );
 /** 监听中（录音中） */
 const listening = computed(() => status.value === "listening");
+
+/** 「没读准」后自动重开录制（2026-11-09 用户反馈）：
+ *  过去判定没读准只是切到"再试一次"按钮，孩子还得再点一次麦克风才能开口 ——
+ *  对 5 岁是两步操作。现在判完直接开录，孩子张嘴就行。
+ *  延迟 350ms：让判错的提示音先播完，别把提示音一起录进去；
+ *  期间若家长已经手动开录（status 已是 listening）就不再重复启动。 */
+/** 判完"没读准"到真正开录之间的空档：藏起判定按钮，别让"再试一次"闪一下 */
+const restarting = ref(false);
+function judgeMiss() {
+  parentJudge(false);
+  if (autoRecTimer) clearTimeout(autoRecTimer);
+  if (micBlocked.value) return;
+  restarting.value = true;
+  autoRecTimer = setTimeout(() => {
+    autoRecTimer = null;
+    restarting.value = false;
+    if (status.value === "listening") return;
+    startMic();
+  }, 350);
+}
 
 function finish() {
   if (!allPassed.value) return;
@@ -304,6 +333,10 @@ function finish() {
         </button>
       </template>
 
+      <template v-else-if="restarting">
+        <p class="ci-hint" aria-live="polite">再来一次，准备好就说～</p>
+      </template>
+
       <template v-else>
         <!-- ASR 自动打分：读到 perfect/good → 直接进入下一轮（只闪一下"读对了"，不占着屏） -->
         <template v-if="mode === 'asr'">
@@ -338,7 +371,7 @@ function finish() {
               <BaseButton variant="green" :disabled="advancing" @click="parentJudge(true)">
                 读对了 ✓
               </BaseButton>
-              <BaseButton variant="orange" :disabled="advancing" @click="parentJudge(false)">
+              <BaseButton variant="orange" :disabled="advancing" @click="judgeMiss">
                 没读准
               </BaseButton>
             </template>

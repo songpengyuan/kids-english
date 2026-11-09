@@ -37,7 +37,7 @@ const session = useSpeechSession(
   },
   // 跟我读：ASR 自动打分模式也并行录一份本机回放（仅内存、不上传不入库）；
   // TalkView 不传此开关，保持其原有行为
-  { captureVoice: true }
+  { captureVoice: true, afterReplay: () => speakCurrent() }
 );
 
 // 进入跟读页就预请求麦克风权限（在用户手势链外的 mount 阶段，部分浏览器会拒绝；
@@ -77,6 +77,15 @@ const {
   parentJudge,
   retry,
 } = session;
+
+/**
+ * 孩子的录音播完之后补一遍标准发音（先听自己、再听老师，自己就能听出差别）。
+ * 由 useSpeechSession 的 afterReplay 在回放结束时调用。
+ */
+function speakCurrent() {
+  const w = cur.value;
+  if (w) speak(w.en, { lessonId: w.lessonId, wordId: w.id });
+}
 
 /**
  * 主卡后方可见的待读卡层数（最多 2 张）：当前这张在最前，后面还有几张就露几层，
