@@ -439,12 +439,12 @@ onMounted(() => {
   gap: var(--gap-s);
 }
 .pl-chip {
-  width: var(--tap-min);
-  height: var(--tap-min);
+  width: 40px;
+  height: 40px;
   background: var(--card-bg);
   color: var(--ink-soft);
   box-shadow: var(--shadow-soft);
-  font-size: var(--fs-title);
+  font-size: var(--fs-body);
 }
 /* 唱片区：封面是整页的主角（第①问） */
 .pl-hero {
@@ -454,7 +454,7 @@ onMounted(() => {
   gap: var(--gap-xs);
 }
 .pl-title {
-  margin: var(--gap-s) 0 0;
+  margin: var(--gap-xs) 0 0;
   text-align: center;
   color: var(--ink);
   font-weight: var(--fw-strong);
@@ -497,7 +497,7 @@ onMounted(() => {
 }
 .pl-line {
   margin: 0;
-  padding: var(--gap-s) var(--gap-m);
+  padding: var(--gap-xs) var(--gap-m);
   border-radius: var(--radius-pill);
   color: var(--ink);
   font-weight: var(--fw-mid);
@@ -533,8 +533,8 @@ onMounted(() => {
 .pl-mode {
   display: inline-flex;
   align-items: center;
-  gap: var(--gap-xs);
-  padding: var(--gap-xs) var(--gap-m);
+  gap: var(--gap-2xs, 4px);
+  padding: 4px 12px;
   border-radius: var(--radius-pill);
   background: var(--card-bg);
   color: var(--ink-soft);
@@ -556,28 +556,40 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--gap-l);
+  gap: var(--gap-s);
 }
 /* 模式胶囊与 transport 三键之间的弹性空隙：模式靠左、三键居中偏右，
  * 视觉上是一簇控制但模式不会挤到主键 */
 .pl-transport-gap {
-  flex: 0 0 clamp(var(--gap-s), 4vw, var(--gap-l));
+  flex: 0 0 var(--gap-xs);
 }
 .pl-side {
-  width: var(--tap-min);
-  height: var(--tap-min);
+  width: 40px;
+  height: 40px;
   background: var(--card-bg);
   color: var(--ink-soft);
   box-shadow: var(--shadow-soft);
-  font-size: var(--fs-title);
+  font-size: var(--fs-body);
 }
 .pl-main {
-  width: var(--play-btn);
-  height: var(--play-btn);
+  width: clamp(52px, 14vw, 60px);
+  height: clamp(52px, 14vw, 60px);
   background: var(--brand);
   color: var(--on-tone);
   box-shadow: 0 var(--press) 0 var(--brand-dark), var(--shadow-soft);
-  font-size: var(--fs-hero);
+  font-size: var(--fs-title);
+}
+/* 手机竖屏（基准档）收一档后，宽屏（iPad/Mac ≥600px）恢复大按钮与大间距 */
+@media (min-width: 600px) {
+  .pl-chip { width: var(--tap-min); height: var(--tap-min); font-size: var(--fs-title); }
+  .pl-side { width: var(--tap-min); height: var(--tap-min); font-size: var(--fs-title); }
+  .pl-main { width: var(--play-btn); height: var(--play-btn); font-size: var(--fs-hero); }
+  .pl-transport { gap: var(--gap-l); }
+  .pl-transport-gap { flex: 0 0 clamp(var(--gap-s), 4vw, var(--gap-l)); }
+  .pl-mode { padding: var(--gap-xs) var(--gap-m); }
+  .pl-title { margin-top: var(--gap-s); }
+  .pl-lyrics { padding: var(--gap-m) var(--gap-s); }
+  .pl-line { padding: var(--gap-s) var(--gap-m); }
 }
 .pl-progress-row {
   display: flex;
