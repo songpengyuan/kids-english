@@ -127,43 +127,6 @@ export interface paths {
         patch: operations["patch_child_api_v1_children__child_id__patch"];
         trace?: never;
     };
-    "/api/v1/content/lessons": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Lessons
-         * @description 课程列表（概要，不带歌词/单词全文；详情走 /lessons/{id}）。
-         */
-        get: operations["list_lessons_api_v1_content_lessons_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/content/lessons/{lesson_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Lesson */
-        get: operations["get_lesson_api_v1_content_lessons__lesson_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/children/{child_id}/progress": {
         parameters: {
             query?: never;
@@ -510,16 +473,6 @@ export interface components {
             children: components["schemas"]["ChildOut"][];
         };
         /**
-         * ColorPairOut
-         * @description 颜色配对（l11 连一连）：左列颜色 ↔ 右列动物词
-         */
-        ColorPairOut: {
-            /** Color */
-            color: string;
-            /** Wordid */
-            wordId: string;
-        };
-        /**
          * EventIn
          * @description 单条客户端事件。client_event_id 由客户端生成，服务端据此幂等去重。
          */
@@ -595,105 +548,6 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** LessonDetailOut */
-        LessonDetailOut: {
-            /**
-             * Ok
-             * @default true
-             */
-            ok: boolean;
-            lesson: components["schemas"]["LessonOut"];
-        };
-        /** LessonOut */
-        LessonOut: {
-            /** Id */
-            id: string;
-            /** Title */
-            title: string;
-            /** Titlezh */
-            titleZh: string;
-            /**
-             * Emoji
-             * @default
-             */
-            emoji: string;
-            /**
-             * Tone
-             * @default blue
-             * @enum {string}
-             */
-            tone: "blue" | "green" | "orange" | "purple" | "pink" | "teal";
-            /**
-             * Type
-             * @default official
-             * @enum {string}
-             */
-            type: "official" | "bonus";
-            /** Date */
-            date?: string | null;
-            /** Stagestyle */
-            stageStyle?: string | null;
-            song: components["schemas"]["SongOut"];
-            /**
-             * Words
-             * @default []
-             */
-            words: components["schemas"]["WordOut"][];
-            /**
-             * Phrases
-             * @default []
-             */
-            phrases: components["schemas"]["PhraseOut"][];
-            /** Colorpairs */
-            colorPairs?: components["schemas"]["ColorPairOut"][] | null;
-            /** Wordgroups */
-            wordGroups?: components["schemas"]["WordGroupOut"][] | null;
-            /** Spinner */
-            spinner?: boolean | null;
-        };
-        /** LessonSummaryOut */
-        LessonSummaryOut: {
-            /** Id */
-            id: string;
-            /** Order No */
-            order_no: number;
-            /** Title */
-            title: string;
-            /** Title Zh */
-            title_zh: string;
-            /**
-             * Emoji
-             * @default
-             */
-            emoji: string;
-            /**
-             * Tone
-             * @default blue
-             * @enum {string}
-             */
-            tone: "blue" | "green" | "orange" | "purple" | "pink" | "teal";
-            /**
-             * Type
-             * @default official
-             * @enum {string}
-             */
-            type: "official" | "bonus";
-            /** Date */
-            date?: string | null;
-        };
-        /** LessonsOut */
-        LessonsOut: {
-            /**
-             * Ok
-             * @default true
-             */
-            ok: boolean;
-            /**
-             * Lessons
-             * @default []
-             */
-            lessons: components["schemas"]["LessonSummaryOut"][];
-        };
         /**
          * LoginIn
          * @description 登录二选一：email（新账号通道）或 family_name（存量通道）。
@@ -761,18 +615,6 @@ export interface components {
             nickname?: string | null;
             /** Email */
             email?: string | null;
-        };
-        /** PhraseOut */
-        PhraseOut: {
-            /** En */
-            en: string;
-            /** Zh */
-            zh: string;
-            /**
-             * Audio
-             * @default
-             */
-            audio: string;
         };
         /** PongOut */
         PongOut: {
@@ -910,73 +752,6 @@ export interface components {
              */
             ok: boolean;
         };
-        /** SongOut */
-        SongOut: {
-            /** Audio */
-            audio?: string | null;
-            /** Video */
-            video?: string | null;
-            /**
-             * Scene
-             * @default stage
-             */
-            scene: string;
-            /** Group */
-            group?: string | null;
-            /**
-             * Lyrics
-             * @default []
-             */
-            lyrics: string[];
-            /**
-             * Lyricszh
-             * @default []
-             */
-            lyricsZh: string[];
-            timings?: components["schemas"]["TimingOut"] | null;
-            /**
-             * Tracks
-             * @default []
-             */
-            tracks: components["schemas"]["SongTrackOut"][];
-        };
-        /** SongTrackOut */
-        SongTrackOut: {
-            /**
-             * Title
-             * @default
-             */
-            title: string;
-            /** Titlezh */
-            titleZh?: string | null;
-            /** Audio */
-            audio?: string | null;
-            /** Video */
-            video?: string | null;
-            /**
-             * Lyrics
-             * @default []
-             */
-            lyrics: string[];
-            /**
-             * Lyricszh
-             * @default []
-             */
-            lyricsZh: string[];
-            /** Group */
-            group?: string | null;
-        };
-        /** TimingOut */
-        TimingOut: {
-            /** Bpm */
-            bpm: number;
-            /** Beatsperbar */
-            beatsPerBar: number;
-            /** Duration */
-            duration: number;
-            /** Timeline */
-            timeline: number[];
-        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -989,33 +764,6 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
-        };
-        /** WordGroupOut */
-        WordGroupOut: {
-            /** Key */
-            key: string;
-            /** Name */
-            name: string;
-        };
-        /** WordOut */
-        WordOut: {
-            /** Id */
-            id: string;
-            /** En */
-            en: string;
-            /** Zh */
-            zh: string;
-            /**
-             * Emoji
-             * @default
-             */
-            emoji: string;
-            /** Image */
-            image?: string | null;
-            /** Audio */
-            audio?: string | null;
-            /** Group */
-            group?: string | null;
         };
     };
     responses: never;
@@ -1281,70 +1029,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChildCreatedOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_lessons_api_v1_content_lessons_get: {
-        parameters: {
-            query?: never;
-            header?: {
-                authorization?: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LessonsOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_lesson_api_v1_content_lessons__lesson_id__get: {
-        parameters: {
-            query?: never;
-            header?: {
-                authorization?: string;
-            };
-            path: {
-                lesson_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LessonDetailOut"];
                 };
             };
             /** @description Validation Error */

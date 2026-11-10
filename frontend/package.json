@@ -13,6 +13,7 @@
     "test": "vitest run",
     "type-check": "vue-tsc --noEmit",
     "export:lessons": "node scripts/export-lessons.mjs",
+    "lesson:pipeline": "bash scripts/lesson-pipeline.sh",
     "verify": "bash ../scripts/ci-local.sh",
     "guard:tokens": "node scripts/guard-tokens.mjs",
     "smoke": "node scripts/smoke.mjs"
