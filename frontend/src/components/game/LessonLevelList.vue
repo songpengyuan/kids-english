@@ -107,7 +107,15 @@ function onChestDone() {
 }
 function onLockedChest() {
   speakZh(`先把${playCount.value}个小游戏都完成，就能打开宝箱啦`);
+  // 语音提示可能被音效开关/环境声盖掉：补一条孩子能"看见"的浮动文案（2.6s 自动消失）
+  chestHint.value = `还差 ${playCount.value - doneCount.value} 个玩法就能开宝箱啦`;
+  if (chestHintTimer) clearTimeout(chestHintTimer);
+  chestHintTimer = window.setTimeout(() => (chestHint.value = ""), 2600);
 }
+/** 宝箱锁定时的可见提示文案（配合 onLockedChest 的语音，双通道） */
+const chestHint = ref("");
+let chestHintTimer: number | null = null;
+
 function onChestRow() {
   if (chestDone.value) {
     speakZh("宝箱已经领取过啦");
@@ -189,6 +197,9 @@ function onChestRow() {
               <span v-else class="st st-locked"><PathIcon name="lock" /></span>
             </span>
           </button>
+          <Transition name="hint-pop">
+            <p v-if="chestHint" class="lll-chest-hint anim-pop" role="status">{{ chestHint }}</p>
+          </Transition>
         </li>
       </ul>
     </div>
@@ -441,5 +452,26 @@ function onChestRow() {
   .lll-bar {
     height: 6px;
   }
+}
+
+/* 宝箱锁定提示条：语音可能听不到/被环境声盖掉，孩子要能"看见"为什么开不了 */
+.lll-chest-hint {
+  margin: var(--gap-s) auto 0;
+  max-width: 420px;
+  text-align: center;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-mid);
+  color: var(--on-gold);
+  background: var(--grad-gold);
+  border-radius: var(--radius-pill);
+  padding: 10px 20px;
+  box-shadow: var(--shadow-chip);
+}
+.hint-pop-leave-active {
+  transition: opacity var(--dur-base) ease, transform var(--dur-base) ease;
+}
+.hint-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 </style>
