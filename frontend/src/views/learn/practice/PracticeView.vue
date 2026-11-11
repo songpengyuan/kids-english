@@ -112,16 +112,26 @@ function enter(l: Lesson) {
   overflow: hidden;
   text-align: left;
   transition: transform var(--dur-fast) var(--ease-out);
+  /* 让下面的 emoji 能按「卡片宽度」而不是「视口宽度」定字号 */
+  container-type: inline-size;
 }
 /* 大 emoji 作为背景装饰 */
 .card-emoji {
   position: absolute;
   right: 4%;
   top: 8%;
-  font-size: clamp(80px, 18vw, 130px);
+  /* 兜底：不支持容器查询单位（cqw）的旧浏览器仍用视口钳制 */
+  font-size: clamp(56px, 12vw, 96px);
+  /* 按卡片宽度取 40%：2 列手机卡 / 3 列 iPad 卡 / 4 列方卡都保持同一占比。
+     之前用 vw（clamp 80~130px）在 4 列方卡上会涨到 130px，直接压住标题文字；
+     在 2 列窄卡上又顶到 80px 下限，显得过大。 */
+  font-size: 40cqw;
   line-height: 1;
   opacity: 0.95;
-  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2));
+  /* 这里**不能**加 filter: drop-shadow —— 彩色 emoji 走 COLRv1 字形，
+     Chrome 取整块字形栅格做阴影形状，会在卡面上留下一块方形色晕
+     （手机 2 列窄卡尤其明显，看起来像一张方图糊在封面上）。
+     要立体感请用卡片自身的投影，别给 emoji 加 filter。 */
 }
 .card-text {
   position: relative;
