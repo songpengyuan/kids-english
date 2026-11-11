@@ -30,6 +30,8 @@ try {
     tone: l.tone,
     type: l.type,
     date: l.date || null,
+    // 课程简介（家长视角的一段话）；无简介的课为 undefined，stringify 时自动省略
+    intro: l.intro,
     stageStyle: l.stageStyle ?? "cards",
     // 转盘复习玩法开关（spinner）；非转盘课为 undefined，JSON.stringify 自动省略
     spinner: l.spinner,

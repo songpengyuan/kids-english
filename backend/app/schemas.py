@@ -198,6 +198,8 @@ class LessonOut(BaseModel):
     tone: Tone = "blue"
     type: LessonType = "official"
     date: str | None = None
+    # 课程简介（家长视角的一段话；课程页折叠展示）
+    intro: str | None = None
     # 学单词玩法样式：cards=看图点读（默认），dialog=亲子口语对话卡（l10）
     stageStyle: str | None = None
     song: SongOut

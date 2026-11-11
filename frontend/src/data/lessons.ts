@@ -103,6 +103,8 @@ export interface RawLesson {
   emoji: string;
   tone?: Tone;
   date?: string;
+  /** 课程简介（家长视角的一段话：绘本故事 + 本课重点）。缺省 = 课程页不显示简介卡 */
+  intro?: string;
   /** 学单词玩法样式：cards=看图点读（默认），dialog=亲子口语对话卡（l10 用） */
   stageStyle?: "cards" | "dialog";
   song: RawLessonSong;
@@ -168,6 +170,8 @@ export interface Lesson {
   tone: Tone;
   type: LessonType;
   date?: string;
+  /** 课程简介（家长视角的一段话；课程页折叠展示，缺省不显示） */
+  intro?: string;
   /** 学单词玩法样式（默认看图点读；l10 为亲子口语对话卡） */
   stageStyle: "cards" | "dialog";
   song: LessonSong;

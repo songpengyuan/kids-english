@@ -173,6 +173,18 @@ function openActivity(key: string) {
     </template>
 
     <!-- 本课关卡卡片列表（game 视图；全站总地图 #/game 仍走 GamePath，不受影响） -->
+    <!-- 课程简介：家长视角的一段话（绘本故事 + 本课重点）。默认折叠成一行，
+         孩子不会被长文案挡住关卡；点开才展开全文 -->
+    <details v-if="lesson?.intro" class="intro">
+      <summary class="intro__head">
+        <BookOpen class="intro__ico" />
+        <span class="intro__label">课程简介</span>
+        <span class="intro__peek">{{ lesson.intro }}</span>
+        <svg class="intro__chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </summary>
+      <p class="intro__text">{{ lesson.intro }}</p>
+    </details>
+
     <LessonLevelList v-if="lesson && view === 'game'" :lesson="lesson" />
 
     <!-- 卡片目录视图 -->
@@ -241,6 +253,68 @@ function openActivity(key: string) {
 }
 @media (prefers-reduced-motion: reduce) {
   .dl-ico.spin { animation: none; }
+}
+
+/* 课程简介卡：折叠时只留一行摘要，展开后显示整段；不抢关卡的视觉权重 */
+.intro {
+  margin-bottom: var(--gap-s);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  overflow: hidden;
+}
+.intro__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+}
+.intro__head::-webkit-details-marker {
+  display: none;
+}
+.intro__ico {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--brand);
+}
+.intro__label {
+  flex: none;
+}
+.intro__peek {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-faint);
+  font-weight: 400;
+}
+.intro__chev {
+  flex: none;
+  color: var(--ink-faint);
+  transition: transform 0.18s;
+}
+.intro[open] .intro__chev {
+  transform: rotate(180deg);
+}
+.intro[open] .intro__peek {
+  display: none;
+}
+.intro__text {
+  margin: 0;
+  padding: 0 14px 12px;
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+  line-height: 1.75;
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro__chev { transition: none; }
 }
 
 .view-switch {

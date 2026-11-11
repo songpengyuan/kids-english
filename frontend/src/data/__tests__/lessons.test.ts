@@ -40,3 +40,17 @@ describe("l11 词群", () => {
     expect((L11.colorPairs ?? []).length).toBeGreaterThan(0);
   });
 });
+
+describe("课程简介（intro）", () => {
+  it("l13 的简介原样映射进 Lesson（字段不丢）", () => {
+    const l13 = getLesson("l13")!;
+    expect(l13.intro).toBeTruthy();
+    expect(l13.intro).toContain("Good Night, Gorilla");
+  });
+
+  it("简介是一段话的量级（>40 且 <300 字），详情页不会被长文撑爆", () => {
+    const l13 = getLesson("l13")!;
+    expect(l13.intro!.length).toBeGreaterThan(40);
+    expect(l13.intro!.length).toBeLessThan(300);
+  });
+});

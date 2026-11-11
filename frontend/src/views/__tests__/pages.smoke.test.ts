@@ -203,6 +203,17 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(errors).toEqual([]);
   });
 
+  it("课程详情显示课程简介（默认折叠，展开后看全文）", async () => {
+    const w = await mountPage(CourseDetailView, "/course/l13", { view: "game" });
+    const intro = w.find(".intro");
+    expect(intro.exists()).toBe(true);
+    expect(intro.find(".intro__label").text()).toBe("课程简介");
+    // 默认收起：孩子先看到关卡，不被长文案挡住
+    expect(intro.attributes("open")).toBeUndefined();
+    expect(intro.find(".intro__peek").text()).toContain("Good Night, Gorilla");
+    expect(errors).toEqual([]);
+  });
+
   it("课程详情 menu 视图（玩法瓷片，顺序 = activityKeys：song 打头）", async () => {
     const w = await mountPage(CourseDetailView, "/course/l4", { view: "menu" });
     const tiles = w.findAll(".tile").map((t) => t.text());
