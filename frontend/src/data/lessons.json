@@ -1248,5 +1248,159 @@
         "zh": "爸爸轻轻嘘嘘嘘"
       }
     ]
+  },
+  {
+    "id": "l13",
+    "title": "Good Night, Gorilla",
+    "titleZh": "晚安，大猩猩",
+    "emoji": "🦍",
+    "tone": "purple",
+    "date": "2026-11-11",
+    "song": {
+      "audio": "/lessons/l13/song.mp3",
+      "video": "/lessons/l13/song.mp4",
+      "scene": "stage",
+      "lyrics": [
+        "Let's go to the zoo and stomp like the elephants do.",
+        "Let's go to the zoo and stomp like the elephants do.",
+        "",
+        "Let's go to the zoo and jump like kangaroos do.",
+        "Let's go to the zoo and jump like kangaroos do.",
+        "",
+        "Let's go to the zoo and swing like the monkeys do.",
+        "Let's go to the zoo and swing like the monkeys do.",
+        "",
+        "Let's go to the zoo and waddle like the penguins do.",
+        "Let's go to the zoo and waddle like the penguins do.",
+        "",
+        "Let's go to the zoo and slither like the snakes do.",
+        "Let's go to the zoo and slither like the snakes do.",
+        "",
+        "Let's go to the zoo and swim like the polar bears do.",
+        "Let's go to the zoo and swim like the polar bears do.",
+        "",
+        "Let's go to the zoo and dance like the animals do.",
+        "Let's go to the zoo and dance like the animals do."
+      ],
+      "lyricsZh": [
+        "我们去动物园吧，像大象那样跺跺脚。",
+        "我们去动物园吧，像大象那样跺跺脚。",
+        "",
+        "我们去动物园吧，像袋鼠那样跳一跳。",
+        "我们去动物园吧，像袋鼠那样跳一跳。",
+        "",
+        "我们去动物园吧，像猴子那样荡一荡。",
+        "我们去动物园吧，像猴子那样荡一荡。",
+        "",
+        "我们去动物园吧，像企鹅那样摇摇摆摆走。",
+        "我们去动物园吧，像企鹅那样摇摇摆摆走。",
+        "",
+        "我们去动物园吧，像小蛇那样扭一扭。",
+        "我们去动物园吧，像小蛇那样扭一扭。",
+        "",
+        "我们去动物园吧，像北极熊那样游一游。",
+        "我们去动物园吧，像北极熊那样游一游。",
+        "",
+        "我们去动物园吧，像所有动物那样跳个舞。",
+        "我们去动物园吧，像所有动物那样跳个舞。"
+      ]
+    },
+    "spinner": true,
+    "words": [
+      {
+        "id": "gorilla",
+        "en": "gorilla",
+        "zh": "大猩猩",
+        "emoji": "🦍",
+        "image": "/lessons/l13/words/gorilla.webp"
+      },
+      {
+        "id": "elephant",
+        "en": "elephant",
+        "zh": "大象",
+        "emoji": "🐘",
+        "image": "/lessons/l13/words/elephant.webp"
+      },
+      {
+        "id": "zookeeper",
+        "en": "zookeeper",
+        "zh": "动物园管理员",
+        "emoji": "🧑‍✈️",
+        "image": "/lessons/l13/words/zookeeper.webp"
+      },
+      {
+        "id": "mouse",
+        "en": "mouse",
+        "zh": "老鼠",
+        "emoji": "🐁",
+        "image": "/lessons/l13/words/mouse.webp"
+      },
+      {
+        "id": "giraffe",
+        "en": "giraffe",
+        "zh": "长颈鹿",
+        "emoji": "🦒",
+        "image": "/lessons/l13/words/giraffe.webp"
+      },
+      {
+        "id": "hyena",
+        "en": "hyena",
+        "zh": "鬣狗",
+        "emoji": "🐺",
+        "image": "/lessons/l13/words/hyena.webp"
+      },
+      {
+        "id": "lion",
+        "en": "lion",
+        "zh": "狮子",
+        "emoji": "🦁",
+        "image": "/lessons/l13/words/lion.webp"
+      },
+      {
+        "id": "armadillo",
+        "en": "armadillo",
+        "zh": "犰狳",
+        "emoji": "🦫",
+        "image": "/lessons/l13/words/armadillo.webp"
+      }
+    ],
+    "phrases": [
+      {
+        "en": "Today, let's go to the zoo.",
+        "zh": "今天我们去动物园吧。"
+      },
+      {
+        "en": "What do you see?",
+        "zh": "你看到什么了？"
+      },
+      {
+        "en": "I see an elephant.",
+        "zh": "我看到一头大象。"
+      },
+      {
+        "en": "I see a gorilla.",
+        "zh": "我看到一只大猩猩。"
+      },
+      {
+        "en": "I see a hyena.",
+        "zh": "我看到一只鬣狗。"
+      },
+      {
+        "en": "I see a lion.",
+        "zh": "我看到一头狮子。"
+      },
+      {
+        "en": "I see a giraffe.",
+        "zh": "我看到一只长颈鹿。"
+      },
+      {
+        "en": "I see an armadillo.",
+        "zh": "我看到一只犰狳。"
+      },
+      {
+        "en": "Good night, Gorilla.",
+        "zh": "晚安，大猩猩。"
+      }
+    ]
   }
 ]
