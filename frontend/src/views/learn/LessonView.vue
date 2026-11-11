@@ -533,7 +533,7 @@ const playStage = computed(() => {
 }
 /* 课名单行：字号/字重/颜色继承外层 .hdr-title 的主标题规格（单一真源，不在内层重复声明）；
    这里只锁定单行，超长交给外层 nowrap + ellipsis 安全截断，绝不挤压右侧徽章簇 */
-/* 顶栏行内课程小封面：跟字号缩放（自托管 Twemoji，跨端一致） */
+/* 顶栏行内课程小封面：跟字号缩放（原创自托管封面图，跨端一致） */
 .hdr-emoji-img {
   width: 1.2em;
   height: 1.2em;

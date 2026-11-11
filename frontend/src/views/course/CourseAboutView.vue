@@ -21,6 +21,7 @@ import { activityKeys, getLesson as getLocalLesson, type Lesson } from "../../da
 import { useContentStore } from "../../stores/content";
 import { useProgressStore } from "../../stores/progress";
 import { speak } from "../../services/speech";
+import { emojiCoverUrl } from "../../utils/emojiCover";
 import { Play } from "@lucide/vue";
 
 const route = useRoute();
@@ -113,9 +114,17 @@ function goBack() {
     <template #title><span>课程详情</span></template>
 
     <div v-if="lesson" class="about">
-      <!-- 课程头：emoji 大图 + 中英文名 + 上课日期 -->
+      <!-- 课程头：原创封面图 + 中英文名 + 上课日期 -->
       <button type="button" class="about-hero" aria-label="朗读课程名" @click="speakTitle">
-        <span class="about-emoji" :class="'tone-' + lesson.tone">{{ lesson.emoji }}</span>
+        <span class="about-emoji" :class="'tone-' + lesson.tone">
+          <img
+            v-if="emojiCoverUrl(lesson.emoji)"
+            class="about-emoji__img"
+            :src="emojiCoverUrl(lesson.emoji)!"
+            alt=""
+          />
+          <template v-else>{{ lesson.emoji }}</template>
+        </span>
         <h1 class="about-title">{{ lesson.title }}</h1>
         <p class="about-sub">{{ lesson.titleZh }}<span v-if="dateLabel"> · {{ dateLabel }}</span></p>
         <span class="about-hint">轻点标题 / 词卡可听发音</span>
@@ -223,6 +232,12 @@ function goBack() {
   border-radius: 24px;
   font-size: var(--fs-emoji-xl);
   line-height: 1;
+}
+/* 原创封面图：占底座 78%，四周留白与纯文字 emoji 观感一致 */
+.about-emoji__img {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
 }
 .about-hero:active {
   transform: scale(0.99);

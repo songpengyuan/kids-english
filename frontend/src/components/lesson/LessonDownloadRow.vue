@@ -7,12 +7,14 @@ import { computed } from "vue";
 import { Download, CheckCircle2, AlertCircle } from "@lucide/vue";
 import { useLessonDownload } from "../../composables/useLessonDownload";
 import type { Lesson } from "../../data/lessons";
+import { emojiCoverUrl } from "../../utils/emojiCover";
 
 const props = defineProps<{ lesson: Lesson }>();
 const emit = defineEmits<{ (e: "finished"): void }>();
 
 const dl = useLessonDownload();
 const state = computed(() => dl.state.value);
+const cover = computed(() => emojiCoverUrl(props.lesson.emoji));
 const label = computed(() => {
   if (state.value === "downloading") return `${dl.loaded.value}/${dl.total.value}`;
   if (state.value === "done") return "已离线";
@@ -30,7 +32,8 @@ async function start() {
 <template>
   <div class="dl-row" :class="{ done: state === 'done', error: state === 'error' }">
     <span class="dl-title">
-      <span class="dl-emoji" aria-hidden="true">{{ lesson.emoji }}</span>
+      <img v-if="cover" class="dl-emoji" :src="cover" alt="" />
+      <span v-else class="dl-emoji" aria-hidden="true">{{ lesson.emoji }}</span>
       {{ lesson.titleZh }}
     </span>
     <button
@@ -75,6 +78,9 @@ async function start() {
 }
 .dl-emoji {
   flex: none;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
   font-size: 18px;
   line-height: 1;
 }

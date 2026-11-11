@@ -198,7 +198,7 @@ function openActivity(key: string) {
 </template>
 
 <style scoped>
-/* 顶栏行内课程小封面：跟字号缩放（自托管 Twemoji，跨端一致） */
+/* 顶栏行内课程小封面：跟字号缩放（原创自托管封面图，跨端一致） */
 .hdr-emoji-img {
   width: 1.2em;
   height: 1.2em;

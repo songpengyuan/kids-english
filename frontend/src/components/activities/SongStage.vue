@@ -12,6 +12,7 @@
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { Music } from "@lucide/vue";
 import type { Lesson } from "../../data/lessons";
+import { emojiCoverUrl } from "../../utils/emojiCover";
 
 const props = withDefaults(
   defineProps<{
@@ -31,6 +32,8 @@ const bpm = computed(() => props.lesson.song.timings?.bpm || 0);
 const beatCss = computed(() => (bpm.value ? 60 / bpm.value : 0.5) + "s");
 /* 当前场景：sea / rainbow / numbers / letters / stage（默认） */
 const scene = computed(() => props.lesson.song.scene || "stage");
+/** 课程封面：原创自托管图优先，资产集外回退 emoji 文本 */
+const cover = computed(() => emojiCoverUrl(props.lesson.emoji));
 /* 出场角色：本课的单词 emoji，最多 8 个，太多会挤 */
 const cast = computed(() => props.lesson.words.slice(0, 8));
 interface Note {
@@ -99,7 +102,10 @@ onBeforeUnmount(() => clearInterval(noteTimer));
     <template v-if="lesson.song.scene === 'sea'">
       <span class="sun"></span>
       <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span>
-      <span class="hero" :class="{ bobbing: playing }">{{ lesson.emoji }}</span>
+      <span class="hero" :class="{ bobbing: playing }">
+        <img v-if="cover" class="hero-img" :src="cover" alt="" />
+        <template v-else>{{ lesson.emoji }}</template>
+      </span>
       <div class="waves">
         <span class="wave w1"></span><span class="wave w2"></span><span class="wave w3"></span>
       </div>
@@ -107,24 +113,36 @@ onBeforeUnmount(() => clearInterval(noteTimer));
     <template v-else-if="lesson.song.scene === 'rainbow'">
       <span class="rainbow"></span>
       <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span>
-      <span class="hero" :class="{ bobbing: playing }">{{ lesson.emoji }}</span>
+      <span class="hero" :class="{ bobbing: playing }">
+        <img v-if="cover" class="hero-img" :src="cover" alt="" />
+        <template v-else>{{ lesson.emoji }}</template>
+      </span>
       <span class="float-emoji f1">🌈</span><span class="float-emoji f2">⭐</span><span class="float-emoji f3">☁️</span>
     </template>
     <template v-else-if="lesson.song.scene === 'numbers'">
       <span class="hill h1"></span><span class="hill h2"></span>
       <span class="balloon b1">1</span><span class="balloon b2">2</span><span class="balloon b3">3</span>
-      <span class="hero" :class="{ bobbing: playing }">{{ lesson.emoji }}</span>
+      <span class="hero" :class="{ bobbing: playing }">
+        <img v-if="cover" class="hero-img" :src="cover" alt="" />
+        <template v-else>{{ lesson.emoji }}</template>
+      </span>
       <span class="float-emoji f1">🎈</span><span class="float-emoji f2">⭐</span><span class="float-emoji f3">🎈</span>
     </template>
     <template v-else-if="lesson.song.scene === 'letters'">
       <span class="letter-tile t1">A</span><span class="letter-tile t2">B</span><span class="letter-tile t3">C</span>
-      <span class="hero" :class="{ bobbing: playing }">{{ lesson.emoji }}</span>
+      <span class="hero" :class="{ bobbing: playing }">
+        <img v-if="cover" class="hero-img" :src="cover" alt="" />
+        <template v-else>{{ lesson.emoji }}</template>
+      </span>
       <span class="float-emoji f1">✏️</span><span class="float-emoji f2">⭐</span><span class="float-emoji f3">📖</span>
     </template>
     <template v-else>
       <span class="spot"></span><span class="spot s2"></span>
       <span class="curtain l"></span><span class="curtain r"></span>
-      <span class="hero" :class="{ bobbing: playing }">{{ lesson.emoji }}</span>
+      <span class="hero" :class="{ bobbing: playing }">
+        <img v-if="cover" class="hero-img" :src="cover" alt="" />
+        <template v-else>{{ lesson.emoji }}</template>
+      </span>
     </template>
 
     <!-- 演出名单：本课单词角色，跟着节拍一排小弹簧 -->
@@ -212,6 +230,13 @@ onBeforeUnmount(() => clearInterval(noteTimer));
   font-size: clamp(42px, 13vw, 92px);
   line-height: 1;
   filter: drop-shadow(0 6px 0 rgba(30, 90, 130, 0.18));
+}
+/* 原创封面图：与文字 emoji 同字号占位 */
+.hero-img {
+  display: block;
+  width: 1em;
+  height: 1em;
+  object-fit: contain;
 }
 .hero.bobbing {
   animation: hero-bob calc(var(--beat, 0.5s)) ease-in-out infinite;

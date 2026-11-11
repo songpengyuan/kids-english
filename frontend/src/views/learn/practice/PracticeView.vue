@@ -56,7 +56,7 @@ function enter(l: Lesson) {
           :style="{ animationDelay: i * 0.04 + 's' }"
           @click="enter(l)"
         >
-          <!-- 课程封面：自托管 Twemoji 图（跨端一致），资产集外回退 emoji 文本 -->
+          <!-- 课程封面：原创自托管图（跨端一致），资产集外回退 emoji 文本 -->
           <img
             v-if="emojiCoverUrl(l.emoji)"
             class="card-emoji card-emoji--img"
