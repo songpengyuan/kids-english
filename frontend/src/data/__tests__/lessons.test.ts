@@ -52,9 +52,50 @@ describe("课程简介（intro）", () => {
     expect(l13.intro).toContain("Good night, zoo.");
   });
 
-  it("简介长度在折叠卡可读区间（>40 且 <800 字）", () => {
+  it("l13 简介长度在折叠卡可读区间（>40 且 <800 字）", () => {
     const l13 = getLesson("l13")!;
     expect(l13.intro!.length).toBeGreaterThan(40);
     expect(l13.intro!.length).toBeLessThan(800);
+  });
+
+  it("7 节课都有老师给的简介，且首段是课程故事、含重点词汇段", () => {
+    for (const id of ["l5", "l4", "l9", "l10", "l11", "l12", "l13"]) {
+      const lesson = getLesson(id)!;
+      expect(lesson.intro, id).toBeTruthy();
+      const paragraphs = lesson.intro!.split(/\n{2,}/).map((s) => s.trim());
+      expect(paragraphs.length, id).toBeGreaterThan(2);
+      expect(paragraphs[0].length, id).toBeGreaterThan(40);
+      // “重点词汇：…”由词卡承接，about 页会过滤，所以必须能识别到这个前缀
+      expect(paragraphs.some((p) => p.startsWith("重点词汇")), id).toBe(true);
+    }
+  });
+
+  it("课时日期按老师课程表校正", () => {
+    const dates = Object.fromEntries(
+      ["l5", "l4", "l9", "l10", "l11", "l12", "l13"].map((id) => [id, getLesson(id)!.date])
+    );
+    expect(dates).toEqual({
+      l5: "2026-09-16",
+      l4: "2026-09-18",
+      l9: "2026-10-09",
+      l10: "2026-10-16",
+      l11: "2026-10-23",
+      l12: "2026-11-04",
+      l13: "2026-11-11",
+    });
+  });
+
+  it("l12 简介保留歌词与重点词汇，不丢老师原文关键句", () => {
+    const l12 = getLesson("l12")!;
+    expect(l12.intro).toContain("The wheels on the bus go round and round.");
+    expect(l12.intro).toContain("daddies");
+    expect(l12.intro).toContain("重点词汇");
+  });
+
+  it("l11 简介保留颜色/动物词与绘本问答句", () => {
+    const l11 = getLesson("l11")!;
+    expect(l11.intro).toContain("gold 金色");
+    expect(l11.intro).toContain("Goldfish, goldfish, what do you see?");
+    expect(l11.intro).toContain("What color is it?");
   });
 });
