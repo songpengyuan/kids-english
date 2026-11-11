@@ -30,9 +30,6 @@ defineOptions({ name: "CourseDetailView" });
 
 const lessonId = computed(() => route.params.id as string);
 const lesson = ref<Lesson | null>(getLocalLesson(lessonId.value));
-/** 简介第一段：折叠态只露这一句，多段文案不把 summary 撑成两行 */
-const introPeek = computed(() => (lesson.value?.intro ?? "").split("\n").find((s) => s.trim()) ?? "");
-
 watch(
   lessonId,
   async (id) => {
@@ -54,11 +51,6 @@ const dlLabel = computed(() => {
   if (dlState.value === "error") return "部分没下完，点我再试";
   return "下载本课离线包";
 });
-/** 进课程介绍页（家长导读）；孩子入口不跳这里 */
-function openAbout() {
-  void router.push(`/course/${lessonId.value}/about`);
-}
-
 function startDownload() {
   if (lesson.value && dlState.value !== "downloading") void dl.start(lesson.value);
 }
@@ -180,24 +172,10 @@ function openActivity(key: string) {
     </template>
 
     <!-- 本课关卡卡片列表（game 视图；全站总地图 #/game 仍走 GamePath，不受影响） -->
-    <!-- 课程简介入口：只露一行故事摘要，点整卡进独立介绍页（#/course/:id/about）。
-         长文不在这里展开——展开会把 9 张关卡卡整屏推走，孩子找不回第 1 关 -->
-    <button v-if="lesson?.intro" class="intro" @click="openAbout">
-      <BookOpen class="intro__ico" />
-      <span class="intro__label">课程简介</span>
-      <span class="intro__peek">{{ introPeek }}</span>
-      <svg class="intro__chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-    </button>
-
     <LessonLevelList v-if="lesson && view === 'game'" :lesson="lesson" />
 
     <!-- 卡片目录视图 -->
     <div v-else-if="view === 'menu'" class="menu-wrap">
-      <!-- 课程介绍：家长陪练前先看绘本故事 / 词表 / 句子 -->
-      <button v-if="lesson?.intro" class="dl-bar intro-entry" @click="openAbout">
-        <BookOpen class="dl-ico" />
-        <span class="dl-text">课程介绍</span>
-      </button>
       <!-- 离线包：一键下载本课全部音频/词图/视频，供无网环境播放（家长操作） -->
       <button
         v-if="lesson"
@@ -262,47 +240,6 @@ function openActivity(key: string) {
 }
 @media (prefers-reduced-motion: reduce) {
   .dl-ico.spin { animation: none; }
-}
-
-/* 课程简介入口卡：一行摘要 + 右箭头；点开进独立介绍页 */
-.intro {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 14px;
-  margin-bottom: var(--gap-s);
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--card-bg);
-  overflow: hidden;
-  cursor: pointer;
-  color: var(--ink-soft);
-  font-size: var(--fs-small);
-  font-weight: var(--fw-mid);
-  text-align: left;
-}
-.intro__ico {
-  width: 16px;
-  height: 16px;
-  flex: none;
-  color: var(--brand);
-}
-.intro__label {
-  flex: none;
-}
-.intro__peek {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--ink-faint);
-  font-weight: 400;
-}
-.intro__chev {
-  flex: none;
-  color: var(--ink-faint);
 }
 
 .view-switch {

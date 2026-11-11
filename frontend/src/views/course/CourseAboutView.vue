@@ -20,6 +20,7 @@ import PageShell from "../../components/ui/PageShell.vue";
 import { activityKeys, getLesson as getLocalLesson, type Lesson } from "../../data/lessons";
 import { useContentStore } from "../../stores/content";
 import { useProgressStore } from "../../stores/progress";
+import { speak } from "../../services/speech";
 import { Play } from "@lucide/vue";
 
 const route = useRoute();
@@ -86,6 +87,15 @@ function goLearn() {
   void router.push(`/course/${lessonId.value}`);
 }
 
+/* 点读：详情页的标题和词卡都能出声——词卡优先用课时里预生成的童声 mp3，
+ * 没音频自动回退浏览器 TTS；标题按课名朗读（ttsOnly，不查词音文件） */
+function speakTitle() {
+  if (lesson.value) void speak(lesson.value.title, { ttsOnly: true });
+}
+function speakWord(w: Lesson["words"][number]) {
+  if (lesson.value) void speak(w.en, { lessonId: lesson.value.id, wordId: w.id });
+}
+
 const dateLabel = computed(() => {
   const d = lesson.value?.date;
   if (!d) return "";
@@ -104,11 +114,12 @@ function goBack() {
 
     <div v-if="lesson" class="about">
       <!-- 课程头：emoji 大图 + 中英文名 + 上课日期 -->
-      <header class="about-hero">
+      <button type="button" class="about-hero" aria-label="朗读课程名" @click="speakTitle">
         <span class="about-emoji" :class="'tone-' + lesson.tone">{{ lesson.emoji }}</span>
         <h1 class="about-title">{{ lesson.title }}</h1>
         <p class="about-sub">{{ lesson.titleZh }}<span v-if="dateLabel"> · {{ dateLabel }}</span></p>
-      </header>
+        <span class="about-hint">轻点标题 / 词卡可听发音</span>
+      </button>
 
       <!-- 本课进度：孩子练到哪了、拿了多少星 -->
       <section class="about-card progress-card">
@@ -143,14 +154,21 @@ function goBack() {
       <section v-if="lesson.words.length" class="about-card">
         <h2 class="about-h">重点词汇<span class="about-count">{{ lesson.words.length }}</span></h2>
         <div class="word-grid">
-          <div v-for="w in lesson.words" :key="w.id" class="word">
+          <button
+            v-for="w in lesson.words"
+            :key="w.id"
+            type="button"
+            class="word"
+            :aria-label="`朗读 ${w.en}`"
+            @click="speakWord(w)"
+          >
             <img v-if="w.image" class="word-img" :src="w.image" :alt="w.en" loading="lazy" />
             <span v-else class="word-emoji">{{ w.emoji }}</span>
-            <div class="word-meta">
+            <span class="word-meta">
               <span class="word-en">{{ w.en }}</span>
               <span class="word-zh">{{ w.zh }}</span>
-            </div>
-          </div>
+            </span>
+          </button>
         </div>
       </section>
 
@@ -185,7 +203,11 @@ function goBack() {
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  width: 100%;
   padding: 16px var(--gap-m) 18px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
   border: 1.5px solid var(--line);
   border-radius: var(--radius);
   background: var(--card-bg);
@@ -201,6 +223,14 @@ function goBack() {
   border-radius: 24px;
   font-size: var(--fs-emoji-xl);
   line-height: 1;
+}
+.about-hero:active {
+  transform: scale(0.99);
+}
+.about-hint {
+  margin-top: 6px;
+  color: var(--ink-faint);
+  font-size: var(--fs-small);
 }
 .about-title {
   margin: 0;
@@ -264,6 +294,16 @@ function goBack() {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.word:active {
+  transform: scale(0.97);
 }
 .word-img,
 .word-emoji {

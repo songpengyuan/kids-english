@@ -220,15 +220,14 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(errors).toEqual([]);
   });
 
-  it("课程详情只放简介入口卡（一行摘要，不展开长文）", async () => {
+  it("学习页顶部不再放简介入口（内容都在课程详情页）", async () => {
     const w = await mountPage(CourseDetailView, "/course/l13", { view: "game" });
-    const intro = w.find(".intro");
-    expect(intro.exists()).toBe(true);
-    expect(intro.element.tagName).toBe("BUTTON");
-    expect(intro.find(".intro__label").text()).toBe("课程简介");
-    expect(intro.find(".intro__peek").text()).toContain("Good Night, Gorilla");
-    // 长文（词表 / 句子）留在独立介绍页，课程页不出现，免得把关卡列表推走
-    expect(intro.text()).not.toContain("重点词汇");
+    expect(w.find(".intro").exists()).toBe(false);
+    expect(w.text()).not.toContain("课程简介");
+    // 关卡列表照常从第一关开始，没有多一块卡片把列表推走
+    const rows = w.findAll(".lll-row");
+    expect(rows.length).toBeGreaterThanOrEqual(9); // 9 玩法（+ 宝箱）
+    expect(rows[0].text()).toContain("学童谣");
     expect(errors).toEqual([]);
   });
 
