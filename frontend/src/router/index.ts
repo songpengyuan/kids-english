@@ -81,6 +81,13 @@ export const appRoutes: RouteRecordRaw[] = [
           component: () => import("../views/course/CourseDetailView.vue"),
           meta: { title: "课程", sky: true },
         },
+        // 课程介绍（家长导读：绘本故事 + 词表 + 句子；孩子入口不受干扰）
+        {
+          path: ":id/about",
+          name: "course-about",
+          component: () => import("../views/course/CourseAboutView.vue"),
+          meta: { title: "课程介绍" },
+        },
         // 玩法页（独立路由，用 LessonView）
         { path: "/course/:id/learn", name: "lesson-learn", component: LessonView, meta: { title: "学单词", stage: "learn" } },
         { path: "/course/:id/hear", name: "lesson-quiz", component: LessonView, meta: { title: "听音选图", stage: "quiz" } },

@@ -64,6 +64,7 @@ import LearnView from "../../views/learn/LearnView.vue";
 import GameView from "../game/GameView.vue";
 import QuestView from "../game/QuestView.vue";
 import CourseDetailView from "../course/CourseDetailView.vue";
+import CourseAboutView from "../course/CourseAboutView.vue";
 import MyView from "../me/MyView.vue";
 import ReportView from "../me/ReportView.vue";
 import ParentView from "../me/ParentView.vue";
@@ -203,14 +204,28 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(errors).toEqual([]);
   });
 
-  it("课程详情显示课程简介（默认折叠，展开后看全文）", async () => {
+  it("课程详情只放简介入口卡（一行摘要，不展开长文）", async () => {
     const w = await mountPage(CourseDetailView, "/course/l13", { view: "game" });
     const intro = w.find(".intro");
     expect(intro.exists()).toBe(true);
+    expect(intro.element.tagName).toBe("BUTTON");
     expect(intro.find(".intro__label").text()).toBe("课程简介");
-    // 默认收起：孩子先看到关卡，不被长文案挡住
-    expect(intro.attributes("open")).toBeUndefined();
     expect(intro.find(".intro__peek").text()).toContain("Good Night, Gorilla");
+    // 长文（词表 / 句子）留在独立介绍页，课程页不出现，免得把关卡列表推走
+    expect(intro.text()).not.toContain("重点词汇");
+    expect(errors).toEqual([]);
+  });
+
+  it("课程介绍页：绘本故事 + 词卡 + 拓展词汇与句子", async () => {
+    const w = await mountPage(CourseAboutView, "/course/l13/about");
+    expect(w.text()).toContain("绘本故事");
+    expect(w.text()).toContain("重点词汇");
+    expect(w.text()).toContain("gorilla");
+    expect(w.text()).toContain("拓展词汇");
+    expect(w.text()).toContain("Good night, zoo.");
+    // 8 个词各一张词卡（图 + 英 + 中）；"重点词汇：…"那段由词卡承担，不重复渲染
+    expect(w.findAll(".word")).toHaveLength(8);
+    expect(w.text()).not.toContain("重点词汇：");
     expect(errors).toEqual([]);
   });
 
