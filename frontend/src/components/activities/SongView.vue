@@ -388,7 +388,7 @@ function onVideoError() {
         {{ w.emoji }} {{ w.en }}
       </span>
     </div>
-    <p v-if="mode !== 'audio'" class="under-tip">跟着唱完一遍，就能领小星星啦</p>
+    <p v-if="mode !== 'audio'" class="under-tip">听完一遍，就能领小星星啦</p>
 
     <!-- 收尾：完整听过一遍才可领星（循环模式下这是本页唯一出口）。
          SafeBottom：按钮不再直贴视口底（全面屏 Home 条会压住它） -->
