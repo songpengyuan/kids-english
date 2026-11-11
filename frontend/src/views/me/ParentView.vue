@@ -25,6 +25,8 @@ import PageShell from "../../components/ui/PageShell.vue";
 import EntryRow from "../../components/ui/EntryRow.vue";
 import IconTile from "../../components/ui/IconTile.vue";
 import SoundToggle from "../../components/layout/SoundToggle.vue";
+import LessonDownloadRow from "../../components/lesson/LessonDownloadRow.vue";
+import { lessons } from "../../data/lessons";
 import {
   BarChart3,
   HardDrive,
@@ -273,6 +275,19 @@ function pickChild(id: number) {
         <span class="cache-size">{{ cacheLabel }}</span>
       </div>
       <p class="gate-desc">孩子看过的童谣视频与发音会缓存下来供无网时播放（上限约 200MB，满了自动清理最旧的）。</p>
+
+      <!-- 课程离线包：按课下载音视频/词图/发音，出门前在设置里备好 -->
+      <h4 class="cache-sub">下载课程离线包</h4>
+      <p class="gate-desc">下载后这节课的童谣、单词发音和词图都能无网播放；建议出门前只下最近要学的一两课。</p>
+      <div class="dl-list">
+        <LessonDownloadRow
+          v-for="l in lessons"
+          :key="l.id"
+          :lesson="l"
+          @finished="refreshCacheSize"
+        />
+      </div>
+
       <button class="cache-clear" :disabled="clearing" @click="clearMediaCache">
         {{ clearing ? "清理中…" : "清理离线缓存" }}
       </button>
@@ -451,6 +466,15 @@ function pickChild(id: number) {
   font-weight: var(--fw-strong);
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+}
+.cache-sub {
+  margin: 16px 0 4px;
+  color: var(--ink);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-strong);
+}
+.dl-list {
+  margin-top: 4px;
 }
 .cache-clear {
   margin-top: 10px;

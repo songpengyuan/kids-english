@@ -192,6 +192,28 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(errors).toEqual([]);
   });
 
+  it("离线包下载收在家长中心设置：7 节课各自一行，不占课程详情页", async () => {
+    // jsdom 没有 Cache API，家长中心默认整卡隐藏；补一个空实现验证渲染结构
+    vi.stubGlobal("caches", {
+      open: async () => ({
+        keys: async () => [],
+        match: async () => undefined,
+      }),
+    });
+    try {
+      const w = await mountPage(ParentView, "/me/parent");
+      await flushPromises();
+      expect(w.text()).toContain("下载课程离线包");
+      expect(w.findAll(".dl-row")).toHaveLength(7);
+      // 第一行是 l5，按钮初始为“下载”
+      expect(w.findAll(".dl-row")[0].text()).toContain("我是一个音乐人");
+      expect(w.findAll(".dl-btn")[0].text()).toContain("下载");
+      expect(errors).toEqual([]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("游戏总地图（独立路由 /game）", async () => {
     const w = await mountPage(GameView, "/game");
     expect(w.text()).toContain("游戏闯关");
@@ -279,6 +301,9 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(tiles[1]).toContain("学单词");
     expect(tiles[2]).toContain("听音选图");
     expect(w.text()).not.toContain("闯关挑战");
+    // 离线包下载入口已收进家长中心设置，不再出现在课程详情页
+    expect(w.text()).not.toContain("下载本课离线包");
+    expect(w.find(".dl-bar").exists()).toBe(false);
   });
 
   it("闯关玩法页（quest 薄壳 → LessonView，闯关身份由路由名识别）", async () => {

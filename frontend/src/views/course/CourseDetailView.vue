@@ -17,8 +17,7 @@ import { activityKeys, actDisplayName, getLesson as getLocalLesson, splitActKey,
 import type { QuestAct } from "../../composables/useQuest";
 import { useContentStore } from "../../stores/content";
 import { useProgressStore } from "../../stores/progress";
-import { useLessonDownload } from "../../composables/useLessonDownload";
-import { BookOpen, Download, CheckCircle2, AlertCircle, Headphones, Layers, Link2, MessageCircle, Mic, Music, PenLine, RotateCw } from "@lucide/vue";
+import { BookOpen, Headphones, Layers, Link2, MessageCircle, Mic, Music, PenLine, RotateCw } from "@lucide/vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -40,23 +39,8 @@ watch(
   { immediate: true }
 );
 
-/* ---------- 离线包：下载本课媒体（词音/句音/词图/童谣音视频） ----------
- * 放在 menu 视图（家长视角操作）。下载经 SW 的 DOWNLOAD_LESSON 通道：
- * 页面切走不中断；已有缓存的项目秒过，失败单个不打断整批。 */
-const dl = useLessonDownload();
-const dlState = computed(() => dl.state.value);
-const dlLabel = computed(() => {
-  if (dlState.value === "downloading") return `离线包下载中 ${dl.loaded.value}/${dl.total.value}`;
-  if (dlState.value === "done") return "已可离线播放 ✓";
-  if (dlState.value === "error") return "部分没下完，点我再试";
-  return "下载本课离线包";
-});
-function startDownload() {
-  if (lesson.value && dlState.value !== "downloading") void dl.start(lesson.value);
-}
-
 /* 进课详情时静默预取该课词音（几 KB 小文件，首次点读零延迟；重复访问时
-   SW 缓存命中零网络，无成本） */
+   SW 缓存命中零网络，无成本）。离线包下载入口统一收在家长中心设置区。 */
 watch(lesson, (l) => {
   if (!l) return;
   for (const w of l.words) {
@@ -176,19 +160,6 @@ function openActivity(key: string) {
 
     <!-- 卡片目录视图 -->
     <div v-else-if="view === 'menu'" class="menu-wrap">
-      <!-- 离线包：一键下载本课全部音频/词图/视频，供无网环境播放（家长操作） -->
-      <button
-        v-if="lesson"
-        class="dl-bar"
-        :class="{ done: dlState === 'done', error: dlState === 'error' }"
-        :disabled="dlState === 'downloading'"
-        @click="startDownload"
-      >
-        <CheckCircle2 v-if="dlState === 'done'" class="dl-ico" />
-        <AlertCircle v-else-if="dlState === 'error'" class="dl-ico" />
-        <Download v-else class="dl-ico" :class="{ spin: dlState === 'downloading' }" />
-        <span class="dl-text">{{ dlLabel }}</span>
-      </button>
       <LessonMenu
         :activities="activities"
         :progress="lessonProgress"
@@ -201,47 +172,6 @@ function openActivity(key: string) {
 </template>
 
 <style scoped>
-/* 离线包下载条：menu 视图顶部的轻量行动条，done 转绿、error 转橙 */
-.dl-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  border: 1.5px dashed var(--line);
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  padding: 10px 16px;
-  margin-bottom: var(--gap-s);
-  color: var(--ink-soft);
-  font-weight: var(--fw-mid);
-  transition: border-color 0.2s, color 0.2s;
-}
-.dl-bar:disabled {
-  cursor: default;
-}
-.dl-bar.done {
-  border-color: color-mix(in srgb, var(--ok) 55%, transparent);
-  color: var(--ok);
-}
-.dl-bar.error {
-  border-color: color-mix(in srgb, var(--orange) 60%, transparent);
-  color: var(--orange);
-}
-.dl-ico {
-  width: 18px;
-  height: 18px;
-  flex: none;
-}
-.dl-ico.spin {
-  animation: dl-spin 1.1s linear infinite;
-}
-@keyframes dl-spin {
-  to { transform: rotate(360deg); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .dl-ico.spin { animation: none; }
-}
-
 .view-switch {
   display: inline-flex;
   gap: 2px;
