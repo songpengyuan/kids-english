@@ -205,6 +205,9 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
   display: flex;
   align-items: center;
   justify-content: center;
+  /* 图片解码完成前的暖底占位：否则首帧是深色空卡，弱网真机上孩子看到"图片时有时无" */
+  background: var(--media-bg);
+  border-radius: var(--radius-s);
 }
 .pic img {
   width: 78%;

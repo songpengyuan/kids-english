@@ -535,6 +535,8 @@ function finish() {
   height: var(--talk-pic);
   object-fit: contain;
   border-radius: var(--radius-s);
+  /* 图片解码完成前的暖底占位（同 QuizView） */
+  background: var(--media-bg);
 }
 /* 图下的单词标签：答句本身已经含这个词，标签是"图→词"的对照，属次要信息。
  * 以前 1.12× 气泡字号（21px）比答句（18.7px）还大，主次颠倒 → 降到 0.85× 并转软色。 */

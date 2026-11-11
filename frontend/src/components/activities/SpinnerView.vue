@@ -453,6 +453,9 @@ const micLabel = computed(() => {
   align-items: center;
   justify-content: center;
   flex: none;
+  /* 图片解码完成前的暖底占位（同 QuizView） */
+  background: var(--media-bg);
+  border-radius: var(--radius-s);
 }
 .current-art img {
   max-width: 100%;
