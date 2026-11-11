@@ -157,6 +157,29 @@ function goStreak() {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 课名页（标题是「点按朗读课名」的 .hdr-title-tap，见 CourseDetailView / LessonView）：
+   英文课名「Brown Bear, Brown Bear」在 390 宽下只能显示到「…B」，家长认不出是哪课，
+   所以这类标题允许折成两行（最多两行，再长才省略）。
+   判定锚点用按钮类而不是封面图：新课时若暂缺自托管封面（回退 emoji 文本）也照样折行。
+   中文页面名没有这个按钮，仍走单行省略，顶栏高度不变。 */
+.hdr-title:has(.hdr-title-tap) {
+  white-space: normal;
+}
+.hdr-title:has(.hdr-title-tap) :deep(.hdr-title-tap) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  /* width: max-content 先按「单行整句」量宽度，只有超过中列才被 max-width 收窄折行：
+     短课名（Good Night, Gorilla）保持单行、顶栏不无谓变高；长课名（Brown Bear,
+     Brown Bear）才折成两行。只写 max-width 会让 flex 项先被压窄，短标题也被折行。 */
+  width: max-content;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: clip;
+  line-height: 1.25;
+}
 .hdr-right {
   flex: none;
   position: relative;

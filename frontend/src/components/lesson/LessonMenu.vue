@@ -22,16 +22,28 @@ const emit = defineEmits<{
 interface MenuCard {
   key: string;
   name: string;
+  /** 词群入口名的中文半段（含「·」）与词群半段：窄屏折行时保证点是留在第一行，
+      不让「·Animals」这种以点开头的残行出现 */
+  head: string;
+  tail: string;
   desc?: string;
   tone: string;
   icon: any;
   stars?: number;
 }
 
+/** 「学单词·Colors」→ head「学单词·」+ tail「Colors」；没有词群后缀时 head 即全名 */
+function splitName(name: string): { head: string; tail: string } {
+  const at = name.indexOf("·");
+  if (at < 0) return { head: name, tail: "" };
+  return { head: name.slice(0, at + 1), tail: name.slice(at + 1) };
+}
+
 const cards = computed<MenuCard[]>(() =>
   props.activities.map((a) => ({
     key: a.key,
     name: a.name,
+    ...splitName(a.name),
     desc: a.desc,
     tone: a.tone,
     icon: a.icon,
@@ -59,7 +71,7 @@ function onClick(c: MenuCard) {
         @click="onClick(c)"
       >
         <component :is="c.icon" class="tile-ico" />
-        <span class="tile-name">{{ c.name }}</span>
+        <span class="tile-name"><span class="tile-name__head">{{ c.head }}</span><span v-if="c.tail" class="tile-name__tail">{{ c.tail }}</span></span>
         <span v-if="c.desc" class="tile-desc">{{ c.desc }}</span>
         <span v-if="c.stars" class="tile-badge"><Star class="k-ico star-fill" />{{ c.stars }}</span>
       </button>
@@ -128,8 +140,35 @@ function onClick(c: MenuCard) {
 }
 .tile:active { transform: scale(0.96); }
 .tile-ico { font-size: clamp(28px, 5vh, 40px); }
-.tile-name { font-size: clamp(14px, 2.5vh, 18px); font-weight: var(--fw-strong); }
-.tile-desc { font-size: clamp(11px, 1.8vh, 13px); font-weight: var(--fw-mid); opacity: 0.8; }
+/* 玩法名允许折行：词群入口名是「学单词·Colors」这类中文+英文混排，
+   窄屏（320–360）下比瓷砖内宽还长，单行会左右溢出瓷砖（曾经文字压到卡外）。
+   max-width 让溢出的长词在卡内折成两行；· 本身是合法断行点（U+00B7 属 BA 类），
+   所以「学单词·」/「Colors」两行读起来仍顺。 */
+.tile-name {
+  font-size: clamp(14px, 2.5vh, 18px);
+  font-weight: var(--fw-strong);
+  max-width: 100%;
+  line-height: 1.3;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+/* 词群后缀（Colors/Animals）不允许再断词：只接受「学单词·」+「Colors」这种整段换行 */
+.tile-name__tail {
+  white-space: nowrap;
+}
+/* 中文半段（含「·」）也不许断：否则浏览器会在「图」和「·」之间断行，
+   变成「听音选图」/「·Animals」——点跑到第二行开头，读起来像排版事故 */
+.tile-name__head {
+  white-space: nowrap;
+}
+.tile-desc {
+  font-size: clamp(11px, 1.8vh, 13px);
+  font-weight: var(--fw-mid);
+  opacity: 0.8;
+  max-width: 100%;
+  text-align: center;
+  line-height: 1.35;
+}
 .tile-badge {
   position: absolute;
   top: 6px;
