@@ -88,7 +88,7 @@ const {
   // 循环回到开头也要落"听过"的标记，否则默认循环就永远领不到星
   onLoopRestart: () => {
     watched.value = true;
-    lyricsEl.value?.scrollTo({ top: 0 });
+    lyricsEl.value?.scrollTo?.({ top: 0 });
   },
 });
 
