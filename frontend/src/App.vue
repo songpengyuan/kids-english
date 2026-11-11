@@ -144,4 +144,18 @@ onMounted(() => {
     scroll-behavior: auto !important;
   }
 }
+
+/* 细滚动条：桌面端默认滚动条又粗又黑（关卡列表/磨耳朵实测），压成细条；
+ * 触屏设备本来就不显示滚动条，无影响 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line, rgba(255, 255, 255, 0.15));
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 </style>
