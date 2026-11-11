@@ -37,7 +37,8 @@ const router = useRouter();
 
 function enter(l: Lesson) {
   speak(l.title, { ttsOnly: true });
-  router.push(`/course/${l.id}`);
+  // 课程卡先进课程详情页（介绍 + 进度 + 需加强的词），点“开始学习”再进关卡列表
+  router.push(`/course/${l.id}/about`);
 }
 </script>
 

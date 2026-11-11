@@ -1,24 +1,31 @@
 <script setup lang="ts">
 /**
- * 课程介绍页（#/course/:id/about）——家长视角的课前/课后导读。
+ * 课程详情页 / 课时首页（#/course/:id/about）——课程卡片的落地页。
  *
  * 为什么独立成页（2026-11-11 交互评估）：
  *  - 挂成关卡会污染孩子“9 关 + 宝箱”的通关节奏，页里只有字、点不动，收益为负；
- *  - 塞在课程详情页折叠卡里，500+ 字展开后把关卡列表整屏推走，想回第 1 关得滑很久。
- * 所以课程页只留一张“课程简介”入口卡（一行摘要），真内容在这里整页读。
+ *  - 塞在课程页折叠卡里，500+ 字展开后把关卡列表整屏推走，想回第 1 关得滑很久。
+ * 所以拆成独立页：课程列表卡片先落到这里（介绍 + 进度 + 需加强的词），
+ * 底部“开始学习 / 继续学习”再进关卡列表（#/course/:id）。
  *
- * 数据来源：lesson.intro（老师给的整段文案，空行分段）。其中“重点词汇：…”那段
- * 不再重复渲染——上面的词卡网格用 words 的图/英/中把它表达得更清楚。
+ * 数据来源：
+ *  - lesson.intro（老师给的整段文案，空行分段）；其中“重点词汇：…”那段不重复渲染，
+ *    由词卡网格用 words 的图/英/中承担；
+ *  - 进度/错词全部复用 useProgressStore（completed / 星级 / words.wrong），
+ *    不新造状态，和关卡列表、复习页同一口径。
  */
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import PageShell from "../../components/ui/PageShell.vue";
-import { getLesson as getLocalLesson, type Lesson } from "../../data/lessons";
+import { activityKeys, getLesson as getLocalLesson, type Lesson } from "../../data/lessons";
 import { useContentStore } from "../../stores/content";
+import { useProgressStore } from "../../stores/progress";
+import { Play } from "@lucide/vue";
 
 const route = useRoute();
 const router = useRouter();
 const content = useContentStore();
+const progress = useProgressStore();
 
 defineOptions({ name: "CourseAboutView" });
 
@@ -48,6 +55,37 @@ const extras = computed(() =>
   paragraphs.value.slice(1).filter((p) => !p.startsWith("重点词汇"))
 );
 
+/* ---------- 本课进度（复刻关卡列表口径：已玩过的玩法数 / 总玩法数） ---------- */
+const actKeys = computed(() => (lesson.value ? activityKeys(lesson.value) : []));
+const doneCount = computed(() => {
+  const id = lesson.value?.id;
+  if (!id) return 0;
+  const completed = progress.progress[id]?.completed || [];
+  return actKeys.value.filter((k) => completed.includes(k)).length;
+});
+const percent = computed(() =>
+  actKeys.value.length ? Math.min(100, Math.round((doneCount.value / actKeys.value.length) * 100)) : 0
+);
+const stars = computed(() => (lesson.value ? progress.lessonStars(lesson.value.id) : 0));
+/** 本课答错过的词（按错次数降序）：详情页用来提示“这几个词需要加强” */
+const weakWords = computed(() => {
+  const l = lesson.value;
+  if (!l) return [] as { id: string; en: string; zh: string; image?: string | null; emoji: string; wrong: number }[];
+  const stats = progress.progress[l.id]?.words || {};
+  return l.words
+    .map((w) => ({ ...w, wrong: stats[w.id]?.wrong || 0 }))
+    .filter((w) => w.wrong > 0)
+    .sort((a, b) => b.wrong - a.wrong)
+    .slice(0, 8);
+});
+const ctaLabel = computed(() => {
+  if (percent.value >= 100) return "再玩一遍";
+  return percent.value > 0 ? "继续学习" : "开始学习";
+});
+function goLearn() {
+  void router.push(`/course/${lessonId.value}`);
+}
+
 const dateLabel = computed(() => {
   const d = lesson.value?.date;
   if (!d) return "";
@@ -62,7 +100,7 @@ function goBack() {
 
 <template>
   <PageShell scroll back-label="返回" @back="goBack">
-    <template #title><span>课程介绍</span></template>
+    <template #title><span>课程详情</span></template>
 
     <div v-if="lesson" class="about">
       <!-- 课程头：emoji 大图 + 中英文名 + 上课日期 -->
@@ -71,6 +109,31 @@ function goBack() {
         <h1 class="about-title">{{ lesson.title }}</h1>
         <p class="about-sub">{{ lesson.titleZh }}<span v-if="dateLabel"> · {{ dateLabel }}</span></p>
       </header>
+
+      <!-- 本课进度：孩子练到哪了、拿了多少星 -->
+      <section class="about-card progress-card">
+        <div class="progress-top">
+          <span class="about-h progress-h">已完成 {{ doneCount }}/{{ actKeys.length }} 关</span>
+          <span class="progress-pct">{{ percent }}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" :style="{ width: percent + '%' }"></div></div>
+        <div v-if="stars" class="progress-stars">⭐ 已得 {{ stars }} 颗星</div>
+      </section>
+
+      <!-- 需要加强的单词：只列本课答错过的词，点词卡可回关卡列表重练 -->
+      <section v-if="weakWords.length" class="about-card">
+        <h2 class="about-h">需要加强的单词<span class="about-count">{{ weakWords.length }}</span></h2>
+        <div class="weak-list">
+          <button v-for="w in weakWords" :key="w.id" class="weak" @click="goLearn">
+            <img v-if="w.image" class="weak-img" :src="w.image" :alt="w.en" loading="lazy" />
+            <span v-else class="weak-img weak-emoji">{{ w.emoji }}</span>
+            <span class="weak-text">
+              <span class="weak-en">{{ w.en }}</span>
+              <span class="weak-wrong">错过 {{ w.wrong }} 次</span>
+            </span>
+          </button>
+        </div>
+      </section>
 
       <section v-if="story" class="about-card">
         <h2 class="about-h">绘本故事</h2>
@@ -94,6 +157,14 @@ function goBack() {
       <section v-if="extras.length" class="about-card">
         <div v-for="(p, i) in extras" :key="i" class="about-para">{{ p }}</div>
       </section>
+
+      <!-- 主行动：进现在的关卡列表（#/course/:id） -->
+      <div class="cta-bar">
+        <button class="cta" @click="goLearn">
+          <Play class="cta-ico" />
+          <span>{{ ctaLabel }}</span>
+        </button>
+      </div>
     </div>
 
     <div v-else class="about-empty">这节课的介绍还没准备好</div>
@@ -223,6 +294,122 @@ function goBack() {
 .word-zh {
   font-size: var(--fs-small);
   color: var(--ink-faint);
+}
+
+/* 进度卡：已完成 X/Y + 百分比 + 星数（口径与关卡列表一致） */
+.progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-s);
+}
+.progress-h {
+  margin: 0;
+}
+.progress-pct {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  color: var(--brand);
+}
+.progress-bar {
+  height: 8px;
+  margin: 10px 0 6px;
+  border-radius: 999px;
+  background: var(--brand-tint);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--brand-grad);
+  transition: width 0.25s ease;
+}
+.progress-stars {
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+}
+
+/* 需要加强的单词：词卡小格子，点一下回关卡列表重练 */
+.weak-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--gap-s);
+}
+.weak {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.weak-img {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--brand-soft);
+}
+.weak-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+.weak-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.weak-en {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-mid);
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.weak-wrong {
+  font-size: var(--fs-small);
+  color: var(--orange);
+}
+
+/* 主行动：粘在滚动区底部的“开始学习 / 继续学习” */
+.cta-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: 10px 0 2px;
+  background: var(--bg);
+}
+.cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  border: none;
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--on-tone);
+  font-size: var(--fs-btn);
+  font-weight: var(--fw-strong);
+  cursor: pointer;
+  box-shadow: var(--shadow-hard);
+}
+.cta:active {
+  transform: translateY(2px);
+  box-shadow: var(--shadow-soft);
+}
+.cta-ico {
+  width: 1.1em;
+  height: 1.1em;
 }
 
 .about-empty {

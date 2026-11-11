@@ -77,6 +77,7 @@ import ListenView from "../listen/ListenView.vue";
 import GateView from "../../views/GateView.vue";
 import { appRoutes } from "../../router";
 import { usePlayerStore } from "../../stores/player";
+import { useProgressStore } from "../../stores/progress";
 import { lessons, activityKeys, splitActKey } from "../../data/lessons";
 
 /** jsdom 没有 ResizeObserver（LearnView/GamePath 会用到） */
@@ -120,6 +121,21 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     const w = await mountPage(LearnView, "/course");
     expect(w.text()).toContain("我是一个音乐人"); // date 最早的课排第一
     expect(w.text()).toContain("Walking In The Jungle"); // l10 也在列表里
+    expect(errors).toEqual([]);
+  });
+
+  it("课程卡片点击 → 课程详情页（不是直接进关卡列表）", async () => {
+    const w = await mountPage(LearnView, "/course");
+    const cards = w.findAll(".lesson-card");
+    expect(cards.length).toBe(lessons.length);
+    // 列表按 date 升序：第一张是 l5《我是一个音乐人》
+    const first = [...lessons].sort((a, b) =>
+      (a.date ?? "9999-12-31").localeCompare(b.date ?? "9999-12-31")
+    )[0];
+    await cards[0].trigger("click");
+    await flushPromises();
+    const router = (w.vm as unknown as { $router: Router }).$router;
+    expect(router.currentRoute.value.path).toBe(`/course/${first.id}/about`);
     expect(errors).toEqual([]);
   });
 
@@ -213,6 +229,34 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(intro.find(".intro__peek").text()).toContain("Good Night, Gorilla");
     // 长文（词表 / 句子）留在独立介绍页，课程页不出现，免得把关卡列表推走
     expect(intro.text()).not.toContain("重点词汇");
+    expect(errors).toEqual([]);
+  });
+
+  it("课程详情页：进度 + 开始学习（课程卡片的落地页）", async () => {
+    const w = await mountPage(CourseAboutView, "/course/l13/about");
+    expect(w.text()).toContain("课程详情");
+    expect(w.find(".progress-card").text()).toContain("已完成 0/9 关");
+    expect(w.find(".cta").text()).toContain("开始学习");
+    await w.find(".cta").trigger("click");
+    await flushPromises();
+    const router = (w.vm as unknown as { $router: Router }).$router;
+    expect(router.currentRoute.value.path).toBe("/course/l13");
+    expect(errors).toEqual([]);
+  });
+
+  it("课程详情页：错过的词进“需要加强”区，练过一关后主按钮变“继续学习”", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const store = useProgressStore();
+    store.recordWord("l13", "gorilla", { seen: 1, wrong: 1 });
+    store.setGameStars("l13", "song", 1);
+    const w = await mountPage(CourseAboutView, "/course/l13/about", {}, pinia);
+    const weak = w.find(".weak-list");
+    expect(weak.exists()).toBe(true);
+    expect(weak.text()).toContain("gorilla");
+    expect(weak.text()).toContain("错过 1 次");
+    expect(w.find(".progress-card").text()).toContain("已完成 1/9 关");
+    expect(w.find(".cta").text()).toContain("继续学习");
     expect(errors).toEqual([]);
   });
 
