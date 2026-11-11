@@ -46,11 +46,15 @@ describe("课程简介（intro）", () => {
     const l13 = getLesson("l13")!;
     expect(l13.intro).toBeTruthy();
     expect(l13.intro).toContain("Good Night, Gorilla");
+    // 老师给的整段内容都要在：故事 + 重点词汇 + 拓展词汇 + 绘语句子
+    expect(l13.intro).toContain("重点词汇");
+    expect(l13.intro).toContain("拓展词汇");
+    expect(l13.intro).toContain("Good night, zoo.");
   });
 
-  it("简介是一段话的量级（>40 且 <300 字），详情页不会被长文撑爆", () => {
+  it("简介长度在折叠卡可读区间（>40 且 <800 字）", () => {
     const l13 = getLesson("l13")!;
     expect(l13.intro!.length).toBeGreaterThan(40);
-    expect(l13.intro!.length).toBeLessThan(300);
+    expect(l13.intro!.length).toBeLessThan(800);
   });
 });

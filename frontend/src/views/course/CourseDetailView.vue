@@ -30,6 +30,8 @@ defineOptions({ name: "CourseDetailView" });
 
 const lessonId = computed(() => route.params.id as string);
 const lesson = ref<Lesson | null>(getLocalLesson(lessonId.value));
+/** 简介第一段：折叠态只露这一句，多段文案不把 summary 撑成两行 */
+const introPeek = computed(() => (lesson.value?.intro ?? "").split("\n").find((s) => s.trim()) ?? "");
 
 watch(
   lessonId,
@@ -179,7 +181,7 @@ function openActivity(key: string) {
       <summary class="intro__head">
         <BookOpen class="intro__ico" />
         <span class="intro__label">课程简介</span>
-        <span class="intro__peek">{{ lesson.intro }}</span>
+        <span class="intro__peek">{{ introPeek }}</span>
         <svg class="intro__chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
       </summary>
       <p class="intro__text">{{ lesson.intro }}</p>
@@ -312,6 +314,8 @@ function openActivity(key: string) {
   color: var(--ink-soft);
   font-size: var(--fs-small);
   line-height: 1.75;
+  /* 简介按空行分段（故事 / 重点词汇 / 拓展词汇 / 绘本句子），保留换行 */
+  white-space: pre-line;
 }
 @media (prefers-reduced-motion: reduce) {
   .intro__chev { transition: none; }
