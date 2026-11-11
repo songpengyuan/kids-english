@@ -23,6 +23,7 @@ import LessonResult from "../../components/lesson/LessonResult.vue";
 import LessonMenu from "../../components/lesson/LessonMenu.vue";
 import LessonProgressHeader from "../../components/lesson/LessonProgressHeader.vue";
 import AppDialog from "../../components/ui/AppDialog.vue";
+import { emojiCoverUrl } from "../../utils/emojiCover";
 import { activityKeys, actDisplayName, getLesson as getLocalLesson, splitActKey, wordGroupsOf, type Lesson, type Word } from "../../data/lessons";
 import { useContentStore } from "../../stores/content";
 import { speak, speakZh } from "../../services/speech";
@@ -360,7 +361,17 @@ const playStage = computed(() => {
         >
           <!-- 顶栏只显示英文课名（主标题层级由外层 .hdr-title 提供）；点按朗读英文标题。
                中文译名不再出现在顶栏；答题进行中中列是进度点/弱化玩法名，不渲染本课名块 -->
-          <span class="hdr-title-main">{{ lesson.emoji }} {{ lesson.title || "课程" }}</span>
+          <span class="hdr-title-main">
+            <!-- 课程小封面：自托管图优先（跨端一致），资产集外回退 emoji 文本 -->
+            <img
+              v-if="emojiCoverUrl(lesson.emoji)"
+              class="hdr-emoji-img"
+              :src="emojiCoverUrl(lesson.emoji)!"
+              alt=""
+            />
+            <template v-else>{{ lesson.emoji }}</template>
+            {{ lesson.title || "课程" }}
+          </span>
         </button>
       </template>
       <!-- 卡片目录模式：右上角切到闯关地图（孩子主入口） -->
@@ -522,6 +533,13 @@ const playStage = computed(() => {
 }
 /* 课名单行：字号/字重/颜色继承外层 .hdr-title 的主标题规格（单一真源，不在内层重复声明）；
    这里只锁定单行，超长交给外层 nowrap + ellipsis 安全截断，绝不挤压右侧徽章簇 */
+/* 顶栏行内课程小封面：跟字号缩放（自托管 Twemoji，跨端一致） */
+.hdr-emoji-img {
+  width: 1.2em;
+  height: 1.2em;
+  object-fit: contain;
+  vertical-align: -0.18em;
+}
 .hdr-title-main {
   white-space: nowrap;
 }

@@ -16,8 +16,10 @@ import LessonMenu from "../../components/lesson/LessonMenu.vue";
 import { activityKeys, actDisplayName, getLesson as getLocalLesson, splitActKey, type Lesson } from "../../data/lessons";
 import type { QuestAct } from "../../composables/useQuest";
 import { useContentStore } from "../../stores/content";
+import { speak, speakZh } from "../../services/speech";
 import { useProgressStore } from "../../stores/progress";
 import { BookOpen, Headphones, Layers, Link2, MessageCircle, Mic, Music, PenLine, RotateCw } from "@lucide/vue";
+import { emojiCoverUrl } from "../../utils/emojiCover";
 
 const route = useRoute();
 const router = useRouter();
@@ -66,6 +68,11 @@ watch(
 
 function goBack() {
   void router.push("/course");
+}
+
+/** 标题点读英文课名（孩子看到的都能发音） */
+function speakTitle() {
+  if (lesson.value) void speak(lesson.value.title, { ttsOnly: true });
 }
 
 /** 玩法清单（与 LessonView 同源：activityKeys 是唯一顺序来源）。
@@ -129,7 +136,26 @@ function openActivity(key: string) {
     @back="goBack"
   >
     <template #title>
-      <span>{{ lesson?.emoji }} {{ lesson?.title || "课程" }}</span>
+      <button
+        v-if="lesson"
+        type="button"
+        class="hdr-title-tap"
+        aria-label="朗读课程名"
+        @click="speakTitle"
+      >
+        <span class="hdr-title-emoji">
+          <!-- 课程小封面：自托管图优先（跨端一致），资产集外回退 emoji 文本 -->
+          <img
+            v-if="emojiCoverUrl(lesson.emoji)"
+            class="hdr-emoji-img"
+            :src="emojiCoverUrl(lesson.emoji)!"
+            alt=""
+          />
+          <template v-else>{{ lesson.emoji }}</template>
+        </span>
+        {{ lesson.title || "课程" }}
+      </button>
+      <span v-else>课程</span>
     </template>
     <!-- 右上角：地图 / 卡片目录 切换 -->
     <template #right>
@@ -163,15 +189,35 @@ function openActivity(key: string) {
       <LessonMenu
         :activities="activities"
         :progress="lessonProgress"
-        @open-song="openActivity('song')"
-        @open-learn="openActivity('learn')"
-        @open-activity="(a) => openActivity(a.key)"
+        @open-song="speakZh('唱童谣'); openActivity('song')"
+        @open-learn="speakZh('学单词'); openActivity('learn')"
+        @open-activity="(a) => { speakZh(a.name); openActivity(a.key); }"
       />
     </div>
   </PageShell>
 </template>
 
 <style scoped>
+/* 顶栏行内课程小封面：跟字号缩放（自托管 Twemoji，跨端一致） */
+.hdr-emoji-img {
+  width: 1.2em;
+  height: 1.2em;
+  object-fit: contain;
+  vertical-align: -0.18em;
+}
+.hdr-title-tap {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: var(--gap-xs) var(--gap-s);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.hdr-title-tap:active {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
 .view-switch {
   display: inline-flex;
   gap: 2px;

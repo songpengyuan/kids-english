@@ -16,9 +16,11 @@
  *   <EmojiTile :emoji="s.emoji" :tone="s.tone" />
  *   <EmojiTile emoji="🎵" tone="gold" size="lg" />
  */
+import { computed } from "vue";
 import type { Tone } from "../../types";
+import { emojiCoverUrl } from "../../utils/emojiCover";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     emoji: string;
     /** 取自 base.css 的 .tone-* 色调板，是全站唯一允许的彩色来源 */
@@ -28,11 +30,16 @@ withDefaults(
   }>(),
   { tone: "blue", size: "md" }
 );
+
+/** 有自托管封面图（public/covers/）就用图——跨设备像素级一致；
+ *  资产集外的 emoji 回退文本渲染（见 utils/emojiCover.ts） */
+const cover = computed(() => emojiCoverUrl(props.emoji));
 </script>
 
 <template>
   <span class="emoji-tile" :class="[`tone-${tone}`, `emoji-tile--${size}`]" aria-hidden="true">
-    {{ emoji }}
+    <img v-if="cover" class="emoji-tile__img" :src="cover" alt="" />
+    <template v-else>{{ emoji }}</template>
   </span>
 </template>
 
@@ -47,6 +54,12 @@ withDefaults(
   border-radius: var(--radius-s);
   font-size: var(--fs-emoji-l);
   line-height: 1;
+}
+/* 封面图模式：占底座 72%，四周留白比例与文本 emoji 观感一致 */
+.emoji-tile__img {
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
 }
 .emoji-tile--lg {
   width: 1.6em;

@@ -21,6 +21,7 @@ import { useProgressStore } from "../../../stores/progress";
 import { useRouter } from "vue-router";
 import { speak } from "../../../services/speech";
 import { Check } from "@lucide/vue";
+import { emojiCoverUrl } from "../../../utils/emojiCover";
 
 const content = useContentStore();
 const progress = useProgressStore();
@@ -55,7 +56,14 @@ function enter(l: Lesson) {
           :style="{ animationDelay: i * 0.04 + 's' }"
           @click="enter(l)"
         >
-          <span class="card-emoji" aria-hidden="true">{{ l.emoji }}</span>
+          <!-- 课程封面：自托管 Twemoji 图（跨端一致），资产集外回退 emoji 文本 -->
+          <img
+            v-if="emojiCoverUrl(l.emoji)"
+            class="card-emoji card-emoji--img"
+            :src="emojiCoverUrl(l.emoji)!"
+            alt=""
+          />
+          <span v-else class="card-emoji" aria-hidden="true">{{ l.emoji }}</span>
           <div class="card-text">
             <span class="card-title">{{ l.title }}</span>
             <span class="card-sub">{{ l.titleZh }}</span>
@@ -133,6 +141,15 @@ function enter(l: Lesson) {
      Chrome 取整块字形栅格做阴影形状，会在卡面上留下一块方形色晕
      （手机 2 列窄卡尤其明显，看起来像一张方图糊在封面上）。
      要立体感请用卡片自身的投影，别给 emoji 加 filter。 */
+}
+/* 封面图版：与文本 emoji 同位同占比（SVG 方形，宽度即高度）。
+ * SVG 是 img 元素（透明底），drop-shadow 阴影贴形——与 COLRv1 字形 emoji
+ * 的方形色晕问题不同，这里安全；亮色卡上浅色图标（如 l5 小号）不再发飘 */
+.card-emoji--img {
+  width: 40cqw;
+  height: 40cqw;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.14));
 }
 .card-text {
   position: relative;
