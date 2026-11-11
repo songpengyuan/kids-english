@@ -50,3 +50,7 @@ backend/app/media/*
 .zcode/
 # pytest 运行缓存
 .pytest_cache/
+
+# 个人临时素材目录（照片/参考图，不入库——隐私红线：儿童相关内容不进 git）
+.tmp-inspect/
+.tmp-animals/
