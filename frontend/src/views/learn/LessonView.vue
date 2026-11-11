@@ -22,6 +22,7 @@ import HeaderBar from "../../components/layout/HeaderBar.vue";
 import LessonResult from "../../components/lesson/LessonResult.vue";
 import LessonMenu from "../../components/lesson/LessonMenu.vue";
 import LessonProgressHeader from "../../components/lesson/LessonProgressHeader.vue";
+import AppDialog from "../../components/ui/AppDialog.vue";
 import { activityKeys, actDisplayName, getLesson as getLocalLesson, splitActKey, wordGroupsOf, type Lesson, type Word } from "../../data/lessons";
 import { useContentStore } from "../../stores/content";
 import { speak, speakZh } from "../../services/speech";
@@ -192,6 +193,16 @@ function claimChest() {
  *  除 menu/result 外都是玩法页——别再手写玩法 key 列表（新增 memory/order 时漏项，
  *  会把它们误当菜单页：顶栏没有进度、左上角还是返回箭头）。 */
 const isPlay = computed(() => stage.value !== "menu" && stage.value !== "result");
+/** 玩法中点左上角"关闭"：先弹孩子化确认再退出——孩子手指小、左上角常被误触，
+ *  直接退出会把答了一半的题全丢掉（2026-11-12 全面走查 P1 #1）。结算/菜单页不拦。 */
+const showLeaveConfirm = ref(false);
+function onBack() {
+  if (isPlay.value) {
+    showLeaveConfirm.value = true;
+    return;
+  }
+  back();
+}
 /** 玩法进度（0-100），由 Learn/Quiz/Match/Speak 上报到顶栏进度条（多邻国式） */
 const playPct = ref(0);
 /** 本局总量（题数/页数/对数/词数/轮数）与已完成量 → 顶栏显示 x/y，孩子知道一共要做多少 */
@@ -325,7 +336,7 @@ const playStage = computed(() => {
       :close="isPlay"
       :show-badges="!isPlay"
       :back-label="questMode ? '返回闯关地图' : stage === 'menu' ? '返回地图' : '返回本课菜单'"
-      @back="back"
+      @back="onBack"
     >
       <template #title>
         <!-- 本局进度：有步数 → 圆点；无步数玩法（唱童谣等）→ 弱化玩法名。
@@ -415,10 +426,62 @@ const playStage = computed(() => {
       @open-chest="claimChest"
     />
 
+    <!-- 玩法中退出确认：孩子误触左上角的高频兜底 -->
+    <AppDialog v-if="showLeaveConfirm" aria-label="确认离开" @close="showLeaveConfirm = false">
+      <template #default="{ close }">
+        <p class="leave-title">还没玩完哦</p>
+        <p class="leave-sub">真的要离开吗？答过的题会不见的</p>
+        <div class="leave-actions">
+          <button class="leave-stay" data-haptic @click="close()">继续玩</button>
+          <button class="leave-go" data-haptic @click="showLeaveConfirm = false; back()">离开</button>
+        </div>
+      </template>
+    </AppDialog>
+
   </div>
 </template>
 
 <style scoped>
+/* 退出确认弹窗内容（AppDialog 卡内） */
+.leave-title {
+  font-size: var(--fs-title);
+  font-weight: var(--fw-strong);
+  color: var(--ink);
+  text-align: center;
+}
+.leave-sub {
+  margin-top: var(--gap-s);
+  font-size: var(--fs-body);
+  color: var(--ink-soft);
+  text-align: center;
+}
+.leave-actions {
+  margin-top: var(--gap-l);
+  display: flex;
+  gap: var(--gap-m);
+  justify-content: center;
+}
+.leave-actions button {
+  flex: 1;
+  max-width: 220px;
+  padding: 14px 20px;
+  border: none;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-btn);
+  font-weight: var(--fw-strong);
+  cursor: pointer;
+}
+.leave-stay {
+  background: var(--brand);
+  color: var(--on-tone);
+  box-shadow: 0 4px 0 var(--brand-dark);
+}
+.leave-go {
+  background: var(--btn-plain-bg);
+  color: var(--ink-soft);
+  box-shadow: 0 4px 0 var(--btn-plain-deep);
+}
+
 .group-switch {
   display: inline-flex;
   gap: 2px;
