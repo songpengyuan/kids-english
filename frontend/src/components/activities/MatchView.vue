@@ -60,10 +60,12 @@ type Side = "img" | "word";
 type MatchMode = "word" | "sound";
 const mode = ref<MatchMode>(readMode());
 function readMode() {
+  // 默认「听音」：5 岁孩子不识字，认拼写连线超出能力（2026-11-12 全面走查 P1 #4）。
+  // 「看词」保留为切换项——孩子/家长主动选过 word 就尊重其选择。
   try {
-    return localStorage.getItem(MODE_KEY) === "sound" ? "sound" : "word";
+    return localStorage.getItem(MODE_KEY) === "word" ? "word" : "sound";
   } catch {
-    return "word";
+    return "sound";
   }
 }
 function setMode(m: MatchMode) {
@@ -466,7 +468,7 @@ onBeforeUnmount(() => {
         <!-- 提示语刻意短（右侧还有"看词/听音"切换 + 计数）：390 宽下长提示会被挤成窄条 -->
         <template v-if="colorMode">把颜色和小动物连起来</template>
         <template v-else-if="mode === 'word'">把图片和单词连起来</template>
-        <template v-else>听发音，连到对应的图</template>
+        <template v-else>听发音，连对应的图</template>
       </template>
       <!-- 练习方式切换：认字（显示单词）/ 听力（只显示声音）；颜色配对模式隐藏 -->
       <template v-if="!colorMode" #extra>
@@ -708,6 +710,8 @@ onBeforeUnmount(() => {
 }
 .cell.pic {
   cursor: grab;
+  /* 图片解码完成前的暖底占位（同 QuizView）：避免首帧深色空卡 */
+  background: var(--media-bg);
 }
 .cell.pic:active {
   cursor: grabbing;
