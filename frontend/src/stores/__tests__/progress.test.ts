@@ -118,6 +118,44 @@ describe("progress store · 老数据迁移", () => {
   });
 });
 
+describe("progress store · 写入口径（星级/玩法标记）", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-11T09:00:00"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("setGameStars：低星不得覆盖高星（多设备/重玩的合并口径）", () => {
+    const p = useProgressStore();
+    p.setGameStars("l11", "learn", 3);
+    p.setGameStars("l11", "learn", 1); // 重玩得低星
+    expect(p.progress.l11.learn).toBe(3);
+  });
+
+  it("setGameStars：completed 并集去重，同一玩法不重复入列", () => {
+    const p = useProgressStore();
+    p.setGameStars("l11", "learn", 2);
+    p.setGameStars("l11", "learn", 3);
+    expect((p.progress.l11.completed ?? []).filter((x) => x === "learn")).toHaveLength(1);
+    // 新玩法正常追加
+    p.setGameStars("l11", "match", 1);
+    expect(p.progress.l11.completed ?? []).toEqual(["learn", "match"]);
+  });
+
+  it("markSong / markChest：幂等标记（completed 只记一次）", () => {
+    const p = useProgressStore();
+    p.markSong("l11");
+    p.markSong("l11");
+    expect(p.progress.l11.song).toBe(1);
+    expect((p.progress.l11.completed ?? []).filter((x) => x === "song")).toHaveLength(1);
+    p.markChest("l11");
+    p.markChest("l11");
+    expect((p.progress.l11.completed ?? []).filter((x) => x === "chest")).toHaveLength(1);
+  });
+});
+
 describe("progress store · 掌握度与每日快照", () => {
   beforeEach(() => {
     localStorage.clear();
