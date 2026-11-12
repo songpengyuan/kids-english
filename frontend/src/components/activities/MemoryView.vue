@@ -80,6 +80,16 @@ const counterText = computed(() =>
     : `${solvedPairs.value} / ${totalPairs.value}`
 );
 
+/** 网格列数：卡数决定（8 卡 4 列、6 卡 3 列、≤4 卡 2 列）。
+ *  曾经固定 4 列，6 张卡时变成 4+2 排布、2 张卡时只占左半边，宽屏下尤其失衡。 */
+const gridCols = computed(() => {
+  const pairs = curGroup.value.cards.length / 2;
+  return pairs <= 2 ? 2 : Math.min(4, pairs);
+});
+/** 宽屏高度系数：卡宽高比 3/4，两行卡总高 ≈ 网宽×2/3（4 列）或 ≈ 网宽×8/9（3 列），
+ *  用于按可视高度反推网格最大宽度，保证 iPad/桌面下放大的同时一屏装下不滚动。 */
+const gridFit = computed(() => (gridCols.value === 3 ? 1.12 : 1.5));
+
 watch(groupIdx, async () => {
   flipped.value = [];
   matchedUids.value = new Set();
@@ -157,7 +167,13 @@ onBeforeUnmount(() => {
     </StageHead>
 
     <div class="board view-body">
-      <div class="grid">
+      <div
+        class="grid"
+        :style="{
+          gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
+          '--fit': gridFit
+        }"
+      >
         <div
           v-for="card in curGroup.cards"
           :key="card.uid"
@@ -207,9 +223,10 @@ onBeforeUnmount(() => {
 }
 .grid {
   display: grid;
-  /* minmax(0,1fr) 而非 1fr：裸 1fr 有 min-content 地板，窄分屏（507px）下
-     长单词卡把轨道顶出 ~1px/张（审计实报 9 张越界 9px）——归零地板让轨道严格等分 */
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* 列数由脚本按卡数写入（8 卡 4 列 / 6 卡 3 列 / ≤4 卡 2 列），宽屏下排布更整齐。
+     （不用 repeat(var(--cols))：CSS 变量在 repeat 计数位置各浏览器支持不稳。
+     minmax(0,1fr) 而非 1fr：裸 1fr 有 min-content 地板，窄分屏（507px）下
+     长单词卡把轨道顶出 ~1px/张（审计实报 9 张越界 9px）——归零地板让轨道严格等分） */
   gap: var(--gap-s);
   width: 100%;
   max-width: 480px;
@@ -246,7 +263,7 @@ onBeforeUnmount(() => {
   background: var(--card-bg);
   border: 2px solid var(--line);
   transform: rotateY(180deg);
-  padding: 8px;
+  padding: clamp(8px, 1.2vmin, 16px);
 }
 .face img, .face .ph {
   max-width: 100%;
@@ -267,6 +284,23 @@ onBeforeUnmount(() => {
 .m-card.wrong .inner { transform: rotateY(180deg); }
 .m-card.wrong .face { border-color: var(--red); }
 
+/* 宽屏（iPad 竖/横屏、分屏、桌面）：利用空间放大纸牌，而非永远 480px 一小团。
+ *  - 网格宽度按可视高度反推封顶：4 列两行卡高 ≈ 网宽×2/3、3 列 ≈ 网宽×8/9，
+ *    预留头部（约 170px）后 max-width = (100dvh-250) × --fit（4 列 1.5 / 3 列 1.12）
+ *  - 桌面封顶 820px：卡约 190px 宽，孩子指头更容易点中，也不因 #app 1180 而过度拉伸
+ *  - 字号/间距/描边随卡片放大：词 20~40px、emoji 36~72px、背面 ? 24~44px
+ *  - 只改「值」不改结构，符合 DESIGN_SYSTEM §11.4「改值用 600」；
+ *    手机横屏（844×390 也 ≥600）由下方后置的 max-height:480px 档覆盖回原值 */
+@media (min-width: 600px) {
+  .grid {
+    max-width: min(820px, calc((100dvh - 250px) * var(--fit, 1.5)));
+    gap: clamp(10px, 1.5vmin, 22px);
+  }
+  .word-text { font-size: clamp(20px, min(4vh, 3vw), 40px); }
+  .face .ph { font-size: clamp(36px, min(9vh, 8vw), 72px); }
+  .back { font-size: clamp(24px, min(5vh, 4vw), 44px); }
+}
+
 /* 手机矮横屏（≤480px 高）：卡高原由宽度驱动（3/4 比例，卡 110px→高 147px），
  * 两行卡加头部会顶破底边（audit 实测 phone14/SE 横屏越界 21-28px）。
  * 按视口高度封顶网格宽度：卡高 = 网宽×4/3 ÷4列，两行卡高 ≈ 网宽×2/3，
@@ -275,6 +309,11 @@ onBeforeUnmount(() => {
 @media (max-height: 480px) {
   .grid {
     max-width: min(480px, calc((100vh - 118px) * 1.5));
+    /* 覆盖上方 600 档的放大值，手机横屏空间紧 */
+    gap: var(--gap-s);
   }
+  .word-text { font-size: var(--fs-title); }
+  .face .ph { font-size: var(--fs-emoji-l); }
+  .back { font-size: var(--fs-title); }
 }
 </style>

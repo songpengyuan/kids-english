@@ -446,11 +446,13 @@ function finishEmpty() {
 
 /* 拖动浮层：跟着手指，不拦截命中测试 */
 .drag-ghost {
+  /* --gh 由宽屏档放大，margin 恒取一半使浮层中心落在手指处 */
+  --gh: 88px;
   position: fixed;
   z-index: 999;
-  width: 88px;
-  height: 88px;
-  margin: -44px 0 0 -44px;
+  width: var(--gh);
+  height: var(--gh);
+  margin: calc(var(--gh) / -2) 0 0 calc(var(--gh) / -2);
   padding: 6px;
   background: var(--card-bg);
   border: 2px solid var(--brand);
@@ -520,6 +522,48 @@ function finishEmpty() {
 }
 .next-btn:active { transform: scale(0.95); }
 
+/* 宽屏（iPad 竖/横屏、分屏、桌面）：拼句子元素随视口放大，不再是恒定小尺寸
+ *  - 句子条放宽到 920px，框架文字/嵌图/空槽同步放大；词图卡放大到 ~170px，更好点按拖动
+ *  - 尺寸用 min(vw,vh) 双侧约束：竖屏由宽度主导、矮横屏由高度主导，放大但不溢出
+ *  - 只改「值」不改结构，符合 DESIGN_SYSTEM §11.4「改值用 600」；
+ *    手机横屏（844×390 也 ≥600）由下方后置的 max-height:480px 档覆盖回原值 */
+@media (min-width: 600px) {
+  .board { gap: clamp(20px, 2.4vmin, 34px); }
+  .sentence {
+    max-width: min(920px, 96%);
+    padding: clamp(14px, 2vmin, 26px) clamp(24px, 3vw, 44px);
+    gap: clamp(8px, 1.2vmin, 14px);
+  }
+  .frame, .ono-text { font-size: clamp(22px, min(3.4vh, 3vw), 38px); }
+  .ono-emoji { font-size: clamp(26px, min(4.2vh, 3.6vw), 44px); }
+  .pic-slot {
+    width: clamp(92px, min(13vw, 12vh), 140px);
+    height: clamp(92px, min(13vw, 12vh), 140px);
+  }
+  .pic-slot .slot-word { font-size: clamp(12px, 1.6vh, 18px); }
+  .pic-static {
+    width: clamp(68px, min(9vw, 8vh), 100px);
+    height: clamp(68px, min(9vw, 8vh), 100px);
+  }
+  .bank { gap: clamp(14px, 2vmin, 22px); max-width: min(1000px, 96%); }
+  .pic-card {
+    width: clamp(112px, min(15vw, 13vh), 170px);
+    height: clamp(120px, min(16vw, 14vh), 182px);
+  }
+  .pic-word { font-size: clamp(12px, 1.5vh, 17px); }
+  .listen-btn {
+    padding: clamp(10px, 1.6vmin, 16px) clamp(20px, 2.6vw, 34px);
+    font-size: clamp(var(--fs-body), 2.2vh, 20px);
+  }
+  .answer-btn { padding: clamp(8px, 1.4vmin, 12px) clamp(18px, 2.2vw, 28px); }
+  .next-btn {
+    padding: clamp(14px, 2vmin, 20px) clamp(40px, 4vw, 64px);
+    font-size: clamp(var(--fs-body), 2.4vh, 22px);
+  }
+  /* 拖动浮层同步放大（--gh 变化时 margin 自动取一半保持手指居中） */
+  .drag-ghost { --gh: clamp(96px, 11vw, 128px); }
+}
+
 /* 手机矮横屏（≤480px 高）：压缩纵向链条——槽与图卡缩小、间距收紧，
  * 头部 + Listen + 句子条 + 看答案 + 三张图卡要一屏装下
  * （layout-audit 实测 phone SE/14 横屏图卡被底边裁掉 40-48px）
@@ -539,5 +583,8 @@ function finishEmpty() {
   .pic-word { font-size: var(--fs-small); line-height: 1; }
   .answer-btn { padding: 5px 12px; }
   .next-btn { padding: 9px 28px; }
+  /* 覆盖上方 600 档的放大值，手机横屏空间紧 */
+  .bank { gap: 14px; max-width: 100%; }
+  .drag-ghost { --gh: 88px; }
 }
 </style>
