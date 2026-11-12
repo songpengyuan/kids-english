@@ -208,13 +208,14 @@ onBeforeUnmount(() => {
       <button class="cp-chip round" aria-label="收起词句播放" @click="close">
         <ChevronDown class="k-ico" />
       </button>
+      <div class="cp-song">
+        <span class="cp-cover"><EmojiTile :emoji="lesson.emoji" :tone="lesson.tone" size="md" /></span>
+        <div class="cp-song-text">
+          <p class="cp-title">{{ lesson.title }}</p>
+          <p class="cp-sub">{{ wordCount }} 个单词 · {{ phraseCount }} 句亲子口语</p>
+        </div>
+      </div>
       <span class="cp-count">{{ idx + 1 }} / {{ total }}</span>
-    </div>
-
-    <div class="cp-hero">
-      <EmojiTile :emoji="lesson.emoji" :tone="lesson.tone" size="xl" />
-      <p class="cp-title">{{ lesson.title }}</p>
-      <p class="cp-sub">{{ wordCount }} 个单词 · {{ phraseCount }} 句亲子口语</p>
     </div>
 
     <div class="cp-card" :class="'tone-' + lesson.tone">
@@ -267,7 +268,26 @@ onBeforeUnmount(() => {
 .cp-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--gap-xs);
+}
+.cp-song {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-xs);
+}
+/* 封面收进 40px 内，给下面的单词/句子让出整块高度 */
+.cp-cover {
+  display: inline-flex;
+  flex: none;
+}
+.cp-cover :deep(.emoji-tile) {
+  font-size: 22px;
+  border-radius: var(--radius-s);
+}
+.cp-song-text {
+  min-width: 0;
 }
 .cp-chip {
   width: 40px;
@@ -278,7 +298,8 @@ onBeforeUnmount(() => {
   font-size: var(--fs-body);
 }
 .cp-count {
-  padding: 4px 12px;
+  flex: none;
+  padding: 4px 10px;
   border-radius: var(--radius-pill);
   background: var(--brand-soft);
   color: var(--brand);
@@ -286,24 +307,25 @@ onBeforeUnmount(() => {
   font-weight: var(--fw-strong);
   font-variant-numeric: tabular-nums;
 }
-.cp-hero {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--gap-xs);
-}
 .cp-title {
-  margin: var(--gap-xs) 0 0;
-  text-align: center;
+  margin: 0;
   color: var(--ink);
-  font-size: var(--fs-title);
+  font-size: var(--fs-body);
   font-weight: var(--fw-strong);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cp-sub {
-  margin: 0;
+  margin: 2px 0 0;
   color: var(--ink-soft);
   font-size: var(--fs-small);
   font-weight: var(--fw-mid);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 /* 当前句卡：大英文做主视觉，中文只做释义 */
 .cp-card {
@@ -312,16 +334,19 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   gap: var(--gap-s);
-  padding: var(--gap-l);
+  padding: var(--gap-m) var(--gap-l);
   overflow-y: auto;
   border-radius: var(--radius);
   background: var(--card-bg);
   box-shadow: var(--shadow-hard);
+  text-align: center;
 }
 .cp-kind-row {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--gap-xs);
 }
 .cp-kind {
@@ -334,14 +359,14 @@ onBeforeUnmount(() => {
 }
 /* 单词用词图（已有素材），句子用对话气泡，避免大卡片里只剩一行字 */
 .cp-img {
-  width: clamp(128px, 38vw, 176px);
-  height: clamp(128px, 38vw, 176px);
+  width: clamp(96px, 26vw, 128px);
+  height: clamp(96px, 26vw, 128px);
   object-fit: contain;
   align-self: center;
 }
 .cp-bubble {
-  width: clamp(128px, 38vw, 176px);
-  height: clamp(128px, 38vw, 176px);
+  width: clamp(96px, 26vw, 128px);
+  height: clamp(96px, 26vw, 128px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -356,18 +381,20 @@ onBeforeUnmount(() => {
 }
 .cp-en {
   margin: 0;
+  max-width: 100%;
   color: var(--ink);
-  font-size: clamp(var(--fs-title), 7vw, var(--fs-hero));
+  font-size: clamp(30px, 8.8vw, 46px);
   font-weight: var(--fw-strong);
-  line-height: 1.3;
+  line-height: 1.15;
   overflow-wrap: anywhere;
 }
 .cp-zh {
   margin: 0;
+  max-width: 100%;
   color: var(--ink-soft);
   font-size: var(--fs-body);
   font-weight: var(--fw-mid);
-  line-height: 1.5;
+  line-height: 1.4;
 }
 .cp-transport {
   display: flex;
@@ -402,12 +429,14 @@ onBeforeUnmount(() => {
   .cp-chip { width: var(--tap-min); height: var(--tap-min); font-size: var(--fs-title); }
   .cp-side { width: var(--tap-min); height: var(--tap-min); font-size: var(--fs-title); }
   .cp-main { width: var(--play-btn); height: var(--play-btn); font-size: var(--fs-hero); }
-  .cp-card { padding: var(--gap-l) var(--gap-l); }
+  .cp-cover :deep(.emoji-tile) { font-size: 26px; }
+  .cp-en { font-size: clamp(36px, 6vw, 56px); }
 }
 @media (max-height: 480px) {
-  .clip-player { gap: var(--gap-s); }
-  .cp-hero { flex-direction: row; gap: var(--gap-m); }
-  .cp-title { margin: 0; text-align: left; }
+  .clip-player { gap: var(--gap-xs); }
+  .cp-card { gap: var(--gap-xs); padding: var(--gap-s) var(--gap-m); }
+  .cp-img, .cp-bubble { width: 64px; height: 64px; }
   .cp-sub, .cp-hint { display: none; }
+  .cp-en { font-size: clamp(24px, 4vw, 34px); }
 }
 </style>
