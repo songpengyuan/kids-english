@@ -93,6 +93,7 @@ function iconName(lv: PathLevel): string {
 /** 玩法全开放：任意玩法卡都直接进闯关玩法页（useQuest 不做锁校验，落点与旧地图一致） */
 function openRow(r: Row) {
   hapticTap();
+  speakZh(r.lv.name); // 孩子听到自己去哪（TTS 全局存活，跨路由不断）
   void router.push(`/course/${props.lesson.id}/game/quest?step=${r.lv.actKey}`);
 }
 
