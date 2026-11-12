@@ -400,7 +400,7 @@ onBeforeUnmount(() => {
           class="entry-row course-row"
           @click="openCourse(l)"
         >
-          <EmojiTile :emoji="l.emoji" :tone="l.tone" size="lg" />
+          <EmojiTile :emoji="l.emoji" :tone="l.tone" size="md" />
           <span class="entry-row__body">
             <span class="sr-title-row">
               <span class="entry-row__title sr-title">{{ l.title }}</span>
@@ -445,10 +445,15 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   /* 课程卡之间要留出明确间隙：--gap-s 在 390 宽会被压到 6px，卡片会贴成一堵墙 */
-  gap: var(--gap-l);
+  gap: calc(var(--gap-l) + var(--gap-xs));
   width: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+/* 滚动容器里的行不允许被压扁：否则 7 张卡会均分视口高度，
+ * 行高小于封面高度，封面溢出到行间，看起来就像卡片粘在一起。 */
+.body > * {
+  flex-shrink: 0;
 }
 .today-chip {
   text-align: center;
@@ -463,12 +468,25 @@ onBeforeUnmount(() => {
 }
 /* 课程行：复用全局 .entry-row 骨架；右侧只留一个播放提示 */
 .course-row {
-  padding-block: var(--gap-m);
+  padding-block: var(--gap-s);
   text-align: left;
   cursor: pointer;
 }
+/* 列表封面单独封顶：EmojiTile 的 md/lg 在桌面会被 vh/vw 推到 100px+，
+ * 放进课程行会把每张卡撑成一块高墙。48–64px 足够辨认，又不挤压列表。 */
+.course-row .emoji-tile {
+  width: clamp(48px, 7vh, 64px);
+  height: clamp(48px, 7vh, 64px);
+  font-size: clamp(26px, 4vh, 34px);
+}
 .course-row .entry-row__body {
-  gap: var(--gap-xs);
+  gap: var(--gap-s);
+}
+.course-row .entry-row__title {
+  line-height: 1.4;
+}
+.course-row .entry-row__desc {
+  line-height: 1.5;
 }
 .course-play {
   flex: none;
