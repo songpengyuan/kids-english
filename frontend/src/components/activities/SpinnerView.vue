@@ -202,12 +202,13 @@ const micLabel = computed(() => {
   <div class="spinner view">
     <StageHead class="spinner-head" :right-text="`已说 ${doneCount} / ${total}`">
       <template #tip>
-        <RotateCw class="k-ico tip-ico" />
-        转一转，先自己大声读出指针指到的单词
+        <Mic v-if="current" class="k-ico tip-ico" />
+        <RotateCw v-else class="k-ico tip-ico" />
+        {{ current ? "大声读出这个词，读完点下一转" : "转一转，先自己大声读出指针指到的单词" }}
       </template>
     </StageHead>
 
-    <div class="board view-body">
+    <div class="board view-body" :class="{ speaking: !!current }">
       <div class="wheel-wrap" :class="{ dense }">
         <!-- 顶部固定指针 -->
         <div class="pointer" aria-hidden="true" />
@@ -244,9 +245,11 @@ const micLabel = computed(() => {
         </div>
       </div>
 
-      <!-- 当前停到的词卡 -->
-      <div class="current" :class="{ empty: !current }">
-        <template v-if="current">
+      <!-- 停词阶段：词卡 + 麦克风合成一组「说出来」面板，屏上只有这一个主动作。
+           停词后**不再出现「转一转」**——转盘结果已经出来了，再转一次只会把同一个词
+           重新转一遍（spin 的目标恒为 queue[doneCount]），对孩子是纯干扰。 -->
+      <div v-if="current" class="say">
+        <div class="current">
           <div class="current-art">
             <img
               v-if="!imgFail[current.id] && current.image"
@@ -265,51 +268,44 @@ const micLabel = computed(() => {
             </div>
             <span class="current-zh">{{ current.zh }}</span>
           </div>
-        </template>
-        <span v-else class="current-hint">点下面的按钮，开始转盘游戏</span>
-      </div>
+        </div>
 
-      <!-- 控制区：未停词 → 转一转；停词后 → 麦克风 + 下一转 -->
-      <div class="control-zone">
-        <template v-if="current && !finished">
-          <!-- 麦克风不可用：不阻塞，提示直接读 + 可继续 -->
-          <div v-if="micBlocked || !canRecord" class="mic-blocked">
-            <p class="blocked-tip">🎤 麦克风不可用，看着词大声读出来就好</p>
-            <button class="next-btn" data-haptic @click="advance">
+        <!-- 麦克风不可用：不阻塞，提示直接读 + 可继续 -->
+        <div v-if="micBlocked || !canRecord" class="mic-blocked">
+          <p class="blocked-tip">🎤 麦克风不可用，看着词大声读出来就好</p>
+          <button class="next-btn" data-haptic @click="advance">
+            {{ isLast ? "完成" : "下一转" }}<ChevronRight class="k-ico" />
+          </button>
+        </div>
+
+        <template v-else>
+          <div class="mic-row">
+            <button
+              class="mic"
+              :class="{ live: micPhase === 'listening' }"
+              :aria-label="micPhase === 'listening' ? '结束录音' : '开始说话'"
+              @click="onMicTap"
+            >
+              <Square v-if="micPhase === 'listening'" class="k-ico" />
+              <Mic v-else class="k-ico" />
+            </button>
+            <button v-if="micPhase === 'done'" class="next-btn" data-haptic @click="advance">
+              <ThumbsUp class="k-ico" />
               {{ isLast ? "完成" : "下一转" }}<ChevronRight class="k-ico" />
             </button>
           </div>
-
-          <template v-else>
-            <div class="mic-row">
-              <button
-                class="mic"
-                :class="{ live: micPhase === 'listening' }"
-                :aria-label="micPhase === 'listening' ? '结束录音' : '开始说话'"
-                @click="onMicTap"
-              >
-                <Square v-if="micPhase === 'listening'" class="k-ico" />
-                <Mic v-else class="k-ico" />
-              </button>
-              <button
-                v-if="micPhase === 'done'"
-                class="next-btn"
-                data-haptic
-                @click="advance"
-              >
-                <ThumbsUp class="k-ico" />
-                {{ isLast ? "完成" : "下一转" }}<ChevronRight class="k-ico" />
-              </button>
-            </div>
-            <p class="mic-label">{{ micLabel }}</p>
-          </template>
+          <p class="mic-label">{{ micLabel }}</p>
         </template>
+      </div>
 
+      <!-- 起转阶段：屏上只有「转一转」，没有词卡与麦克风 -->
+      <template v-else>
+        <p class="idle-hint">转盘停到哪个词，就大声读出来</p>
         <button class="spin-btn" :disabled="spinning || finished" data-haptic @click="spin">
           <RotateCw :class="{ spinning: spinning }" class="btn-ico" />
           {{ spinning ? "转动中…" : finished ? "完成啦" : "转一转" }}
         </button>
-      </div>
+      </template>
     </div>
   </div>
 </template>
@@ -328,6 +324,10 @@ const micLabel = computed(() => {
   justify-content: center;
   gap: var(--gap-m);
   min-height: 0;
+}
+/* 停词阶段：圆盘与词卡收紧成一个整体，把屏幕中段让给「说出来」这一组 */
+.board.speaking {
+  gap: var(--gap-s);
 }
 
 .wheel-wrap {
@@ -430,6 +430,14 @@ const micLabel = computed(() => {
 }
 .hub-ico { width: 26px; height: 26px; }
 
+/* 停词阶段的操作组：词卡在上、麦克风紧贴在下，全屏只有这一处可点 */
+.say {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-s);
+  width: 100%;
+}
 .current {
   display: flex;
   align-items: center;
@@ -437,18 +445,15 @@ const micLabel = computed(() => {
   background: var(--card-bg);
   border: 2px solid var(--line);
   border-radius: var(--radius);
-  padding: var(--gap-s) var(--gap-m);
-  min-height: 96px;
-  min-width: min(84vw, 340px);
+  padding: var(--gap-m);
+  min-height: 112px;
+  min-width: min(88vw, 380px);
+  max-width: min(92vw, 420px);
   justify-content: center;
 }
-.current.empty {
-  border-style: dashed;
-  background: transparent;
-}
 .current-art {
-  width: 72px;
-  height: 72px;
+  width: 84px;
+  height: 84px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -488,28 +493,24 @@ const micLabel = computed(() => {
   flex: none;
 }
 .current-en {
-  font-size: var(--fs-title);
+  /* 停词后词本身是焦点：升到 hero 级（宽度不足时由 clamp 的 vw 项兜底） */
+  font-size: var(--fs-hero);
   font-weight: var(--fw-strong);
   color: var(--ink);
+  line-height: 1.15;
 }
 .current-zh {
   font-size: var(--fs-body);
   color: var(--ink-soft);
 }
-.current-hint {
+.idle-hint {
+  margin: 0;
   color: var(--ink-faint);
   font-weight: var(--fw-mid);
+  text-align: center;
 }
 
-/* 控制区 */
-.control-zone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--gap-xs);
-  min-height: 84px;
-  justify-content: center;
-}
+/* 麦克风与提示 */
 .mic-row {
   display: flex;
   align-items: center;
@@ -615,25 +616,29 @@ const micLabel = computed(() => {
    否则 300px 圆盘 + 词卡 + 按钮会把底部按钮挤出视口（参照 QuizView/MatchView 矮横屏惯例）。 */
 @media (max-height: 480px) {
   .spinner-head { margin-bottom: var(--gap-xs); }
-  .board { gap: var(--gap-xs); }
-  .wheel-wrap { width: min(42vw, 36vh, 220px); }
+  /* 矮横屏竖向只剩 ~250px：改成「圆盘在左、词卡+麦克风在右」的横排，
+     否则竖排到底部提示会被切掉（740×360 实测）。 */
+  .board { flex-direction: row; gap: var(--gap-l); }
+  .wheel-wrap { width: min(34vh, 200px); }
   .sector-pos { top: 8%; }
   .sector-img { width: 24px; height: 24px; border-radius: 4px; }
   .sector-emoji { font-size: 17px; }
   .sector-word { font-size: 9px; }
-  .hub { width: 46px; height: 46px; border-width: 2px; }
-  .hub-ico { width: 22px; height: 22px; }
+  .hub { width: 40px; height: 40px; border-width: 2px; }
+  .hub-ico { width: 20px; height: 20px; }
+  .say { width: auto; gap: 4px; }
   .current {
-    min-height: 54px;
-    min-width: min(70vw, 300px);
-    padding: var(--gap-xs) var(--gap-m);
+    min-height: 48px;
+    min-width: min(64vw, 300px);
+    padding: 4px var(--gap-m);
     gap: var(--gap-s);
   }
-  .current-art { width: 50px; height: 50px; }
-  .current-speak { width: 30px; height: 30px; }
-  .control-zone { min-height: 56px; gap: 4px; }
-  .mic { width: 52px; height: 52px; }
-  .mic .k-ico { width: 24px; height: 24px; }
+  .current-art { width: 44px; height: 44px; }
+  .current-en { font-size: var(--fs-title); }
+  .current-speak { width: 28px; height: 28px; }
+  .mic { width: 46px; height: 46px; }
+  .mic .k-ico { width: 21px; height: 21px; }
+  .mic-label { font-size: var(--fs-small); line-height: 1.2; }
   .next-btn { padding: 6px var(--gap-m); }
   .spin-btn { padding: 6px var(--gap-m); }
   .btn-ico { width: 18px; height: 18px; }
