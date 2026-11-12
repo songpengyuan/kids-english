@@ -320,13 +320,28 @@ function goBack() {
 .word:active {
   transform: scale(0.97);
 }
-.word-img,
+/* 词图与 emoji 分开写：只有图片需要"去底浮出"，emoji 仍要落在浅蓝底上才看得清。
+ * 词图素材（public/lessons/<id>/words/*.webp）本来就是 512×512 透明实物抠图
+ * （l4 实测透明率 60–85%），之前装进 44px 的 --brand-soft 方块 + cover，
+ * 等于把"实物"压成了"缩略图"：色底是平的、图还被方块圈住。
+ * 去底 + contain 之后图自己就是那个物体，与底部 tab / 关卡节点同一套观感。
+ * 尺寸同时从 44 提到 52：素材画布里内容只占约 40% 边长（海马透明 85%），
+ * 不放大就等于去掉了底板、物体反而更小。 */
+.word-img {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  object-fit: contain;
+  /* 矩形图（如 sea 的海景）靠这一行保住圆角；透明图的四角本来就是空的，裁不到 */
+  border-radius: 10px;
+  /* 落地影：让它"放在纸上"，而不是"贴上去的一张图" */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
+}
 .word-emoji {
   width: 44px;
   height: 44px;
   flex: none;
   border-radius: 10px;
-  object-fit: cover;
   background: var(--brand-soft);
   display: flex;
   align-items: center;
