@@ -314,40 +314,49 @@ html.no-bottom-nav #app {
   border-radius: var(--radius-s);
   white-space: nowrap;
   flex: none;
+  /* 拟物外壳（SKEUO-SPEC L2 小尺寸）：顶面高光叠在各自底色之上 +
+   * 同色系实心底边。三个徽章（星星/贝壳/连击）因此是同一个实体家族，
+   * 不再是"贝壳立体、星星扁平"。
+   *   --badge-base 由各配色变体覆盖成自己的 -deep 色；中性面用中性黑。 */
+  background-image: var(--sk-gloss);
+  background-repeat: no-repeat;
+  box-shadow: var(--sticker), 0 var(--sk-depth-sm) 0 var(--badge-base, var(--sk-base));
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+/* 按下：整体下沉到厚度塌陷（三个徽章一致，不再是各自写一份 :active） */
+.badge:active {
+  transform: translateY(calc(var(--sk-depth-sm) - 1px));
+}
+/* 暗色：黑色底边在深底上看不见 → 换成内描边把边界"描"出来（与 --shadow-hard 暗色同法） */
+:root[data-theme="dark"] .badge {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07), 0 var(--sk-depth-sm) 0 rgba(0, 0, 0, 0.45);
 }
 /* 星星：中性面 + 金色图形（数字要读得清，所以数字不跟着变金） */
 .star-badge {
-  background: var(--card-bg);
+  background-color: var(--card-bg);
   color: var(--ink-soft);
-  box-shadow: var(--shadow-soft);
 }
 .star-badge .star-fill {
   color: var(--gold);
+  /* 星星图形自己也做一点点实体感：给金色星加同色系投影，在扁平面上"凸"起来 */
+  filter: drop-shadow(0 1px 0 color-mix(in srgb, var(--gold) 60%, var(--black)));
 }
 /* 贝壳：金色贴纸（可点，去宝藏罐）—— 与 .tone-gold 同一套观感 */
 .treasure-badge {
-  background: var(--c-gold);
+  background-color: var(--c-gold);
+  --badge-base: var(--c-gold-deep);
   color: var(--on-gold);
-  box-shadow: var(--sticker), 0 var(--press) 0 var(--c-gold-deep);
-  transition: transform var(--dur-fast);
-}
-.treasure-badge:active {
-  transform: translateY(calc(var(--press) - 1px));
 }
 /* 连击：未达成是中性面，今日达成后转成橙色贴纸（孩子一眼看出"今天已完成"） */
 .streak-badge {
-  background: var(--card-bg);
+  background-color: var(--card-bg);
   color: var(--ink-soft);
-  box-shadow: var(--shadow-soft);
-  transition: background var(--dur-base), color var(--dur-base), transform var(--dur-fast);
-}
-.streak-badge:active {
-  transform: translateY(calc(var(--press) - 1px));
+  transition: background-color var(--dur-base), color var(--dur-base), transform var(--dur-fast);
 }
 .streak-badge.done {
-  background: var(--c-orange);
+  background-color: var(--c-orange);
+  --badge-base: var(--c-orange-deep);
   color: var(--on-tone);
-  box-shadow: var(--sticker), 0 var(--press) 0 var(--c-orange-deep);
 }
 .badge .flame-ico {
   color: var(--orange);

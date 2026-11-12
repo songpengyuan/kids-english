@@ -548,7 +548,8 @@ const cap = computed(() => {
   width: 34%;
   height: 16%;
   border-radius: 999px;
-  background: var(--chest-knob);
+  /* 把手也用"顶面高光 + 底色"两层写法：与箱体同一束光，才像同一块金属压出来的 */
+  background: var(--sk-gloss), var(--chest-knob);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
 }
 .chest.opened .lid {

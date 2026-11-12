@@ -746,7 +746,11 @@ function unitLesson(id: string) {
   height: 57px; /* 68 × 57 ≈ 参考图的透视比例 */
   border-radius: 50%;
   border: none;
-  background: var(--face);
+  /* 顶面 = 统一高光层 + 各状态自己的面（纯色或渐变）。
+   * 两层写法对两种值都合法：<image>, <color> 与 <image>, <image>。
+   * 加这一层之后椭圆面才有"塑料外壳受光"的表面，不再是纯色饼 ——
+   * 三种状态（done 课程色 / active 金黄 / locked 灰）共用同一条光。 */
+  background: var(--sk-gloss), var(--face);
   /* 底座（实心圆下移 = 圆柱侧壁）+ 落地投影 */
   box-shadow: 0 var(--depth) 0 var(--base), 0 calc(var(--depth) + 5px) 14px rgba(0, 0, 0, 0.12);
   display: flex;
