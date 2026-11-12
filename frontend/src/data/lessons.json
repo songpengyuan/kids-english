@@ -841,7 +841,7 @@
         "en": "brown",
         "zh": "棕色",
         "emoji": "🟤",
-        "image": "/lessons/l11/words/brown.svg",
+        "image": "/lessons/l11/words/brown.webp",
         "group": "colors",
         "color": "#8B4513"
       },
@@ -850,7 +850,7 @@
         "en": "red",
         "zh": "红色",
         "emoji": "🔴",
-        "image": "/lessons/l11/words/red.svg",
+        "image": "/lessons/l11/words/red.webp",
         "group": "colors",
         "color": "#E53935"
       },
@@ -859,7 +859,7 @@
         "en": "yellow",
         "zh": "黄色",
         "emoji": "🟡",
-        "image": "/lessons/l11/words/yellow.svg",
+        "image": "/lessons/l11/words/yellow.webp",
         "group": "colors",
         "color": "#FDD835"
       },
@@ -868,7 +868,7 @@
         "en": "blue",
         "zh": "蓝色",
         "emoji": "🔵",
-        "image": "/lessons/l11/words/blue.svg",
+        "image": "/lessons/l11/words/blue.webp",
         "group": "colors",
         "color": "#1E88E5"
       },
@@ -877,7 +877,7 @@
         "en": "green",
         "zh": "绿色",
         "emoji": "🟢",
-        "image": "/lessons/l11/words/green.svg",
+        "image": "/lessons/l11/words/green.webp",
         "group": "colors",
         "color": "#43A047"
       },
@@ -886,7 +886,7 @@
         "en": "orange",
         "zh": "橙色",
         "emoji": "🍊",
-        "image": "/lessons/l11/words/orange.svg",
+        "image": "/lessons/l11/words/orange.webp",
         "group": "colors",
         "color": "#FB8C00"
       },
@@ -895,7 +895,7 @@
         "en": "pink",
         "zh": "粉色",
         "emoji": "🌸",
-        "image": "/lessons/l11/words/pink.svg",
+        "image": "/lessons/l11/words/pink.webp",
         "group": "colors",
         "color": "#EC407A"
       },
@@ -904,7 +904,7 @@
         "en": "purple",
         "zh": "紫色",
         "emoji": "🟣",
-        "image": "/lessons/l11/words/purple.svg",
+        "image": "/lessons/l11/words/purple.webp",
         "group": "colors",
         "color": "#8E24AA"
       },
@@ -913,7 +913,7 @@
         "en": "white",
         "zh": "白色",
         "emoji": "⚪",
-        "image": "/lessons/l11/words/white.svg",
+        "image": "/lessons/l11/words/white.webp",
         "group": "colors",
         "color": "#FFFFFF"
       },
@@ -922,7 +922,7 @@
         "en": "black",
         "zh": "黑色",
         "emoji": "⚫",
-        "image": "/lessons/l11/words/black.svg",
+        "image": "/lessons/l11/words/black.webp",
         "group": "colors",
         "color": "#212121"
       },

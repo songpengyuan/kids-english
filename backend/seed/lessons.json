@@ -1004,7 +1004,7 @@
         "en": "brown",
         "zh": "棕色",
         "emoji": "🟤",
-        "image": "/lessons/l11/words/brown.svg",
+        "image": "/lessons/l11/words/brown.webp",
         "audio": "/lessons/l11/audio/brown.mp3",
         "group": "colors"
       },
@@ -1013,7 +1013,7 @@
         "en": "red",
         "zh": "红色",
         "emoji": "🔴",
-        "image": "/lessons/l11/words/red.svg",
+        "image": "/lessons/l11/words/red.webp",
         "audio": "/lessons/l11/audio/red.mp3",
         "group": "colors"
       },
@@ -1022,7 +1022,7 @@
         "en": "yellow",
         "zh": "黄色",
         "emoji": "🟡",
-        "image": "/lessons/l11/words/yellow.svg",
+        "image": "/lessons/l11/words/yellow.webp",
         "audio": "/lessons/l11/audio/yellow.mp3",
         "group": "colors"
       },
@@ -1031,7 +1031,7 @@
         "en": "blue",
         "zh": "蓝色",
         "emoji": "🔵",
-        "image": "/lessons/l11/words/blue.svg",
+        "image": "/lessons/l11/words/blue.webp",
         "audio": "/lessons/l11/audio/blue.mp3",
         "group": "colors"
       },
@@ -1040,7 +1040,7 @@
         "en": "green",
         "zh": "绿色",
         "emoji": "🟢",
-        "image": "/lessons/l11/words/green.svg",
+        "image": "/lessons/l11/words/green.webp",
         "audio": "/lessons/l11/audio/green.mp3",
         "group": "colors"
       },
@@ -1049,7 +1049,7 @@
         "en": "orange",
         "zh": "橙色",
         "emoji": "🍊",
-        "image": "/lessons/l11/words/orange.svg",
+        "image": "/lessons/l11/words/orange.webp",
         "audio": "/lessons/l11/audio/orange.mp3",
         "group": "colors"
       },
@@ -1058,7 +1058,7 @@
         "en": "pink",
         "zh": "粉色",
         "emoji": "🌸",
-        "image": "/lessons/l11/words/pink.svg",
+        "image": "/lessons/l11/words/pink.webp",
         "audio": "/lessons/l11/audio/pink.mp3",
         "group": "colors"
       },
@@ -1067,7 +1067,7 @@
         "en": "purple",
         "zh": "紫色",
         "emoji": "🟣",
-        "image": "/lessons/l11/words/purple.svg",
+        "image": "/lessons/l11/words/purple.webp",
         "audio": "/lessons/l11/audio/purple.mp3",
         "group": "colors"
       },
@@ -1076,7 +1076,7 @@
         "en": "white",
         "zh": "白色",
         "emoji": "⚪",
-        "image": "/lessons/l11/words/white.svg",
+        "image": "/lessons/l11/words/white.webp",
         "audio": "/lessons/l11/audio/white.mp3",
         "group": "colors"
       },
@@ -1085,7 +1085,7 @@
         "en": "black",
         "zh": "黑色",
         "emoji": "⚫",
-        "image": "/lessons/l11/words/black.svg",
+        "image": "/lessons/l11/words/black.webp",
         "audio": "/lessons/l11/audio/black.mp3",
         "group": "colors"
       },
