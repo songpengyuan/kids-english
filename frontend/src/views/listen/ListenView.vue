@@ -1,9 +1,11 @@
 <script setup lang="ts">
 /**
- * 磨耳朵（/listen）：歌曲列表 + 视频 tab。
+ * 磨耳朵（/listen）：歌曲 / 视频 / 词句三个 tab。
  *
  * 歌曲播放已提升到全局 player store（audio 单例常驻），
  * 本页只负责：列表交互 / 歌词全屏页渲染 / 视频播放（局部）。
+ * 词句 tab 按课分组，打开 LessonClipPlayer 顺序播单词 + 亲子口语（局部 audio，
+ * 进入时暂停全局歌曲，避免两条音轨同时响）。
  * 切到其他 tab 播放不中断，底部播放条可随时控制。
  *
  * 2026-10 设计系统统一：
@@ -36,7 +38,7 @@
  */
 import { ref, computed, watch, nextTick, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { lessons } from "../../data/lessons";
+import { lessons, type Lesson } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
 import { useLrc, activeLrcIndex, mapLrcToLyrics } from "../../composables/useLrc";
@@ -51,6 +53,7 @@ import SegmentedTabs from "../../components/ui/SegmentedTabs.vue";
 import EmojiTile from "../../components/ui/EmojiTile.vue";
 import SpeakWave from "../../components/ui/SpeakWave.vue";
 import VideoPlayer, { type VideoItem } from "../../components/listen/VideoPlayer.vue";
+import LessonClipPlayer from "../../components/listen/LessonClipPlayer.vue";
 import type { ListenSubTab } from "../../types";
 
 const player = usePlayerStore();
@@ -135,14 +138,31 @@ onMounted(followActiveLine);
 const TABS = [
   { value: "songs", label: "歌曲", icon: Music },
   { value: "videos", label: "视频", icon: Film },
+  { value: "clips", label: "词句", icon: BookOpen },
 ];
 
 const subTab = ref<ListenSubTab>("songs");
+/** 当前打开的「词句」课；null = 未打开播放器 */
+const clipLesson = ref<Lesson | null>(null);
 function switchTab(t: ListenSubTab) {
   subTab.value = t;
   player.closeLyrics();
   videoIdx.value = -1;
+  clipLesson.value = null;
 }
+function openClips(l: Lesson) {
+  hapticTap();
+  player.closeLyrics();
+  videoIdx.value = -1;
+  clipLesson.value = l;
+}
+
+/** 词句 tab 的课程分组：单词 / 亲子口语都来自课时数据 */
+const clipGroups = computed(() =>
+  lessons
+    .map((l) => ({ lesson: l, words: l.words.length, phrases: l.phrases.length }))
+    .filter((g) => g.words || g.phrases)
+);
 const showPlaylist = ref(false);
 
 /** 当前歌所属课时 id（2026-11-08「去这一课」按钮）：多轨条目的 id 是
@@ -313,7 +333,7 @@ onMounted(() => {
             </div>
           </div>
         </template>
-        <template v-else>
+        <template v-else-if="subTab === 'videos'">
           <div class="video-grid">
             <button v-for="(v, i) in videoList" :key="v.id" class="video-card" :class="'tone-' + v.tone" @click="videoIdx = i">
               <span class="vc-emoji" aria-hidden="true">{{ v.emoji }}</span>
@@ -321,6 +341,25 @@ onMounted(() => {
               <span class="vc-sub">{{ v.titleZh }}</span>
               <span class="vc-play round"><Play class="k-ico" /></span>
             </button>
+          </div>
+        </template>
+        <template v-else>
+          <div class="song-list">
+            <div
+              v-for="g in clipGroups"
+              :key="g.lesson.id"
+              class="entry-row clip-row"
+              @click="openClips(g.lesson)"
+            >
+              <EmojiTile :emoji="g.lesson.emoji" :tone="g.lesson.tone" />
+              <span class="entry-row__body">
+                <span class="entry-row__title">{{ g.lesson.title }}</span>
+                <span class="entry-row__desc">
+                  {{ g.lesson.titleZh }} · {{ g.words }} 个单词 / {{ g.phrases }} 句对话
+                </span>
+              </span>
+              <span class="clip-play"><Play class="k-ico" /></span>
+            </div>
           </div>
         </template>
       </div>
@@ -344,6 +383,9 @@ onMounted(() => {
 
     <!-- 视频播放（自绘控制栏：三档循环 / 进度 / 上下个 / 静音 / 全屏） -->
     <VideoPlayer v-if="videoIdx >= 0" :videos="videoList" :start-index="videoIdx" @close="videoIdx = -1" />
+
+    <!-- 词句播放：按一课顺序播单词 + 亲子口语句子 -->
+    <LessonClipPlayer v-if="clipLesson" :lesson="clipLesson" @close="clipLesson = null" />
   </div>
 </template>
 
@@ -823,5 +865,15 @@ onMounted(() => {
   font-size: var(--fs-small);
   background: var(--scrim);
   color: var(--mask-ink);
+}
+
+/* 词句课程行：复用 .entry-row 骨架，右侧只留一个播放提示 */
+.clip-row {
+  cursor: pointer;
+}
+.clip-play {
+  flex: none;
+  color: var(--brand);
+  font-size: var(--fs-title);
 }
 </style>

@@ -13,7 +13,7 @@ export type ButtonVariant = "green" | "blue" | "orange" | "gray";
 export type RepeatMode = "off" | "all" | "one";
 
 /** 磨耳朵子 tab */
-export type ListenSubTab = "songs" | "videos";
+export type ListenSubTab = "songs" | "videos" | "clips";
 
 /** 答题反馈类型 */
 export type FeedbackType = "correct" | "wrong" | null;

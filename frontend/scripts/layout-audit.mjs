@@ -126,10 +126,26 @@ const PAGES = [
     name: "listen-video",
     q: "#/listen",
     prep: `(async () => {
+      document.querySelector('button[aria-label="收起歌词"]')?.click();
+      await new Promise(r => setTimeout(r, 300));
       const tab = [...document.querySelectorAll('button')].find(b => b.textContent.includes('视频'));
       tab?.click();
       await new Promise(r => setTimeout(r, 300));
       document.querySelector('.video-card')?.click();
+    })()`,
+  },
+  // 词句播放浮层（2026-11-12 新增第三个 tab）：切到词句再点第一课。
+  {
+    name: "listen-clips",
+    q: "#/listen",
+    prep: `(async () => {
+      // 同一 hash 连续走查时 Pinia 不会重置，先把上一轮的歌曲浮层收起
+      document.querySelector('button[aria-label="收起歌词"]')?.click();
+      await new Promise(r => setTimeout(r, 300));
+      const tab = [...document.querySelectorAll('.seg-btn')].find(b => b.textContent.includes('词句'));
+      tab?.click();
+      await new Promise(r => setTimeout(r, 300));
+      document.querySelector('.clip-row')?.click();
     })()`,
   },
 ];

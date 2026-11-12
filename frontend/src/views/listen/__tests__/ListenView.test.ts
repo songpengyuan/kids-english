@@ -32,7 +32,7 @@ vi.hoisted(() => {
 });
 
 vi.mock("../../../services/haptics", () => ({ hapticTap: vi.fn() }));
-vi.mock("../../../services/speech", () => ({ speak: vi.fn(), speakZh: vi.fn() }));
+vi.mock("../../../services/speech", () => ({ speak: vi.fn(), speakText: vi.fn(), speakZh: vi.fn() }));
 
 function makeRouter() {
   return createRouter({
@@ -73,6 +73,44 @@ describe("ListenView · 列表态", () => {
   });
 });
 
+describe("ListenView · 词句 tab", () => {
+  async function openClips(w: Awaited<ReturnType<typeof mountListen>>) {
+    const tab = w.findAll(".seg-btn").find((b) => b.text() === "词句");
+    expect(tab).toBeTruthy();
+    await tab!.trigger("click");
+    await flushPromises();
+  }
+
+  it("第三个 tab 按课程列出单词与亲子口语数量", async () => {
+    const w = await mountListen();
+    await openClips(w);
+    expect(w.findAll(".clip-row").length).toBeGreaterThanOrEqual(7);
+    expect(w.find(".clip-row").text()).toContain("个单词");
+    expect(w.find(".clip-row").text()).toContain("句对话");
+    expect(w.find(".song-row").exists()).toBe(false);
+  });
+
+  it("点课程进入词句播放器：单词在前，能暂停与收起", async () => {
+    const w = await mountListen();
+    await openClips(w);
+    await w.findAll(".clip-row")[0].trigger("click");
+    await flushPromises();
+    expect(w.find(".clip-player").exists()).toBe(true);
+    expect(w.find(".cp-kind").text()).toBe("单词");
+    expect(w.find(".cp-en").text().length).toBeGreaterThan(0);
+    expect(w.find(".cp-count").text()).toMatch(/^1 \/ \d+$/);
+
+    const main = w.find(".cp-main");
+    expect(main.attributes("aria-label")).toBe("暂停"); // 进入即自动播放
+    await main.trigger("click");
+    expect(w.find(".cp-main").attributes("aria-label")).toBe("播放");
+    await w.find('button[aria-label="收起词句播放"]').trigger("click");
+    await flushPromises();
+    expect(w.find(".clip-player").exists()).toBe(false);
+    expect(w.findAll(".clip-row").length).toBeGreaterThan(0);
+  });
+});
+
 describe("ListenView · 播放态", () => {
   it("点歌曲行进入播放态：transport 三键 + 模式胶囊（默认列表循环）+ 歌词行", async () => {
     const w = await mountListen();
@@ -84,7 +122,6 @@ describe("ListenView · 播放态", () => {
     expect(w.findAll(".pl-line").length).toBeGreaterThan(5);
     expect(w.find(".pl-progress").exists()).toBe(true);
   });
-
   it("模式单键三档循环：列表循环 → 单曲循环 → 随机 → 列表循环", async () => {
     const w = await mountListen();
     await openPlayer(w);
