@@ -7,6 +7,7 @@ import { useAudioTransport, fmtDuration } from "../../composables/useAudioTransp
 import { useLrc, activeLrcIndex, mapLrcToLyrics } from "../../composables/useLrc";
 import { Clapperboard, Headphones, Music, Pause, Play, Repeat, Sparkles, SkipBack, SkipForward } from "@lucide/vue";
 import SongStage from "./SongStage.vue";
+import VideoPlayer, { type VideoItem } from "../listen/VideoPlayer.vue";
 import SafeBottom from "../layout/SafeBottom.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import { speak, speakText } from "../../services/speech";
@@ -28,17 +29,6 @@ const emit = defineEmits<{ back: []; "song-done": [] }>();
 
 const audioEl = ref<HTMLAudioElement | null>(null);
 const audioMissing = ref(false);
-const videoEl = ref<HTMLVideoElement | null>(null);
-/** 视频是否已开始播放：开始前盖海报层（Chromium 在 preload 出数据后直接绘
- *  第一帧而不加载 poster——这部 mp4 首帧是黑的，看着像坏了） */
-const videoStarted = ref(false);
-/** 视频真实宽高比（loadedmetadata 后更新）：盒子按它收身，原生控制条贴住画面下缘，
- *  不再沉在一片拉高的黑底底下（元素曾被 .video-zone 拉到 503px 高，内容只有 234px） */
-const videoAspect = ref("16 / 9");
-function onVideoMeta(e: Event) {
-  const v = e.target as HTMLVideoElement;
-  if (v.videoWidth && v.videoHeight) videoAspect.value = `${v.videoWidth} / ${v.videoHeight}`;
-}
 
 /** 多段音视频轨道：顶层 audio/video/lyrics 是第一轨，tracks 追加后续轨。
  *  配了词群的课（l11）按当前群过滤：Colors 只放颜色歌、Animals 只放 Brown Bear。 */
@@ -129,7 +119,6 @@ watch(
   () => props.group,
   () => {
     pause();
-    videoEl.value?.pause();
     trackIdx.value = 0;
     watched.value = false;
     audioMissing.value = false;
@@ -144,25 +133,39 @@ watch(
 const hasVideo = computed(() => !!curTrack.value.video);
 const firstTab = computed(() => (hasVideo.value ? "video" : "stage"));
 const mode = ref(firstTab.value);
-/** 视频封面：optimize-videos.mjs 与 mp4 成对产出的同名 jpg（缺失时浏览器无封面，无害） */
+/** 视频封面：optimize-videos.mjs 与 mp4 成对产出的同名 jpg（缺失时通用播放器回退课程 emoji） */
 function posterOf(src: string | null): string | undefined {
   return src ? src.replace(/\.mp4$/, ".jpg") : undefined;
 }
 
-/** 离开本页（回菜单 / 换课）必须停播：脱离 DOM 的媒体元素在部分浏览器会继续出声 */
+/** 视频收编进通用播放器（2026-11-13）：单条列表 = 播放器自动收掉上一个/下一个/循环键，
+ *  待播封面/缓冲反馈/失败重试/进度条全部沿用同一套孩子交互，不再用裸 <video controls>。
+ *  key 绑条目 id：换轨/换群时重挂载回待播态。时长不记磨耳朵（listen=false）——
+ *  本页有自己的"听完一遍领星"闭环，磨耳朵口径仍归磨耳朵页。 */
+const videoItem = computed<VideoItem>(() => ({
+  id: `${props.lesson.id}-song-${trackIdx.value}`,
+  title: curTrack.value.title || props.lesson.title,
+  titleZh: props.lesson.titleZh,
+  emoji: songCover.value,
+  tone: props.lesson.tone ?? "blue",
+  src: curTrack.value.video!,
+  cover: posterOf(curTrack.value.video ?? null),
+}));
+
+/** 离开本页（回菜单 / 换课）必须停播：脱离 DOM 的媒体元素在部分浏览器会继续出声。
+ *  视频的停播由通用播放器自己的卸载钩子负责（它还顺手结算自己的播放段） */
 onBeforeUnmount(() => {
   audioEl.value?.pause();
-  videoEl.value?.pause();
 });
 
 /** 完整听过一遍（音频或视频）→ 才有资格领星；与"是否循环"无关（watched 在 transport 回调里落） */
 const canFinish = computed(() => watched.value || (videoMissing.value && audioMissing.value));
 
-/** 切 Tab：互斥播放（切走的一路立刻暂停），避免两个声音叠在一起 */
+/** 切 Tab：互斥播放（切走的一路立刻暂停），避免两个声音叠在一起。
+ *  视频 tab 切走时通用播放器随 v-if 卸载、自停——不用手动 pause */
 function setMode(m: "video" | "stage" | "audio") {
   if (m === mode.value) return;
   hapticTap();
-  if (m !== "video" && videoEl.value) videoEl.value.pause();
   if (m === "video" && playing.value) pause();
   mode.value = m;
 }
@@ -172,7 +175,6 @@ function switchTrack(i: number) {
   if (i < 0 || i >= tracks.value.length || i === trackIdx.value) return;
   hapticTap();
   pause();
-  videoEl.value?.pause();
   trackIdx.value = i;
   watched.value = false;
   audioMissing.value = false;
@@ -283,31 +285,17 @@ function onVideoError() {
       </button>
     </div>
 
-    <!-- ===== 视频模式（课时放了 song.mp4 时才有） ===== -->
+    <!-- ===== 视频模式（课时放了 song.mp4 时才有）：通用播放器 embedded 形态，
+         待播封面+播放键 / 缓冲转圈 / 失败重试 / 进度条开播后才出现，与磨耳朵同一套交互 -->
     <div v-if="mode === 'video' && hasVideo" class="video-zone view-body">
-      <div class="video-box" :style="{ aspectRatio: videoAspect }">
-        <video
-          ref="videoEl"
-          :src="curTrack.video || undefined"
-          :poster="posterOf(curTrack.video ?? null)"
-          controls
-          playsinline
-          preload="metadata"
-          class="video"
-          @play="videoStarted = true"
-          @loadedmetadata="onVideoMeta"
-          @error="onVideoError"
-          @ended="onVideoEnded"
-        ></video>
-        <!-- 海报覆盖层：只盖"还没开始播"的阶段；pointer-events:none 让点击穿透到
-             原生控件（点视频体 = 开始播放），开始后整层撤掉 -->
-        <img
-          v-if="!videoStarted && curTrack.video"
-          class="video-cover"
-          :src="posterOf(curTrack.video ?? null)"
-          alt=""
-        />
-      </div>
+      <VideoPlayer
+        :key="videoItem.id"
+        :videos="[videoItem]"
+        embedded
+        :listen="false"
+        @ended="onVideoEnded"
+        @error="onVideoError"
+      />
     </div>
 
     <!-- ===== 动画舞台：随节拍弹跳的角色 ===== -->
@@ -478,38 +466,10 @@ function onVideoError() {
   box-shadow: 0 2px 0 var(--blue-dark);
 }
 
-/* ---------- 视频模式 ---------- */
+/* ---------- 视频模式（通用播放器 embedded 形态：画面比例/限高由组件自管） ---------- */
 .video-zone {
   width: 100%;
   display: flex;
-}
-.video-box {
-  position: relative;
-  width: 100%;
-  /* 宽高比由视频 metadata 决定：盒子紧贴画面，原生控制条正好是画面下缘那一行。
-     align-self 防父级 flex（.video-zone 为 row）把盒子拉伸回满高——
-     一旦被拉高，aspect-ratio 失效，控制条又沉到黑底底下 */
-  align-self: center;
-  aspect-ratio: 16 / 9;
-  max-height: 100%;
-}
-.video-cover {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-hard);
-  pointer-events: none;
-}
-.video {
-  width: 100%;
-  height: 100%;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-hard);
-  background: var(--black);
-  object-fit: contain;
 }
 
 /* ---------- 动画舞台 ---------- */
