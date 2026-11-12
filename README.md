@@ -41,52 +41,63 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 | 域 | 路径 | 说明 |
 |---|---|---|
-| 课程 | `/course`（正式课/加餐两个 tab） | 课时卡片网格 |
-| | `/course/:id` | 单课菜单（6 个玩法入口） |
-| | `/course/:id/{learn,hear,match,speak,song,talk}` | 六种玩法，**复用同一个组件**，由 `meta.stage` 区分 |
-| | `/course/:id/game` | 本课闯关地图（背景由 `meta.sky` 驱动） |
+| 课程 | `/course` | 课时卡片网格，**点击先落课程详情页** |
+| | `/course/:id` | 课程详情：关卡大卡列表（默认）/ 玩法瓷片目录，右上角切换 |
+| | `/course/:id/about` | 课程介绍独立页（简介 + 进度 + 需加强的词，词卡可点读） |
+| | `/course/:id/{learn,hear,match,speak,song,talk,order}` + spinner | 玩法页，**复用同一个组件**，由 `meta.stage` 区分；词群课（l11）玩法按词群拆入口（`?group=colors` 锁群） |
 | | `/course/review` | 错词复习（间隔重复队列） |
-| 游戏 | `/game`、`/game/quest/:id/:stage?` | 全局闯关入口 |
-| 磨耳朵 | `/listen` | 童谣/动画视频播放 + 歌词页 |
+| 磨耳朵 | `/listen` | **先选课** → 统一课程播放页：歌曲 / 视频 / **词句**（单词+亲子口语逐条播放）三种模式，逐行中文翻译 |
 | 我的 | `/me` | 星星·连击·贝壳·今日学情 |
 | | `/me/calendar` | 学习日历（打卡） |
 | | `/me/treasure`、`/me/treasure/hero/:id` | 宝藏罐 + 英雄图鉴 |
-| | `/me/report`、`/me/parent` | 家长报告 / 家长中心（`requiresParent`，算术题门禁） |
+| | `/me/report`、`/me/parent` | 家长报告 / 家长中心（`requiresParent`，算术题门禁；含离线缓存面板） |
 
-另有 `/gate`（应用口令）与家长算术题两级门禁，见 `frontend/src/router/gateGuard.ts` / `parentGuard.ts`。
+另有 `/gate`（应用口令）与家长算术题两级门禁，见 `frontend/src/router/gateGuard.ts` / `parentGuard.ts`；
+法律文档页 `/terms`、`/privacy`、`/children-privacy` 公开可访问（门禁豁免）。
+
+玩法全开放：任意关卡卡直接进玩法页；**玩法中途点关闭会弹孩子化确认**（防误触丢进度），结算与菜单页不拦。
 
 ## 数据策略
 
 **localStorage 是唯一真相源**（离线可用），后端只做跨设备同步，**合并口径是逐字段取 max**（学习时长只增不减），全链路可降级——后端挂了不影响孩子正常玩。
 
-7 个 Pinia store：`progress`（进度/掌握度/今日学情，含云同步状态机）、`rewards`（贝壳与英雄形态）、`streak`（连击）、`player`（磨耳朵播放）、`auth`（家长登录与孩子档案）、`gate`（应用口令门禁）、`content`（课时种子）。
+7 个 Pinia store：`progress`（进度/掌握度/今日学情，含云同步状态机）、`rewards`（贝壳与英雄形态）、`streak`（连击）、`player`（磨耳朵播放）、`auth`（家长登录与孩子档案）、`gate`（应用口令门禁）、`content`（课时数据薄壳——**课程内容纯前端**，content API 已移除）。
 
 ## 课时资源
 
-7 节课：`l4` 水手出海去、`l5` 我是一个音乐人、`l6` 彩虹颜色歌、`l7` 跟我数数、`l8` 字母歌、`l9` 一根小手指、`l10` 丛林里散步（共 7 课）。其中 **l6/l7/l8 是"加餐"课**，其余为正式课（`BONUS_IDS`）。
+7 节课（按上课顺序）：`l5` 我是一个音乐人、`l4` 水手出海去、`l9` 一根小手指、`l10` 丛林里散步、`l11` 棕熊你看到了什么、`l12` 公交车轮子转呀转、`l13` 晚安大猩猩。加餐课（l6/l7/l8）已于 2026-11 下线。
 
 资源按约定放好即自动生效，**不用改代码**：
 
 ```
 frontend/public/lessons/<课时id>/
-├── song.mp3          童谣音频
-├── song.mp4          童谣视频（可选，有则音乐页先播视频）
-├── audio/<单词id>.mp3 单词发音（可选，缺失回退浏览器 TTS）
-└── words/<单词id>.png 单词图片（缺失回退 emoji 占位）
+├── song.mp3 / song.mp4      童谣音视频（视频缺失时自动显示动画舞台）
+├── song.jpg / song.lrc      视频首帧 poster / 歌词时间轴（成对产出）
+├── audio/<单词id>.mp3       单词发音（gen-word-audio.py 产出；缺失回退浏览器 TTS）
+├── audio/ph-<序号>.mp3      亲子口语句
+└── words/<单词id>.webp      词图（缺失回退 emoji 占位）
 ```
 
-**l6/l7/l8 的音视频与图片全部是仓库自研合成的**（无版权风险）：`scripts/gen-songs.py` 合成童谣并写回逐行时间轴、`gen-word-art.py` 生成贴纸风 SVG、`gen-word-audio.py` 生成神经网络发音（成年女声）。改内容重跑脚本即可，没有素材也能完整试玩。⚠️ `gen-songs.py` **只**作用于 l6/l7/l8，不会覆盖你自己提供的 l4/l5。
+**词图与发音全部由仓库管线生成**（无版权风险）：`gen-word-art.py` 生成贴纸风 SVG（→ optimize 转 webp）、`gen-word-audio.py` 生成 Ana 童声发音（2026-11-07 试听定版，支持 `--rate/--pitch`）。改内容重跑脚本即可，没有素材也能完整试玩。
 
-**新增课时**：编辑 `frontend/src/data/lessons.ts` 的 `rawLessons`。一节课的结构见 `RawLesson` 接口，要点：
+**新增/修改课时**：编辑 `frontend/src/data/lessons.json`（数据本体，lessons.ts 只留类型与 normalize），然后跑一条命令完成四件套：
+
+```bash
+pnpm --dir frontend lesson:pipeline   # 词图贴纸 → 词音句音 → export 种子 → 数据校验（fail-fast）
+```
+
+一节课的结构见 lessons.ts 的 `RawLesson` 接口，要点：
 
 - `tone` **只能取 6 个卡片色调之一**（`blue|green|orange|purple|pink|teal`）——⚠️ 不要写十六进制色值，相邻课时用不同 hue，孩子靠颜色区分课程。
-- 资源路径写站点根形式（`/lessons/l4/song.mp3`），文件末尾的 `asset()` 会自动补部署基路径，本地与子路径部署通用。
-- `date` 与 `type`（`official`/`bonus`）会影响首页 tab 与排序。
+- 资源路径写站点根形式（`/lessons/l4/song.mp3`），`asset()` 自动补部署基路径。
+- `date` 影响课程排序（按上课顺序）；`type` 现一律 `official`（加餐 tab 已下线）。
+- 详细约定与实战坑位见 `.agents/skills/new-lesson/SKILL.md`。
 
 ## 激励闭环
 
 - **星星**：每个玩法结算给 0–3 星；一课"全部通关"要求全部玩法都玩过**且**星级达标（学/辨/连/读 ≥2 星，唱/对话 ≥1 分），避免"只晃一圈就显示通关"。
-- **宝箱**：自由练习每完成一个玩法开一次宝箱，固定掉贝壳 3–6 个 + **25% 概率掉英雄卡片**；闯关地图上另有金色宝箱关卡（本课 6 个玩法全通后解锁）。⚠️ **闯关通关不开箱**——关卡完成直接停在「第 N 关完成」大画面，回地图走左上角「← 返回闯关地图」（2026-10-19 口径）。
+- **宝箱**：自由练习每完成一个玩法开一次宝箱，固定掉贝壳 3–6 个 + **25% 概率掉英雄卡片**；课程详情页另有金色宝箱关卡（本课全部玩法关通过后解锁，锁定时点它会语音+浮字提示还差几关）。⚠️ **闯关通关不开箱**——关卡完成直接停在「第 N 关完成」大画面（2026-10-19 口径）。**玩法中途点关闭会弹孩子化确认**（防误触丢进度，2026-11-11）。
+- **转盘**：课程详情页新增复习玩法——随机点词、停下先跟读再进下一个词（2026-11 上线，见 ACTIVITY-VARIANTS.md）。
 - **英雄图鉴**：贝壳的消耗出口。**世代 → 角色 → 形态**三级（昭和/平成/新生代/令和，41 位角色 / 81 个形态，如迪迦的复合型·强力型·空中型），按稀有度定价（常见 20 / 稀有 60 / 传说 120 贝壳）；重复兑换同一形态可升星（最高 ★★★），所以不会出现"集齐就没目标"。点形态卡朗读中英文介绍。
 - **到期复习**：练习中答错/连错的词进入间隔重复队列，按 1/3/7/14 天回到复习页，连对 4 次算掌握并出队。
 - **家长报告**：今日时长、完成玩法数、单词明细、错词清单、连击与宝藏概览。

@@ -372,41 +372,32 @@ speak(text, { lessonId, wordId })
 - 为什么预生成：浏览器 TTS 音色机械且**各端不一致**（桌面 Chrome 音色最少）；
   神经网络音色一次生成、永久使用、各端一致，30 个词共约 360KB，无运行时成本。
 - 中文提示语（`speakZh`）不走注册表，始终用浏览器 TTS。
+- **音色定版**：2026-11-07 用户 A/B 试听后定版 **en-US-AnaNeural 真·8 岁童声原速**
+  （旧默认 Aria 成年女声"念单词"机械感重；更早被否的 Ana 童声在"孩子爱听"标准下翻案）。
 - **新增/换音色**：`pip install edge-tts` 后跑
-  `python3 scripts/gen-word-audio.py`（增量）或 `--force --voice en-US-AriaNeural`（全量）。
-  放对了文件名无需改任何代码。
+  `python3 scripts/gen-word-audio.py`（增量）或 `--force`（全量）；
+  支持 `--rate "+15%"` / `--pitch "+12Hz"` 韵律参数（TTS 提速提调比放慢更自然）。
+  换音色/参数必须先出局域网试听页 A/B 定版再全量，放对了文件名无需改任何代码。
 
-### 5.2 自研课时资源流水线（l6 颜色 / l7 数字 / l8 字母）
+### 5.2 内容资源管线（词图/词音/种子四件套一键串联）
 
-后三课（l6 颜色、l7 数字 0-10、l8 字母）的音频和图片**全部是自己合成的**，
-不引用任何第三方素材，避免版权问题、也保证整套风格统一：
-
-| 资源 | 生成方式 | 脚本 |
-|---|---|---|
-| 童谣 mp3 + 逐行时间轴 | 自研合成器（numpy 生成玩具乐器音色 + lameenc 编码），旋律按歌词音节自动落点 | `scripts/gen-songs.py` |
-| 单词贴纸图（SVG，共 29 张） | 手写 SVG：圆角贴纸底 + 粗白描边 + 会笑的眼睛；颜色/数字/字母三种画法 | `scripts/gen-word-art.py` |
-| 单词与口语句发音 | edge-tts 神经网络童声（同 §5.1） | `scripts/gen-word-audio.py` |
+词图与发音**全部由仓库管线生成**（不引用第三方素材，避免版权问题、保证风格统一）：
+`gen-word-art.py`（贴纸风 SVG，动物/颜色/数字/字母四套画法，2026-11-08 起数据驱动——
+课程在 lessons.json 里才产出）、`gen-word-audio.py`（Ana 童声，同 §5.1）。
+l6/l7/l8 的合成童谣（gen-songs.py）随加餐课下线已移除，脚本不再在仓库。
 
 ```bash
-# 改完 lessons.js 里的歌词/单词后，按这个顺序重跑
-python3 scripts/gen-songs.py        # 覆盖 song.mp3 + 写回 song-timings.json
-python3 scripts/gen-word-art.py     # 覆盖 public/lessons/{l6,l7,l8}/words/*.svg
-python3 scripts/gen-word-audio.py   # 增量补发音（已存在会跳过）
+# 改完 lessons.json 里的歌词/单词/词图后，一条命令完成四件套（fail-fast）：
+pnpm --dir frontend lesson:pipeline          # 词图 → 词音（增量）→ export 种子 → 数据校验
+pnpm --dir frontend lesson:pipeline --force  # 词音全量重生成（换音色/参数时用）
 ```
 
-- **为什么音频要自己合成**：`song-timings.json` 里的 `bpm` 与逐行 `timeline`
-  是驱动「动画舞台对拍 + 卡拉 OK 字幕」的数据；只有自己生成，才能拿到
-  精确到行的起唱时间（见 §3 的 `SongStage.vue`）。换第三方 mp3 时时间轴会失效，
-  此时 `SongView` 自动回退成「按播放比例估算」。
-- **歌词与旋律的对齐是硬校验**：`gen-songs.py` 会逐句断言
-  `旋律音符数 == 音节数`，对不上直接报错，避免生成「跑调的伴奏」。
-  音节数是脚本按元音规则估算的（如 `seven`/`zero` 算 2 个音节），
-  改歌词后若报错，按提示调整该句的旋律轮廓即可。
-- **图片与课的引用是硬校验**：`gen-word-art.py` 最后会读 `lessons.js`，
-  核对「生成的文件」与「课里引用的路径」完全一致，多一个少一个都报错，
-  防止改名字后留下 404。
-- 生成物已提交进仓库（三课合计约 3.3MB），**运行时不依赖这些脚本**，
-  只在需要改内容时重跑。
+- **图片与课的引用是硬校验**：`gen-word-art.py` 按 lessons.json 里**在册课程**核对
+  「生成的文件」与「课里引用的路径」完全一致，多一个少一个都报错
+  （2026-11-08 起数据驱动：加餐课下线后不再产出孤儿贴纸，l11 动物/颜色纳入自检）。
+- 生成物已提交进仓库，**运行时不依赖这些脚本**，只在需要改内容时重跑。
+  （历史备注：gen-songs.py 合成童谣的旋律/音节对齐经验已沉淀到
+  `lyrics-pipeline` skill 与 `docs/LYRICS-WORKFLOW.md`；脚本随加餐课下线移除。）
 
 ### 5.3 儿童字体（5 岁孩子友好）
 
