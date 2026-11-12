@@ -95,6 +95,24 @@ describe("player store · 播放控制", () => {
     expect(p.currentIdx).toBe(0); // repeatMode 默认 all
   });
 
+  it("课程队列：下一首只在本课内循环，不串到别的课", () => {
+    const p = usePlayerStore();
+    const l5 = SONG_LIST.findIndex((s) => s.id === "l5");
+    const l4 = SONG_LIST.findIndex((s) => s.id === "l4");
+    expect(l5).toBeGreaterThanOrEqual(0);
+    expect(l4).toBeGreaterThanOrEqual(0);
+    p.setQueue([l5, l4]);
+    p.playSong(l5);
+    p.next();
+    expect(p.currentIdx).toBe(l4);
+    p.next();
+    expect(p.currentIdx).toBe(l5); // 队列末尾回到本课第一首
+    p.clearQueue();
+    p.playSong(l5);
+    p.next();
+    expect(p.currentIdx).toBe(l4); // 清空队列后回到全站顺序
+  });
+
   it("prev：播放超 3s 归零；否则上一首", () => {
     const p = usePlayerStore();
     p.playSong(1);

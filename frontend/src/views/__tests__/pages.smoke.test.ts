@@ -154,12 +154,12 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     setActivePinia(pinia);
     usePlayerStore().playSong(0);
     const w = await mountPage(ListenView, "/listen", {}, pinia);
-    // 详情页（歌词浮层）渲染、歌曲列表行不渲染（.listen 是页面根，恒在）；
+    // 详情页（课程播放页）渲染、课程列表行不渲染（.listen 是页面根，恒在）；
     // 收起键一下回列表
     expect(w.find(".player").exists()).toBe(true);
-    expect(w.find(".song-row").exists()).toBe(false);
+    expect(w.find(".course-row").exists()).toBe(false);
     // 「去这一课」圆钮：直达当前歌所属的课程详情（多轨 id 已剥轨号）
-    const lessonBtn = w.find('.pl-bar button[aria-label="去这一课"]');
+    const lessonBtn = w.find('.lp-head-actions button[aria-label="去这一课"]');
     expect(lessonBtn.exists()).toBe(true);
     await lessonBtn.trigger("click");
     await flushPromises();

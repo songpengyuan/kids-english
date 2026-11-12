@@ -1,42 +1,21 @@
 <script setup lang="ts">
 /**
- * 磨耳朵（/listen）：歌曲 / 视频 / 词句三个 tab。
+ * 磨耳朵（/listen）：先选课，再进课程播放页。
  *
- * 歌曲播放已提升到全局 player store（audio 单例常驻），
- * 本页只负责：列表交互 / 歌词全屏页渲染 / 视频播放（局部）。
- * 词句 tab 按课分组，打开 LessonClipPlayer 顺序播单词 + 亲子口语（局部 audio，
- * 进入时暂停全局歌曲，避免两条音轨同时响）。
- * 切到其他 tab 播放不中断，底部播放条可随时控制。
+ * 2026-11 信息架构改造（用户确认）：
+ *  · 首页不再按「歌曲 / 视频 / 词句」分三个 tab —— 这三种是同一课的消费方式，
+ *    不是三门内容。首页只留课程列表，点课后进同一个播放页。
+ *  · 播放页共用一行课程标题（封面 + 课名 + 进度），下面才是「歌曲 / 视频 / 词句」
+ *    分段切换；切换不换课，默认落在歌曲。
+ *  · 歌曲仍由全局 player store 持有，跨 tab 续播；但播放队列收窄到当前课程，
+ *    上一首/下一首不再串到别的课。
+ *  · 视频 / 词句播放器改为 embedded 模式：不再各自铺一层浮层和关闭按钮，
+ *    共用播放页的页头与模式切换。
  *
- * 2026-10 设计系统统一：
- *  · 行内"正在播放"声波改用共享的 SpeakWave 组件（原来本页自己写了一份 .eq，
- *    和 MatchView / QuizView / Hero 详情页那份是同一套动画的第四份拷贝）；
- *  · emoji 封面改用共享的 EmojiTile（歌词页封面 + 列表行封面原本各写一份）；
- *  · 列表行改用全局 .entry-row 骨架（此前和"家长中心/闯关入口"那几处各写一套）；
- *  · 横向 padding 由外层 .view / .player 提供，去掉各处重复叠加的那一层
- *    （此前内容实际被内缩了 2 倍 --pad-x，iPad 上尤其明显）；
- *  · 所有色值/字号/圆角/层级改为 token。
- *
- * 2026-10-17 播放页（歌词全屏页）重做成"唱片页"：
- *  · 修掉最硬的一处缺陷——**这台播放器上原本没有播放/暂停**：控制被整体挪给了
- *    底部迷你播放条（底栏那颗 30px 的小圆键），页面只剩一颗没有文案的"播放列表"圆钮。
- *    现在 transport 回到页面里：上一首 / 72px 主播放键 / 下一首，播放列表挪到顶栏右侧。
- *  · 一屏三问：① 听的是哪首（大封面 + 歌名）→ ② 唱到哪（歌词）→ ③ 我要干嘛（主播放键）。
- *  · 歌词从"一整面 2.2 行高的灰字"改成卡拉 OK：当前行带药丸底 + 加粗 + 全不透明，
- *    其余行降到 55% 透明度，并把当前行自动滚到卡片正中（位置本身在说"唱到这里了"）。
- *  · 进度条只留这一条（底栏那条已随迷你播放条一起删掉），颜色回到进度语义色 --brand
- *    （原来是 accent-color: --yellow，与"进度=品牌"的规范相冲）；收起键给上可见的圆底。
- *
- * 2026-10-17 二改：**本页不再隐藏底部导航**。
- *  · 上一版的解法是"藏掉底栏"——播放页因此成了全站唯一没有导航的页面，只能靠
- *    左上角收起键退出，播着歌想切去学习就必须先收起。
- *  · 现在的解法是**浮层让位**：播放页从 inset:0 改成"底栏以上"（bottom = --nav-h + 安全区），
- *    底栏常显；万一哪天边界算错，底栏在 --z-floating(40)、浮层在 --z-bar(30)，
- *    仍是底栏压在上面 —— 不会重演"导航整条消失、孩子无路可退"的事故。
- *  · 补上播放模式（此前 store 里 repeatMode/shuffleOn 一直存在，界面上却没有入口）：
- *    随机 + 循环三档（顺序播放 → 列表循环 → 单曲循环），按钮带中文标注。
+ * 历史（2026-10 播放页）：歌词卡拉 OK、当前行自动跟随、歌曲模式单键三档循环；
+ * 2026-10-17 起播放页不再隐藏底部导航（下边界抬到底栏之上，底栏常显）。
  */
-import { ref, computed, watch, nextTick, onMounted } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { lessons, type Lesson } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
@@ -73,10 +52,6 @@ const modeLabel = computed(() => {
 });
 
 /* ---------- 播放页的歌词（卡拉 OK，整篇可滚动） ---------- */
-
-/* LRC 时间轴（public/lessons/<id>/<音频同名>.lrc，gen-lrc.py 产出）：
- * 拉得到就按时间精确高亮（2026-10-25 接入，此前是 progress×行数 的比例映射，
- * 前奏/间奏会"空唱"）；拉不到或与当前歌词对不上（LRC 过期）→ 回退比例映射。 */
 const lrcLines = useLrc(computed(() => player.currentSong?.src ?? null));
 const lrcMap = computed(() => {
   const lrc = lrcLines.value;
@@ -96,13 +71,12 @@ const activeLine = computed(() => {
   return Math.min(n - 1, Math.max(0, Math.round(player.progress * n)));
 });
 
-/* ===== 整篇歌词滚动（2026-10-18 按家长反馈从"固定 5 行窗"升级）=====
+/* ===== 整篇歌词滚动 =====
  * 完整歌词列表 + 当前行高亮 + 自动滚动跟随；家长手动滚动后 3 秒内
  * 不自动抢滚动（看完想看的那段，歌词自己"回来"）。 */
 const lyricsEl = ref<HTMLElement | null>(null);
 const userScrolling = ref(false);
 let userScrollTimer = 0;
-/** 程序滚动进行中的计数（smooth scroll 期间触发的 scroll 事件不算用户手势） */
 let programmaticScrolls = 0;
 
 function followActiveLine() {
@@ -130,45 +104,101 @@ watch(activeLine, () => {
 watch(
   () => player.currentSong?.id,
   () => {
-    userScrolling.value = false; // 换歌重新跟随
+    userScrolling.value = false;
     nextTick(followActiveLine);
   }
 );
-onMounted(followActiveLine);
 
-/** tab 定义提到 setup 顶层，避免每次渲染新建数组导致子组件 props 反复 diff */
-const TABS = [
+/* ---------- 课程播放页：共用标题 + 页内模式切换 ---------- */
+type PlayerMode = ListenSubTab;
+
+/** 模式定义提到 setup 顶层，避免每次渲染新建数组导致子组件 props 反复 diff */
+const MODE_TABS = [
   { value: "songs", label: "歌曲", icon: Music },
   { value: "videos", label: "视频", icon: Film },
   { value: "clips", label: "词句", icon: BookOpen },
 ];
 
-const subTab = ref<ListenSubTab>("songs");
-/** 当前打开的「词句」课；null = 未打开播放器 */
-const clipLesson = ref<Lesson | null>(null);
-function switchTab(t: ListenSubTab) {
-  subTab.value = t;
-  player.closeLyrics();
-  videoIdx.value = -1;
-  clipLesson.value = null;
+const activeLesson = ref<Lesson | null>(null);
+const mode = ref<PlayerMode>("songs");
+const showPlaylist = ref(false);
+/** 离开歌曲模式前是否在播：切回歌曲时恢复，切走时先暂停，避免两路声音叠在一起 */
+const songWasPlaying = ref(false);
+
+/** 当前课在全局 SONG_LIST 里的曲目（多轨课会展开成多条） */
+function songEntriesFor(l: Lesson | null) {
+  if (!l) return [];
+  return player.SONG_LIST
+    .map((song, index) => ({ song, index }))
+    .filter(({ song }) => song.id === l.id || song.id.startsWith(`${l.id}-t`));
 }
-function openClips(l: Lesson) {
+function songIndicesFor(l: Lesson | null) {
+  return songEntriesFor(l).map((e) => e.index);
+}
+const courseSongs = computed(() => songEntriesFor(activeLesson.value));
+
+function lessonForSongId(id: string | undefined): Lesson | null {
+  if (!id) return null;
+  const lid = id.replace(/-t\d+$/, "");
+  return lessons.find((l) => l.id === lid) ?? null;
+}
+
+/** 把播放页落到当前歌所属的课程（从别的 tab 回到磨耳朵时也走这里） */
+function adoptCurrentSong() {
+  const l = lessonForSongId(player.currentSong?.id);
+  if (!l) return;
+  activeLesson.value = l;
+  player.setQueue(songIndicesFor(l));
+  mode.value = "songs";
+}
+
+function openCourse(l: Lesson) {
+  hapticTap();
+  activeLesson.value = l;
+  mode.value = "songs";
+  songWasPlaying.value = false;
+  const indices = songIndicesFor(l);
+  player.setQueue(indices);
+  if (!indices.length) return;
+  const start = indices.includes(player.currentIdx) ? player.currentIdx : indices[0];
+  player.openLyrics(start);
+}
+
+function closePlayer() {
   hapticTap();
   player.closeLyrics();
-  videoIdx.value = -1;
-  clipLesson.value = l;
+  player.clearQueue();
+  activeLesson.value = null;
+  mode.value = "songs";
+  showPlaylist.value = false;
 }
 
-/** 词句 tab 的课程分组：单词 / 亲子口语都来自课时数据 */
-const clipGroups = computed(() =>
-  lessons
-    .map((l) => ({ lesson: l, words: l.words.length, phrases: l.phrases.length }))
-    .filter((g) => g.words || g.phrases)
-);
-const showPlaylist = ref(false);
+function switchMode(next: PlayerMode) {
+  if (next === mode.value || !activeLesson.value) return;
+  hapticTap();
+  if (mode.value === "songs") {
+    songWasPlaying.value = player.playing;
+    if (player.playing) player.togglePlay();
+    player.closeLyrics();
+  }
+  if (next === "songs") {
+    const indices = songIndicesFor(activeLesson.value);
+    const start = indices.includes(player.currentIdx) ? player.currentIdx : indices[0];
+    if (start !== undefined) player.openLyrics(start);
+    if (songWasPlaying.value && !player.playing) player.togglePlay();
+  }
+  mode.value = next;
+}
 
-/** 当前歌所属课时 id（2026-11-08「去这一课」按钮）：多轨条目的 id 是
- *  `${lessonId}-tN`（见 player.SONG_LIST 构造），剥掉轨号后缀即课时 id */
+function playTrack(index: number) {
+  hapticTap();
+  mode.value = "songs";
+  songWasPlaying.value = true;
+  player.playSong(index);
+  showPlaylist.value = false;
+}
+
+/** 当前歌所属课时 id（「去这一课」） */
 const currentLessonId = computed(() => player.currentSong?.id.replace(/-t\d+$/, "") ?? null);
 function goCurrentLesson() {
   hapticTap();
@@ -177,67 +207,83 @@ function goCurrentLesson() {
   if (lid) router.push(`/course/${lid}`);
 }
 
-const videoList = computed<VideoItem[]>(() =>
-  lessons
+/* ---------- 视频 / 词句：只取当前课 ---------- */
+function videosFor(l: Lesson | null): VideoItem[] {
+  if (!l) return [];
+  const first = l.song.video
+    ? [{
+        id: l.id, title: l.song.title || l.title, titleZh: l.titleZh, emoji: l.emoji,
+        tone: l.tone ?? "blue", src: l.song.video,
+      }]
+    : [];
+  const extras = (l.song.tracks || [])
+    .filter((t) => t.video)
+    .map((t, i) => {
+      const cover = trackCover(t.group, l.emoji, l.tone ?? "blue");
+      return {
+        id: `${l.id}-t${i + 2}`,
+        title: t.title,
+        titleZh: t.titleZh || l.titleZh,
+        emoji: cover.emoji,
+        tone: cover.tone,
+        src: t.video!,
+      };
+    });
+  return [...first, ...extras];
+}
+const videoItems = computed(() => videosFor(activeLesson.value));
 
-    .flatMap((l) => {
-      // l.song.video / t.video 在 normalize 时已 asset 补 BASE，直接用，不要再 asset
-      const first = l.song.video
-        ? [{
-            id: l.id, title: l.song.title || l.title, titleZh: l.titleZh, emoji: l.emoji,
-            tone: l.tone ?? "blue", src: l.song.video,
-          }]
-        : [];
-      const extras = (l.song.tracks || [])
-        .filter((t) => t.video)
-        .map((t, i) => {
-          const cover = trackCover(t.group, l.emoji, l.tone ?? "blue");
-          return {
-            id: `${l.id}-t${i + 2}`,
-            title: t.title,
-            titleZh: t.titleZh || l.titleZh,
-            emoji: cover.emoji,
-            tone: cover.tone,
-            src: t.video!,
-          };
-        });
-      return [...first, ...extras];
-    })
-);
+const lessonMeta = computed(() => {
+  const l = activeLesson.value;
+  if (!l) return "";
+  return `${l.words.length} 个单词 · ${l.phrases.length} 句亲子口语`;
+});
+const currentTrackTitle = computed(() => player.currentSong?.title ?? activeLesson.value?.song.title ?? "");
+const currentTrackSub = computed(() => player.currentSong?.titleZh ?? activeLesson.value?.titleZh ?? "");
 
-/* ---------- 视频播放（2026-10-25 起由 VideoPlayer 组件承担：
- * 自绘控制栏 + 三档循环 + 播放段结算计时。本页只记"开了哪个"。 ---------- */
-const videoIdx = ref(-1);
-
-/**
- * 进页面拉一次云端：页面顶部「今天磨了 N 分钟」读的是 progress.todayStats，
- * 而它只会被 syncFromServer 合并刷新。之前只有启动 / 「我的」页 / 家长中心会拉，
- * 直接落在磨耳朵页（底栏中间位进来、或播放页返回）时读到的是本机 _daily，
- * 于是同一口令在另一台设备上显示 0 分钟 —— 数字会"看着像没同步"。
- */
 onMounted(() => {
   void progStore.syncFromServer();
-  // 从其他 tab 切回来时，有加载过的歌就直接落到正在播详情（2026-11-08 用户反馈；
-  // 音乐 App 惯例）。只展开不重播：同曲 openLyrics/noNowPlaying 语义，暂停中的歌
-  // 展开后仍是暂停态。冷启动无歌（currentIdx=-1）仍是列表；想回列表点收起键一下。
-  if (player.currentIdx >= 0 && !player.nowPlaying) {
-    player.nowPlaying = true;
+  // 从其他 tab 切回来时，有加载过的歌就直接落到正在播的课程播放页（2026-11-08 惯例）。
+  // 只展开不重播：同曲 openLyrics 不会重置 audio.src。
+  if (player.currentIdx >= 0) {
+    adoptCurrentSong();
+    if (!player.nowPlaying) player.nowPlaying = true;
+    nextTick(followActiveLine);
   }
+});
+
+/** 全局 store 被其它入口打开时，同步当前课程（不让播放页停在上一课） */
+watch(
+  () => player.nowPlaying,
+  (on) => {
+    if (on && player.currentSong) adoptCurrentSong();
+  }
+);
+
+onBeforeUnmount(() => {
+  clearTimeout(userScrollTimer);
+  player.clearQueue();
 });
 </script>
 
 <template>
   <div class="listen view">
-    <!-- ===== 播放页（唱片页；状态来自全局 store，跨路由保持） =====
-         一屏三问：听的是哪首 → 唱到哪 → 我要干嘛。整页只有一颗主播放键。 -->
+    <!-- ===== 课程播放页：共用页头 + 页内模式切换 =====
+         一屏三问：这一课是什么 → 现在用哪种方式磨 → 播到哪 / 我要干嘛。 -->
     <Transition name="lyrics">
-      <div v-if="player.nowPlaying && player.currentSong" class="player">
-        <!-- 顶栏"页面级动作"：收起 / 去这一课 / 播放列表（transport 不放在这里） -->
-        <div class="pl-bar">
-          <button class="pl-chip round" aria-label="收起歌词" @click="player.closeLyrics()">
+      <div v-if="activeLesson" class="player">
+        <div class="lp-head">
+          <button class="pl-chip round" aria-label="收起播放页" @click="closePlayer">
             <ChevronDown class="k-ico" />
           </button>
-          <span class="pl-bar-right">
+          <span class="lp-course">
+            <span class="lp-cover"><EmojiTile :emoji="activeLesson.emoji" :tone="activeLesson.tone" /></span>
+            <span class="lp-course-text">
+              <span class="lp-title">{{ activeLesson.title }}</span>
+              <span class="lp-sub">{{ activeLesson.titleZh }} · {{ lessonMeta }}</span>
+            </span>
+          </span>
+          <span class="lp-head-actions">
             <button
               v-if="currentLessonId"
               class="pl-chip round"
@@ -247,157 +293,150 @@ onMounted(() => {
             >
               <BookOpen class="k-ico" />
             </button>
-            <button class="pl-chip round" aria-label="打开播放列表" @click="showPlaylist = true">
+            <button
+              v-if="mode === 'songs' && courseSongs.length > 1"
+              class="pl-chip round"
+              aria-label="打开播放列表"
+              @click="showPlaylist = true"
+            >
               <ListMusic class="k-ico" />
             </button>
           </span>
         </div>
 
-        <div class="pl-hero">
-          <EmojiTile :emoji="player.currentSong.emoji" :tone="player.currentSong.tone" size="xl" />
-          <p class="pl-title">{{ player.currentSong.title }}</p>
-          <p class="pl-sub">{{ player.currentSong.titleZh }}</p>
+        <div class="lp-tabs">
+          <SegmentedTabs
+            :model-value="mode"
+            :items="MODE_TABS"
+            @update:model-value="(v: string) => switchMode(v as PlayerMode)"
+          />
         </div>
 
-        <!-- 整篇歌词：当前行高亮 + 自动滚动跟随；家长可手动滚动（3s 后自动跟随恢复） -->
-        <div class="pl-lyrics" ref="lyricsEl" @scroll.passive="onLyricsScroll">
-          <div class="pl-lines">
-            <template v-if="player.currentLyrics.length">
-              <p
-                v-for="(line, i) in player.currentLyrics"
-                :key="i"
-                class="pl-line"
-                :class="{ on: i === activeLine }"
-                :data-line="i"
-              >{{ line }}<span v-if="player.currentLyricsZh[i]" class="pl-zh">{{ player.currentLyricsZh[i] }}</span></p>
-            </template>
-            <p v-else class="pl-line on">🎵</p>
+        <!-- 歌曲：宽屏左侧当前曲目 / 右侧整篇歌词；手机只留歌词，把高度让给内容 -->
+        <template v-if="mode === 'songs'">
+          <div class="lp-song">
+            <div class="lp-art">
+              <EmojiTile :emoji="player.currentSong?.emoji ?? activeLesson.emoji" :tone="player.currentSong?.tone ?? activeLesson.tone" size="xl" />
+              <p class="lp-art-title">{{ currentTrackTitle }}</p>
+              <p class="lp-art-sub">{{ currentTrackSub }}</p>
+            </div>
+
+            <div class="pl-lyrics" ref="lyricsEl" @scroll.passive="onLyricsScroll">
+              <div class="pl-lines">
+                <template v-if="player.currentLyrics.length">
+                  <p
+                    v-for="(line, i) in player.currentLyrics"
+                    :key="i"
+                    class="pl-line"
+                    :class="{ on: i === activeLine }"
+                    :data-line="i"
+                  >{{ line }}<span v-if="player.currentLyricsZh[i]" class="pl-zh">{{ player.currentLyricsZh[i] }}</span></p>
+                </template>
+                <p v-else class="pl-line on">🎵</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="pl-transport">
+            <button class="pl-mode on" :aria-label="`播放模式：${modeLabel}，点击切换`" @click="player.cycleMode()">
+              <component :is="modeIcon" class="k-ico" />
+              <span class="pl-mode-label">{{ modeLabel }}</span>
+            </button>
+            <span class="pl-transport-gap" aria-hidden="true" />
+            <button class="pl-side round" aria-label="上一首" @click="player.prev()">
+              <SkipBack class="k-ico" />
+            </button>
+            <button class="pl-main round" :aria-label="player.playing ? '暂停' : '播放'" @click="player.togglePlay()">
+              <Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" />
+            </button>
+            <button class="pl-side round" aria-label="下一首" @click="player.next()">
+              <SkipForward class="k-ico" />
+            </button>
+          </div>
+
+          <div class="pl-progress-row">
+            <span class="pl-time">{{ player.formatTime(player.progress * player.duration) }}</span>
+            <input class="pl-progress" type="range" aria-label="播放进度"
+              :style="{ '--p': Math.round(player.progress * 100) + '%' }"
+              :value="Math.round(player.progress * 100)" @input="player.seek" min="0" max="100" />
+            <span class="pl-time">{{ player.formatTime(player.duration) }}</span>
+          </div>
+        </template>
+
+        <!-- 视频：不再单独铺浮层，直接占满内容区；无视频时给封面提示，不白屏 -->
+        <div v-else-if="mode === 'videos'" class="lp-media">
+          <VideoPlayer
+            v-if="videoItems.length"
+            :key="activeLesson.id + '-video'"
+            :videos="videoItems"
+            :start-index="0"
+            embedded
+          />
+          <div v-else class="lp-empty">
+            <EmojiTile :emoji="activeLesson.emoji" :tone="activeLesson.tone" size="xl" />
+            <p class="lp-empty-title">这一课还没有视频</p>
+            <p class="lp-empty-sub">先听歌曲，或者切到词句跟读吧</p>
           </div>
         </div>
 
-        <!-- transport：整页唯一的主行动就是中间那颗实底播放键。
-             模式按钮收进同一行（2026-11-08 微调：原来独占一行悬在歌词与
-             transport 之间，视觉上像个孤儿元素；归位后控制簇聚拢，歌词区
-             多出一行呼吸空间）。文字标注保留——三种循环状态长得几乎一样，
-             必须靠文字区分（见样式区说明）。 -->
-        <div class="pl-transport">
-          <button class="pl-mode on" :aria-label="`播放模式：${modeLabel}，点击切换`" @click="player.cycleMode()">
-            <component :is="modeIcon" class="k-ico" />
-            <span class="pl-mode-label">{{ modeLabel }}</span>
-          </button>
-          <span class="pl-transport-gap" aria-hidden="true" />
-          <button class="pl-side round" aria-label="上一首" @click="player.prev()">
-            <SkipBack class="k-ico" />
-          </button>
-          <button class="pl-main round" :aria-label="player.playing ? '暂停' : '播放'" @click="player.togglePlay()">
-            <Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" />
-          </button>
-          <button class="pl-side round" aria-label="下一首" @click="player.next()">
-            <SkipForward class="k-ico" />
-          </button>
-        </div>
-
-        <div class="pl-progress-row">
-          <span class="pl-time">{{ player.formatTime(player.progress * player.duration) }}</span>
-          <input class="pl-progress" type="range" aria-label="播放进度"
-            :style="{ '--p': Math.round(player.progress * 100) + '%' }"
-            :value="Math.round(player.progress * 100)" @input="player.seek" min="0" max="100" />
-          <span class="pl-time">{{ player.formatTime(player.duration) }}</span>
+        <!-- 词句：embedded 播放器，共用页头，不再重复课程标题 -->
+        <div v-else class="lp-media lp-clips">
+          <LessonClipPlayer
+            :key="activeLesson.id + '-clips'"
+            :lesson="activeLesson"
+            embedded
+          />
         </div>
       </div>
     </Transition>
 
-    <!-- ===== 列表页（无顶部 header）；非播放态显示 ===== -->
-    <template v-if="!player.nowPlaying || !player.currentSong">
+    <!-- ===== 磨耳朵首页：只按课程列，格式入口不在这里 ===== -->
+    <template v-if="!activeLesson">
       <div class="today-chip">🎵 今天听了 <b>{{ Math.floor((progStore.todayStats.listenSec ?? 0) / 60) }}</b> 分钟啦</div>
-      <!-- 顶部 tab：与学习页同款 SegmentedTabs -->
-      <div class="type-tabs">
-        <SegmentedTabs
-          :model-value="subTab"
-          :items="TABS"
-          @update:model-value="(v: string) => switchTab(v as ListenSubTab)"
-        />
-      </div>
       <div class="view-body body">
-        <template v-if="subTab === 'songs'">
-          <div class="song-list">
-            <div v-for="(s, i) in player.SONG_LIST" :key="s.id" class="entry-row song-row"
-              :class="{ on: player.currentIdx === i }" @click="player.openLyrics(i)">
-              <EmojiTile :emoji="s.emoji" :tone="s.tone" />
-              <span class="entry-row__body">
-                <span class="sr-title-row">
-                  <span class="entry-row__title sr-title">{{ s.title }}</span>
-                  <!-- 正在播放：标题旁动态声波（孩子一眼看出哪首在唱） -->
-                  <SpeakWave v-if="player.currentIdx === i && player.playing" size="sm" tone="var(--brand)" />
-                </span>
-                <span class="entry-row__desc">{{ s.titleZh }}</span>
-              </span>
-              <button v-if="player.currentIdx === i" class="sr-play" aria-label="播放/暂停" @click.stop="player.playFromRow(i)">
-                <Pause v-if="player.playing" class="k-ico" /><Play v-else class="k-ico" />
-              </button>
-              <span v-else class="sr-play sr-play--idle"><Play class="k-ico" /></span>
-            </div>
-          </div>
-        </template>
-        <template v-else-if="subTab === 'videos'">
-          <div class="video-grid">
-            <button v-for="(v, i) in videoList" :key="v.id" class="video-card" :class="'tone-' + v.tone" @click="videoIdx = i">
-              <span class="vc-emoji" aria-hidden="true">
-                <img v-if="emojiCoverUrl(v.emoji)" class="vc-emoji__img" :src="emojiCoverUrl(v.emoji)!" alt="" />
-                <template v-else>{{ v.emoji }}</template>
-              </span>
-              <span class="vc-name">{{ v.title }}</span>
-              <span class="vc-sub">{{ v.titleZh }}</span>
-              <span class="vc-play round"><Play class="k-ico" /></span>
-            </button>
-          </div>
-        </template>
-        <template v-else>
-          <div class="song-list">
-            <div
-              v-for="g in clipGroups"
-              :key="g.lesson.id"
-              class="entry-row clip-row"
-              @click="openClips(g.lesson)"
-            >
-              <EmojiTile :emoji="g.lesson.emoji" :tone="g.lesson.tone" />
-              <span class="entry-row__body">
-                <span class="entry-row__title">{{ g.lesson.title }}</span>
-                <span class="entry-row__desc">
-                  {{ g.lesson.titleZh }} · {{ g.words }} 个单词 / {{ g.phrases }} 句对话
-                </span>
-              </span>
-              <span class="clip-play"><Play class="k-ico" /></span>
-            </div>
-          </div>
-        </template>
+        <button
+          v-for="l in lessons"
+          :key="l.id"
+          class="entry-row course-row"
+          @click="openCourse(l)"
+        >
+          <EmojiTile :emoji="l.emoji" :tone="l.tone" size="lg" />
+          <span class="entry-row__body">
+            <span class="sr-title-row">
+              <span class="entry-row__title sr-title">{{ l.title }}</span>
+              <SpeakWave
+                v-if="songEntriesFor(l).some(({ song }) => player.currentSong?.id === song.id) && player.playing"
+                size="sm"
+                tone="var(--brand)"
+              />
+            </span>
+            <span class="entry-row__desc">
+              {{ l.titleZh }} · 歌曲 · 视频 · {{ l.words.length }} 词 / {{ l.phrases.length }} 句
+            </span>
+          </span>
+          <span class="course-play"><Play class="k-ico" /></span>
+        </button>
       </div>
     </template>
 
-    <!-- 播放列表抽屉 -->
-    <BaseDrawer :open="showPlaylist" :title="`播放列表（${player.SONG_LIST.length}）`" @close="showPlaylist = false">
+    <!-- 播放列表抽屉（仅一课多轨时出现，不承担跨课导航） -->
+    <BaseDrawer :open="showPlaylist" :title="`本课歌曲（${courseSongs.length}）`" @close="showPlaylist = false">
       <div class="drawer-list">
-        <button v-for="(s, i) in player.SONG_LIST" :key="s.id" class="drawer-item"
-          :class="{ on: player.currentIdx === i }" @click="player.playSong(i); showPlaylist = false">
-          <span class="di-idx">{{ i + 1 }}</span>
+        <button v-for="entry in courseSongs" :key="entry.song.id" class="drawer-item"
+          :class="{ on: player.currentIdx === entry.index }" @click="playTrack(entry.index)">
+          <span class="di-idx">{{ entry.index + 1 }}</span>
           <span class="di-emoji" aria-hidden="true">
-            <img v-if="emojiCoverUrl(s.emoji)" class="di-emoji__img" :src="emojiCoverUrl(s.emoji)!" alt="" />
-            <template v-else>{{ s.emoji }}</template>
+            <img v-if="emojiCoverUrl(entry.song.emoji)" class="di-emoji__img" :src="emojiCoverUrl(entry.song.emoji)!" alt="" />
+            <template v-else>{{ entry.song.emoji }}</template>
           </span>
           <span class="di-info">
-            <span class="di-title">{{ s.title }}</span>
-            <span class="di-sub">{{ s.titleZh }}</span>
+            <span class="di-title">{{ entry.song.title }}</span>
+            <span class="di-sub">{{ entry.song.titleZh }}</span>
           </span>
-          <SpeakWave v-if="player.currentIdx === i && player.playing" size="sm" tone="var(--brand)" />
+          <SpeakWave v-if="player.currentIdx === entry.index && player.playing" size="sm" tone="var(--brand)" />
         </button>
       </div>
     </BaseDrawer>
-
-    <!-- 视频播放（自绘控制栏：三档循环 / 进度 / 上下个 / 静音 / 全屏） -->
-    <VideoPlayer v-if="videoIdx >= 0" :videos="videoList" :start-index="videoIdx" @close="videoIdx = -1" />
-
-    <!-- 词句播放：按一课顺序播单词 + 亲子口语句子 -->
-    <LessonClipPlayer v-if="clipLesson" :lesson="clipLesson" @close="clipLesson = null" />
   </div>
 </template>
 
@@ -420,18 +459,15 @@ onMounted(() => {
   color: var(--brand);
   font-size: var(--fs-body);
 }
-/* 顶部 tab 容器：与学习页一致 */
-.type-tabs {
-  margin: var(--gap-s) 0 var(--gap-m);
+/* 课程行：复用全局 .entry-row 骨架；右侧只留一个播放提示 */
+.course-row {
+  text-align: left;
+  cursor: pointer;
 }
-.song-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-s);
-}
-/* 列表行骨架来自全局 .entry-row；这里只补"正在播放"的态 */
-.song-row.on {
-  box-shadow: var(--shadow-hard), inset 0 0 0 2px var(--brand);
+.course-play {
+  flex: none;
+  color: var(--brand);
+  font-size: var(--fs-title);
 }
 .sr-title-row {
   display: flex;
@@ -445,25 +481,10 @@ onMounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.sr-play {
-  font-size: var(--fs-title);
-  color: var(--brand);
-  background: none;
-  padding: 0;
-  flex: none;
-}
-.sr-play--idle {
-  color: var(--ink-faint);
-}
 
-/* ===== 播放页（唱片页） =====
- * 「一屏三问」：① 听的是哪首（封面 + 歌名）→ ② 唱到哪（歌词）→ ③ 我要干嘛（主播放键）。
- *
- * 下边界 = 底栏之上（--nav-h + 安全区），**不是 inset:0**：
- * 底栏常显，播着歌也能直接切 tab。这样"两个底部"不用互相躲 —— 浮层只占底栏之上的空间，
- * 而不是靠把底栏藏掉来腾地方（藏底栏的代价见 nav-visibility.ts 的事故记录）。
- * 层级上底栏 --z-floating(40) > 浮层 --z-bar(30)：即使以后边界算法被改坏，
- * 也是底栏压在浮层上，不会出现"整条导航消失"。
+/* ===== 课程播放页 =====
+ * 浮层只占底栏以上的空间：底栏常显，播着歌也能切 tab。
+ * 层级上底栏 --z-floating(40) > 浮层 --z-bar(30)，边界算错也是底栏压在上面。
  */
 .player {
   position: fixed;
@@ -474,23 +495,65 @@ onMounted(() => {
   z-index: var(--z-bar);
   display: flex;
   flex-direction: column;
-  gap: var(--gap-m);
+  gap: var(--gap-s);
   padding:
     max(var(--gap-s), env(safe-area-inset-top))
     var(--pad-x)
     var(--gap-m);
 }
-/* 顶栏只放"页面级动作"：收起在左、播放列表在右。
- * 两颗都是白底圆键——原来是透明底的图标，孩子看不出那里能点。 */
-.pl-bar {
+/* 共用页头：返回 + 课程封面/标题 + 页面级动作，三模式共用同一行 */
+.lp-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--gap-xs);
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
 }
-.pl-bar-right {
+.lp-course {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-xs);
+}
+.lp-cover {
+  display: inline-flex;
+  flex: none;
+}
+.lp-cover :deep(.emoji-tile) {
+  font-size: 22px;
+  border-radius: var(--radius-s);
+}
+.lp-course-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.lp-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+  font-weight: var(--fw-strong);
+  font-size: var(--fs-body);
+  line-height: 1.25;
+}
+.lp-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  font-weight: var(--fw-mid);
+  font-size: var(--fs-small);
+  line-height: 1.2;
+}
+.lp-head-actions {
   display: inline-flex;
   align-items: center;
-  gap: var(--gap-s);
+  gap: var(--gap-xs);
+  flex: none;
 }
 .pl-chip {
   width: 40px;
@@ -500,40 +563,34 @@ onMounted(() => {
   box-shadow: var(--shadow-soft);
   font-size: var(--fs-body);
 }
-/* 唱片区：封面是整页的主角（第①问） */
-.pl-hero {
+.lp-tabs {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* 歌曲：默认手机单列（歌词占满剩余高）；宽屏下图左文右 */
+.lp-song {
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--gap-xs);
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
 }
-.pl-title {
-  margin: var(--gap-xs) 0 0;
-  text-align: center;
-  color: var(--ink);
-  font-weight: var(--fw-strong);
-  font-size: var(--fs-title);
+.lp-art {
+  display: none;
 }
-.pl-sub {
-  margin: 0;
-  text-align: center;
-  color: var(--ink-soft);
-  font-weight: var(--fw-mid);
-  font-size: var(--fs-small);
-}
-/* 歌词卡：整篇可滚动（家长手动滑 / 播放时自动跟随当前行）。
- * flex:1 + min-height:0 吃掉剩余高度；内层 .pl-lines 用 margin-block:auto
- * 安全居中——行数少时垂直居中，行数多溢出时可滚（auto margin 溢出时自动归零，
- * 不会像 justify-content:center 那样把顶部内容裁进摸不到的区域）。 */
 .pl-lyrics {
-  position: relative; /* 行的 offsetTop 以此为基准，供自动滚动计算 */
+  position: relative;
   flex: 1 1 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; /* 孩子界面不露滚动条，滚动手感保留 */
+  scrollbar-width: none;
   padding: var(--gap-m) var(--gap-s);
   background: var(--card-bg);
   border-radius: var(--radius);
@@ -565,8 +622,6 @@ onMounted(() => {
   font-weight: var(--fw-strong);
   opacity: 1;
 }
-/* 歌词行的逐行中文翻译：英文下方一行小字，低强调不抢英文主体；
- * 高亮行内中文用品牌色但保持浅淡，一眼能分清"唱的是哪句 / 这句什么意思"。 */
 .pl-zh {
   display: block;
   margin-top: 2px;
@@ -580,10 +635,23 @@ onMounted(() => {
   color: var(--brand);
   opacity: 0.9;
 }
-/* 播放模式：收进 transport 行（2026-11-08 微调，见模板注释）。
- * 做成"图标 + 中文"的胶囊而不是纯图标：模式是抽象概念，只有图标时
- * 三种循环状态（顺序/列表循环/单曲循环）长得几乎一样，必须靠文字区分。
- * 未激活时降到次级文字色、激活时品牌色 + 品牌浅底，与「当前行」那套高亮语言一致。 */
+.lp-art-title {
+  margin: var(--gap-xs) 0 0;
+  max-width: 100%;
+  text-align: center;
+  color: var(--ink);
+  font-weight: var(--fw-strong);
+  font-size: var(--fs-body);
+}
+.lp-art-sub {
+  margin: 0;
+  text-align: center;
+  color: var(--ink-soft);
+  font-weight: var(--fw-mid);
+  font-size: var(--fs-small);
+}
+
+/* 播放模式：图标 + 中文，三档循环状态靠文字区分 */
 .pl-mode {
   display: inline-flex;
   align-items: center;
@@ -604,16 +672,15 @@ onMounted(() => {
 .pl-mode-label {
   line-height: 1;
 }
-
-/* transport：中间实底主键 + 立体厚度（整页唯一的主行动），两侧降为白底圆键 */
 .pl-transport {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--gap-s);
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
 }
-/* 模式胶囊与 transport 三键之间的弹性空隙：模式靠左、三键居中偏右，
- * 视觉上是一簇控制但模式不会挤到主键 */
 .pl-transport-gap {
   flex: 0 0 var(--gap-xs);
 }
@@ -633,27 +700,15 @@ onMounted(() => {
   box-shadow: 0 var(--press) 0 var(--brand-dark), var(--shadow-soft);
   font-size: var(--fs-title);
 }
-/* 手机竖屏（基准档）收一档后，宽屏（iPad/Mac ≥600px）恢复大按钮与大间距 */
-@media (min-width: 600px) {
-  .pl-chip { width: var(--tap-min); height: var(--tap-min); font-size: var(--fs-title); }
-  .pl-side { width: var(--tap-min); height: var(--tap-min); font-size: var(--fs-title); }
-  .pl-main { width: var(--play-btn); height: var(--play-btn); font-size: var(--fs-hero); }
-  .pl-transport { gap: var(--gap-l); }
-  .pl-transport-gap { flex: 0 0 clamp(var(--gap-s), 4vw, var(--gap-l)); }
-  .pl-mode { padding: var(--gap-xs) var(--gap-m); }
-  .pl-title { margin-top: var(--gap-s); }
-  .pl-lyrics { padding: var(--gap-m) var(--gap-s); }
-  .pl-line { padding: var(--gap-s) var(--gap-m); }
-}
 .pl-progress-row {
   display: flex;
   align-items: center;
   gap: var(--gap-s);
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
 }
-/* 进度：色回到进度语义色 --brand（原来写 accent-color: --yellow，
- * 与"进度/导航类用品牌色"的规范相冲）。
- * 也不用原生 accent-color：它跟着 UA 与 color-scheme 变（无头 Chrome 下整条轨道
- * 渲染成深色），显式画轨道与拇指才能各浏览器一致，也才把拇指做大给孩子按。 */
+/* 进度：显式画轨道与拇指，跨浏览器一致，也把拇指做大给孩子按 */
 .pl-progress {
   flex: 1;
   height: var(--slider-thumb);
@@ -661,7 +716,6 @@ onMounted(() => {
   -webkit-appearance: none;
   background: transparent;
 }
-/* 已播段实底品牌色、未播段浅色，用模板注入的 --p（百分比）切分 */
 .pl-progress::-webkit-slider-runnable-track {
   height: var(--gap-xs);
   border-radius: var(--radius-pill);
@@ -703,75 +757,82 @@ onMounted(() => {
   font-variant-numeric: tabular-nums;
 }
 
-/* ===== iPad 横屏 / 桌面：单列必溢出，改双栏 =====
- * 根因（2026-10-17 反馈"播放页看不到播放键"）：单列总高约 850px，
- * 而浮层只有 视口-底栏 ≈ 652px（iPad 横屏 1024×768、--nav-h=116）——
- * flex 收缩压不掉固定尺寸的 transport，主播放键 bottom=809 直接被裁出视口。
- * 解法：宽横屏用 grid 两栏，左列封面+模式+控制+进度，右列歌词卡占满整高。
- * 用 grid-area 重排而**不动 DOM**：手机竖屏的单列节奏（封面→歌词→控制）原样保留。
- * 行分布 1fr 给 hero 行：封面在左列垂直居中，控制键贴底（拇指落点）。
- *
- * 这一条**故意留在 768**（值档已降到 600，见 tokens.css 断点约定）：双栏是结构改动，
- * 且右侧歌词列要吃掉整列高。若降到 600，手机横屏（667×375）会命中它，而下面
- * max-height:480 的兜底只隐藏 .pl-lyrics、并不撤销 grid —— 左列会被压进半屏宽的格子里。
- * 那 iPad 分屏 2/3（678×768）走单列会不会裁掉播放键？**实测不会**：封面/字号随宽度
- * 收缩，678 宽下单列总高远不到上面那个 850px（那是 1024 宽的估算）。
- * layout-audit 的 listen-player 页常驻校验这一点。 */
-@media (min-width: 768px) and (orientation: landscape) {
-  .player {
-    display: grid;
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
-    grid-template-areas:
-      "bar bar"
-      "hero lyrics"
-      "transport lyrics"
-      "progress lyrics";
-    column-gap: var(--gap-l);
-    align-content: stretch;
-  }
-  .pl-bar { grid-area: bar; }
-  .pl-hero { grid-area: hero; align-self: center; }
-  .pl-lyrics {
-    grid-area: lyrics;
-    height: 100%;
-  }
-  .pl-transport { grid-area: transport; }
-  .pl-progress-row { grid-area: progress; }
+/* 视频 / 词句内容区：吃掉页头与模式条以外的整块剩余高度 */
+.lp-media {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
+}
+.lp-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-s);
+  padding: var(--gap-l);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-hard);
+  text-align: center;
+}
+.lp-empty-title {
+  margin: var(--gap-s) 0 0;
+  color: var(--ink);
+  font-weight: var(--fw-strong);
+  font-size: var(--fs-title);
+}
+.lp-empty-sub {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
 }
 
-/* ===== 手机横屏（tiny）兜底：竖排塞不下，砍装饰保控制 =====
- * 可用高约 290px：歌词窗（~290px）与播放模式行整块砍掉，标题/副标题并入封面行，
- * 间距收紧；overflow-y:auto 只做最后保险 —— 任何情况下 transport 不能被裁掉。 */
-@media (max-height: 480px) {
-  .player {
-    gap: var(--gap-s);
-    overflow-y: auto;
+/* 宽屏：歌曲图左文右；视频与词句保持组件自己的宽屏布局 */
+@media (min-width: 600px) {
+  .pl-chip { width: var(--tap-min); height: var(--tap-min); font-size: var(--fs-title); }
+  .pl-side { width: var(--tap-min); height: var(--tap-min); font-size: var(--fs-title); }
+  .pl-main { width: var(--play-btn); height: var(--play-btn); font-size: var(--fs-hero); }
+  .pl-transport { gap: var(--gap-l); }
+  .pl-transport-gap { flex: 0 0 clamp(var(--gap-s), 4vw, var(--gap-l)); }
+  .pl-mode { padding: var(--gap-xs) var(--gap-m); }
+  .lp-cover :deep(.emoji-tile) { font-size: 30px; }
+  .lp-title { font-size: var(--fs-title); }
+  .lp-song {
+    display: grid;
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+    column-gap: var(--gap-l);
   }
-  /* 矮横屏砍装饰：歌词/副标题/模式胶囊（模式图标与三键语义易混，干脆藏） */
+  .lp-art {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--gap-xs);
+    min-width: 0;
+    padding: var(--gap-m);
+  }
+  .pl-lyrics { padding: var(--gap-m) var(--gap-s); height: 100%; }
+  .pl-line { padding: var(--gap-s) var(--gap-m); }
+}
+
+/* 手机横屏：高度只有 290px 左右，砍掉封面与模式胶囊，先保歌词和主键 */
+@media (max-height: 480px) {
+  .player { gap: var(--gap-s); overflow-y: auto; }
+  .lp-art,
   .pl-mode,
-  .pl-lyrics,
   .pl-sub {
     display: none;
   }
-  .pl-transport-gap {
-    display: none;
-  }
-  .pl-hero {
-    flex: none;
-    flex-direction: row;
-    gap: var(--gap-m);
-  }
-  .pl-title {
-    margin: 0;
-    text-align: left;
-  }
-  .pl-hero :deep(.emoji-tile) {
-    font-size: clamp(48px, 13vh, 64px);
-  }
+  .pl-transport-gap { display: none; }
+  .lp-song { display: flex; }
 }
 
-/* 歌词全屏页 = 抽屉：进入/收起都从底部丝滑滑出（大元素位移 → --dur-slow） */
+/* 歌词页入场/收起：从底部滑出 */
 .lyrics-enter-active {
   transition: transform var(--dur-slow) var(--ease-out), opacity var(--dur-slow) ease;
 }
@@ -795,7 +856,6 @@ onMounted(() => {
   width: 100%;
   padding: var(--gap-s) var(--gap-m);
   text-align: left;
-  /* 显式透明：全局 button 重置没重置 background，会带出浏览器默认浅灰底 */
   background: transparent;
 }
 .drawer-item:active {
@@ -841,72 +901,5 @@ onMounted(() => {
   display: block;
   color: var(--ink-faint);
   font-size: var(--fs-small);
-}
-
-/* 视频 */
-.video-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--gap-s);
-}
-/* 彩色卡面由全局 .tone-* 注入；这里只描述卡片形状 */
-.video-card {
-  position: relative;
-  border-radius: var(--radius);
-  padding: var(--gap-m);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--gap-xs);
-  /* 卡片内容是固定的 emoji + 两行字，给个高度下限让网格两行等高、
-   * 不至于在窄屏被压成扁条（结构性下限，不是样式值） */
-  min-height: 120px;
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-.vc-emoji {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--fs-emoji-xl);
-  height: var(--fs-emoji-xl);
-  font-size: var(--fs-emoji-xl);
-  line-height: 1;
-}
-.vc-emoji__img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.vc-name {
-  font-weight: var(--fw-strong);
-  font-size: var(--fs-body);
-  text-shadow: var(--tone-ink-shadow);
-}
-.vc-sub {
-  font-size: var(--fs-small);
-  font-weight: var(--fw-mid);
-  opacity: 0.85;
-  text-shadow: var(--tone-ink-shadow);
-}
-/* 播放键：压在彩色卡面上的半透明黑底徽章（卡色深浅不定，只有固定黑幕能保证白图标对比度） */
-.vc-play {
-  position: absolute;
-  bottom: var(--gap-s);
-  right: var(--gap-s);
-  width: 2em;
-  height: 2em;
-  font-size: var(--fs-small);
-  background: var(--scrim);
-  color: var(--mask-ink);
-}
-
-/* 词句课程行：复用 .entry-row 骨架，右侧只留一个播放提示 */
-.clip-row {
-  cursor: pointer;
-}
-.clip-play {
-  flex: none;
-  color: var(--brand);
-  font-size: var(--fs-title);
 }
 </style>

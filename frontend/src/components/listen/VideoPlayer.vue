@@ -38,7 +38,7 @@ export interface VideoItem {
   tone?: string;
 }
 
-const props = defineProps<{ videos: VideoItem[]; startIndex?: number }>();
+const props = defineProps<{ videos: VideoItem[]; startIndex?: number; embedded?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
 const progress = useProgressStore();
@@ -198,12 +198,15 @@ function close() {
   segSettle();
   emit("close");
 }
-onBeforeUnmount(segSettle);
+onBeforeUnmount(() => {
+  segSettle();
+  videoEl.value?.pause();
+});
 </script>
 
 <template>
-  <div v-if="cur" ref="shellEl" class="vp" @click.self="close">
-    <button class="vp-close round" aria-label="关闭视频" @click="close">
+  <div v-if="cur" ref="shellEl" class="vp" :class="{ 'vp--embedded': embedded }" @click.self="!embedded && close()">
+    <button v-if="!embedded" class="vp-close round" aria-label="关闭视频" @click="close">
       <X class="k-ico" />
     </button>
 
@@ -301,6 +304,35 @@ onBeforeUnmount(segSettle);
 .vp:fullscreen {
   background: var(--black);
   padding: 0;
+}
+/* 嵌入课程播放页：不再盖住整屏，只占内容区；关闭/标题由外层共用页头承担 */
+.vp--embedded {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  justify-content: center;
+}
+.vp--embedded .vp-body {
+  width: min(900px, 100%);
+  height: 100%;
+  justify-content: center;
+}
+.vp--embedded .vp-video {
+  max-height: min(52vh, calc(100dvh - 300px));
+}
+/* 嵌入在浅色页面上：控制面板不再浮在视频遮罩上，改成实底深色卡，
+   否则 --mask-ink（白字）落在卡片背景上完全看不见 */
+.vp--embedded .vp-panel {
+  background: var(--mask-bg);
+}
+.vp--embedded .vp-caption {
+  color: var(--ink-soft);
+  text-shadow: none;
 }
 /* 真全屏：视频占满除控制栏外的全部空间（contain 黑底无缝），面板通栏 */
 .vp:fullscreen .vp-body {

@@ -78,6 +78,8 @@ export const usePlayerStore = defineStore("player", () => {
   const shuffleOn = ref(false);
   /** 歌词全屏页是否展开（跨路由保持：磨耳朵页回来仍是歌词页） */
   const nowPlaying = ref(false);
+  /** 当前课程播放队列（SONG_LIST 索引）；null = 全站顺序，兼容旧的跨课播放 */
+  const queue = ref<number[] | null>(null);
 
   const currentSong = computed<PlayableSong | null>(
     () => (currentIdx.value >= 0 ? SONG_LIST[currentIdx.value] ?? null : null),
@@ -283,24 +285,37 @@ export const usePlayerStore = defineStore("player", () => {
     }
   }
 
+  /** 设置当前课程的播放队列；传空数组等于回到全站顺序。 */
+  function setQueue(indices: number[]) {
+    const valid = indices.filter((i) => i >= 0 && i < SONG_LIST.length);
+    queue.value = valid.length ? [...valid] : null;
+  }
+  function clearQueue() {
+    queue.value = null;
+  }
+
   function next() {
     if (repeatMode.value === "one") {
       audio.currentTime = 0;
       void audio.play();
       return;
     }
-    if (shuffleOn.value && SONG_LIST.length > 1) {
+    const q = queue.value;
+    const pool = q?.length ? q : SONG_LIST.map((_, i) => i);
+    if (shuffleOn.value && pool.length > 1) {
       let r: number;
       do {
-        r = Math.floor(Math.random() * SONG_LIST.length);
+        r = pool[Math.floor(Math.random() * pool.length)];
       } while (r === currentIdx.value);
       playSong(r);
       return;
     }
-    if (currentIdx.value < SONG_LIST.length - 1) {
-      playSong(currentIdx.value + 1);
+    const pos = pool.indexOf(currentIdx.value);
+    const nextPos = pos >= 0 ? pos + 1 : 0;
+    if (nextPos < pool.length) {
+      playSong(pool[nextPos]);
     } else if (repeatMode.value === "all") {
-      playSong(0);
+      playSong(pool[0]);
     } else {
       playing.value = false;
       stopListenTimer();
@@ -312,7 +327,9 @@ export const usePlayerStore = defineStore("player", () => {
       audio.currentTime = 0;
       return;
     }
-    if (currentIdx.value > 0) playSong(currentIdx.value - 1);
+    const pool = queue.value?.length ? queue.value : SONG_LIST.map((_, i) => i);
+    const pos = pool.indexOf(currentIdx.value);
+    if (pos > 0) playSong(pool[pos - 1]);
   }
 
   /** 循环模式三档轮转：顺序播放 → 列表循环 → 单曲循环 → 顺序播放。
@@ -370,6 +387,8 @@ export const usePlayerStore = defineStore("player", () => {
     repeatLabel,
     shuffleOn,
     nowPlaying,
+    setQueue,
+    clearQueue,
     playSong,
     playFromRow,
     openLyrics,

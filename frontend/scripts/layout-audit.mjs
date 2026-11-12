@@ -116,36 +116,28 @@ const PAGES = [
   { name: "calendar", q: "#/me/calendar" },
   { name: "treasure", q: "#/me/treasure" },
   { name: "hero", q: "#/me/treasure/hero/tiga" },
-  // 播放器是"点开才出现"的浮层，静态首屏量不到 —— 这正是它去年出过
-  // "iPad 横屏看不到播放键"的原因（单列 850px 塞进 652px）。
-  // prep：先点第一首歌把浮层展开，再按常规探针量。
-  { name: "listen-player", q: "#/listen", prep: "document.querySelector('.song-row')?.click()" },
-  // 视频播放浮层（2026-10-25 自绘控制栏后纳入）：切到视频 tab 再点第一张卡。
-  // tab 切换是 Vue 异步渲染，prep 里起 async 等一拍再点卡（外部有 900ms 稳定期兜底）。
+  // prep：点第一张课程卡进统一播放页（默认歌曲），再按常规探针量。
+  { name: "listen-player", q: "#/listen", prep: "document.querySelector('.course-row')?.click()" },
+  // 视频模式（2026-11 起页内切换）：先进课，再切「视频」。
   {
     name: "listen-video",
     q: "#/listen",
     prep: `(async () => {
-      document.querySelector('button[aria-label="收起歌词"]')?.click();
+      document.querySelector('.course-row')?.click();
       await new Promise(r => setTimeout(r, 300));
-      const tab = [...document.querySelectorAll('button')].find(b => b.textContent.includes('视频'));
-      tab?.click();
+      [...document.querySelectorAll('.seg-btn')].find(b => b.textContent.includes('视频'))?.click();
       await new Promise(r => setTimeout(r, 300));
-      document.querySelector('.video-card')?.click();
     })()`,
   },
-  // 词句播放浮层（2026-11-12 新增第三个 tab）：切到词句再点第一课。
+  // 词句模式（2026-11 起页内切换）：先进课，再切「词句」。
   {
     name: "listen-clips",
     q: "#/listen",
     prep: `(async () => {
-      // 同一 hash 连续走查时 Pinia 不会重置，先把上一轮的歌曲浮层收起
-      document.querySelector('button[aria-label="收起歌词"]')?.click();
+      document.querySelector('.course-row')?.click();
       await new Promise(r => setTimeout(r, 300));
-      const tab = [...document.querySelectorAll('.seg-btn')].find(b => b.textContent.includes('词句'));
-      tab?.click();
+      [...document.querySelectorAll('.seg-btn')].find(b => b.textContent.includes('词句'))?.click();
       await new Promise(r => setTimeout(r, 300));
-      document.querySelector('.clip-row')?.click();
     })()`,
   },
 ];

@@ -29,7 +29,7 @@ interface Clip {
   image?: string;
 }
 
-const props = defineProps<{ lesson: Lesson }>();
+const props = defineProps<{ lesson: Lesson; embedded?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
 const progressStore = useProgressStore();
@@ -257,8 +257,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="clip-player">
-    <div class="cp-bar">
+  <div class="clip-player" :class="{ 'clip-player--embedded': embedded }">
+    <div v-if="!embedded" class="cp-bar">
       <button class="cp-chip round" aria-label="收起词句播放" @click="close">
         <ChevronDown class="k-ico" />
       </button>
@@ -275,6 +275,7 @@ onBeforeUnmount(() => {
     <div class="cp-card" :class="['tone-' + lesson.tone, { 'is-wide': isWide }]">
       <div class="cp-kind-row">
         <span class="cp-kind">{{ kindLabel }}</span>
+        <span v-if="embedded" class="cp-kind-count">{{ idx + 1 }} / {{ total }}</span>
         <SpeakWave v-if="playing" size="sm" tone="var(--brand)" />
       </div>
       <div class="cp-visual">
@@ -328,6 +329,16 @@ onBeforeUnmount(() => {
     var(--pad-x)
     var(--gap-m);
   background: var(--bg);
+}
+/* 嵌入课程播放页：去掉自己的浮层头/背景/边界，模式与课程标题由外层共用页头承担 */
+.clip-player--embedded {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
 }
 /* PC/iPad 上内容不再拉满整屏，统一收在一个舒服的阅读宽度里 */
 .cp-bar,
@@ -436,6 +447,12 @@ onBeforeUnmount(() => {
   color: var(--brand);
   font-size: var(--fs-small);
   font-weight: var(--fw-strong);
+}
+.cp-kind-count {
+  color: var(--ink-faint);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  font-variant-numeric: tabular-nums;
 }
 /* 图区：手机约占屏宽一半，PC/iPad 用大图上墙，比旧版 96–128px 明显放大 */
 .cp-visual {
