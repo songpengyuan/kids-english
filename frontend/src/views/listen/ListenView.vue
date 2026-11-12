@@ -444,6 +444,8 @@ onBeforeUnmount(() => {
 .body {
   display: flex;
   flex-direction: column;
+  /* 课程卡之间要留出明确间隙：--gap-s 在 390 宽会被压到 6px，卡片会贴成一堵墙 */
+  gap: var(--gap-l);
   width: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -461,8 +463,12 @@ onBeforeUnmount(() => {
 }
 /* 课程行：复用全局 .entry-row 骨架；右侧只留一个播放提示 */
 .course-row {
+  padding-block: var(--gap-m);
   text-align: left;
   cursor: pointer;
+}
+.course-row .entry-row__body {
+  gap: var(--gap-xs);
 }
 .course-play {
   flex: none;
