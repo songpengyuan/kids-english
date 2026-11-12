@@ -249,7 +249,14 @@ const micLabel = computed(() => {
            停词后**不再出现「转一转」**——转盘结果已经出来了，再转一次只会把同一个词
            重新转一遍（spin 的目标恒为 queue[doneCount]），对孩子是纯干扰。 -->
       <div v-if="current" class="say">
-        <div class="current">
+        <!-- 整张词卡就是一个点读目标（P3 点词卡=读这个词 + P2 可点区 ≥52px）：
+            原来只有卡角一个 34×34 的小喇叭能点，5 岁孩子瞄不准。 -->
+        <button
+          type="button"
+          class="current"
+          :aria-label="`再听一遍 ${current.en}`"
+          @click="replay"
+        >
           <div class="current-art">
             <img
               v-if="!imgFail[current.id] && current.image"
@@ -261,14 +268,15 @@ const micLabel = computed(() => {
           </div>
           <div class="current-text">
             <div class="current-row">
-              <button class="current-speak" @click="replay" aria-label="想听示范再点喇叭">
+              <!-- 喇叭只剩"这里可以点"的视觉提示，不再单独承担点按 -->
+              <span class="current-speak" aria-hidden="true">
                 <Volume2 class="k-ico" />
-              </button>
+              </span>
               <span class="current-en">{{ current.en }}</span>
             </div>
             <span class="current-zh">{{ current.zh }}</span>
           </div>
-        </div>
+        </button>
 
         <!-- 麦克风不可用：不阻塞，提示直接读 + 可继续 -->
         <div v-if="micBlocked || !canRecord" class="mic-blocked">
@@ -450,6 +458,19 @@ const micLabel = computed(() => {
   min-width: min(88vw, 380px);
   max-width: min(92vw, 420px);
   justify-content: center;
+  /* 整卡即按钮：去掉默认外观，保留原卡片样子 */
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.current:active {
+  transform: scale(0.98);
+}
+.current:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 .current-art {
   width: 84px;
@@ -479,6 +500,8 @@ const micLabel = computed(() => {
   align-items: center;
   gap: var(--gap-s);
 }
+/* 喇叭现在是"卡片可点"的视觉提示（整卡可点，见模板注释），不再是独立按钮：
+   位置/尺寸保留，避免整卡布局跳动 */
 .current-speak {
   border: none;
   background: var(--brand-soft);
@@ -489,7 +512,6 @@ const micLabel = computed(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   flex: none;
 }
 .current-en {

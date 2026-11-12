@@ -9,7 +9,7 @@ import { describe, expect, it, vi, beforeEach, beforeAll, afterEach } from "vite
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 
-vi.mock("../../../services/speech", () => ({ speak: vi.fn(), stopSpeaking: vi.fn() }));
+vi.mock("../../../services/speech", () => ({ speak: vi.fn(), speakText: vi.fn(), stopSpeaking: vi.fn() }));
 vi.mock("../../../services/effects", () => ({
   sfxTap: vi.fn(),
   sfxCorrect: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock("../../../utils/speechScore", () => ({
 vi.mock("../../../utils/speakSession", () => ({ speakStars: () => 3 }));
 
 import LearnStage from "../LearnStage.vue";
-import { speak } from "../../../services/speech";
+import { speak, speakText } from "../../../services/speech";
 import { createRecorder } from "../../../utils/speechScore";
 
 /** jsdom 没有 ResizeObserver / 真实布局尺寸，桩掉后组件走保守兜底（每页 4 张） */
@@ -228,6 +228,24 @@ describe("LearnStage dialog 亲子口语对话卡（l10）· 逐轮对话 + 录�
     expect(play).toHaveBeenCalled();
     await wrapper.find(".dlg-replay").trigger("click");
     expect(play).toHaveBeenCalledTimes(2);
+  });
+
+  it("点「孩子答」气泡会出声：没读对先读单词，读对了读整句（P3 点句子=读句子）", async () => {
+    const stop = vi.fn().mockResolvedValue("blob:rec-url");
+    vi.mocked(createRecorder).mockReturnValue({ start: vi.fn().mockResolvedValue(undefined), stop, release: vi.fn() } as never);
+    const wrapper = mount(LearnStage, {
+      props: { words: dlgWords, dialog: true, phrases: dlgPhrases },
+      global: { plugins: [createPinia()] },
+    });
+    // 还没读对：气泡点一下 = 再听一遍当前单词（此前点它完全没反应）
+    await wrapper.find(".dlg-bubble.a").trigger("click");
+    expect(speak).toHaveBeenCalledWith("frog", { lessonId: "l10", wordId: "frog" });
+    // 读对后气泡换成整句：点一下读整句（ttsOnly，避免把句子错当单词音频）
+    await passOneRound(wrapper);
+    expect(wrapper.find(".dlg-bubble.a").text()).toContain("It's a frog.");
+    vi.mocked(speakText).mockClear();
+    await wrapper.find(".dlg-bubble.a").trigger("click");
+    expect(speakText).toHaveBeenCalledWith("It's a frog.", { rate: 0.8 });
   });
 
   it("三轮全部通过 → 「我都会啦」可点，完成记 3 星", async () => {

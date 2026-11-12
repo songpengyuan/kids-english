@@ -9,7 +9,8 @@ import { Clapperboard, Headphones, Music, Pause, Play, Repeat, Sparkles, SkipBac
 import SongStage from "./SongStage.vue";
 import SafeBottom from "../layout/SafeBottom.vue";
 import BaseButton from "../ui/BaseButton.vue";
-import type { Lesson } from "../../data/lessons";
+import { speak, speakText } from "../../services/speech";
+import type { Lesson, Word } from "../../data/lessons";
 import { emojiCoverUrl } from "../../utils/emojiCover";
 import { trackCover } from "../../utils/trackCover";
 
@@ -66,6 +67,22 @@ const stripWords = computed(() =>
 );
 const trackIdx = ref(0);
 const curTrack = computed(() => tracks.value[trackIdx.value] || tracks.value[0]);
+
+/* ---------- 点读（P3 一切可点即发声） ----------
+ * 歌词行 = 整句、词条 = 单词。此前两处都只有文字没有点击：孩子照着唱到哪句想再听一遍、
+ * 或者想单独听某个词，点了屏幕没反应（新增课 l11/l12/l13 的童谣页都受影响）。
+ * 歌词行整句走 TTS（ttsOnly）：句子不该被错配成某个单词的预生成音频；
+ * 放歌中途点歌词先把歌暂停——TTS 与音轨抢喇叭，不暂停就只能听见歌。
+ */
+async function speakLine(i: number) {
+  const line = curTrack.value?.lyrics?.[i];
+  if (!line) return;
+  if (playing.value) pause();
+  await speakText(line, { rate: 0.8, lang: "en-US" });
+}
+function speakChip(w: Word) {
+  void speak(w.en, { lessonId: w.lessonId, wordId: w.id, rate: 0.85 });
+}
 /** 当前轨的课程封面：Colors Song 用调色盘，其余沿用本课封面 */
 const songCover = computed(
   () => trackCover(curTrack.value.group ?? props.group, props.lesson.emoji, props.lesson.tone).emoji
@@ -387,6 +404,11 @@ function onVideoError() {
             class="line"
             :class="{ blank: !line, on: i === activeLine }"
             :data-line="i"
+            :role="line ? 'button' : undefined"
+            :tabindex="line ? 0 : undefined"
+            :aria-label="line ? `再听一遍：${line}` : undefined"
+            @click="speakLine(i)"
+            @keydown.enter.prevent="speakLine(i)"
           >
             {{ line }}<span v-if="curTrack.lyricsZh && curTrack.lyricsZh[i]" class="line-zh">{{ curTrack.lyricsZh[i] }}</span>
           </p>
@@ -396,9 +418,16 @@ function onVideoError() {
     </template>
 
     <div v-if="mode !== 'audio'" class="words-strip">
-      <span v-for="w in stripWords" :key="w.id" class="chip anim-pop">
+      <button
+        v-for="w in stripWords"
+        :key="w.id"
+        type="button"
+        class="chip anim-pop"
+        :aria-label="`听一听 ${w.en}`"
+        @click="speakChip(w)"
+      >
         {{ w.emoji }} {{ w.en }}
-      </span>
+      </button>
     </div>
     <p v-if="mode !== 'audio'" class="under-tip">听完一遍，就能领小星星啦</p>
 
@@ -640,6 +669,17 @@ function onVideoError() {
   color: var(--ink-faint);
   line-height: 1.8;
   transition: color 0.2s, transform 0.2s;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.line:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+/* 点下去有一点点缩，孩子才知道"这行点到了"（朗读本身是主反馈） */
+.line:active {
+  transform: scale(0.98);
 }
 .line.blank { height: var(--gap-m); }
 .line.on {
@@ -709,6 +749,19 @@ function onVideoError() {
   font-size: var(--fs-small);
   white-space: nowrap;
   color: var(--ink);
+  /* 词条是点读入口（点一下读这个单词）：去掉按钮默认外观，保留原胶囊的样子 */
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 34px;
+}
+.chip:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.chip:active {
+  transform: translateY(1px);
 }
 
 .finish-zone {

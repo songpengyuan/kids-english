@@ -14,6 +14,7 @@ import { mount } from "@vue/test-utils";
 import SongView from "../SongView.vue";
 import { useProgressStore } from "../../../stores/progress";
 import { lessons } from "../../../data/lessons";
+import { speak, speakText } from "../../../services/speech";
 
 vi.mock("../../../services/effects", () => ({
   bigCelebrate: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock("../../../services/effects", () => ({
   sfxTap: vi.fn(),
 }));
 vi.mock("../../../services/haptics", () => ({ hapticTap: vi.fn() }));
+vi.mock("../../../services/speech", () => ({ speak: vi.fn(), speakText: vi.fn(), stopSpeaking: vi.fn() }));
 
 const l11 = lessons.find((l) => l.id === "l11")!;
 
@@ -115,5 +117,37 @@ describe("SongView · 领星门禁", () => {
     audioEl(w).dispatchEvent(new Event("ended"));
     await w.vm.$nextTick();
     expect(w.emitted("song-done")).toHaveLength(1);
+  });
+});
+
+describe("SongView · 点读（P3 一切可点即发声）", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+    vi.mocked(speak).mockClear();
+    vi.mocked(speakText).mockClear();
+  });
+
+  it("点歌词行 = 把这一句读出来（整句走 TTS，不误配单词音频）", async () => {
+    const w = mountSong();
+    await switchToAudio(w);
+    await w.vm.$nextTick();
+    const idx = l11.song.lyrics.findIndex((l) => !!l);
+    const target = l11.song.lyrics[idx];
+    await w.findAll(".line")[idx].trigger("click");
+    expect(speakText).toHaveBeenCalledWith(target, { rate: 0.8, lang: "en-US" });
+  });
+
+  it("点词条胶囊 = 读这个单词（带课时上下文命中预生成音频）", async () => {
+    const w = mountSong(); // 默认舞台模式才渲染词条条
+    const word = l11.words[0];
+    const chip = w.findAll(".chip").find((c) => c.text().includes(word.en));
+    expect(chip).toBeTruthy();
+    await chip!.trigger("click");
+    expect(speak).toHaveBeenCalledWith(word.en, {
+      lessonId: word.lessonId,
+      wordId: word.id,
+      rate: 0.85,
+    });
   });
 });

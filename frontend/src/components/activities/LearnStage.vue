@@ -7,7 +7,7 @@ import { useLearnSession } from "../../composables/useLearnSession";
 import { useSpeechSession } from "../../composables/useSpeechSession";
 import { useWhisperPrompt } from "../../composables/useWhisperPrompt";
 import { useProgressStore } from "../../stores/progress";
-import { speak } from "../../services/speech";
+import { speak, speakText } from "../../services/speech";
 import type { Word, Phrase } from "../../data/lessons";
 import { Check, Mic, MousePointerClick, Square, Volume2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
@@ -174,6 +174,15 @@ const gradeOk = computed(
 );
 /** 监听中（录音中） */
 const listening = computed(() => status.value === "listening");
+/** 点「孩子答」气泡：还没读对 → 再听一遍这个词；读对了 → 听整句回答
+ *  （P3 点句子=读句子）。此前这块气泡只是 div，孩子点它没任何反应。 */
+function playAnswerBubble() {
+  if (listening.value) return;
+  const w = cur.value;
+  if (!w) return;
+  if (gradeOk.value) void speakText(answerText(w), { rate: 0.8 });
+  else void speak(w.en, { lessonId: w.lessonId, wordId: w.id });
+}
 </script>
 
 <template>
@@ -218,7 +227,11 @@ const listening = computed(() => status.value === "listening");
           <div
             class="dlg-bubble a"
             :class="{ ok: gradeOk, talking: listening }"
-            aria-label="孩子回答"
+            :aria-label="gradeOk ? `点一下听整句：${answerText(cur)}` : '点一下再听一遍这个单词'"
+            role="button"
+            tabindex="0"
+            @click="playAnswerBubble"
+            @keydown.enter.prevent="playAnswerBubble"
           >
             <span class="dlg-who">孩子答</span>
             <span class="dlg-text">
@@ -472,6 +485,12 @@ const listening = computed(() => status.value === "listening");
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.dlg-bubble.a:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 .dlg-bubble.a.ok {
   background: var(--state-ok-bg);

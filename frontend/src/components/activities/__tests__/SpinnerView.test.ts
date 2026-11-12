@@ -24,6 +24,7 @@ vi.mock("../../../utils/speechScore", () => ({
 
 import SpinnerView from "../SpinnerView.vue";
 import { recorderSupported } from "../../../utils/speechScore";
+import { speak } from "../../../services/speech";
 
 const words = [
   { id: "red", en: "red", zh: "红色", emoji: "🔴", image: null, lessonId: "l11" },
@@ -83,6 +84,19 @@ describe("SpinnerView 转盘：停词后不再显示「转一转」", () => {
     expect(wrapper.find(".spin-btn").exists()).toBe(false);
     expect(wrapper.find(".mic-blocked").exists()).toBe(true);
     expect(wrapper.find(".next-btn").exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("点整张词卡 = 再听一遍这个词（整卡可点，不再依赖 34px 小喇叭）", async () => {
+    const wrapper = await mountSpinner();
+    await spinToStop(wrapper);
+    // 词卡本身是可点按钮（P2 可点区 ≥52px / P3 点词卡=读词）
+    expect(wrapper.find(".current").element.tagName).toBe("BUTTON");
+    vi.mocked(speak).mockClear();
+    await wrapper.find(".current").trigger("click");
+    expect(speak).toHaveBeenCalled();
+    // 卡角喇叭已退化为卡内视觉提示，不再单独接点击
+    expect(wrapper.find(".current-speak").element.tagName).toBe("SPAN");
     wrapper.unmount();
   });
 });
