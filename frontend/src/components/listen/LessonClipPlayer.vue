@@ -14,6 +14,8 @@ import { usePlayerStore } from "../../stores/player";
 import { speakText } from "../../services/speech";
 import { hapticTap } from "../../services/haptics";
 import type { Lesson } from "../../data/lessons";
+import { phraseCoverUrl } from "../../utils/phraseCover";
+import { useViewport } from "../../composables/useViewport";
 import EmojiTile from "../ui/EmojiTile.vue";
 import SpeakWave from "../ui/SpeakWave.vue";
 
@@ -23,7 +25,7 @@ interface Clip {
   en: string;
   zh: string;
   src: string;
-  /** 单词用已有词图；口语句子没有图，用对话气泡占位 */
+  /** 单词用已有词图；口语句子优先复用句中的词图，提问/场景句用通用拟物图 */
   image?: string;
 }
 
@@ -32,6 +34,11 @@ const emit = defineEmits<{ close: [] }>();
 
 const progressStore = useProgressStore();
 const player = usePlayerStore();
+const { width, height } = useViewport();
+/** 宽屏双栏只给真正有横向余量的视口：竖屏 600+，横屏 768+；低高度走横向压缩 */
+const isWide = computed(
+  () => height.value > 480 && width.value >= 600 && (width.value <= height.value || width.value >= 768),
+);
 
 /** 先单词后亲子口语：孩子先听清单词，再听整句 */
 const clips = computed<Clip[]>(() => {
@@ -49,6 +56,7 @@ const clips = computed<Clip[]>(() => {
     en: p.en,
     zh: p.zh,
     src: p.audio || "",
+    image: phraseCoverUrl(p.en, props.lesson.words) || undefined,
   }));
   return [...words, ...phrases];
 });
@@ -60,6 +68,8 @@ const current = computed<Clip | null>(() => clips.value[idx.value] ?? null);
 const wordCount = computed(() => props.lesson.words.length);
 const phraseCount = computed(() => props.lesson.phrases.length);
 const kindLabel = computed(() => (current.value?.kind === "word" ? "单词" : "亲子口语"));
+/** 长句降低字号，避免在右侧文字栏里被拆成过多短行 */
+const longText = computed(() => (current.value?.en.length ?? 0) > 26);
 
 /* ---------- 三档循环：与歌曲/视频播放器同一套交互（localStorage 记住选择） ---------- */
 type ClipMode = "all" | "one" | "shuffle";
@@ -262,17 +272,21 @@ onBeforeUnmount(() => {
       <span class="cp-count">{{ idx + 1 }} / {{ total }}</span>
     </div>
 
-    <div class="cp-card" :class="'tone-' + lesson.tone">
+    <div class="cp-card" :class="['tone-' + lesson.tone, { 'is-wide': isWide }]">
       <div class="cp-kind-row">
         <span class="cp-kind">{{ kindLabel }}</span>
         <SpeakWave v-if="playing" size="sm" tone="var(--brand)" />
       </div>
-      <img v-if="current?.image" class="cp-img" :src="current.image" alt="" />
-      <div v-else class="cp-bubble" aria-hidden="true">
-        <MessageCircle class="cp-bubble__ico" />
+      <div class="cp-visual">
+        <img v-if="current?.image" class="cp-img" :src="current.image" alt="" />
+        <div v-else class="cp-bubble" aria-hidden="true">
+          <MessageCircle class="cp-bubble__ico" />
+        </div>
       </div>
-      <p class="cp-en">{{ current?.en }}</p>
-      <p class="cp-zh">{{ current?.zh }}</p>
+      <div class="cp-copy">
+        <p class="cp-en" :class="{ 'is-long': longText }">{{ current?.en }}</p>
+        <p class="cp-zh">{{ current?.zh }}</p>
+      </div>
     </div>
 
     <div class="cp-transport">
@@ -314,6 +328,15 @@ onBeforeUnmount(() => {
     var(--pad-x)
     var(--gap-m);
   background: var(--bg);
+}
+/* PC/iPad 上内容不再拉满整屏，统一收在一个舒服的阅读宽度里 */
+.cp-bar,
+.cp-card,
+.cp-transport,
+.cp-foot {
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
 }
 .cp-bar {
   display: flex;
@@ -377,16 +400,22 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* 当前句卡：大英文做主视觉，中文只做释义 */
+/* 当前句卡：手机纵向（类型→图→文字），宽屏横向（图左、类型/文字右） */
 .cp-card {
   flex: 1 1 0;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    "kind"
+    "visual"
+    "copy";
+  align-content: center;
   align-items: center;
-  gap: var(--gap-s);
-  padding: var(--gap-m) var(--gap-l);
+  justify-items: center;
+  gap: clamp(8px, 1.8vh, 18px);
+  padding: clamp(14px, 2.4vh, 28px) clamp(16px, 3.4vw, 40px);
   overflow-y: auto;
   border-radius: var(--radius);
   background: var(--card-bg);
@@ -394,6 +423,7 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 .cp-kind-row {
+  grid-area: kind;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -407,20 +437,28 @@ onBeforeUnmount(() => {
   font-size: var(--fs-small);
   font-weight: var(--fw-strong);
 }
-/* 单词用词图（已有素材），句子用对话气泡，避免大卡片里只剩一行字 */
-.cp-img {
-  width: clamp(96px, 26vw, 128px);
-  height: clamp(96px, 26vw, 128px);
-  object-fit: contain;
-  align-self: center;
-}
-.cp-bubble {
-  width: clamp(96px, 26vw, 128px);
-  height: clamp(96px, 26vw, 128px);
+/* 图区：手机约占屏宽一半，PC/iPad 用大图上墙，比旧版 96–128px 明显放大 */
+.cp-visual {
+  grid-area: visual;
+  width: min(60vw, 38vh, 360px);
+  aspect-ratio: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   align-self: center;
+}
+.cp-img,
+.cp-bubble {
+  width: 100%;
+  height: 100%;
+}
+.cp-img {
+  object-fit: contain;
+}
+.cp-bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   background: var(--brand-soft);
 }
@@ -429,14 +467,28 @@ onBeforeUnmount(() => {
   height: 54%;
   color: var(--brand);
 }
+.cp-copy {
+  grid-area: copy;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
+  min-width: 0;
+}
 .cp-en {
   margin: 0;
   max-width: 100%;
   color: var(--ink);
-  font-size: clamp(30px, 8.8vw, 46px);
+  font-size: clamp(34px, 5.2vw, 74px);
   font-weight: var(--fw-strong);
   line-height: 1.15;
   overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.cp-en.is-long {
+  font-size: clamp(21px, 3.2vw, 46px);
+  line-height: 1.24;
 }
 .cp-zh {
   margin: 0;
@@ -504,13 +556,62 @@ onBeforeUnmount(() => {
   .cp-side { width: var(--tap-min); height: var(--tap-min); font-size: var(--fs-title); }
   .cp-main { width: var(--play-btn); height: var(--play-btn); font-size: var(--fs-hero); }
   .cp-cover :deep(.emoji-tile) { font-size: 26px; }
-  .cp-en { font-size: clamp(36px, 6vw, 56px); }
 }
+/* 宽屏：图左、文字右，图区跨两行；卡片最高 1040px，不再是一根窄条。
+   isWide 由 useViewport 按设计系统档位算：竖屏 600+ / 横屏 768+，且高度够用。 */
+.cp-card.is-wide {
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "visual kind"
+    "visual copy";
+  justify-items: stretch;
+  gap: var(--gap-m) clamp(24px, 4vw, 56px);
+  padding: clamp(24px, 3.4vh, 42px) clamp(28px, 4vw, 56px);
+  text-align: left;
+}
+.cp-card.is-wide .cp-kind-row {
+  justify-self: start;
+  justify-content: flex-start;
+  align-self: end;
+}
+.cp-card.is-wide .cp-visual {
+  justify-self: center;
+  width: min(34vw, 40vh, 380px);
+}
+.cp-card.is-wide .cp-copy {
+  align-items: flex-start;
+  align-self: center;
+  justify-content: center;
+}
+.cp-card.is-wide .cp-en {
+  font-size: clamp(36px, 4.4vw, 68px);
+}
+.cp-card.is-wide .cp-en.is-long {
+  font-size: clamp(24px, 2.7vw, 44px);
+}
+.cp-card.is-wide .cp-zh {
+  font-size: clamp(15px, 1.5vw, 20px);
+}
+/* 低高度（横屏手机 / 小窗）：先压间距，再把图文并成横向，别把图挤没 */
 @media (max-height: 480px) {
   .clip-player { gap: var(--gap-xs); }
-  .cp-card { gap: var(--gap-xs); padding: var(--gap-s) var(--gap-m); }
-  .cp-img, .cp-bubble { width: 64px; height: 64px; }
+  .cp-card {
+    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "visual kind"
+      "visual copy";
+    gap: var(--gap-xs) var(--gap-m);
+    padding: var(--gap-s) var(--gap-m);
+    text-align: left;
+  }
   .cp-sub { display: none; }
+  .cp-visual { width: 96px; }
+  .cp-kind-row { justify-self: start; justify-content: flex-start; align-self: end; }
+  .cp-copy { align-items: flex-start; align-self: center; }
+  .cp-zh { font-size: var(--fs-small); }
   .cp-en { font-size: clamp(24px, 4vw, 34px); }
+  .cp-en.is-long { font-size: clamp(18px, 2.8vw, 28px); }
 }
 </style>

@@ -127,6 +127,20 @@ describe("ListenView · 词句 tab", () => {
     expect(w.find(".clip-player").exists()).toBe(false);
     expect(w.findAll(".clip-row").length).toBeGreaterThan(0);
   });
+
+  it("亲子口语句子也带图：l5 第 8 句 What can you play? 用音符拟物图", async () => {
+    const w = await mountListen();
+    await openClips(w);
+    await w.findAll(".clip-row")[0].trigger("click");
+    await flushPromises();
+    for (let i = 0; i < 7; i++) {
+      await w.find('button[aria-label="下一句"]').trigger("click");
+    }
+    expect(w.find(".cp-count").text()).toBe("8 / 17");
+    expect(w.find(".cp-kind").text()).toBe("亲子口语");
+    expect(w.find(".cp-visual").exists()).toBe(true);
+    expect(w.find(".cp-img").attributes("src")).toContain("/phrases/play.webp");
+  });
 });
 
 describe("ListenView · 播放态", () => {
