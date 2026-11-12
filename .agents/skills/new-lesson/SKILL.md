@@ -30,9 +30,11 @@ BASE 前缀，别自己拼）；`words[].image` 缺失自动回退 emoji。
   表里已有的玩法+变体 → 纯数据接入，本 skill 全程适用，**组件文件零改动**；
   表里没有的形态是**代码事件**（三步：字段按 ADR-007 四约定落库 / 组件首例直写 /
   登记表+validate-data 同笔更新）——别为了塞进纯数据硬造字段。
-- 字段：`id`(lN 递增)、`title/titleZh/emoji/tone/date`、`song{audio,video,scene,lyrics,tracks?,group?,title?}`、
+- 字段：`id`(lN 递增)、`title/titleZh/emoji/tone/date`、`song{audio,video,scene,lyrics,tracks?,group?,title?,titleZh?}`、
   `words[{id,en,zh,emoji,image,group?,color?}]`、`phrases[{en,zh}]`；
-  多词群课（如 l11 颜色/动物）加 `wordGroups[]` + 词/轨上的 `group` + 配对玩法 `colorPairs[]`。
+  多词群课（如 l11 颜色/动物）加 `wordGroups[]` + 词/轨上的 `group` + 配对玩法 `colorPairs[]`；
+  l13 起支持 `about`（课程介绍文案，`\n` 分段，详情页/介绍页折叠卡展示——老师讲义原文可整段放）。
+- 新增课时后跑 `pnpm lesson:pipeline`（词图→词音→种子→校验一键串联，见仓库 README 课时资源段）。
 - 关卡**不用手工接线**：pathLevels 按 lessons × 活动键自动派生（`${lessonId}-${actKey}`）。
 - normalize（`lessons` 导出处）自动注入 `lessonId`、查 `song-timings.json` 得 timings、
   给 phrases/words 挂发音路径——改数据结构时这些推导要同步。
@@ -43,7 +45,8 @@ BASE 前缀，别自己拼）；`words[].image` 缺失自动回退 emoji。
 
 ```bash
 cd frontend
-python3 scripts/gen-word-audio.py            # 单词+口语句发音 mp3（edge-tts Aria 成年女声，只补缺失）
+python3 scripts/gen-word-audio.py            # 单词+口语句发音 mp3（edge-tts Ana 童声原速，2026-11-07 试听定版；只补缺失）
+pnpm lesson:pipeline                         # 一键串联：词图 → 词音 → export 种子 → 数据校验（fail-fast）
 python3 scripts/gen-word-art.py <...>        # 词图生成（见脚本 docstring）
 python3 scripts/optimize-word-art.py         # 词图去白底 → 透明 WebP；入库后删源 PNG
 node scripts/optimize-videos.mjs             # mp4 → 720p/CRF26/faststart + 首帧 poster

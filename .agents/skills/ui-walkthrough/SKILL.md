@@ -46,6 +46,15 @@ node scripts/verify-pwa.mjs                              # 双根布局（根=�
    陷阱，真实浏览器不受影响。
 8. **双会话共用 dev server 时白屏**：先清 `.vite` 重启（同第 3 条），再怀疑对方改动；
    对方重构进行中时你的验证结果不可信，等它收工（进程 + mtime 双条件，见仓库 AGENTS.md）。
+9. **公开路由是备案抽查面**：/gate、法律页（/terms /privacy /children-privacy，门禁豁免
+   见 gateGuard 的 PUBLIC_PATHS）任意直达都要悬挂备案号——新增公开路由要同步
+   PUBLIC_PATHS + 页脚备案号，否则整轮走查绿了合规仍是红的。
+10. **新增可见元素必须同步接发音**（点读全覆盖口径，commit 8750b8a）：详情页/介绍页/
+    播放器/关卡卡上孩子看得到的文字都要有 tap 发音（英文 speak、中文 speakZh）；
+    走查时用探针 `speechSynthesis.speak` + `HTMLAudioElement.play` 双监听逐元素点。
+11. **layout-audit 的 prep 等待按页定制**（scripts/layout-audit.mjs，listen-player/
+    listen-clips 为 2s）：新增"点开才出现"的浮层页要在 pages 清单配 prep 并确认
+    等待覆盖其入场动画（--dur-slow 0.45s 平移 100vh 的浮层 900ms 会误报十几条越界）。
 
 ## 走查输出约定
 
