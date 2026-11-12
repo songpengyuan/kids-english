@@ -152,3 +152,25 @@ describe("MatchView 颜色配对模式（左色圆 ↔ 右动物）", () => {
     w.unmount();
   });
 });
+
+describe("MatchView · 默认模式（走查 P1 #4，86416b0）", () => {
+  it("无存储记录时默认「听音」——5 岁孩子不识字，认拼写连线超出能力", async () => {
+    localStorage.removeItem("kids-english-match-mode");
+    // 模式开关只在普通（图↔词）模式渲染：用无 colorPairs 的词表挂载
+    const w = mount(MatchView, { props: { words: animals.slice(0, 4) } });
+    await w.vm.$nextTick();
+    const on = w.findAll(".mode-btn.on").map((b) => b.text());
+    expect(on.join(",")).toContain("听音");
+    w.unmount();
+  });
+
+  it("家长选过「看词」后尊重其选择（存 localStorage）", async () => {
+    localStorage.setItem("kids-english-match-mode", "word");
+    const w = mount(MatchView, { props: { words: animals.slice(0, 4) } });
+    await w.vm.$nextTick();
+    const on = w.findAll(".mode-btn.on").map((b) => b.text());
+    expect(on.join(",")).toContain("看词");
+    localStorage.removeItem("kids-english-match-mode");
+    w.unmount();
+  });
+});
