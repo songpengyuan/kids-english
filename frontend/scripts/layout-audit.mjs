@@ -339,7 +339,11 @@ try {
       // 可选交互：把"点开才出现"的浮层展开（播放器 / 抽屉），否则量不到真实布局
       if (pg.prep) {
         await cdp.send("Runtime.evaluate", { expression: `(() => { ${pg.prep} })()` });
-        await sleep(900); // 浮层入场动画（--dur-slow）+ 布局稳定
+        // 2026-11-12：listen-player 的入场 Transition（--dur-slow 0.45s 平移 100vh）
+        // + 封面图加载在 900ms 时还没稳定，探针会逮到整片面板的 15 个越界误报；
+        // 放宽到 2s（与页级等待同量级）。
+        const prepWait = pg.name === "listen-player" ? 2000 : 900;
+        await sleep(prepWait); // 浮层入场动画（--dur-slow）+ 布局稳定
       }
 
       const res = await cdp.send("Runtime.evaluate", {
