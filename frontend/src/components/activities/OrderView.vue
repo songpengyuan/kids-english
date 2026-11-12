@@ -69,6 +69,7 @@ watch(
 );
 onScopeDispose(() => {
   if (readTimer !== null) clearTimeout(readTimer);
+  endPress();
 });
 
 function playSentence() {
@@ -92,41 +93,90 @@ function pick(w: Word) {
   }
 }
 
-/* ---------- 拖动路径（2026-11-09） ----------
- * 点击仍是主路径（低龄最稳），拖动是补充手感：按下后移动超过 8px 才算拖，
- * 松手落在空槽上就判定，落在别处则静默收回（不计错、不朗读）。
- * 统一用 pointer 事件：手机触摸和鼠标同一套逻辑，键盘 Enter/Space 仍走 click。 */
+/* ---------- 点选 / 拖动（2026-11-12 重做命中归属） ----------
+ * 孩子点卡时手指会晃、会压在卡片边缘、会两只手一起按 —— 旧实现三个坑：
+ * 1) 位移只要 >8px 就算拖拽，松手没落进空槽就被整段吞掉；孩子以为没点上，
+ *    再点一次常常落到旁边那张 → 表现为「选中的词和点的不一致」；
+ * 2) 拖完用 400ms 时间窗压 click，把紧随其后的正常点按也一起吞了；
+ * 3) activeWord 是组件级单份，第二根手指（手掌/另一只手）会把判定改到它按的卡。
+ * 现在：位移 >12px 才算拖；松手时仍压在自己按下的那张卡上就按点按判定，
+ * 晃到别处则静默放弃（绝不判到邻卡）；拖动结果用一次性 click 抑制；
+ * 只认第一个按下的指针。键盘 Enter/Space 没有 pointer 事件，仍走 click。
+ * 拖动期间在 window 上跟踪 move/up/cancel（不再依赖 setPointerCapture：
+ * 触摸指针的捕获在部分环境不可靠，手指拖出卡片后收不到 up，状态会卡死，
+ * 下一次点按就被当成"还有手指在按"直接丢弃）。 */
+const DRAG_THRESHOLD = 12;
 const dragWord = ref<Word | null>(null);
 const dragPos = ref({ x: 0, y: 0 });
 const dropHot = ref(false);
+let pressPointerId: number | null = null;
+let pressWord: Word | null = null;
+let pressEl: HTMLElement | null = null;
 let startX = 0;
 let startY = 0;
 let moved = false;
-let activeWord: Word | null = null;
-/** 拖完会补发一次 click，用时间戳压掉，避免同一次操作判两遍 */
-let ignoreClickUntil = 0;
+/** 一次手势只压掉浏览器紧跟 pointerup 补发的那一次 click（不再用时间窗） */
+let swallowClick = false;
+
+function hitTest(x: number, y: number): Element | null {
+  if (typeof document.elementFromPoint !== "function") return null;
+  return document.elementFromPoint(x, y);
+}
 
 /** 手指当前位置下是不是那个空槽（jsdom 没有 elementFromPoint，兜底 false） */
 function slotUnder(x: number, y: number): boolean {
-  if (typeof document.elementFromPoint !== "function") return false;
-  const el = document.elementFromPoint(x, y);
+  const el = hitTest(x, y);
   return !!el && !!el.closest(".pic-slot");
+}
+
+/** 手指当前位置下是哪张图卡（取不到命中测试时返回 null） */
+function cardUnder(x: number, y: number): HTMLElement | null {
+  const el = hitTest(x, y);
+  return el ? ((el.closest(".pic-card") as HTMLElement | null) ?? null) : null;
+}
+
+/** 手势期间在 window 上跟踪（捕获阶段）：手指拖出卡片也能收到 move/up */
+function bindGestureListeners() {
+  window.addEventListener("pointermove", onCardMove, true);
+  window.addEventListener("pointerup", onCardUp, true);
+  window.addEventListener("pointercancel", onCardCancel, true);
+}
+function unbindGestureListeners() {
+  window.removeEventListener("pointermove", onCardMove, true);
+  window.removeEventListener("pointerup", onCardUp, true);
+  window.removeEventListener("pointercancel", onCardCancel, true);
+}
+
+function endPress() {
+  unbindGestureListeners();
+  pressPointerId = null;
+  pressWord = null;
+  pressEl = null;
+  startX = 0;
+  startY = 0;
+  moved = false;
+  dragWord.value = null;
+  dropHot.value = false;
 }
 
 function onCardDown(e: PointerEvent, w: Word) {
   if (lock.value || solved.value) return;
-  activeWord = w;
+  if (pressPointerId !== null) return; // 已经有一根手指在按：多指/手掌误触不算新选择
+  pressPointerId = e.pointerId ?? 0; // jsdom 等环境派发的合成 PointerEvent 没有 pointerId
+  pressWord = w;
+  pressEl = (e.currentTarget as HTMLElement | null) ?? null;
   startX = e.clientX;
   startY = e.clientY;
   moved = false;
-  (e.currentTarget as HTMLElement | null)?.setPointerCapture?.(e.pointerId);
+  swallowClick = false;
+  bindGestureListeners();
 }
 
 function onCardMove(e: PointerEvent) {
-  if (!activeWord) return;
-  if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+  if (pressPointerId !== (e.pointerId ?? 0) || !pressWord) return;
+  if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > DRAG_THRESHOLD) {
     moved = true;
-    dragWord.value = activeWord;
+    dragWord.value = pressWord;
   }
   if (!moved) return;
   dragPos.value = { x: e.clientX, y: e.clientY };
@@ -134,30 +184,42 @@ function onCardMove(e: PointerEvent) {
 }
 
 function onCardUp(e: PointerEvent) {
-  const w = activeWord;
-  activeWord = null;
-  if (!w) return;
+  if (pressPointerId !== (e.pointerId ?? 0)) return;
+  const w = pressWord;
   const wasDrag = moved;
-  moved = false;
-  dragWord.value = null;
-  dropHot.value = false;
-  if (!wasDrag) return; // 没移动 = 点按，交给 click
-  ignoreClickUntil = Date.now() + 400;
-  if (slotUnder(e.clientX, e.clientY)) {
-    sfxTap();
-    pick(w);
+  const downEl = pressEl;
+  const overSlot = wasDrag && slotUnder(e.clientX, e.clientY);
+  endPress();
+  if (!w) return;
+  // 拖完浏览器可能补发一次 click：无论有没有落进空槽都压掉，避免同一次操作判两遍
+  swallowClick = true;
+  if (wasDrag) {
+    if (overSlot) {
+      sfxTap();
+      pick(w);
+    }
+    return;
   }
+  // 点按：松手时还在自己按下的这张卡上才算数。
+  // 取不到命中测试（jsdom / 极端旧环境）时按"仍在原卡"处理，保证点击可用。
+  const upEl = cardUnder(e.clientX, e.clientY);
+  if (upEl && downEl && upEl !== downEl) return; // 手指晃到了别的卡上：放弃本次，不判邻卡
+  sfxTap();
+  pick(w);
 }
 
-function onCardCancel() {
-  activeWord = null;
-  moved = false;
-  dragWord.value = null;
-  dropHot.value = false;
+function onCardCancel(e?: PointerEvent) {
+  if (e && pressPointerId !== null && (e.pointerId ?? 0) !== pressPointerId) return;
+  swallowClick = true; // 取消后浏览器也可能补发 click
+  endPress();
 }
 
 function onCardClick(w: Word) {
-  if (Date.now() < ignoreClickUntil) return;
+  if (swallowClick) {
+    swallowClick = false;
+    return;
+  }
+  if (lock.value || solved.value) return;
   sfxTap();
   pick(w);
 }
@@ -261,9 +323,6 @@ function finishEmpty() {
           :class="{ wrong: errKey === o.id }"
           data-haptic
           @pointerdown="onCardDown($event, o)"
-          @pointermove="onCardMove($event)"
-          @pointerup="onCardUp($event)"
-          @pointercancel="onCardCancel"
           @click="onCardClick(o)"
         >
           <img :src="o.image!" :alt="o.en" />
@@ -429,6 +488,7 @@ function finishEmpty() {
   min-height: 0;
   object-fit: contain;
   pointer-events: none;
+  transition: transform 0.1s;
 }
 .pic-word {
   font-size: var(--fs-small);
@@ -436,11 +496,21 @@ function finishEmpty() {
   line-height: 1.1;
   color: var(--ink);
   pointer-events: none;
+  transition: transform 0.1s;
 }
-.pic-card:active { transform: scale(0.95); }
+/* 按压/点错的反馈只动卡里的图与词，卡片自身（也就是手指命中框）不位移、不缩放：
+   孩子压着卡片边缘或在抖动期间再点一下，判定仍落在同一张卡上，
+   不会因为 transform 把命中测试挪到相邻卡或间隙（2026-11-12 走查修） */
+.pic-card:active img,
+.pic-card:active .pic-word {
+  transform: scale(0.94);
+}
 .pic-card.wrong {
   border-color: var(--red);
   background: var(--state-bad-bg);
+}
+.pic-card.wrong img,
+.pic-card.wrong .pic-word {
   animation: shake 0.4s;
 }
 

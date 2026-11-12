@@ -36,8 +36,11 @@ beforeEach(() => {
 });
 
 function mountView() {
+  // 手势期间组件在 window 上跟踪 move/up（手指拖出卡片也要收到松手）：
+  // 必须真实挂到 document 上，事件才会冒泡到 window
   return mount(OrderView, {
     props: { lesson },
+    attachTo: document.body,
     global: { stubs: { "router-link": true } },
   });
 }
@@ -141,7 +144,7 @@ describe("OrderView 看图填空", () => {
     expect(v.find(".pic-slot .slot-word").text()).toBe("wipers");
   });
 
-  it("拖到空槽之外松手不算作答；点击仍是主路径可正常判定", async () => {
+  it("拖到空槽之外松手不算作答；随后重新点一下仍能正常判定", async () => {
     const v = mountView();
     await flushPromises();
     const card = cardByAlt(v, "wipers")!;
@@ -157,10 +160,62 @@ describe("OrderView 看图填空", () => {
     expect(v.find(".pic-slot img").exists()).toBe(false);
     expect(v.findAll(".pic-card")).toHaveLength(3);
     expect(v.find(".next-btn").exists()).toBe(false);
-    // 之后点一下仍能作答（拖动不会把组件锁死；等过 400ms 的重复点击抑制窗口）
-    await new Promise((r) => setTimeout(r, 450));
-    await cardByAlt(v, "wipers")!.trigger("click");
+    // 紧接着重新点一次（不等任何时间窗）：这是一次新手势，必须立刻生效
+    fire("pointerdown", 100, 400);
+    fire("pointerup", 100, 400);
     await flushPromises();
+    expect(v.find(".pic-slot img").attributes("src")).toBe("/wipers.png");
+  });
+
+  /** 造一条带 pointerId 的指针事件（jsdom 没有 PointerEvent 构造器） */
+  function pointer(el: Element, type: string, x: number, y: number, id = 1) {
+    const ev = new MouseEvent(type, { clientX: x, clientY: y, bubbles: true });
+    Object.defineProperty(ev, "pointerId", { value: id });
+    el.dispatchEvent(ev);
+  }
+
+  /** 把 elementFromPoint 钉到指定元素上，模拟"手指落点在哪张卡" */
+  function hitAt(el: Element | null) {
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: () => el,
+    });
+  }
+
+  it("点按在 pointerup 就判定（不依赖浏览器补发的 click）", async () => {
+    const v = mountView();
+    await flushPromises();
+    const card = cardByAlt(v, "wipers")!;
+    pointer(card.element, "pointerdown", 100, 400);
+    pointer(card.element, "pointerup", 100, 400);
+    await flushPromises();
+    expect(v.find(".pic-slot img").attributes("src")).toBe("/wipers.png");
+  });
+
+  it("手指晃到邻卡上才松手 → 放弃本次，不判成邻卡（回归：全局 activeWord 会把判定带到别处）", async () => {
+    const v = mountView();
+    await flushPromises();
+    const cat = cardByAlt(v, "cat")!; // 干扰项，点它才会错
+    const wipers = cardByAlt(v, "wipers")!;
+    hitAt(cat.element); // 松手瞬间命中的是 cat 那张卡
+    pointer(wipers.element, "pointerdown", 100, 400);
+    pointer(wipers.element, "pointerup", 300, 400);
+    await flushPromises();
+    expect(v.find(".pic-card.wrong").exists()).toBe(false);
+    expect(v.find(".pic-slot img").exists()).toBe(false);
+  });
+
+  it("另一根手指按在别的卡上，不会改写正在按的那张卡的判定（多指/手掌误触）", async () => {
+    const v = mountView();
+    await flushPromises();
+    hitAt(null); // 无命中测试 → 按"仍在原卡"处理
+    const wipers = cardByAlt(v, "wipers")!;
+    const cat = cardByAlt(v, "cat")!;
+    pointer(wipers.element, "pointerdown", 100, 400, 1);
+    pointer(cat.element, "pointerdown", 300, 400, 2); // 第二根手指落在干扰卡上
+    pointer(wipers.element, "pointerup", 100, 400, 1);
+    await flushPromises();
+    // 判定的仍是第一根手指按的 wipers（正确），不是 cat
     expect(v.find(".pic-slot img").attributes("src")).toBe("/wipers.png");
   });
 });
