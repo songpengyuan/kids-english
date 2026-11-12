@@ -30,17 +30,16 @@ import SectionTitle from "../../components/ui/SectionTitle.vue";
 import { FORM_TOTAL } from "../../data/heroes";
 import EntryRow from "../../components/ui/EntryRow.vue";
 import IconTile from "../../components/ui/IconTile.vue";
+import SkIcon from "../../components/ui/SkIcon.vue";
 import ShellIcon from "../../components/ShellIcon.vue";
 import ParentGate from "../../components/gate/ParentGate.vue";
 import ThemeToggle from "../../components/layout/ThemeToggle.vue";
 import {
-  CalendarDays,
   ChevronRight,
   Eye,
   Flame,
   Moon,
   Play,
-  RotateCcw,
   Shield,
   Star,
 } from "@lucide/vue";
@@ -191,7 +190,7 @@ function goTreasure() {
       @click="speakZh('复习一下'), router.push('/course/review')"
     >
       <template #icon>
-        <IconTile tone="orange"><RotateCcw class="k-ico" /></IconTile>
+        <SkIcon name="review" size="md" />
       </template>
     </EntryRow>
 
@@ -200,12 +199,12 @@ function goTreasure() {
       <SectionTitle>我的收藏</SectionTitle>
       <div class="collection-grid">
         <button class="coll-card tone-gold" @click="goTreasure">
-          <span class="coll-ico" aria-hidden="true"><ShellIcon /></span>
+          <span class="coll-ico" aria-hidden="true"><SkIcon name="jar" size="lg" /></span>
           <span class="coll-label">宝藏罐</span>
           <span class="coll-desc">英雄 {{ ownedForms }}/{{ FORM_TOTAL }}</span>
         </button>
         <button class="coll-card tone-blue" @click="goCalendar">
-          <span class="coll-ico" aria-hidden="true"><CalendarDays class="k-ico" /></span>
+          <span class="coll-ico" aria-hidden="true"><SkIcon name="calendar" size="lg" /></span>
           <span class="coll-label">学习日历</span>
           <span class="coll-desc">看看你的打卡贴纸</span>
         </button>
@@ -359,13 +358,12 @@ button.honor-stat:active {
   transition: transform var(--dur-fast) var(--ease-out);
 }
 .coll-ico {
-  font-size: var(--fs-emoji-l);
-  line-height: 1;
+  /* 拟物图标（SkIcon lg=52px）自带尺寸，这里只负责居中对齐；
+   * 不再用 font-size 驱动 —— img 不跟随字号缩放 */
   display: inline-flex;
-}
-.coll-ico .k-ico {
-  width: 1em;
-  height: 1em;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 .coll-label {
   font-size: var(--fs-body);
