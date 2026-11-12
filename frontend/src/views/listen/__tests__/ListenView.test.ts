@@ -68,6 +68,9 @@ describe("ListenView · 列表态", () => {
     const titles = w.findAll(".sr-title").map((t) => t.text());
     expect(titles).toContain("Brown Bear Song");
     expect(titles).toContain("Colors Song");
+    const colorRow = w.findAll(".song-row").find((r) => r.text().includes("Colors Song"));
+    expect(colorRow).toBeTruthy();
+    expect(colorRow!.find(".emoji-tile__img").attributes("src")).toContain("1f3a8.webp");
     expect(w.text()).toContain("今天听了");
     expect(w.text()).toContain("I Am the Music Man");
   });

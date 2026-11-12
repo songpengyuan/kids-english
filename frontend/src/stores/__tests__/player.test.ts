@@ -29,6 +29,13 @@ describe("player store · 播放控制", () => {
     expect(s.src).toMatch(/^https?:|^\//);
   });
 
+  it("多轨条目带自己的封面：Colors Song 用调色盘，不继承课程棕熊", () => {
+    const color = SONG_LIST.find((s) => s.title === "Colors Song");
+    expect(color).toBeTruthy();
+    expect(color!.emoji).toBe("🎨");
+    expect(color!.tone).toBe("pink");
+  });
+
   it("playSong：选曲、置播放态、audio.src 更新", () => {
     const p = usePlayerStore();
     p.playSong(0);

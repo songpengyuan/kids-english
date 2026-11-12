@@ -40,6 +40,8 @@ import { ref, computed, watch, nextTick, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { lessons, type Lesson } from "../../data/lessons";
 import { useProgressStore } from "../../stores/progress";
+import { emojiCoverUrl } from "../../utils/emojiCover";
+import { trackCover } from "../../utils/trackCover";
 import { usePlayerStore } from "../../stores/player";
 import { useLrc, activeLrcIndex, mapLrcToLyrics } from "../../composables/useLrc";
 import { hapticTap } from "../../services/haptics";
@@ -188,13 +190,17 @@ const videoList = computed<VideoItem[]>(() =>
         : [];
       const extras = (l.song.tracks || [])
         .filter((t) => t.video)
-        .map((t, i) => ({
-          id: `${l.id}-t${i + 2}`,
-          title: t.title,
-          titleZh: t.titleZh || l.titleZh,
-          emoji: l.emoji,
-          tone: l.tone ?? "blue", src: t.video!,
-        }));
+        .map((t, i) => {
+          const cover = trackCover(t.group, l.emoji, l.tone ?? "blue");
+          return {
+            id: `${l.id}-t${i + 2}`,
+            title: t.title,
+            titleZh: t.titleZh || l.titleZh,
+            emoji: cover.emoji,
+            tone: cover.tone,
+            src: t.video!,
+          };
+        });
       return [...first, ...extras];
     })
 );
@@ -336,7 +342,10 @@ onMounted(() => {
         <template v-else-if="subTab === 'videos'">
           <div class="video-grid">
             <button v-for="(v, i) in videoList" :key="v.id" class="video-card" :class="'tone-' + v.tone" @click="videoIdx = i">
-              <span class="vc-emoji" aria-hidden="true">{{ v.emoji }}</span>
+              <span class="vc-emoji" aria-hidden="true">
+                <img v-if="emojiCoverUrl(v.emoji)" class="vc-emoji__img" :src="emojiCoverUrl(v.emoji)!" alt="" />
+                <template v-else>{{ v.emoji }}</template>
+              </span>
               <span class="vc-name">{{ v.title }}</span>
               <span class="vc-sub">{{ v.titleZh }}</span>
               <span class="vc-play round"><Play class="k-ico" /></span>
@@ -841,8 +850,18 @@ onMounted(() => {
   transition: transform var(--dur-fast) var(--ease-out);
 }
 .vc-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fs-emoji-xl);
+  height: var(--fs-emoji-xl);
   font-size: var(--fs-emoji-xl);
   line-height: 1;
+}
+.vc-emoji__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .vc-name {
   font-weight: var(--fw-strong);

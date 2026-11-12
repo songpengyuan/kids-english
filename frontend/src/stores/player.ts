@@ -13,6 +13,7 @@ import { defineStore } from "pinia";
 import { lessons, asset } from "../data/lessons";
 import { useProgressStore } from "./progress";
 import type { RepeatMode, Tone } from "../types";
+import { trackCover } from "../utils/trackCover";
 
 export interface PlayableSong {
   id: string;
@@ -46,17 +47,20 @@ export const SONG_LIST: PlayableSong[] = lessons
     };
     const extras = (l.song.tracks || [])
       .filter((t) => t.audio)
-      .map((t, i) => ({
-        id: `${l.id}-t${i + 2}`,
-        title: t.title,
-        // 轨道有自己的中文名（如 l11 颜色歌）就用它，别再把课程名错挂成副标题
-        titleZh: t.titleZh || l.titleZh,
-        emoji: l.emoji,
-        tone: l.tone ?? "blue",
-        src: t.audio!,
-        lyrics: t.lyrics || [],
-        lyricsZh: t.lyricsZh || [],
-      }));
+      .map((t, i) => {
+        const cover = trackCover(t.group, l.emoji, l.tone ?? "blue");
+        return {
+          id: `${l.id}-t${i + 2}`,
+          title: t.title,
+          // 轨道有自己的中文名（如 l11 颜色歌）就用它，别再把课程名错挂成副标题
+          titleZh: t.titleZh || l.titleZh,
+          emoji: cover.emoji,
+          tone: cover.tone,
+          src: t.audio!,
+          lyrics: t.lyrics || [],
+          lyricsZh: t.lyricsZh || [],
+        };
+      });
     return [first, ...extras];
   });
 

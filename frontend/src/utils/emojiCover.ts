@@ -11,7 +11,7 @@
  * 新增课时若换了 emoji：补一张同风格的 512×512 透明 WebP 即可；
  * 不在资产集 → 返回 null，调用方回退显示 emoji 文本（宁可风格不统一也不显示豆腐块）。
  */
-const KNOWN_COVER_CODEPOINTS = new Set(["1f3ba", "1f30a", "1f446", "1f412", "1f43b", "1f68c", "1f98d"]);
+const KNOWN_COVER_CODEPOINTS = new Set(["1f3a8", "1f3ba", "1f30a", "1f446", "1f412", "1f43b", "1f68c", "1f98d"]);
 
 export function emojiCoverUrl(emoji: string | null | undefined): string | null {
   if (!emoji) return null;
