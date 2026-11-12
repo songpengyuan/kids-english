@@ -143,12 +143,13 @@ function lessonForSongId(id: string | undefined): Lesson | null {
   return lessons.find((l) => l.id === lid) ?? null;
 }
 
-/** 把播放页落到当前歌所属的课程（从别的 tab 回到磨耳朵时也走这里） */
+/** 把播放页落到当前歌所属的课程（从别的 tab 回到磨耳朵时也走这里）。
+ *  2026-11-13 课程级口径：不再把播放队列锁进单课——循环/下一首都走全站
+ *  SONG_LIST（跨课连续磨），页头靠 currentSong watcher 跟着歌走。 */
 function adoptCurrentSong() {
   const l = lessonForSongId(player.currentSong?.id);
   if (!l) return;
   activeLesson.value = l;
-  player.setQueue(songIndicesFor(l));
   mode.value = "songs";
 }
 
@@ -158,7 +159,6 @@ function openCourse(l: Lesson) {
   mode.value = "songs";
   songWasPlaying.value = false;
   const indices = songIndicesFor(l);
-  player.setQueue(indices);
   if (!indices.length) return;
   const start = indices.includes(player.currentIdx) ? player.currentIdx : indices[0];
   player.openLyrics(start);
@@ -187,6 +187,10 @@ function switchMode(next: PlayerMode) {
     if (start !== undefined) player.openLyrics(start);
     if (songWasPlaying.value && !player.playing) player.togglePlay();
   }
+  // 视频/词句是跨课流播放器：主动进入（含换课进入）时 epoch+1 重挂，
+  // 落到当前课的起点；之后播完跨课推进不重挂，无缝续播
+  if (next === "videos") videoEpoch.value++;
+  if (next === "clips") clipsEpoch.value++;
   mode.value = next;
 }
 
@@ -207,9 +211,12 @@ function goCurrentLesson() {
   if (lid) router.push(`/course/${lid}`);
 }
 
-/* ---------- 视频 / 词句：只取当前课 ---------- */
-function videosFor(l: Lesson | null): VideoItem[] {
-  if (!l) return [];
+/* ---------- 视频 / 词句：跨课程连续流（2026-11-13 课程级口径） ----------
+ * 循环与上一/下一都在全部课程的池上转，播完一课自动续到下一课；
+ * 页头（activeLesson）由播放器的 change 事件跟随落到当前内容所属课程。
+ * videoEpoch/clipsEpoch 只在「用户主动进入该形态」时 +1 重挂（起点=当前课），
+ * 跨课推进不改 epoch——组件不重挂，播放不中断。 */
+function videosOf(l: Lesson): VideoItem[] {
   const first = l.song.video
     ? [{
         id: l.id, title: l.song.title || l.title, titleZh: l.titleZh, emoji: l.emoji,
@@ -231,7 +238,25 @@ function videosFor(l: Lesson | null): VideoItem[] {
     });
   return [...first, ...extras];
 }
-const videoItems = computed(() => videosFor(activeLesson.value));
+const allVideos = lessons.flatMap(videosOf);
+const videoEpoch = ref(0);
+const clipsEpoch = ref(0);
+const videoStartIdx = computed(() => {
+  const lid = activeLesson.value?.id;
+  if (!lid) return 0;
+  const i = allVideos.findIndex((v) => v.id === lid || v.id.startsWith(`${lid}-t`));
+  return i >= 0 ? i : 0;
+});
+
+/** 视频/词句跨课推进 → 页头落到新课程（不重挂播放器） */
+function onVideoChange(idx: number) {
+  const l = lessonForSongId(allVideos[idx]?.id);
+  if (l) activeLesson.value = l;
+}
+function onClipChange(lessonId: string) {
+  const l = lessons.find((x) => x.id === lessonId);
+  if (l) activeLesson.value = l;
+}
 
 const lessonMeta = computed(() => {
   const l = activeLesson.value;
@@ -257,6 +282,16 @@ watch(
   () => player.nowPlaying,
   (on) => {
     if (on && player.currentSong) adoptCurrentSong();
+  }
+);
+
+/** 歌跨课推进（课程级循环/下一首）→ 页头落到新歌所属课程 */
+watch(
+  () => player.currentSong?.id,
+  (id) => {
+    if (!activeLesson.value || mode.value !== "songs") return;
+    const l = lessonForSongId(id);
+    if (l && l.id !== activeLesson.value.id) activeLesson.value = l;
   }
 );
 
@@ -363,28 +398,31 @@ onBeforeUnmount(() => {
           </div>
         </template>
 
-        <!-- 视频：不再单独铺浮层，直接占满内容区；无视频时给封面提示，不白屏 -->
+        <!-- 视频：跨课程连续流，播完自动续下一课（页头随 change 落到新课程） -->
         <div v-else-if="mode === 'videos'" class="lp-media">
           <VideoPlayer
-            v-if="videoItems.length"
-            :key="activeLesson.id + '-video'"
-            :videos="videoItems"
-            :start-index="0"
+            v-if="allVideos.length"
+            :key="videoEpoch"
+            :videos="allVideos"
+            :start-index="videoStartIdx"
             embedded
+            @change="onVideoChange"
           />
           <div v-else class="lp-empty">
             <EmojiTile :emoji="activeLesson.emoji" :tone="activeLesson.tone" size="xl" />
-            <p class="lp-empty-title">这一课还没有视频</p>
+            <p class="lp-empty-title">还没有课程视频</p>
             <p class="lp-empty-sub">先听歌曲，或者切到词句跟读吧</p>
           </div>
         </div>
 
-        <!-- 词句：embedded 播放器，共用页头，不再重复课程标题 -->
+        <!-- 词句：跨课程连续流（逐课 词→句 衔接），共用页头随 change 落到新课程 -->
         <div v-else class="lp-media lp-clips">
           <LessonClipPlayer
-            :key="activeLesson.id + '-clips'"
-            :lesson="activeLesson"
+            :key="clipsEpoch"
+            :lessons="lessons"
+            :start-lesson-id="activeLesson.id"
             embedded
+            @change="onClipChange"
           />
         </div>
       </div>

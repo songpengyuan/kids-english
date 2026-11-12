@@ -15,6 +15,7 @@ import { createRouter, createMemoryHistory } from "vue-router";
 import { mount, flushPromises } from "@vue/test-utils";
 import ListenView from "../ListenView.vue";
 import { usePlayerStore } from "../../../stores/player";
+import { lessons } from "../../../data/lessons";
 
 vi.hoisted(() => {
   const w = globalThis as unknown as Record<string, unknown>;
@@ -190,7 +191,9 @@ describe("ListenView · 词句内容", () => {
     for (let i = 0; i < 7; i++) {
       await w.find('button[aria-label="下一句"]').trigger("click");
     }
-    expect(w.find(".cp-kind-count").text()).toBe("8 / 17");
+    // 2026-11-13 课程级口径：计数器显示的是**跨课程流**里的位置（全部课的词+句总数）
+    const streamTotal = lessons.reduce((n, l) => n + l.words.length + l.phrases.length, 0);
+    expect(w.find(".cp-kind-count").text()).toBe(`8 / ${streamTotal}`);
     expect(w.find(".cp-kind").text()).toBe("亲子口语");
     expect(w.find(".cp-visual").exists()).toBe(true);
     expect(w.find(".cp-img").attributes("src")).toContain("/phrases/play.webp");

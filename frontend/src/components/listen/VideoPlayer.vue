@@ -67,7 +67,7 @@ const props = withDefaults(
   }>(),
   { listen: true }
 );
-const emit = defineEmits<{ close: []; ended: []; error: [] }>();
+const emit = defineEmits<{ close: []; ended: []; error: []; change: [index: number] }>();
 
 const progress = useProgressStore();
 
@@ -220,6 +220,9 @@ function onStageTap() {
 function go(i: number) {
   segSettle();
   idx.value = i;
+  // 换片唯一出入口（上一个/下一个/播完推进/随机都走这里）：消费方靠它
+  // 让页面跟着视频跨课走（磨耳朵的切换是课程级——页头要落到新课程）
+  emit("change", i);
 }
 /** 换片后自动续播：src 变化不会自动 play，显式续播（与旧版一致） */
 watch(cur, async () => {

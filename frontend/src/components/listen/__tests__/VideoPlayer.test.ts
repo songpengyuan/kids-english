@@ -273,6 +273,33 @@ describe("VideoPlayer", () => {
     expect(playSpy).toHaveBeenCalled();
   });
 
+  it("换片 emit change（磨耳朵靠它把页头落到新课程）：上一个/下一个/播完推进都走同一事件", async () => {
+    const w = mountPlayer(0);
+    fakePlaying(videoOf(w));
+    await w.vm.$nextTick();
+    await w.find('button[aria-label="下一个视频"]').trigger("click");
+    expect(w.emitted("change")).toEqual([[1]]);
+    const video = videoOf(w);
+    Object.defineProperty(video, "paused", { value: false, configurable: true });
+    video.currentTime = 10;
+    video.dispatchEvent(new Event("ended"));
+    await Promise.resolve();
+    await Promise.resolve();
+    // 2 条列表：1 → wrap 回 0
+    expect(w.emitted("change")).toEqual([[1], [0]]);
+    // 单视频循环不换片：不该有 change
+    const single = mount(VideoPlayer, {
+      props: { videos: [VIDEOS[0]], startIndex: 0 },
+      global: { plugins: [createPinia()] },
+      attachTo: document.body,
+    });
+    fakePlaying(videoOf(single));
+    await single.vm.$nextTick();
+    videoOf(single).dispatchEvent(new Event("ended"));
+    await Promise.resolve();
+    expect(single.emitted("change")).toBeUndefined();
+  });
+
   it("只有一条视频时播完自动重播（不然停在最后一帧像卡住）", async () => {
     const w = mount(VideoPlayer, {
       props: { videos: [VIDEOS[0]], startIndex: 0 },

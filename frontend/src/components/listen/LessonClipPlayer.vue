@@ -1,10 +1,12 @@
 <script setup lang="ts">
 /**
- * 磨耳朵「词句」播放器 —— 按一课顺序播单词 + 亲子口语句子。
+ * 磨耳朵「词句」播放器 —— 按顺序播各课的单词 + 亲子口语句子。
  *
  * 素材：复用 lessons.ts normalize 出来的单词 / 口语句 mp3（/lessons/<id>/audio/...），
  * 不另生成音频；文件缺失或播放失败时才回退 TTS。
- * 播完一句留 0.9s 空拍再自动下一句，整课循环，适合孩子跟读。
+ * 播完一句留 0.9s 空拍再自动下一句，循环范围是**全部课程**（2026-11-13 课程级口径：
+ * 循环/上一句/下一句都在跨课流上转，页面页头靠 change 事件落到当前句所属课程），
+ * 适合孩子跟读。
  * 播放期间按墙钟结算磨耳朵时长，和歌曲播放器同一口径。
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
@@ -25,12 +27,14 @@ interface Clip {
   en: string;
   zh: string;
   src: string;
+  /** 这句/词属于哪一课：跨课推进时消费方靠它把页面落到对应课程 */
+  lessonId: string;
   /** 单词用已有词图；口语句子优先复用句中的词图，提问/场景句用通用拟物图 */
   image?: string;
 }
 
-const props = defineProps<{ lesson: Lesson; embedded?: boolean }>();
-const emit = defineEmits<{ close: [] }>();
+const props = defineProps<{ lessons: Lesson[]; startLessonId?: string; embedded?: boolean }>();
+const emit = defineEmits<{ close: []; change: [lessonId: string] }>();
 
 const progressStore = useProgressStore();
 const player = usePlayerStore();
@@ -40,33 +44,41 @@ const isWide = computed(
   () => height.value > 480 && width.value >= 600 && (width.value <= height.value || width.value >= 768),
 );
 
-/** 先单词后亲子口语：孩子先听清单词，再听整句 */
-const clips = computed<Clip[]>(() => {
-  const words: Clip[] = props.lesson.words.map((w) => ({
-    id: `w-${w.id}`,
-    kind: "word",
-    en: w.en,
-    zh: w.zh,
-    src: w.audio || "",
-    image: w.image || undefined,
-  }));
-  const phrases: Clip[] = props.lesson.phrases.map((p, i) => ({
-    id: `p-${i}`,
-    kind: "phrase",
-    en: p.en,
-    zh: p.zh,
-    src: p.audio || "",
-    image: phraseCoverUrl(p.en, props.lesson.words) || undefined,
-  }));
-  return [...words, ...phrases];
-});
+/** 先单词后亲子口语，逐课衔接：l1 词→l1 句→l2 词→…整条跨课流 */
+const clips = computed<Clip[]>(() =>
+  props.lessons.flatMap((l) => {
+    const words: Clip[] = l.words.map((w) => ({
+      id: `w-${w.id}`,
+      kind: "word",
+      en: w.en,
+      zh: w.zh,
+      src: w.audio || "",
+      lessonId: l.id,
+      image: w.image || undefined,
+    }));
+    const phrases: Clip[] = l.phrases.map((p, i) => ({
+      id: `p-${l.id}-${i}`,
+      kind: "phrase",
+      en: p.en,
+      zh: p.zh,
+      src: p.audio || "",
+      lessonId: l.id,
+      image: phraseCoverUrl(p.en, l.words) || undefined,
+    }));
+    return [...words, ...phrases];
+  }),
+);
 
 const total = computed(() => clips.value.length);
 const idx = ref(0);
 const playing = ref(false);
 const current = computed<Clip | null>(() => clips.value[idx.value] ?? null);
-const wordCount = computed(() => props.lesson.words.length);
-const phraseCount = computed(() => props.lesson.phrases.length);
+/** 当前句所属课程（页头/卡片底色跟着它走，跨课推进时逐句切换） */
+const curLesson = computed<Lesson>(
+  () => props.lessons.find((l) => l.id === current.value?.lessonId) ?? props.lessons[0],
+);
+const wordCount = computed(() => curLesson.value.words.length);
+const phraseCount = computed(() => curLesson.value.phrases.length);
 const kindLabel = computed(() => (current.value?.kind === "word" ? "单词" : "亲子口语"));
 /** 长句降低字号，避免在右侧文字栏里被拆成过多短行 */
 const longText = computed(() => (current.value?.en.length ?? 0) > 26);
@@ -178,6 +190,8 @@ async function go(i: number) {
   stopAudio();
   idx.value = i;
   playing.value = false;
+  // 换句唯一出入口：跨课推进时让页面落到这句所属的课程
+  emit("change", clip.lessonId);
 
   const token = ++playToken;
   if (!clip.src) {
@@ -244,9 +258,12 @@ watch(() => player.playing, (on) => {
 });
 
 onMounted(() => {
-  // 进本播放器先把全局歌曲停住
+  // 进本播放器先把全局歌曲停住；起点 = 指定课程的第一句（没指定就从流头开始）
   if (player.playing) player.togglePlay();
-  void go(0);
+  const start = props.startLessonId
+    ? clips.value.findIndex((c) => c.lessonId === props.startLessonId)
+    : -1;
+  void go(start >= 0 ? start : 0);
 });
 
 onBeforeUnmount(() => {
@@ -263,16 +280,16 @@ onBeforeUnmount(() => {
         <ChevronDown class="k-ico" />
       </button>
       <div class="cp-song">
-        <span class="cp-cover"><EmojiTile :emoji="lesson.emoji" :tone="lesson.tone" size="md" /></span>
+        <span class="cp-cover"><EmojiTile :emoji="curLesson.emoji" :tone="curLesson.tone" size="md" /></span>
         <div class="cp-song-text">
-          <p class="cp-title">{{ lesson.title }}</p>
+          <p class="cp-title">{{ curLesson.title }}</p>
           <p class="cp-sub">{{ wordCount }} 个单词 · {{ phraseCount }} 句亲子口语</p>
         </div>
       </div>
       <span class="cp-count">{{ idx + 1 }} / {{ total }}</span>
     </div>
 
-    <div class="cp-card" :class="['tone-' + lesson.tone, { 'is-wide': isWide }]">
+    <div class="cp-card" :class="['tone-' + curLesson.tone, { 'is-wide': isWide }]">
       <div class="cp-kind-row">
         <span class="cp-kind">{{ kindLabel }}</span>
         <span v-if="embedded" class="cp-kind-count">{{ idx + 1 }} / {{ total }}</span>
