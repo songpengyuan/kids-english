@@ -8,7 +8,7 @@
  * 播放期间按墙钟结算磨耳朵时长，和歌曲播放器同一口径。
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { ChevronDown, MessageCircle, Pause, Play, SkipBack, SkipForward } from "@lucide/vue";
+import { ChevronDown, MessageCircle, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward } from "@lucide/vue";
 import { useProgressStore } from "../../stores/progress";
 import { usePlayerStore } from "../../stores/player";
 import { speakText } from "../../services/speech";
@@ -61,6 +61,50 @@ const wordCount = computed(() => props.lesson.words.length);
 const phraseCount = computed(() => props.lesson.phrases.length);
 const kindLabel = computed(() => (current.value?.kind === "word" ? "单词" : "亲子口语"));
 
+/* ---------- 三档循环：与歌曲/视频播放器同一套交互（localStorage 记住选择） ---------- */
+type ClipMode = "all" | "one" | "shuffle";
+const MODE_KEY = "kc-clip-mode";
+const MODE_META: Record<ClipMode, { label: string; icon: unknown }> = {
+  all: { label: "整课循环", icon: Repeat },
+  one: { label: "单句循环", icon: Repeat1 },
+  shuffle: { label: "随机播放", icon: Shuffle },
+};
+function loadMode(): ClipMode {
+  try {
+    const v = localStorage.getItem(MODE_KEY);
+    return v === "one" || v === "shuffle" ? v : "all";
+  } catch {
+    return "all";
+  }
+}
+const mode = ref<ClipMode>(loadMode());
+const modeMeta = computed(() => MODE_META[mode.value]);
+const hintText = computed(() => {
+  if (mode.value === "one") return "听完重复本句 · 跟着大声读";
+  if (mode.value === "shuffle") return "听完随机跳一句 · 跟着大声读";
+  return "听完自动下一句，整课循环 · 跟着大声读";
+});
+function cycleMode() {
+  hapticTap();
+  mode.value = mode.value === "all" ? "one" : mode.value === "one" ? "shuffle" : "all";
+  try {
+    localStorage.setItem(MODE_KEY, mode.value);
+  } catch {
+    /* 隐私模式写不了就跳过 */
+  }
+}
+/** manual=true 手动点下一句，单句循环也允许往下走；自动结束才按模式 */
+function nextIndex(manual = false): number {
+  const n = Math.max(1, total.value);
+  if (!manual && mode.value === "one") return idx.value;
+  if (mode.value === "shuffle" && n > 1) {
+    let next = idx.value;
+    while (next === idx.value) next = Math.floor(Math.random() * n);
+    return next;
+  }
+  return (idx.value + 1) % n;
+}
+
 let audio: HTMLAudioElement | null = null;
 let advanceTimer = 0;
 let playToken = 0;
@@ -107,7 +151,7 @@ function scheduleNext() {
   settleListenTime();
   clearAdvance();
   advanceTimer = window.setTimeout(() => {
-    go((idx.value + 1) % Math.max(1, total.value));
+    go(nextIndex());
   }, 900);
 }
 
@@ -175,7 +219,7 @@ function prev() {
 
 function next() {
   hapticTap();
-  go((idx.value + 1) % Math.max(1, total.value));
+  go(nextIndex(true));
 }
 
 function close() {
@@ -243,7 +287,13 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <p class="cp-hint">听完自动下一句，整课循环 · 跟着大声读</p>
+    <div class="cp-foot">
+      <button class="cp-mode" :aria-label="`切换循环方式，当前${modeMeta.label}`" @click="cycleMode">
+        <component :is="modeMeta.icon" class="k-ico" />
+        <span>{{ modeMeta.label }}</span>
+      </button>
+      <p class="cp-hint">{{ hintText }}</p>
+    </div>
   </div>
 </template>
 
@@ -418,8 +468,32 @@ onBeforeUnmount(() => {
   box-shadow: 0 var(--press) 0 var(--brand-dark), var(--shadow-soft);
   font-size: var(--fs-title);
 }
+.cp-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-xs);
+}
+.cp-mode {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+}
+.cp-mode .k-ico {
+  width: 1em;
+  height: 1em;
+}
 .cp-hint {
   margin: 0;
+  flex: 1;
   text-align: center;
   color: var(--ink-faint);
   font-size: var(--fs-small);
@@ -436,7 +510,7 @@ onBeforeUnmount(() => {
   .clip-player { gap: var(--gap-xs); }
   .cp-card { gap: var(--gap-xs); padding: var(--gap-s) var(--gap-m); }
   .cp-img, .cp-bubble { width: 64px; height: 64px; }
-  .cp-sub, .cp-hint { display: none; }
+  .cp-sub { display: none; }
   .cp-en { font-size: clamp(24px, 4vw, 34px); }
 }
 </style>

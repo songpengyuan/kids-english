@@ -2,7 +2,7 @@
 /**
  * 底栏中间位（磨耳朵）的回归测试 —— 锁两条铁律：
  *  1. **任何播放状态下，中间的 tab 都必须能导航回 /listen**；
- *  2. **中间位不做播放控制**，播放中只把图标换成声波（状态显示，不是键）。
+ *  2. **中间位不做播放控制**，播放中只在图标右下角叠声波徽章（状态显示，不是键）。
  *
  * 真实事故（2026-10-17 用户反馈「开始播放后切到其他 tab 就切不回磨耳朵了」）：
  * 中间位曾被写成"有歌就换成一颗播放键"，而那颗键用 @click.stop 盖住了整格
@@ -10,7 +10,7 @@
  * 只会暂停音乐、不导航；磨耳朵全站又只有这一个入口，孩子等于被锁在别的 tab 外。
  *
  * 现行语义（2026-10-17 二次调整，用户要求「只换图标、不用做实质功能」）：
- * 整格永远是入口；没在播显示 🎧，正在播显示跳动的声波条。
+ * 整格永远是入口；图标是自托管的拟物耳机，正在播时右下角叠一颗跳动的声波徽章。
  * 暂停不靠这颗键 —— 磨耳朵列表里当前那首自带 .sr-play，播放页有完整 transport。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -55,12 +55,12 @@ describe("BottomNav · 中间位永远是入口，图标只表达状态", () => 
     localStorage.clear();
   });
 
-  it("没在播：中间位是 🎧 入口，点和图标都能导航到 /listen", async () => {
+  it("没在播：中间位是拟物耳机入口，点和图标都能导航到 /listen", async () => {
     await router.push("/course");
     await router.isReady();
 
     const w = mount(BottomNav, { global: { plugins: [router] } });
-    expect(middleTab(w).find(".bn-ico").text()).toBe("🎧");
+    expect(middleTab(w).find(".bn-img").attributes("src")).toContain("/nav/listen.webp");
     expect(w.find(".bn-eq").exists()).toBe(false);
 
     // 点的是格子里**看得见的那块图标**：手指不会精确区分图标与空白
@@ -77,9 +77,9 @@ describe("BottomNav · 中间位永远是入口，图标只表达状态", () => 
     const w = mount(BottomNav, { global: { plugins: [router] } });
     expect(player.playing).toBe(true);
 
-    // 状态显示：耳机 → 三根声波条（不再是"长着暂停脸的键"）
+    // 状态显示：耳机图标保留，右下角叠三根声波徽章（不再是"长着暂停脸的键"）
     expect(w.find(".bn-eq").exists()).toBe(true);
-    expect(middleTab(w).find(".bn-ico").exists()).toBe(false);
+    expect(middleTab(w).find(".bn-img").exists()).toBe(true);
     expect(w.find(".bn-play").exists()).toBe(false);
     expect(middleTab(w).attributes("aria-label")).toBe("磨耳朵（正在播放）");
 
@@ -115,12 +115,12 @@ describe("BottomNav · 中间位永远是入口，图标只表达状态", () => 
     expect(router.currentRoute.value.path).toBe("/listen"); // 也不跳走
   });
 
-  it("磨耳朵页没有选曲时：中间位是 🎧 入口，点击不报错也不跳走", async () => {
+  it("磨耳朵页没有选曲时：中间位是拟物耳机入口，点击不报错也不跳走", async () => {
     await router.push("/listen");
     await router.isReady();
 
     const w = mount(BottomNav, { global: { plugins: [router] } });
-    expect(middleTab(w).find(".bn-ico").text()).toBe("🎧");
+    expect(middleTab(w).find(".bn-img").exists()).toBe(true);
 
     await middleTab(w).trigger("click");
     expect(router.currentRoute.value.path).toBe("/listen");

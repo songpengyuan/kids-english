@@ -10,6 +10,8 @@ import SongStage from "./SongStage.vue";
 import SafeBottom from "../layout/SafeBottom.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import type { Lesson } from "../../data/lessons";
+import { emojiCoverUrl } from "../../utils/emojiCover";
+import { trackCover } from "../../utils/trackCover";
 
 const progress = useProgressStore();
 
@@ -64,6 +66,10 @@ const stripWords = computed(() =>
 );
 const trackIdx = ref(0);
 const curTrack = computed(() => tracks.value[trackIdx.value] || tracks.value[0]);
+/** 当前轨的课程封面：Colors Song 用调色盘，其余沿用本课封面 */
+const songCover = computed(
+  () => trackCover(curTrack.value.group ?? props.group, props.lesson.emoji, props.lesson.tone).emoji
+);
 const videoMissing = ref(!curTrack.value.video);
 
 /* ---------- 播放机芯：transport composable（进度/缓冲/循环/拖动条） ---------- */
@@ -309,7 +315,13 @@ function onVideoError() {
         </button>
         <div class="audio-text">
           <template v-if="!audioMissing">
-            <p class="audio-title">{{ lesson.emoji }} {{ curTrack.title }}</p>
+            <p class="audio-title">
+              <span class="audio-cover" aria-hidden="true">
+                <img v-if="emojiCoverUrl(songCover)" class="audio-cover__img" :src="emojiCoverUrl(songCover)!" alt="" />
+                <template v-else>{{ songCover }}</template>
+              </span>
+              {{ curTrack.title }}
+            </p>
             <p class="audio-sub">{{ playing ? "正在播放，看着歌词一起唱吧～" : "点我播放童谣音乐" }}</p>
           </template>
           <p v-else class="miss">
@@ -498,6 +510,20 @@ function onVideoError() {
   font-weight: var(--fw-strong);
   font-size: var(--fs-title);
   color: var(--ink);
+}
+.audio-cover {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  margin-right: 4px;
+  vertical-align: -0.18em;
+}
+.audio-cover__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .audio-sub {
   font-size: var(--fs-small);

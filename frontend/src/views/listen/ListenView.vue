@@ -380,7 +380,10 @@ onMounted(() => {
         <button v-for="(s, i) in player.SONG_LIST" :key="s.id" class="drawer-item"
           :class="{ on: player.currentIdx === i }" @click="player.playSong(i); showPlaylist = false">
           <span class="di-idx">{{ i + 1 }}</span>
-          <span class="di-emoji" aria-hidden="true">{{ s.emoji }}</span>
+          <span class="di-emoji" aria-hidden="true">
+            <img v-if="emojiCoverUrl(s.emoji)" class="di-emoji__img" :src="emojiCoverUrl(s.emoji)!" alt="" />
+            <template v-else>{{ s.emoji }}</template>
+          </span>
           <span class="di-info">
             <span class="di-title">{{ s.title }}</span>
             <span class="di-sub">{{ s.titleZh }}</span>
@@ -810,8 +813,19 @@ onMounted(() => {
   flex: none;
 }
 .di-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5em;
+  height: 1.5em;
   font-size: var(--fs-title);
+  line-height: 1;
   flex: none;
+}
+.di-emoji__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .di-info {
   flex: 1;

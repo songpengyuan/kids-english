@@ -93,6 +93,21 @@ describe("ListenView · 词句 tab", () => {
     expect(w.find(".song-row").exists()).toBe(false);
   });
 
+  it("词句播放器可切换循环方式：整课循环 → 单句循环 → 随机 → 整课循环", async () => {
+    const w = await mountListen();
+    await openClips(w);
+    await w.findAll(".clip-row")[0].trigger("click");
+    await flushPromises();
+    const label = () => w.find(".cp-mode span").text();
+    expect(label()).toBe("整课循环");
+    await w.find(".cp-mode").trigger("click");
+    expect(label()).toBe("单句循环");
+    await w.find(".cp-mode").trigger("click");
+    expect(label()).toBe("随机播放");
+    await w.find(".cp-mode").trigger("click");
+    expect(label()).toBe("整课循环");
+  });
+
   it("点课程进入词句播放器：单词在前，能暂停与收起", async () => {
     const w = await mountListen();
     await openClips(w);

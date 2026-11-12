@@ -127,14 +127,14 @@ function enter(l: Lesson) {
 /* 大 emoji 作为背景装饰 */
 .card-emoji {
   position: absolute;
-  right: 4%;
-  top: 8%;
+  right: 3%;
+  top: 5%;
   /* 兜底：不支持容器查询单位（cqw）的旧浏览器仍用视口钳制 */
   font-size: clamp(56px, 12vw, 96px);
   /* 按卡片宽度取 40%：2 列手机卡 / 3 列 iPad 卡 / 4 列方卡都保持同一占比。
      之前用 vw（clamp 80~130px）在 4 列方卡上会涨到 130px，直接压住标题文字；
      在 2 列窄卡上又顶到 80px 下限，显得过大。 */
-  font-size: 40cqw;
+  font-size: 52cqw;
   line-height: 1;
   opacity: 0.95;
   /* 这里**不能**加 filter: drop-shadow —— 彩色 emoji 走 COLRv1 字形，
@@ -146,8 +146,8 @@ function enter(l: Lesson) {
  * SVG 是 img 元素（透明底），drop-shadow 阴影贴形——与 COLRv1 字形 emoji
  * 的方形色晕问题不同，这里安全；亮色卡上浅色图标（如 l5 小号）不再发飘 */
 .card-emoji--img {
-  width: 40cqw;
-  height: 40cqw;
+  width: 52cqw;
+  height: 52cqw;
   object-fit: contain;
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.14));
 }

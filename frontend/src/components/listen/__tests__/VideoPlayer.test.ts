@@ -10,8 +10,8 @@ import { createPinia } from "pinia";
 import VideoPlayer from "../VideoPlayer.vue";
 
 const VIDEOS = [
-  { id: "a", title: "Song A", titleZh: "歌A", src: "/lessons/l4/a.mp4" },
-  { id: "b", title: "Song B", titleZh: "歌B", src: "/lessons/l5/b.mp4" },
+  { id: "a", title: "Song A", titleZh: "歌A", src: "/lessons/l4/a.mp4", emoji: "🐻", tone: "orange" },
+  { id: "b", title: "Song B", titleZh: "歌B", src: "/lessons/l5/b.mp4", emoji: "🎺", tone: "gold" },
 ];
 
 function mountPlayer(startIndex = 0) {
@@ -41,6 +41,17 @@ describe("VideoPlayer 控制栏", () => {
     expect(w.find(".vp-mode").text()).toContain("列表循环");
     // 不再用原生 controls（电视上又小又不统一）
     expect(w.find("video").attributes("controls")).toBeUndefined();
+  });
+
+  it("开播前用课程封面盖住旧片头首帧，开播后撤掉", async () => {
+    const w = mountPlayer();
+    expect(w.find(".vp-cover").exists()).toBe(true);
+    expect(w.find(".vp-cover__img").attributes("src")).toContain("/covers/1f43b.webp");
+    // 原生 poster 也不能再是机构片头 /lessons/*.jpg
+    expect(w.find("video").attributes("poster")).toContain("/covers/1f43b.webp");
+    (w.find("video").element as HTMLVideoElement).dispatchEvent(new Event("play"));
+    await w.vm.$nextTick();
+    expect(w.find(".vp-cover").exists()).toBe(false);
   });
 
   it("三档循环单按钮：列表循环 → 单曲循环 → 随机 → 列表循环，且持久化", async () => {

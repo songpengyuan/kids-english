@@ -25,6 +25,7 @@ import {
   X,
 } from "@lucide/vue";
 import { useProgressStore } from "../../stores/progress";
+import { emojiCoverUrl } from "../../utils/emojiCover";
 
 export interface VideoItem {
   id: string;
@@ -48,12 +49,15 @@ const cur = computed(() => props.videos[idx.value] ?? props.videos[0]);
 const videoEl = ref<HTMLVideoElement | null>(null);
 const shellEl = ref<HTMLElement | null>(null);
 const playing = ref(false);
+/** 是否已经开播：封面只在首帧前显示，暂停/拖进度时不重新盖 */
+const started = ref(false);
 const muted = ref(false);
 const curSec = ref(0);
 const durSec = ref(0);
 
-/** 视频封面：optimize-videos.mjs 与 mp4 成对产出的同名 jpg（缺失时无害） */
-const poster = computed(() => cur.value?.src.replace(/\.mp4$/, ".jpg"));
+/** 课程封面：与磨耳朵视频卡同一张自托管图（资产集外回退 emoji）。
+ *  同时用作原生 poster——旧 poster 是机构片头（Everyone Loves elf），不能再用。 */
+const cover = computed(() => emojiCoverUrl(cur.value?.emoji));
 
 /** play() 的返回值在 jsdom/旧内核上可能不是 Promise，统一包一层再 catch */
 function safePlay(v: HTMLVideoElement | null | undefined) {
@@ -146,6 +150,7 @@ watch(cur, async () => {
   curSec.value = 0;
   durSec.value = 0;
   playing.value = false;
+  started.value = false;
   await nextTick();
   safePlay(videoEl.value);
 });
@@ -203,21 +208,37 @@ onBeforeUnmount(segSettle);
     </button>
 
     <div class="vp-body">
-      <video
-        ref="videoEl"
-        class="vp-video"
-        :src="cur.src"
-        :poster="poster ?? undefined"
-        playsinline
-        preload="metadata"
-        autoplay
-        @play="playing = true; segBegin()"
-        @pause="playing = false; segSettle()"
-        @ended="playing = false; onEnded()"
-        @timeupdate="onTime"
-        @loadedmetadata="onMeta"
-        @click="togglePlay"
-      />
+      <div class="vp-stage">
+        <video
+          ref="videoEl"
+          class="vp-video"
+          :src="cur.src"
+          :poster="cover ?? undefined"
+          playsinline
+          preload="metadata"
+          autoplay
+          @play="playing = true; started = true; segBegin()"
+          @pause="playing = false; segSettle()"
+          @ended="playing = false; onEnded()"
+          @timeupdate="onTime"
+          @loadedmetadata="onMeta"
+          @click="togglePlay"
+        />
+        <button
+          v-if="!started"
+          class="vp-cover"
+          :class="'tone-' + cur.tone"
+          aria-label="播放视频"
+          @click="togglePlay"
+        >
+          <span class="vp-cover__icon" aria-hidden="true">
+            <img v-if="cover" class="vp-cover__img" :src="cover" alt="" />
+            <template v-else>{{ cur.emoji }}</template>
+          </span>
+          <span class="vp-cover__title">{{ cur.title }}</span>
+          <span class="vp-cover__sub">{{ cur.titleZh }}</span>
+        </button>
+      </div>
 
       <div class="vp-panel">
       <div class="vp-seek">
@@ -287,6 +308,10 @@ onBeforeUnmount(segSettle);
   height: 100%;
   justify-content: center;
 }
+.vp:fullscreen .vp-stage {
+  width: 100%;
+  height: 100%;
+}
 .vp:fullscreen .vp-video {
   max-width: none;
   max-height: none;
@@ -311,6 +336,10 @@ onBeforeUnmount(segSettle);
   width: 100%;
   height: 100%;
   justify-content: center;
+}
+.vp:-webkit-full-screen .vp-stage {
+  width: 100%;
+  height: 100%;
 }
 .vp:-webkit-full-screen .vp-video {
   max-width: none;
@@ -347,6 +376,16 @@ onBeforeUnmount(segSettle);
   gap: var(--gap-xs);
   min-height: 0;
 }
+.vp-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  border-radius: var(--radius-s);
+  overflow: hidden;
+  background: var(--black);
+}
 .vp-video {
   display: block;
   /* fit-content：元素紧贴视频画面（不拉伸不留黑边），控制栏才贴得住画面下缘 */
@@ -358,6 +397,47 @@ onBeforeUnmount(segSettle);
   max-height: min(58vh, calc(100dvh - 240px));
   border-radius: var(--radius-s);
   background: var(--black); /* 信箱底：tokens 里 --black 的既定用途 */
+}
+/* 开播前课程封面：盖住视频自带的旧片头首帧，与视频卡保持同一视觉 */
+.vp-cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--gap-m);
+  border: 0;
+  border-radius: var(--radius-s);
+  box-shadow: none;
+  color: var(--on-tone);
+}
+.vp-cover__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(72px, 22vw, 112px);
+  height: clamp(72px, 22vw, 112px);
+  font-size: clamp(72px, 22vw, 112px);
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.18));
+}
+.vp-cover__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.vp-cover__title {
+  font-size: var(--fs-title);
+  font-weight: var(--fw-strong);
+  text-shadow: var(--tone-ink-shadow);
+}
+.vp-cover__sub {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-mid);
+  opacity: 0.88;
+  text-shadow: var(--tone-ink-shadow);
 }
 /* 控制面板：深色圆角卡（浮层配色体系，与关闭键同源） */
 .vp-panel {
