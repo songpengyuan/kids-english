@@ -340,7 +340,9 @@ const micLabel = computed(() => {
 
 .wheel-wrap {
   position: relative;
-  width: min(62vw, 300px);
+  /* 圆盘直径：手机由 62vw 决定（≈242px，与旧版一致）；iPad/桌面加高度项与
+     560px 上限放大（iPad 竖 476px、横 430px、桌面 504px），不再被 300px 卡死 */
+  width: min(56vh, 62vw, 560px);
   aspect-ratio: 1;
   flex: none;
 }
@@ -437,6 +439,34 @@ const micLabel = computed(() => {
   z-index: 2;
 }
 .hub-ico { width: 26px; height: 26px; }
+
+/* 宽屏（iPad 竖/横屏、分屏、桌面）：圆盘放大后扇区图文/中心按钮/指针同步放大，
+   保持「沿圆周一圈、互不重叠」的比例（放大系数 ≤ 圆盘放大系数）。
+   只改「值」不改结构，符合 DESIGN_SYSTEM §11.4「改值用 600」；
+   手机横屏由后置 max-height:480px 档覆盖回压缩值。 */
+@media (min-width: 600px) {
+  .sector-img {
+    width: clamp(38px, 7vh, 64px);
+    height: clamp(38px, 7vh, 64px);
+    border-radius: clamp(7px, 1.4vh, 12px);
+  }
+  .sector-emoji { font-size: clamp(24px, 5.4vh, 44px); }
+  .sector-word { font-size: clamp(11px, 2.2vh, 18px); }
+  .wheel-wrap.dense .sector-emoji { font-size: clamp(15px, 3.2vh, 26px); }
+  .hub {
+    width: clamp(58px, 8vh, 92px);
+    height: clamp(58px, 8vh, 92px);
+  }
+  .hub-ico {
+    width: clamp(26px, 4vh, 42px);
+    height: clamp(26px, 4vh, 42px);
+  }
+  .pointer {
+    border-left-width: clamp(12px, 1.6vh, 18px);
+    border-right-width: clamp(12px, 1.6vh, 18px);
+    border-top-width: clamp(20px, 2.6vh, 30px);
+  }
+}
 
 /* 停词阶段的操作组：词卡在上、麦克风紧贴在下，全屏只有这一处可点 */
 .say {
@@ -648,6 +678,13 @@ const micLabel = computed(() => {
   .sector-word { font-size: 9px; }
   .hub { width: 40px; height: 40px; border-width: 2px; }
   .hub-ico { width: 20px; height: 20px; }
+  /* 覆盖上方 600 档的放大值（手机横屏 ≥600 宽也会命中该档） */
+  .wheel-wrap.dense .sector-emoji { font-size: 15px; }
+  .pointer {
+    border-left-width: 12px;
+    border-right-width: 12px;
+    border-top-width: 20px;
+  }
   .say { width: auto; gap: 4px; }
   .current {
     min-height: 48px;

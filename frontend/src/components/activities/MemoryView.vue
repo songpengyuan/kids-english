@@ -81,7 +81,8 @@ const counterText = computed(() =>
 );
 
 /** 网格列数：卡数决定（8 卡 4 列、6 卡 3 列、≤4 卡 2 列）。
- *  曾经固定 4 列，6 张卡时变成 4+2 排布、2 张卡时只占左半边，宽屏下尤其失衡。 */
+ *  曾经固定 4 列，6 张卡时变成 4+2 排布、2 张卡时只占左半边，宽屏下尤其失衡。
+ *  手机横屏（高 ≤480）竖向空间不够，由后置 CSS 矮屏档强制回 4 列（见样式注释）。 */
 const gridCols = computed(() => {
   const pairs = curGroup.value.cards.length / 2;
   return pairs <= 2 ? 2 : Math.min(4, pairs);
@@ -306,16 +307,19 @@ onBeforeUnmount(() => {
  * 按视口高度封顶网格宽度：卡高 = 网宽×4/3 ÷4列，两行卡高 ≈ 网宽×2/3，
  * 两行 + 头部 ≈ 100vh → 网宽 = (100vh - 头部) × 1.5（SE 横屏 ≈ 385px，
  * 卡 ≈ 92px，比竖屏的 110px 只小一档）。 */
+/* 手机矮横屏（≤480px 高）：列数多的代价在这里翻倍——6 卡走 3 列时卡宽/高 ×1.35，
+ * 两行直接顶破底边（844×390 实测内部溢出 43px / 越界 15 个元素）。
+ * 因此矮横屏统一回 4 列（≤4 卡一行、6/8 卡两行都装得下），并把卡压扁到 4:5 省竖向空间。
+ * 列数由脚本内联写入 grid-template-columns，媒体查询只能靠 !important 覆盖。 */
 @media (max-height: 480px) {
   .grid {
-    /* 系数必须跟着列数走：4 列两行卡高 ≈ 网宽×2/3（→ 1.5），3 列 ≈ 网宽×8/9（→ 1.12）。
-     * 这里曾硬编码 1.5，于是 6 卡（3 列）的关卡在 844×390 上算出 408px 网宽，
-     * 卡宽 136 → 两行卡高 362，加头部顶破底边（audit 实测内部溢出 43px / 越界 13 个元素）。
-     * --fit 由脚本按列数写入（见 gridFit），回退值仍取 4 列的 1.5。 */
-    max-width: min(480px, calc((100vh - 118px) * var(--fit, 1.5)));
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    /* 4 列两行卡高 ≈ 网宽×2/3（4:5 比例下 ≈ 0.4 网宽/行）→ 1.5 系数 */
+    max-width: min(480px, calc((100vh - 118px) * 1.5));
     /* 覆盖上方 600 档的放大值，手机横屏空间紧 */
     gap: var(--gap-s);
   }
+  .m-card { aspect-ratio: 4 / 5; }
   .word-text { font-size: var(--fs-title); }
   .face .ph { font-size: var(--fs-emoji-l); }
   .back { font-size: var(--fs-title); }

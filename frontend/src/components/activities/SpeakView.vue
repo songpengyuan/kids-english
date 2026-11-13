@@ -282,11 +282,14 @@ function next() {
   opacity: 0.75;
 }
 .pic {
-  /* 同时受高和宽约束：iPad 横屏不至于过大，手机竖屏也不会占满整屏 */
+  /* 同时受高和宽约束：iPad/桌面按可视高度放大到 ~380px（原先上限 300px，
+     768×1024 上只有 230px，页面中段大片空白）；手机由 42vw 主导仍紧凑。
+     高度不超 40vh：iPad 横屏（768 高）保持原 307px，避免把底部元素挤出视口。
+     手机横屏由后置 max-height:480px 档固定回 76px。 */
   position: relative;
   z-index: 1;
-  width: clamp(110px, min(40vh, 30vw), 300px);
-  height: clamp(110px, min(40vh, 30vw), 300px);
+  width: clamp(110px, min(40vh, 42vw), 380px);
+  height: clamp(110px, min(40vh, 42vw), 380px);
   flex: none;
   background: var(--card-bg);
   border-radius: var(--radius);
