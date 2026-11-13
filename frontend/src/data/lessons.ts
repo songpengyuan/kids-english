@@ -38,6 +38,24 @@ export function asset(path: string | null | undefined): string | null {
   return BASE + (path.startsWith("/") ? path : `/${path}`);
 }
 
+/**
+ * 词图版本号（CDN 缓存击穿用）。
+ *
+ * 线上 zelab.cn 前面挂了华为云 CDN，对 .webp 下发的是 `max-age=2592000`（30 天），
+ * 而 index.html 是 no-cache。结果是：换掉同名词图、服务器文件已更新，
+ * CDN 仍然吐几十天前的旧图（实测服务器 md5 与 https 拉下来的 md5 不一致）。
+ *
+ * 词图按 `<lessonId>/words/<word>.webp` 固定命名、重生成时同名覆盖，
+ * 所以这里统一追加 `?v=<版本>`：URL 一变 CDN 就当新资源回源。
+ * 改任何一张词图后把这个值 +1 即可，不必等缓存过期。
+ */
+const WORD_IMAGE_REV = "20261114a";
+
+function revAsset(path: string | null): string | null {
+  if (!path) return null;
+  return `${path}${path.includes("?") ? "&" : "?"}v=${WORD_IMAGE_REV}`;
+}
+
 /* 逐行歌词的时间轴（真人演唱课由 gen-lrc.py 对齐产出；合成曲课已下线），用于 KTV 式精确高亮 */
 import songTimings from "./song-timings.json";
 import lessonsData from "./lessons.json";
@@ -243,7 +261,7 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
     // 词归属的课时 id：发音注册表按 (lessonId, wordId) 精确定位，
     // 单词级掌握度（progress.words）也依赖它；跨课同词（如 l4/l6 的 blue）不再串音
     lessonId: lesson.id,
-    image: asset(word.image),
+    image: revAsset(asset(word.image)),
     // 预生成的神经网络童声发音（public/lessons/<id>/audio/<wordId>.mp3），
     // 文件不存在时 speech.js 会自动回退到浏览器 TTS
     audio: asset(`/lessons/${lesson.id}/audio/${word.id}.mp3`) ?? undefined
