@@ -648,8 +648,9 @@ function finishEmpty() {
   .pic-static { width: 56px; height: 56px; }
   .ono-emoji { font-size: var(--fs-body); }
   .ono-text { font-size: var(--fs-body); }
-  /* 混合卡带单词标签，矮横屏下压到 80×88 才能一屏装下 */
-  .pic-card { width: 80px; height: 88px; padding: 4px 4px 2px; gap: 0; }
+  /* 混合卡带单词标签，矮横屏下压到 80×84 才能一屏装下
+     （88 时整列超视口 2px，词卡底部被 Home 条裁掉——2026-11-11 走查 #8） */
+  .pic-card { width: 80px; height: 84px; padding: 4px 4px 2px; gap: 0; }
   .pic-word { font-size: var(--fs-small); line-height: 1; }
   .answer-btn { padding: 5px 12px; }
   .next-btn { padding: 9px 28px; }
