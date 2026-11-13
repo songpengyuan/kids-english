@@ -8,8 +8,9 @@
  * （备案审核/任意访客直达 /gate 时都不应暴露未成年人姓名）。
  * 本站字体已全站引入站酷快乐体，无需额外 @font-face。
  */
-import { ref } from "vue";
+import { nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
+import { Eye, EyeOff } from "@lucide/vue";
 import { useGateStore } from "../stores/gate";
 import { useAuthStore } from "../stores/auth";
 import { useContentStore } from "../stores/content";
@@ -25,6 +26,27 @@ const progress = useProgressStore();
 const pass = ref("");
 const error = ref("");
 const busy = ref(false);
+
+/**
+ * 口令明文查看：家长多半是手输 6 位数字，中间错一位就得全删重来，
+ * 小眼睛让他们先看一眼再提交（不需要懂"为什么看不见"）。
+ * 只是显示态，不影响真正提交的值。
+ */
+const showPass = ref(false);
+const passInput = ref<HTMLInputElement | null>(null);
+
+function toggleShow() {
+  showPass.value = !showPass.value;
+  // 切换 type 后部分浏览器会把焦点/光标重置，这里等 DOM 更新完再还原，
+  // 免得家长"看一眼"之后还要重新点一次输入框才能接着输
+  nextTick(() => {
+    const el = passInput.value;
+    if (!el) return;
+    el.focus();
+    const len = el.value.length;
+    el.setSelectionRange?.(len, len);
+  });
+}
 
 /** 共通收尾：恢复会话、拉内容、同步进度、进应用 */
 async function afterEnter() {
@@ -85,15 +107,32 @@ async function submit() {
 
       <!-- 激活（老路径） -->
       <form class="gate__form" @submit.prevent="submit">
-        <input
-          v-model="pass"
-          class="gate__input"
-          type="password"
-          placeholder="请输入家长口令"
-          maxlength="20"
-          inputmode="numeric"
-          autocomplete="off"
-        />
+        <div class="gate__field">
+          <input
+            ref="passInput"
+            v-model="pass"
+            class="gate__input"
+            :type="showPass ? 'text' : 'password'"
+            placeholder="请输入家长口令"
+            maxlength="20"
+            inputmode="numeric"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+          <!-- 小眼睛：切换明文，只改显示不改提交值 -->
+          <button
+            type="button"
+            class="gate__eye"
+            :aria-label="showPass ? '隐藏口令' : '显示口令'"
+            :aria-pressed="showPass"
+            @mousedown.prevent
+            @click="toggleShow"
+          >
+            <EyeOff v-if="showPass" class="k-ico" aria-hidden="true" />
+            <Eye v-else class="k-ico" aria-hidden="true" />
+          </button>
+        </div>
         <button class="gate__btn" type="submit" :disabled="busy">
           {{ busy ? "进入中…" : "进入" }}
         </button>
@@ -183,9 +222,16 @@ async function submit() {
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
+/* 输入框 + 小眼睛共用一层定位容器：眼睛压在输入框右侧内边距里，
+   不额外占一行高度（口令页纵向空间本来就紧） */
+.gate__field {
+  position: relative;
+  width: 100%;
+}
 .gate__input {
   width: 100%;
-  padding: 12px 14px;
+  /* 右内边距留出小眼睛的点击区，文字不会压到图标下面 */
+  padding: 12px 48px 12px 14px;
   font-size: 16px;
   font-family: inherit;
   color: var(--night-ink);
@@ -200,6 +246,34 @@ async function submit() {
 }
 .gate__input:focus {
   border-color: var(--night-teal);
+}
+/* 触摸目标按输入框整高铺满，宽 44px（够拇指点，也不是一个小点） */
+.gate__eye {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0 14px 14px 0;
+  color: var(--night-ink-faint);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.18s;
+}
+.gate__eye .k-ico {
+  width: 20px;
+  height: 20px;
+}
+.gate__eye:hover {
+  color: var(--night-ink-soft);
+}
+.gate__eye:active {
+  color: var(--night-teal);
 }
 .gate__btn {
   width: 100%;
