@@ -18,6 +18,7 @@ import { lessons } from "../../../data/lessons";
 vi.mock("../../../services/haptics", () => ({ hapticTap: vi.fn() }));
 vi.mock("../../../services/speech", () => ({
   speak: vi.fn(),
+  speakText: vi.fn(),
   speakZh: vi.fn(),
 }));
 vi.mock("../../../composables/useLearnSession", () => ({
@@ -74,7 +75,7 @@ async function mountLevels() {
   return w;
 }
 
-import { speak, speakZh } from "../../../services/speech";
+import { speak, speakText, speakZh } from "../../../services/speech";
 
 describe("CourseAboutView · 点读全覆盖", () => {
   beforeEach(() => {
@@ -104,6 +105,34 @@ describe("CourseAboutView · 点读全覆盖", () => {
   it("课程头带「轻点标题/词卡可听发音」的可视提示", async () => {
     const w = await mountAbout();
     expect(w.text()).toContain("轻点标题");
+  });
+
+  it("口语/句子条目逐条点读：先英文（TTS）后中文释义（2026-11-14 结构化条目）", async () => {
+    const w = await mountAbout();
+    // l5 intro 有「口语句型」节 → 解析为「亲子口语」卡（归一化标题）
+    expect(w.text()).toContain("亲子口语");
+    const line = w.findAll(".line-list .line")[0];
+    expect(line.exists()).toBe(true);
+    await line.trigger("click");
+    expect(speakText).toHaveBeenCalledWith(expect.any(String), expect.anything());
+  });
+
+  it("需要加强的单词改为点读（点词=听词，重练走底部 CTA）", async () => {
+    const w = await mountAbout();
+    // 造一条错词记录：progress store 标 l5 的一个词 wrong
+    const { useProgressStore } = await import("../../../stores/progress");
+    const progress = useProgressStore();
+    const l5 = (await import("../../../data/lessons")).lessons.find((x) => x.id === "l5")!;
+    const wid = l5.words[0].id;
+    progress.recordWord("l5", wid, { seen: 1, wrong: 2 });
+    await flushPromises();
+    const weak = w.find(".weak");
+    expect(weak.exists()).toBe(true);
+    await weak.trigger("click");
+    expect(speak).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ lessonId: "l5", wordId: wid }),
+    );
   });
 });
 

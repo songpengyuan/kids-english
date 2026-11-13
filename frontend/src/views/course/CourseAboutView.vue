@@ -20,7 +20,7 @@ import PageShell from "../../components/ui/PageShell.vue";
 import { activityKeys, getLesson as getLocalLesson, type Lesson } from "../../data/lessons";
 import { useContentStore } from "../../stores/content";
 import { useProgressStore } from "../../stores/progress";
-import { speak } from "../../services/speech";
+import { speak, speakText, speakZh } from "../../services/speech";
 import { emojiCoverUrl } from "../../utils/emojiCover";
 import { Play } from "@lucide/vue";
 
@@ -52,10 +52,54 @@ const paragraphs = computed(() =>
     .filter(Boolean)
 );
 const story = computed(() => paragraphs.value[0] ?? "");
-/** “重点词汇：…”由下方词卡承担，避免同一份信息在页面上出现两遍 */
-const extras = computed(() =>
-  paragraphs.value.slice(1).filter((p) => !p.startsWith("重点词汇"))
-);
+
+/* ---------- 介绍文案的结构化排版（2026-11-14） ----------
+ * intro 的后续段落是老师写的分节文案：亲子口语/口语句型/句子/歌词（句子）/
+ * 拓展词汇 + 无前缀的绘本正文（歌谣分节）。此前整段塞进一个 <p>，"/"分隔
+ * 挤成一坨；现在解析成条目：英文一行 + 中文小字，逐条可点读。
+ * 条目形态两种：en（zh） 全角/半角括号对；en zh 无括号对（l13 拓展词汇，
+ * 分隔符是全角"｜"）。分隔符 "/" 或 "｜"。 */
+interface LinePair {
+  en: string;
+  zh: string;
+}
+function parseItem(raw: string): LinePair {
+  const t = raw.trim();
+  const paren = t.match(/^(.*?)\s*[（(]([^）)]*)[）)]\s*$/);
+  if (paren) return { en: paren[1].trim(), zh: paren[2].trim() };
+  const cjk = t.search(/[\u4e00-\u9fff]/);
+  if (cjk > 0) return { en: t.slice(0, cjk).trim(), zh: t.slice(cjk).trim() };
+  return { en: t, zh: "" };
+}
+function parseSection(p: string): LinePair[] {
+  return p
+    .replace(/^[^：]{1,12}[:：]\s*/, "")
+    .split(/\s*\/\s*|\s*｜\s*/)
+    .map(parseItem)
+    .filter((x) => x.en || x.zh);
+}
+interface AboutSection {
+  title: string;
+  items: LinePair[];
+}
+const aboutSections = computed<{ sections: AboutSection[]; verses: LinePair[][] }>(() => {
+  const sections: AboutSection[] = [];
+  const verses: LinePair[][] = [];
+  for (const p of paragraphs.value.slice(1)) {
+    const prefix = p.match(/^([^：]{1,12})[:：]/)?.[1] ?? "";
+    if (prefix.startsWith("重点词汇")) continue; // 词卡网格承担，不重复渲染
+    if (/^(亲子口语|口语句型)/.test(prefix)) {
+      sections.push({ title: "亲子口语", items: parseSection(p) });
+    } else if (/^(拓展词汇|扩展词汇)/.test(prefix)) {
+      sections.push({ title: "拓展词汇", items: parseSection(p) });
+    } else if (/^(句子|歌词|歌词句子|绘本句子)/.test(prefix)) {
+      sections.push({ title: "绘本句子", items: parseSection(p) });
+    } else {
+      verses.push(parseSection(p));
+    }
+  }
+  return { sections, verses };
+});
 
 /* ---------- 本课进度（复刻关卡列表口径：已玩过的玩法数 / 总玩法数） ---------- */
 const actKeys = computed(() => (lesson.value ? activityKeys(lesson.value) : []));
@@ -72,7 +116,7 @@ const stars = computed(() => (lesson.value ? progress.lessonStars(lesson.value.i
 /** 本课答错过的词（按错次数降序）：详情页用来提示“这几个词需要加强” */
 const weakWords = computed(() => {
   const l = lesson.value;
-  if (!l) return [] as { id: string; en: string; zh: string; image?: string | null; emoji: string; wrong: number }[];
+  if (!l) return [] as (Lesson["words"][number] & { wrong: number })[];
   const stats = progress.progress[l.id]?.words || {};
   return l.words
     .map((w) => ({ ...w, wrong: stats[w.id]?.wrong || 0 }))
@@ -95,6 +139,11 @@ function speakTitle() {
 }
 function speakWord(w: Lesson["words"][number]) {
   if (lesson.value) void speak(w.en, { lessonId: lesson.value.id, wordId: w.id });
+}
+/** 口语/句子/拓展词汇条目点读：先英文再中文释义（介绍文案没有预生成 mp3，走 TTS） */
+async function speakLine(it: { en: string; zh: string }) {
+  if (it.en) await speakText(it.en, { rate: 0.85 });
+  if (it.zh) await speakZh(it.zh, 1, { bypassMute: true });
 }
 
 const dateLabel = computed(() => {
@@ -140,11 +189,12 @@ function goBack() {
         <div v-if="stars" class="progress-stars">⭐ 已得 {{ stars }} 颗星</div>
       </section>
 
-      <!-- 需要加强的单词：只列本课答错过的词，点词卡可回关卡列表重练 -->
+      <!-- 需要加强的单词：只列本课答错过的词；点词卡先听发音（点读口径），
+           重练走底部「开始学习」——一处入口就够，孩子点词永远等于听词 -->
       <section v-if="weakWords.length" class="about-card">
         <h2 class="about-h">需要加强的单词<span class="about-count">{{ weakWords.length }}</span></h2>
         <div class="weak-list">
-          <button v-for="w in weakWords" :key="w.id" class="weak" @click="goLearn">
+          <button v-for="w in weakWords" :key="w.id" class="weak" :aria-label="`朗读 ${w.en}`" @click="speakWord(w)">
             <img v-if="w.image" class="weak-img" :src="w.image" :alt="w.en" loading="lazy" />
             <span v-else class="weak-img weak-emoji">{{ w.emoji }}</span>
             <span class="weak-text">
@@ -181,8 +231,40 @@ function goBack() {
         </div>
       </section>
 
-      <section v-if="extras.length" class="about-card">
-        <div v-for="(p, i) in extras" :key="i" class="about-para">{{ p }}</div>
+      <!-- 口语 / 句子 / 拓展词汇：解析成「英文 + 中文」条目，逐条点读 -->
+      <section v-for="sec in aboutSections.sections" :key="sec.title" class="about-card">
+        <h2 class="about-h">{{ sec.title }}<span class="about-count">{{ sec.items.length }}</span></h2>
+        <div class="line-list">
+          <button
+            v-for="(it, i) in sec.items"
+            :key="i"
+            type="button"
+            class="line"
+            :aria-label="`朗读 ${it.en}`"
+            @click="speakLine(it)"
+          >
+            <span class="line-en">{{ it.en }}</span>
+            <span v-if="it.zh" class="line-zh">{{ it.zh }}</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 绘本正文：歌谣分节排版——节与节留空，行内英文 + 中文小字，同样可点读 -->
+      <section v-if="aboutSections.verses.length" class="about-card">
+        <h2 class="about-h">绘本正文</h2>
+        <div v-for="(stanza, i) in aboutSections.verses" :key="i" class="verse">
+          <button
+            v-for="(it, j) in stanza"
+            :key="j"
+            type="button"
+            class="line"
+            :aria-label="`朗读 ${it.en}`"
+            @click="speakLine(it)"
+          >
+            <span class="line-en">{{ it.en }}</span>
+            <span v-if="it.zh" class="line-zh">{{ it.zh }}</span>
+          </button>
+        </div>
       </section>
 
       <!-- 主行动：进现在的关卡列表（#/course/:id） -->
@@ -288,27 +370,19 @@ function goBack() {
   font-size: var(--fs-small);
   line-height: 1.8;
 }
-.about-para {
-  margin: 0 0 8px;
-  color: var(--ink-soft);
-  font-size: var(--fs-small);
-  line-height: 1.8;
-}
-.about-para:last-child {
-  margin-bottom: 0;
-}
 
-/* 词卡：图 + 英 + 中，两列（宽屏自动多列） */
+/* 词卡：图 + 英 + 中。**卡宽由内容决定**（flex 流式换行）——固定 140px 列会把
+ * jellyfish 这类长词截断成省略号、中文挤压换行；短词也不必占满列宽。 */
 .word-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--gap-s);
 }
 .word {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
   padding: 0;
   border: none;
   background: transparent;
@@ -357,13 +431,63 @@ function goBack() {
   font-size: var(--fs-body);
   font-weight: var(--fw-mid);
   color: var(--ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .word-zh {
   font-size: var(--fs-small);
   color: var(--ink-faint);
+}
+
+/* 口语 / 句子 / 拓展词汇条目：英文一行 + 中文小字，整行可点读。
+ * 竖排卡列表（原文案是"/"分隔挤成一段，孩子和家长都没法逐句跟读） */
+.line-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
+}
+.line {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px var(--gap-s);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.line:active {
+  transform: scale(0.98);
+}
+.line-en {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-mid);
+  color: var(--ink);
+  line-height: 1.35;
+}
+.line-zh {
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+}
+/* 绘本正文：歌谣分节——节间留空，行不加边框（诗的观感，不是按钮堆） */
+.verse {
+  margin-top: var(--gap-s);
+}
+.verse:first-of-type {
+  margin-top: 0;
+}
+.verse .line {
+  width: 100%;
+  padding: 4px var(--gap-xs);
+  border: none;
+  border-radius: 8px;
+}
+.verse .line:active {
+  transform: none;
+  background: var(--brand-tint);
 }
 
 /* 进度卡：已完成 X/Y + 百分比 + 星数（口径与关卡列表一致） */
