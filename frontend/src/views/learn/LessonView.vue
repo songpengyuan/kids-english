@@ -200,6 +200,8 @@ const showLeaveConfirm = ref(false);
 function onBack() {
   if (isPlay.value) {
     showLeaveConfirm.value = true;
+    // 孩子大多不识字：弹窗一出现就把提示读出来（speakZh 自带音效开关与音乐门）
+    void speakZh("还没玩完哦，真的要离开吗？");
     return;
   }
   back();
@@ -443,8 +445,8 @@ const playStage = computed(() => {
         <p class="leave-title">还没玩完哦</p>
         <p class="leave-sub">真的要离开吗？答过的题会不见的</p>
         <div class="leave-actions">
-          <button class="leave-stay" data-haptic @click="close()">继续玩</button>
-          <button class="leave-go" data-haptic @click="showLeaveConfirm = false; back()">离开</button>
+          <button class="leave-stay" data-haptic @click="speakZh('继续玩'); close()">继续玩</button>
+          <button class="leave-go" data-haptic @click="speakZh('离开'); showLeaveConfirm = false; back()">离开</button>
         </div>
       </template>
     </AppDialog>

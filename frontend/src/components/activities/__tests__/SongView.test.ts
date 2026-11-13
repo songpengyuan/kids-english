@@ -22,7 +22,7 @@ vi.mock("../../../services/effects", () => ({
   sfxTap: vi.fn(),
 }));
 vi.mock("../../../services/haptics", () => ({ hapticTap: vi.fn() }));
-vi.mock("../../../services/speech", () => ({ speak: vi.fn(), speakText: vi.fn(), stopSpeaking: vi.fn() }));
+vi.mock("../../../services/speech", () => ({ speak: vi.fn(), speakText: vi.fn(), speakZh: vi.fn(), stopSpeaking: vi.fn() }));
 
 const l11 = lessons.find((l) => l.id === "l11")!;
 

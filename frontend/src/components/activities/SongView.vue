@@ -10,7 +10,7 @@ import SongStage from "./SongStage.vue";
 import VideoPlayer, { type VideoItem } from "../listen/VideoPlayer.vue";
 import SafeBottom from "../layout/SafeBottom.vue";
 import BaseButton from "../ui/BaseButton.vue";
-import { speak, speakText } from "../../services/speech";
+import { speak, speakText, speakZh } from "../../services/speech";
 import type { Lesson, Word } from "../../data/lessons";
 import { emojiCoverUrl } from "../../utils/emojiCover";
 import { trackCover } from "../../utils/trackCover";
@@ -166,6 +166,7 @@ const canFinish = computed(() => watched.value || (videoMissing.value && audioMi
 function setMode(m: "video" | "stage" | "audio") {
   if (m === mode.value) return;
   hapticTap();
+  speakZh(m === "audio" ? "音乐" : "视频");
   if (m === "video" && playing.value) pause();
   mode.value = m;
 }

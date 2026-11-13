@@ -14,12 +14,13 @@
  * - 底部动作：下一关/开宝箱/下一课（quest）、回菜单继续学（free），由父组件处理。
  */
 import { Star } from "@lucide/vue";
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import PathIcon from "../PathIcon.vue";
 import ChestReward from "../rewards/ChestReward.vue";
 import BaseButton from "../ui/BaseButton.vue";
+import { speakZh } from "../../services/speech";
 
-defineProps<{
+const props = defineProps<{
   mode: "quest" | "free";
   stars: number;
   streakJustHit: boolean;
@@ -60,6 +61,16 @@ function onQuestChestDone() {
     emit("openChest");
   }
 }
+
+/* 点读（2026-11-14）：结算页此前全程哑巴——孩子不识字，星星数/下一步去哪
+ * 都要用耳朵接收。结算出现时自动报星数；按钮点了念按钮名。
+ * 音乐门自动放行：结算页没有背景歌（玩法与歌曲互斥）。 */
+onMounted(() => {
+  void speakZh(`真棒，获得 ${props.stars} 颗星`);
+});
+function say(text: string) {
+  void speakZh(text);
+}
 /** 防止"下一关/下一课"按钮重复点击导致连续跳转 */
 const navClicked = ref(false);
 function nav(fn: () => void) {
@@ -96,16 +107,16 @@ function nav(fn: () => void) {
            曾经最后一关 nextLevel 为 null 就什么都不给，宝箱解锁了孩子也不知道；
            也曾只判"没有下一关"就显示"全部完成"——重玩最后一关但全课没通关也误报。 -->
       <div v-if="nextLevel" class="btn-row">
-        <BaseButton :disabled="navClicked" @click="nav(() => emit('goNextLevel'))">
+        <BaseButton :disabled="navClicked" @click="say('下一关'); nav(() => emit('goNextLevel'))">
           下一关：<PathIcon :name="nextLevel.actKey" /> {{ nextLevel.name }} →
         </BaseButton>
       </div>
       <div v-else-if="chestReady && !questChestClaimed" class="btn-row">
-        <BaseButton variant="green" @click="questChestOpen = true">🎁 课程宝箱已解锁，开宝箱</BaseButton>
+        <BaseButton variant="green" @click="say('开宝箱'); questChestOpen = true">🎁 课程宝箱已解锁，开宝箱</BaseButton>
         <ChestReward v-if="questChestOpen" @done="onQuestChestDone" />
       </div>
       <div v-else-if="lessonComplete && nextLesson" class="btn-row">
-        <BaseButton variant="green" :disabled="navClicked" @click="nav(() => emit('goNextLesson'))">
+        <BaseButton variant="green" :disabled="navClicked" @click="say('下一课'); nav(() => emit('goNextLesson'))">
           本课全部完成 🎉 下一课：{{ nextLesson.title }} →
         </BaseButton>
       </div>
@@ -131,7 +142,7 @@ function nav(fn: () => void) {
         <PathIcon name="flame" class="k-ico flame-ico" /> 今日目标达成！已连续 {{ streakDays }} 天
       </div>
       <div class="btn-row">
-        <BaseButton variant="green" @click="emit('toMenu')">继续学</BaseButton>
+        <BaseButton variant="green" @click="say('继续学'); emit('toMenu')">继续学</BaseButton>
       </div>
     </template>
   </div>

@@ -24,7 +24,7 @@ import { trackCover } from "../../utils/trackCover";
 import { usePlayerStore } from "../../stores/player";
 import { useLrc, activeLrcIndex, mapLrcToLyrics } from "../../composables/useLrc";
 import { hapticTap } from "../../services/haptics";
-import { speakZh } from "../../services/speech";
+import { speak, speakZh } from "../../services/speech";
 import {
   Play, Pause, ChevronDown, ListMusic, Music, Film, SkipBack, SkipForward,
   Repeat, Repeat1, Shuffle, BookOpen,
@@ -118,6 +118,8 @@ const MODE_TABS = [
   { value: "videos", label: "视频", icon: Film },
   { value: "clips", label: "词句", icon: BookOpen },
 ];
+/** 切形态时念形态名（孩子听到自己去哪；speakZh 自带音效开关与音乐门） */
+const MODE_LABEL: Record<PlayerMode, string> = { songs: "歌曲", videos: "视频", clips: "词句" };
 
 const activeLesson = ref<Lesson | null>(null);
 const mode = ref<PlayerMode>("songs");
@@ -155,6 +157,8 @@ function adoptCurrentSong() {
 
 function openCourse(l: Lesson) {
   hapticTap();
+  // 点读口径（关卡卡同款）：先念课名再进——孩子听到自己点的是哪门课
+  void speak(l.title, { ttsOnly: true });
   activeLesson.value = l;
   mode.value = "songs";
   songWasPlaying.value = false;
@@ -176,6 +180,7 @@ function closePlayer() {
 function switchMode(next: PlayerMode) {
   if (next === mode.value || !activeLesson.value) return;
   hapticTap();
+  speakZh(MODE_LABEL[next]);
   if (mode.value === "songs") {
     songWasPlaying.value = player.playing;
     if (player.playing) player.togglePlay();
