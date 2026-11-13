@@ -34,8 +34,11 @@ import SkIcon from "../../components/ui/SkIcon.vue";
 import ShellIcon from "../../components/ShellIcon.vue";
 import ParentGate from "../../components/gate/ParentGate.vue";
 import ThemeToggle from "../../components/layout/ThemeToggle.vue";
+import AddToHomeDialog from "../../components/ui/AddToHomeDialog.vue";
+import { useAddToHome } from "../../composables/useAddToHome";
 import {
   ChevronRight,
+  Download,
   Eye,
   Flame,
   Moon,
@@ -54,6 +57,25 @@ const route = useRoute();
 
 /** 家长门禁弹层：家长中心需答对算术题才放行 */
 const showGate = ref(false);
+
+/**
+ * 添加到桌面：家长从微信链接进来后最缺的一步。
+ * Android Chrome 有系统安装框，先调一次（成功就不弹说明）；
+ * iOS / 微信 / 桌面浏览器没有可用 API，直接落到分平台指引。
+ * 已作为独立应用运行时 installVisible=false，入口自然消失。
+ */
+const {
+  visible: installVisible,
+  platform: installPlatform,
+  promptInstall,
+} = useAddToHome();
+const showAddToHome = ref(false);
+
+async function onAddToHome() {
+  speakZh("添加到桌面");
+  if (await promptInstall()) return;
+  showAddToHome.value = true;
+}
 
 function openParent() {
   speakZh("家长中心");
@@ -217,6 +239,19 @@ function goTreasure() {
       <ThemeToggle />
     </div>
 
+    <!-- 添加到桌面：让 PWA 变成桌面上一个独立图标（家长最需要的"少一步"）。
+         已安装时整行隐藏；不给自动弹窗，避免打断孩子 -->
+    <EntryRow
+      v-if="installVisible"
+      title="添加到桌面"
+      desc="一点就开，像 App 一样"
+      @click="onAddToHome"
+    >
+      <template #icon>
+        <IconTile tone="green"><Download class="k-ico" /></IconTile>
+      </template>
+    </EntryRow>
+
     <!-- 家长中心：低调的文字入口，避免孩子误点（进去才有算术门） -->
     <button class="parent-entry" @click="openParent">
       <Shield class="k-ico" />
@@ -226,6 +261,13 @@ function goTreasure() {
 
   <!-- 家长门禁弹层：答对算术题解锁（防孩子误入家长区） -->
   <ParentGate v-if="showGate" @pass="onGatePass" @close="onGateClose" />
+
+  <!-- 添加到桌面：分平台步骤（iOS 无法程序化安装，只能讲清楚点哪里） -->
+  <AddToHomeDialog
+    v-if="showAddToHome"
+    :platform="installPlatform"
+    @close="showAddToHome = false"
+  />
 </template>
 
 <style scoped>
