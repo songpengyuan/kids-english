@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>自研小应用记 · 闲思杂记</title>
+    <meta name="description" content="为什么我放弃了市面上的英语启蒙 App，周末自己给五岁儿子写了一个：不打卡、不评分、不排名，儿歌词图亲子对话，一天十五分钟。" />
+    <meta name="keywords" content="英语启蒙,自研应用,极客爸爸,儿童英语App,不打卡" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-119-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+4e00, U+4e2d, U+65b0, U+65e5, U+6708-6709, U+70b9, U+7684, U+7f51, U+ff0c, U+ff0e, U+ff1a;
+      }
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-latin-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2191, U+2193, U+2212, U+FEFF;
+      }
+      :root {
+        --ink: #eef1fb;
+        --ink-soft: #aab4d4;
+        --ink-faint: #7b86a8;
+        --line: rgba(255, 255, 255, 0.1);
+        --night: #0b1026;
+        --night-2: #121a3d;
+        --card: rgba(22, 30, 64, 0.72);
+        --teal: #2dd4bf;
+        --teal-deep: #14b8a6;
+        --violet: #8b5cf6;
+        --amber: #fbbf24;
+        --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: "ZCOOL KuaiLe", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background: var(--night);
+        line-height: 1.9;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a { color: var(--teal); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 6px; }
+
+      .bg {
+        position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+        background:
+          radial-gradient(1.5px 1.5px at 22% 18%, rgba(255,255,255,0.9) 50%, transparent 51%),
+          radial-gradient(1px 1px at 68% 9%, rgba(255,255,255,0.75) 50%, transparent 51%),
+          radial-gradient(1.2px 1.2px at 84% 30%, rgba(255,255,255,0.6) 50%, transparent 51%),
+          radial-gradient(ellipse 70% 55% at 85% -10%, rgba(139, 92, 246, 0.22), transparent 70%),
+          radial-gradient(ellipse 60% 50% at 8% 0%, rgba(45, 212, 191, 0.16), transparent 70%),
+          linear-gradient(180deg, var(--night) 0%, var(--night-2) 52%, var(--night) 100%);
+      }
+
+      header {
+        position: sticky; top: 0; z-index: 10;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px clamp(20px, 5vw, 48px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(11, 16, 38, 0.72);
+        -webkit-backdrop-filter: saturate(1.4) blur(12px);
+        backdrop-filter: saturate(1.4) blur(12px);
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--ink); }
+      .brand:hover { text-decoration: none; color: var(--ink); }
+      .brand .mark {
+        width: 32px; height: 32px; flex: none;
+        display: grid; place-items: center; border-radius: 10px;
+        background: linear-gradient(135deg, var(--teal), var(--violet));
+        color: #0b1026;
+      }
+      .brand .mark svg { width: 17px; height: 17px; }
+      .back {
+        display: inline-flex; align-items: center; gap: 6px;
+        color: var(--ink-soft); font-size: 14px;
+        border: 1px solid var(--line); border-radius: 12px; padding: 6px 14px;
+        transition: color .18s, border-color .18s;
+      }
+      .back:hover { color: var(--teal); border-color: var(--teal); text-decoration: none; }
+      .back svg { width: 14px; height: 14px; }
+
+      article {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 48px) 60px;
+      }
+      .article-card {
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        border-radius: 18px;
+        padding: clamp(28px, 5vw, 48px);
+        box-shadow: var(--shadow-card);
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+      }
+      .article-card .date {
+        font-size: 13px; color: var(--ink-faint); letter-spacing: 1px;
+      }
+      .article-card h1 {
+        margin-top: 10px; font-size: clamp(26px, 5vw, 36px); line-height: 1.3;
+        background: linear-gradient(120deg, #ffffff 15%, var(--teal) 55%, var(--violet) 95%);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; color: transparent;
+      }
+      .article-card .meta {
+        margin-top: 14px; font-size: 14px; color: var(--ink-soft);
+        display: flex; gap: 14px; flex-wrap: wrap;
+      }
+      .article-card .meta span {
+        display: inline-flex; align-items: center; gap: 5px;
+        border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px;
+        font-size: 12px;
+      }
+      .article-card hr {
+        margin: 28px 0; border: 0; border-top: 1px dashed var(--line);
+      }
+      .article-card p {
+        margin-bottom: 18px; color: var(--ink-soft); font-size: 16px;
+      }
+      .article-card p strong { color: var(--ink); }
+      .article-card h2 {
+        margin: 34px 0 12px; font-size: 20px; line-height: 1.4;
+        color: var(--ink); letter-spacing: 1px;
+        display: flex; align-items: baseline; gap: 9px;
+      }
+      .article-card h2::before { content: "✦"; color: var(--amber); font-size: 13px; }
+      .note {
+        margin: 26px 0 8px;
+        border: 1.5px dashed rgba(45, 212, 191, 0.4);
+        background: rgba(45, 212, 191, 0.08);
+        border-radius: 14px;
+        padding: 15px 18px;
+        color: var(--ink); font-size: 15px;
+      }
+      .note::before { content: "☞ "; color: var(--teal); }
+      .rule-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px 0 8px; }
+      .rule {
+        border: 1.5px solid rgba(45, 212, 191, 0.35); border-radius: 14px;
+        padding: 16px 14px 12px; background: rgba(45, 212, 191, 0.06);
+      }
+      .rule .t { font-size: 16px; color: var(--ink); }
+      .rule .d { font-size: 13px; color: var(--ink-soft); margin-top: 8px; line-height: 1.7; }
+      .karaoke-svg { display: block; margin: 26px auto 8px; max-width: 100%; height: auto; border-radius: 14px; }
+      .related {
+        margin-top: 28px; padding-top: 16px;
+        border-top: 1px dashed var(--line);
+        font-size: 14px; color: var(--ink-faint);
+        display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+      }
+      .related a {
+        color: var(--ink-soft);
+        border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px;
+        transition: color .18s, border-color .18s;
+      }
+      .related a:hover { color: var(--teal); border-color: var(--teal); text-decoration: none; }
+
+      footer {
+        border-top: 1px solid var(--line);
+        background: rgba(8, 12, 28, 0.6);
+        padding: 24px clamp(20px, 5vw, 48px) 32px;
+        text-align: center; font-size: 13px; color: var(--ink-faint);
+      }
+      footer a { color: var(--ink-faint); }
+      footer a:hover { color: var(--teal); }
+
+      @media (max-width: 560px) {
+        .rule-cards { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+
+    <header>
+      <a class="brand" href="/">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M9.9 7.2 C13.5 7.2 15.6 10 15.6 13.5 C15.6 17.3 13 20 9.8 20 C6.6 20 4.2 17.3 4.2 13.6 C4.2 10 6.3 7.2 9.9 7.2 Z" fill="#0d1330" />
+            <path d="M5 17.6 L2.6 20 L6.2 18.9 Z" fill="#0d1330" />
+            <path d="M14.4 7.6 C18.4 5.4 23.2 6.2 23.6 9.2 C23.9 11.5 21.8 13.4 17.9 14 L14.1 12.5 Z" fill="#FFB347" />
+            <circle cx="12.4" cy="9.7" r=".8" fill="#FFFFFF" />
+          </svg>
+        </span>
+        闲思杂记
+      </a>
+      <a class="back" href="/">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6" /></svg>
+        回主页
+      </a>
+    </header>
+
+    <article>
+      <div class="article-card">
+        <div class="date">2026 年 11 月 · 第 8 篇</div>
+        <h1>自研小应用记</h1>
+        <div class="meta">
+          <span>英语启蒙</span>
+          <span>自研工具</span>
+        </div>
+        <hr />
+<p>《英语启蒙踩坑记录》的结尾提过一笔：踩完一圈坑，我干了一件极客爸爸才干的事——自己给他写了个英语小应用。留言里问的人不少，这篇把账摊开讲：为什么写、写了什么、他怎么用脚投票。</p>
+
+<h2>市面上的 App，试一圈的账单</h2>
+<p>我下载过小二十个启蒙应用，付费的、免费的都试了。不是人家的产品不好，是对不上我们家的账：</p>
+<p><strong>打卡体系。</strong>连签七天送贴纸，断签焦虑比孩子的学习兴趣长得都快。断了一天，孩子还没什么，我先自责了——这焦虑是给家长设计的，凭什么让五岁的人陪跑。</p>
+<p><strong>排行榜和"超过了多少小朋友"。</strong>踩坑篇第五坑讲过，比较是毒。产品里掺一滴，整个启蒙的味道就馊了。</p>
+<p><strong>广告和会员弹窗。</strong>免费的经典儿歌，唱到一半弹出充值页，五岁孩子点得比我还快，账单比儿歌先教会我一个词：subscribe。</p>
+<p><strong>内容不对路。</strong>背单词表的、刷题的、从 abc 默写开始的，都是把小学的事压到五岁。踩坑篇第一坑说过：五岁孩子的学习不叫学习，叫玩。</p>
+
+<h2>周末敲出来的第一版</h2>
+<p>我是写代码的。某个被娃嫌弃"这个 App 不好玩"的周日晚上，我开了个新工程。第一个周末的版本糙得很：三个页面——儿歌、词图、亲子对话；没有登录，没有后端，没有统计埋点，数据就在本地。</p>
+<p>他第一天的实测：公交车词图连点了四十多分钟，每点一张蹦一个词、蹦一个声音，笑得像在拆盲盒。那个晚上我确认了一件事：<strong>给自家娃做产品，是全世界需求最明确的活儿</strong>——用户每天在工位（餐桌）上随时可访问，反馈零延迟，拒绝零成本。</p>
+
+<h2>三条铁律，写进代码前先写在这里</h2>
+<div class="rule-cards">
+  <div class="rule">
+    <div class="t">不打卡</div>
+    <div class="d">没有连续签到，没有断签惩罚。学英语是过日子，不是还房贷。哪天玩疯了没开，天塌不下来。</div>
+  </div>
+  <div class="rule">
+    <div class="t">不评分</div>
+    <div class="d">发音只有"示范"，没有"对错"。他把 banana 说成"巴那那"，应用照单全收，然后放一遍示范。勇气比精度金贵。</div>
+  </div>
+  <div class="rule">
+    <div class="t">不排名</div>
+    <div class="d">没有别人的进度可看，没有"击败了多少小朋友"。他唯一的对手是昨天的自己，而昨天的自己从不说话。</div>
+  </div>
+</div>
+
+<h2>他教会我的事</h2>
+<p>第一版之后的所有迭代，需求来源全是同一个五岁用户。挑三条讲：</p>
+<p><strong>逐行卡拉OK。</strong>他唱公交车那首，"wah wah wah" 必须夸张地哭给我看——唱到哪行他得知道啊。于是歌词做成了逐行高亮，唱到哪行亮哪行，他抱着平板当指挥家，指挥到入戏，眼泪都是真的。</p>
+
+<svg class="karaoke-svg" viewBox="0 0 440 132" width="440" height="132" role="img" aria-label="歌词逐行高亮示意：三行歌词，当前行点亮">
+  <rect x="1" y="1" width="438" height="130" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.14)"/>
+  <rect x="36" y="26" width="200" height="14" rx="7" fill="rgba(255,255,255,0.16)"/>
+  <rect x="36" y="59" width="330" height="18" rx="9" fill="url(#kg)" stroke="rgba(45,212,191,0.55)"/>
+  <text x="52" y="73" font-size="13" fill="#0b1026" font-family="-apple-system,'PingFang SC',sans-serif" font-weight="600">wah wah wah, so loud on the bus ♪</text>
+  <circle cx="392" cy="68" r="6" fill="#fbbf24"/>
+  <rect x="36" y="94" width="150" height="14" rx="7" fill="rgba(255,255,255,0.16)"/>
+  <defs>
+    <linearGradient id="kg" x1="36" y1="59" x2="366" y2="77" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2dd4bf"/><stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<p><strong>循环磨耳朵。</strong>睡前他点名要晚安大猩猩，连点了一个星期。于是做了循环播放，他自己排节目单：晚安大猩猩、公交车、再来一遍晚安大猩猩。曲目表由五岁总导演定，我只负责上线。</p>
+<p><strong>看到的都能点出声音。</strong>有一回他指着页面上一只小动物问我"这个呢"，我一时语塞——点不了。后来立了条规矩进需求库：他眼睛看得到的，点下去都要有声音。规矩现在还挂着，验收走查拿它当标准。</p>
+
+<div class="note"><strong>给孩子做产品的验收标准只有一条：他会不会主动打开。</strong>DAU、留存、时长，都不如他踮着脚够平板这个动作诚实。</div>
+
+<p>现在的节奏是一天十五分钟上下，大部分时候是他拽着我要"玩那个公交车"，玩完还要跟小鸟（应用里那个童声）道晚安。需求池的画风大概是这样：唯一评审五岁，需求变更零成本，排期看心情，ROI 用笑声结算。</p>
+<p>有人问后续要不要给别的小朋友用。先攒着吧，等它把我们家的日子陪好了，再说别人的日子。</p>
+
+<div class="related">
+  相关笔记：
+  <a href="english-pitfalls.html">英语启蒙踩坑记录</a>
+  <a href="parent-child-talk.html">亲子开口十句</a>
+  <a href="english-roadmap.html">英语启蒙路线图</a>
+</div>
+<p style="color: var(--ink-faint); font-size: 14px; margin-top: 24px;">—— 技术债欠着没关系，童年债一笔都不能欠。</p>
+      </div>
+    </article>
+
+    <footer>
+      <div>闲思杂记 · zelab.cn · 个人非经营性站点</div>
+      <div style="margin-top: 6px;">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">豫ICP备2026054893号</a>
+      </div>
+    </footer>
+  </body>
+</html>

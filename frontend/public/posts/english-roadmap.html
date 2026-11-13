@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>英语启蒙路线图 · 闲思杂记</title>
+    <meta name="description" content="五岁孩子的英语启蒙路线图：儿歌磨耳朵、词图点读、亲子对话三阶段。每阶段的目标、材料、家长动作与常见坑，附路线图。" />
+    <meta name="keywords" content="英语启蒙路线,儿童英语启蒙,五岁英语,磨耳朵,亲子对话,词图" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-119-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+4e00, U+4e2d, U+65b0, U+65e5, U+6708-6709, U+70b9, U+7684, U+7f51, U+ff0c, U+ff0e, U+ff1a;
+      }
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-latin-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2191, U+2193, U+2212, U+FEFF;
+      }
+      :root {
+        --ink: #eef1fb;
+        --ink-soft: #aab4d4;
+        --ink-faint: #7b86a8;
+        --line: rgba(255, 255, 255, 0.1);
+        --night: #0b1026;
+        --night-2: #121a3d;
+        --card: rgba(22, 30, 64, 0.72);
+        --teal: #2dd4bf;
+        --teal-deep: #14b8a6;
+        --violet: #8b5cf6;
+        --amber: #fbbf24;
+        --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: "ZCOOL KuaiLe", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background: var(--night);
+        line-height: 1.9;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a { color: var(--teal); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 6px; }
+
+      .bg {
+        position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+        background:
+          radial-gradient(1.5px 1.5px at 22% 18%, rgba(255,255,255,0.9) 50%, transparent 51%),
+          radial-gradient(1px 1px at 68% 9%, rgba(255,255,255,0.75) 50%, transparent 51%),
+          radial-gradient(1.2px 1.2px at 84% 30%, rgba(255,255,255,0.6) 50%, transparent 51%),
+          radial-gradient(ellipse 70% 55% at 85% -10%, rgba(139, 92, 246, 0.22), transparent 70%),
+          radial-gradient(ellipse 60% 50% at 8% 0%, rgba(45, 212, 191, 0.16), transparent 70%),
+          linear-gradient(180deg, var(--night) 0%, var(--night-2) 52%, var(--night) 100%);
+      }
+
+      header {
+        position: sticky; top: 0; z-index: 10;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px clamp(20px, 5vw, 48px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(11, 16, 38, 0.72);
+        -webkit-backdrop-filter: saturate(1.4) blur(12px);
+        backdrop-filter: saturate(1.4) blur(12px);
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--ink); }
+      .brand:hover { text-decoration: none; color: var(--ink); }
+      .brand .mark {
+        width: 32px; height: 32px; flex: none;
+        display: grid; place-items: center; border-radius: 10px;
+        background: linear-gradient(135deg, var(--teal), var(--violet));
+        color: #0b1026;
+      }
+      .brand .mark svg { width: 17px; height: 17px; }
+      .back {
+        display: inline-flex; align-items: center; gap: 6px;
+        color: var(--ink-soft); font-size: 14px;
+        border: 1px solid var(--line); border-radius: 12px; padding: 6px 14px;
+        transition: color .18s, border-color .18s;
+      }
+      .back:hover { color: var(--teal); border-color: var(--teal); text-decoration: none; }
+      .back svg { width: 14px; height: 14px; }
+
+      article {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 48px) 60px;
+      }
+      .article-card {
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        border-radius: 18px;
+        padding: clamp(28px, 5vw, 48px);
+        box-shadow: var(--shadow-card);
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+      }
+      .article-card .date {
+        font-size: 13px; color: var(--ink-faint); letter-spacing: 1px;
+      }
+      .article-card h1 {
+        margin-top: 10px; font-size: clamp(26px, 5vw, 36px); line-height: 1.3;
+        background: linear-gradient(120deg, #ffffff 15%, var(--teal) 55%, var(--violet) 95%);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; color: transparent;
+      }
+      .article-card .meta {
+        margin-top: 14px; font-size: 14px; color: var(--ink-soft);
+        display: flex; gap: 14px; flex-wrap: wrap;
+      }
+      .article-card .meta span {
+        display: inline-flex; align-items: center; gap: 5px;
+        border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px;
+        font-size: 12px;
+      }
+      .article-card hr {
+        margin: 28px 0; border: 0; border-top: 1px dashed var(--line);
+      }
+      .article-card p {
+        margin-bottom: 18px; color: var(--ink-soft); font-size: 16px;
+      }
+      .article-card p strong { color: var(--ink); }
+      .article-card h2 {
+        margin: 34px 0 12px; font-size: 20px; line-height: 1.4;
+        color: var(--ink); letter-spacing: 1px;
+        display: flex; align-items: baseline; gap: 9px;
+      }
+      .article-card h2::before { content: "✦"; color: var(--amber); font-size: 13px; }
+      .article-card h2 small { font-size: 13px; color: var(--ink-faint); letter-spacing: 0; font-weight: 400; }
+      .note {
+        margin: 26px 0 8px;
+        border: 1.5px dashed rgba(45, 212, 191, 0.4);
+        background: rgba(45, 212, 191, 0.08);
+        border-radius: 14px;
+        padding: 15px 18px;
+        color: var(--ink); font-size: 15px;
+      }
+      .note::before { content: "☞ "; color: var(--teal); }
+      .stage-line { margin: 20px 0 4px; padding: 12px 14px; }
+      .stage-line p { font-size: 14px; margin-bottom: 10px; line-height: 1.8; }
+      .stage-line p:last-child { margin-bottom: 2px; }
+      .stage-line strong { color: var(--ink); }
+      .stage-line .pit strong { color: #fb7185; }
+      .stage-line.teal { border-left: 3px solid rgba(45, 212, 191, 0.6); background: rgba(45, 212, 191, 0.06); border-radius: 0 12px 12px 0; }
+      .stage-line.violet { border-left: 3px solid rgba(139, 92, 246, 0.6); background: rgba(139, 92, 246, 0.07); border-radius: 0 12px 12px 0; }
+      .stage-line.amber { border-left: 3px solid rgba(251, 191, 36, 0.55); background: rgba(251, 191, 36, 0.06); border-radius: 0 12px 12px 0; }
+      .roadmap-svg { display: block; margin: 8px auto 10px; max-width: 100%; height: auto; }
+      .related {
+        margin-top: 28px; padding-top: 16px;
+        border-top: 1px dashed var(--line);
+        font-size: 14px; color: var(--ink-faint);
+        display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+      }
+      .related a {
+        color: var(--ink-soft);
+        border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px;
+        transition: color .18s, border-color .18s;
+      }
+      .related a:hover { color: var(--teal); border-color: var(--teal); text-decoration: none; }
+
+      footer {
+        border-top: 1px solid var(--line);
+        background: rgba(8, 12, 28, 0.6);
+        padding: 24px clamp(20px, 5vw, 48px) 32px;
+        text-align: center; font-size: 13px; color: var(--ink-faint);
+      }
+      footer a { color: var(--ink-faint); }
+      footer a:hover { color: var(--teal); }
+    </style>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+
+    <header>
+      <a class="brand" href="/">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M9.9 7.2 C13.5 7.2 15.6 10 15.6 13.5 C15.6 17.3 13 20 9.8 20 C6.6 20 4.2 17.3 4.2 13.6 C4.2 10 6.3 7.2 9.9 7.2 Z" fill="#0d1330" />
+            <path d="M5 17.6 L2.6 20 L6.2 18.9 Z" fill="#0d1330" />
+            <path d="M14.4 7.6 C18.4 5.4 23.2 6.2 23.6 9.2 C23.9 11.5 21.8 13.4 17.9 14 L14.1 12.5 Z" fill="#FFB347" />
+            <circle cx="12.4" cy="9.7" r=".8" fill="#FFFFFF" />
+          </svg>
+        </span>
+        闲思杂记
+      </a>
+      <a class="back" href="/">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6" /></svg>
+        回主页
+      </a>
+    </header>
+
+    <article>
+      <div class="article-card">
+        <div class="date">2026 年 11 月 · 第 9 篇</div>
+        <h1>英语启蒙路线图</h1>
+        <div class="meta">
+          <span>英语启蒙</span>
+          <span>路线规划</span>
+        </div>
+        <hr />
+<p>踩坑篇记的是学费，这篇记的是路线。先说结论：五岁起步不算晚，晚的是一上来就背单词表。我们家的路线走通之后回头看，其实就三段——<strong>儿歌磨耳朵 → 词图对上形 → 亲子对话敢开口</strong>。先把图放这儿，后面逐段拆。</p>
+
+<svg class="roadmap-svg" viewBox="0 0 640 148" width="640" height="148" role="img" aria-label="英语启蒙路线图：儿歌磨耳朵、词图点读、亲子对话三阶段">
+  <defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="rgba(170,180,212,0.8)"/>
+    </marker>
+  </defs>
+  <text x="104" y="18" font-size="12" fill="#2dd4bf" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif">阶段一</text>
+  <text x="320" y="18" font-size="12" fill="#a78bfa" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif">阶段二</text>
+  <text x="536" y="18" font-size="12" fill="#fbbf24" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif">阶段三</text>
+  <rect x="16" y="26" width="176" height="64" rx="14" fill="rgba(45,212,191,0.10)" stroke="rgba(45,212,191,0.55)"/>
+  <text x="104" y="54" font-size="16" fill="#eef1fb" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif" font-weight="600">儿歌磨耳朵</text>
+  <text x="104" y="76" font-size="12" fill="#aab4d4" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif">听得懂 · 好玩</text>
+  <rect x="232" y="26" width="176" height="64" rx="14" fill="rgba(139,92,246,0.10)" stroke="rgba(139,92,246,0.5)"/>
+  <text x="320" y="54" font-size="16" fill="#eef1fb" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif" font-weight="600">词图点读</text>
+  <text x="320" y="76" font-size="12" fill="#aab4d4" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif">词对上形 · 不翻译</text>
+  <rect x="448" y="26" width="176" height="64" rx="14" fill="rgba(251,191,36,0.08)" stroke="rgba(251,191,36,0.5)"/>
+  <text x="536" y="54" font-size="16" fill="#eef1fb" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif" font-weight="600">亲子对话</text>
+  <text x="536" y="76" font-size="12" fill="#aab4d4" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif">场景句 · 敢开口</text>
+  <line x1="196" y1="58" x2="228" y2="58" stroke="rgba(170,180,212,0.8)" stroke-width="2" marker-end="url(#arw)"/>
+  <line x1="412" y1="58" x2="444" y2="58" stroke="rgba(170,180,212,0.8)" stroke-width="2" marker-end="url(#arw)"/>
+  <line x1="104" y1="106" x2="536" y2="106" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-dasharray="3 6"/>
+  <circle cx="104" cy="106" r="4" fill="#2dd4bf"/><circle cx="320" cy="106" r="4" fill="#8b5cf6"/><circle cx="536" cy="106" r="4" fill="#fbbf24"/>
+  <text x="104" y="132" font-size="12" fill="#7b86a8" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif">攒理解的音</text>
+  <text x="320" y="132" font-size="12" fill="#7b86a8" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif">攒理解的词</text>
+  <text x="536" y="132" font-size="12" fill="#7b86a8" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif">攒开口的勇气</text>
+</svg>
+
+<h2>阶段一：儿歌磨耳朵 <small>约 1-2 个月，慢就是快</small></h2>
+<div class="stage-line teal">
+  <p><strong>目标：</strong>建立"英语 = 好玩"的第一印象，攒下第一批听得懂的音。这个阶段不求输出，一个词不说都正常，沉默期是输入在攒利息。</p>
+  <p><strong>材料：</strong>配动作的儿歌（公交车、手指歌这种）、反复读的英文绘本。别贪多，三五首循环到唱烂，比三十首各听一遍值钱。</p>
+  <p><strong>家长做什么：</strong>当队友，别当观众。动作跟你一起做，鬼哭狼嚎一起嚎——儿歌从"播放内容"变成"我们的游戏"，语言在里面搭便车。</p>
+  <p class="pit"><strong>常见坑：</strong>考问"这个词什么意思"（考问是兴趣的第一杀手）；拿动画当输入（裸听白磨，账见磨耳朵篇）。</p>
+</div>
+
+<h2>阶段二：词图点读 <small>听得懂的音，对上看得见的形</small></h2>
+<div class="stage-line violet">
+  <p><strong>目标：</strong>把阶段一攒下的"音"和"看得见的图"绑在一起，攒一两百个理解词汇。听到 bus 能拍公交车图，就算绑成功。</p>
+  <p><strong>材料：</strong>词图卡、点读卡；唱烂的儿歌回头单听音频，看他能不能认出老朋友。</p>
+  <p><strong>家长做什么：</strong>只示范，不考试。指着图直接说英文，不说"苹果的英文是 apple"——图和词直接焊死，比走翻译快。词图天天见两分钟，胜过一周一次一小时。</p>
+  <p class="pit"><strong>常见坑：</strong>中文翻译当主力。"英文 → 中文 → 意思"三手换乘，速度和兴趣全掉在换乘站。</p>
+</div>
+
+<h2>阶段三：亲子对话 <small>前两段的积累，在这段开始往外冒</small></h2>
+<div class="stage-line amber">
+  <p><strong>目标：</strong>场景句敢开口，单词敢往外蹦。输出不是教出来的，是攒够了自然漏出来的。</p>
+  <p><strong>材料：</strong>日常场景句（起床洗手吃饭那十句就够用很久），他喜欢的动画片段拿来玩角色扮演。</p>
+  <p><strong>家长做什么：</strong>接住一切输出。他说 banana，你接 "Yes! Banana is yummy!"——把他的每一次开口都变成一次愉快的对话，而不是一场纠音测验。</p>
+  <p class="pit"><strong>常见坑：</strong>逼复述、当众表演给亲戚看。输出是气球，越按越飞不起来。</p>
+</div>
+
+<div class="note"><strong>三个阶段不是三张课程表，是三种状态，可以来回倒。</strong>判断依据不是年龄，是他现在的样子：听得懂就往词图走，词图熟了就往对话走，哪天卡住了，退回上一段磨一磨，不丢人。他的花期他说了算。</div>
+
+<p>我自己给他做的那个小应用，内容也是照这条线排的：儿歌、词图、亲子对话，一课一课往上叠。倒不是这路线多高级，而是自家孩子走通了一遍之后发现，顺序几乎不用改。</p>
+
+<div class="related">
+  相关笔记：
+  <a href="english-pitfalls.html">英语启蒙踩坑记录</a>
+  <a href="listening-notes.html">磨耳朵实操笔记</a>
+  <a href="parent-child-talk.html">亲子开口十句</a>
+</div>
+<p style="color: var(--ink-faint); font-size: 14px; margin-top: 24px;">—— 路线图贴冰箱上，进度条挂在他脸上：全是笑出来的。</p>
+      </div>
+    </article>
+
+    <footer>
+      <div>闲思杂记 · zelab.cn · 个人非经营性站点</div>
+      <div style="margin-top: 6px;">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">豫ICP备2026054893号</a>
+      </div>
+    </footer>
+  </body>
+</html>

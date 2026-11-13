@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>亲子开口十句 · 闲思杂记</title>
+    <meta name="description" content="不敢跟孩子说英语？十句日常场景句：起床穿衣吃饭洗澡睡觉，每句绑一个固定场景，说了就有用，孩子自己会接。" />
+    <meta name="keywords" content="亲子英语,日常英语对话,英语启蒙,场景句,五岁英语" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-119-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+4e00, U+4e2d, U+65b0, U+65e5, U+6708-6709, U+70b9, U+7684, U+7f51, U+ff0c, U+ff0e, U+ff1a;
+      }
+      @font-face {
+        font-family: 'ZCOOL KuaiLe';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/kuaile/zcool-kuaile-latin-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2191, U+2193, U+2212, U+FEFF;
+      }
+      :root {
+        --ink: #eef1fb;
+        --ink-soft: #aab4d4;
+        --ink-faint: #7b86a8;
+        --line: rgba(255, 255, 255, 0.1);
+        --night: #0b1026;
+        --night-2: #121a3d;
+        --card: rgba(22, 30, 64, 0.72);
+        --teal: #2dd4bf;
+        --teal-deep: #14b8a6;
+        --violet: #8b5cf6;
+        --amber: #fbbf24;
+        --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: "ZCOOL KuaiLe", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background: var(--night);
+        line-height: 1.9;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a { color: var(--teal); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 6px; }
+
+      .bg {
+        position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+        background:
+          radial-gradient(1.5px 1.5px at 22% 18%, rgba(255,255,255,0.9) 50%, transparent 51%),
+          radial-gradient(1px 1px at 68% 9%, rgba(255,255,255,0.75) 50%, transparent 51%),
+          radial-gradient(1.2px 1.2px at 84% 30%, rgba(255,255,255,0.6) 50%, transparent 51%),
+          radial-gradient(ellipse 70% 55% at 85% -10%, rgba(139, 92, 246, 0.22), transparent 70%),
+          radial-gradient(ellipse 60% 50% at 8% 0%, rgba(45, 212, 191, 0.16), transparent 70%),
+          linear-gradient(180deg, var(--night) 0%, var(--night-2) 52%, var(--night) 100%);
+      }
+
+      header {
+        position: sticky; top: 0; z-index: 10;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px clamp(20px, 5vw, 48px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(11, 16, 38, 0.72);
+        -webkit-backdrop-filter: saturate(1.4) blur(12px);
+        backdrop-filter: saturate(1.4) blur(12px);
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--ink); }
+      .brand:hover { text-decoration: none; color: var(--ink); }
+      .brand .mark {
+        width: 32px; height: 32px; flex: none;
+        display: grid; place-items: center; border-radius: 10px;
+        background: linear-gradient(135deg, var(--teal), var(--violet));
+        color: #0b1026;
+      }
+      .brand .mark svg { width: 17px; height: 17px; }
+      .back {
+        display: inline-flex; align-items: center; gap: 6px;
+        color: var(--ink-soft); font-size: 14px;
+        border: 1px solid var(--line); border-radius: 12px; padding: 6px 14px;
+        transition: color .18s, border-color .18s;
+      }
+      .back:hover { color: var(--teal); border-color: var(--teal); text-decoration: none; }
+      .back svg { width: 14px; height: 14px; }
+
+      article {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 48px) 60px;
+      }
+      .article-card {
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        border-radius: 18px;
+        padding: clamp(28px, 5vw, 48px);
+        box-shadow: var(--shadow-card);
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+      }
+      .article-card .date {
+        font-size: 13px; color: var(--ink-faint); letter-spacing: 1px;
+      }
+      .article-card h1 {
+        margin-top: 10px; font-size: clamp(26px, 5vw, 36px); line-height: 1.3;
+        background: linear-gradient(120deg, #ffffff 15%, var(--teal) 55%, var(--violet) 95%);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; color: transparent;
+      }
+      .article-card .meta {
+        margin-top: 14px; font-size: 14px; color: var(--ink-soft);
+        display: flex; gap: 14px; flex-wrap: wrap;
+      }
+      .article-card .meta span {
+        display: inline-flex; align-items: center; gap: 5px;
+        border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px;
+        font-size: 12px;
+      }
+      .article-card hr {
+        margin: 28px 0; border: 0; border-top: 1px dashed var(--line);
+      }
+      .article-card p {
+        margin-bottom: 18px; color: var(--ink-soft); font-size: 16px;
+      }
+      .article-card p strong { color: var(--ink); }
+      .article-card h2 {
+        margin: 34px 0 12px; font-size: 20px; line-height: 1.4;
+        color: var(--ink); letter-spacing: 1px;
+        display: flex; align-items: baseline; gap: 9px;
+      }
+      .article-card h2::before { content: "✦"; color: var(--amber); font-size: 13px; }
+      .note {
+        margin: 26px 0 8px;
+        border: 1.5px dashed rgba(45, 212, 191, 0.4);
+        background: rgba(45, 212, 191, 0.08);
+        border-radius: 14px;
+        padding: 15px 18px;
+        color: var(--ink); font-size: 15px;
+      }
+      .note::before { content: "☞ "; color: var(--teal); }
+      .scene-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 22px 0 8px; }
+      .scene {
+        border: 1.5px solid var(--line); border-radius: 14px;
+        padding: 14px 16px 12px; background: rgba(255, 255, 255, 0.03);
+        transition: border-color .18s;
+      }
+      .scene:hover { border-color: rgba(45, 212, 191, 0.45); }
+      .scene .tag { font-size: 12px; color: var(--amber); letter-spacing: 1px; }
+      .scene .en { font-size: 17px; color: var(--ink); margin-top: 5px; line-height: 1.5; }
+      .scene .zh { font-size: 13px; color: var(--ink-soft); margin-top: 7px; line-height: 1.7; }
+      .related {
+        margin-top: 28px; padding-top: 16px;
+        border-top: 1px dashed var(--line);
+        font-size: 14px; color: var(--ink-faint);
+        display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+      }
+      .related a {
+        color: var(--ink-soft);
+        border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px;
+        transition: color .18s, border-color .18s;
+      }
+      .related a:hover { color: var(--teal); border-color: var(--teal); text-decoration: none; }
+
+      footer {
+        border-top: 1px solid var(--line);
+        background: rgba(8, 12, 28, 0.6);
+        padding: 24px clamp(20px, 5vw, 48px) 32px;
+        text-align: center; font-size: 13px; color: var(--ink-faint);
+      }
+      footer a { color: var(--ink-faint); }
+      footer a:hover { color: var(--teal); }
+
+      @media (max-width: 560px) {
+        .scene-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+
+    <header>
+      <a class="brand" href="/">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M9.9 7.2 C13.5 7.2 15.6 10 15.6 13.5 C15.6 17.3 13 20 9.8 20 C6.6 20 4.2 17.3 4.2 13.6 C4.2 10 6.3 7.2 9.9 7.2 Z" fill="#0d1330" />
+            <path d="M5 17.6 L2.6 20 L6.2 18.9 Z" fill="#0d1330" />
+            <path d="M14.4 7.6 C18.4 5.4 23.2 6.2 23.6 9.2 C23.9 11.5 21.8 13.4 17.9 14 L14.1 12.5 Z" fill="#FFB347" />
+            <circle cx="12.4" cy="9.7" r=".8" fill="#FFFFFF" />
+          </svg>
+        </span>
+        闲思杂记
+      </a>
+      <a class="back" href="/">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6" /></svg>
+        回主页
+      </a>
+    </header>
+
+    <article>
+      <div class="article-card">
+        <div class="date">2026 年 11 月 · 第 7 篇</div>
+        <h1>亲子开口十句</h1>
+        <div class="meta">
+          <span>英语启蒙</span>
+          <span>日常对话</span>
+        </div>
+        <hr />
+<p>家里英语启蒙最大的瓶颈，往往不是孩子，是家长的嘴。我就是典型：读写还行，一开口先心里打草稿，怕口音带沟里，怕语法说错，怕"教坏了再改难"。憋了半年，孩子的输入全靠儿歌和动画，日常对话零记录。</p>
+<p>破局点特别朴素：<strong>别把"跟孩子说英语"当考试，当成场景配招。</strong>一句话绑死一个场景，说了就有用——有用，孩子就懂；孩子懂了，你就不慌。下面这十句是我们家跑过三个月、存活下来的，按日常动线排的。</p>
+
+<div class="scene-grid">
+  <div class="scene">
+    <div class="tag">🌅 起床</div>
+    <div class="en">Time to wake up!</div>
+    <div class="zh">配拉开窗帘的动作一起说。三周后他会在窗帘拉开之前先喊这句，生物钟比闹钟准。</div>
+  </div>
+  <div class="scene">
+    <div class="tag">👟 出门穿鞋</div>
+    <div class="en">Shoes on!</div>
+    <div class="zh">短到没法拒绝。玄关专用，配合蹲下递鞋的动作，比"快穿鞋别磨蹭"管用十倍。</div>
+  </div>
+  <div class="scene">
+    <div class="tag">🚗 出发</div>
+    <div class="en">Here we go!</div>
+    <div class="zh">出门仪式感。他现在下楼必喊，声控电梯似的，喊完自己咯咯笑。</div>
+  </div>
+  <div class="scene">
+    <div class="tag">🖐 饭前洗手</div>
+    <div class="en">Wash your hands.</div>
+    <div class="zh">配两下搓手动作。水流声一响这句话就自动成立，不用翻译。</div>
+  </div>
+  <div class="scene">
+    <div class="tag">😋 饭桌上</div>
+    <div class="en">Yummy!</div>
+    <div class="zh">夸菜专用，最好吃的那口先说。他对着西兰花喊得比对我喊得响。</div>
+  </div>
+  <div class="scene">
+    <div class="tag">🤔 二选一</div>
+    <div class="en">Apple or banana?</div>
+    <div class="zh">最容易逼出英语的问题：二选一，指实物，说哪个给哪个。开口率百分之百。</div>
+  </div>
+  <div class="scene">
+    <div class="tag">🧺 收玩具</div>
+    <div class="en">Clean up time!</div>
+    <div class="zh">配固定的收拾调子一起唱。玩具回家，他回家，唱着唱着就收完了。</div>
+  </div>
+  <div class="scene">
+    <div class="tag">🛁 洗澡</div>
+    <div class="en">Splish splash!</div>
+    <div class="zh">玩水拟声词，拍水就喊。澡盆里没有比这更好笑的音节了。</div>
+  </div>
+  <div class="scene">
+    <div class="tag">🌙 睡前</div>
+    <div class="en">Good night, sleep tight.</div>
+    <div class="zh">绘本合上后的固定结束语。tight 的押韵他会自己多念两遍，像尝糖。</div>
+  </div>
+  <div class="scene">
+    <div class="tag">🙌 表扬</div>
+    <div class="en">You did it!</div>
+    <div class="zh">配击掌。高五率百分之百，成功率也百分之百——没有孩子拒绝这句。</div>
+  </div>
+</div>
+
+<h2>用法三条，比句子金贵</h2>
+<p><strong>一、固定场景固定句，别换花样。</strong>今天 "Shoes on!"，明天 "Put on your shoes"，孩子刚建立的"场景→语言"映射就被你手贱重置了。同一场景，一句话说到底，说到他抢答为止。</p>
+<p><strong>二、他说中文，你用英文接。</strong>他说"要苹果"，你递过去顺口一句 "Apple for you"。不逼他复述，不要求"用英语说一遍"——那是把餐桌变成考场，他扭头就走。你只管把输入续上，输出他自己会来。</p>
+<p><strong>三、忘了说就算了。</strong>哪天忙忘了、出差断了，都无所谓。别搞成打卡，一打卡味儿就变了，你在还英语启蒙踩坑记录里的第一个坑。</p>
+
+<div class="note"><strong>让孩子开口的从来不是句型表，是"这句话有用"。</strong>说了就能吃到苹果，说了就能出门，说了就能击掌——语言的回报看得见摸得着，他自然开口。</div>
+
+<p>后来我把这十句连同后来攒的场景句，都做进了自己给他写的那个小应用：亲子对话玩法里，应用提问他作答，答对了它夸张地欢呼，答错了就温柔地换个问法。他管那叫"跟小鸟说话"——那个 Ana 的声音，是他认定的小伙伴。</p>
+
+<div class="related">
+  相关笔记：
+  <a href="english-pitfalls.html">英语启蒙踩坑记录</a>
+  <a href="listening-notes.html">磨耳朵实操笔记</a>
+  <a href="app-story.html">自研小应用记</a>
+</div>
+<p style="color: var(--ink-faint); font-size: 14px; margin-top: 24px;">—— 口水是最好的教材：免费，无限量，还可回收。</p>
+      </div>
+    </article>
+
+    <footer>
+      <div>闲思杂记 · zelab.cn · 个人非经营性站点</div>
+      <div style="margin-top: 6px;">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">豫ICP备2026054893号</a>
+      </div>
+    </footer>
+  </body>
+</html>
