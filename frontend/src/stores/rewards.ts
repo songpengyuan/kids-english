@@ -33,6 +33,9 @@ export const LEGACY_STICKER_REFUND = 20;
  */
 export const CHEST_FORM_CHANCE = 0.2;
 
+/** 双倍贝壳概率（约每 8 箱一次；rng 消耗顺序：贝壳数→双倍判定→形态判定→形态挑选） */
+export const SHELL_BONUS_CHANCE = 0.12;
+
 /** 一次开箱的结果 */
 export interface ChestRoll {
   shells: number;
@@ -40,6 +43,8 @@ export interface ChestRoll {
   formId: string | null;
   /** 掉到的形态是不是新的（用于"新形态登场"高光） */
   isNew: boolean;
+  /** 双倍惊喜（低概率 shells×2，展示区高光 + 乐乐鸟报喜） */
+  bonus: boolean;
 }
 
 const KEY = "kids-english-rewards-v1";
@@ -168,7 +173,12 @@ export const useRewardsStore = defineStore("rewards", () => {
    * 优先掉"还没收集"的；全收集后改为给随机已收集形态升星（满了就不再掉）。
    */
   function rollChest(rng: () => number = Math.random): ChestRoll {
-    const shellsWon = randInt(3, 6, rng);
+    let shellsWon = randInt(3, 6, rng);
+    // 双倍惊喜（2026-11-15 杠杆④ 惊喜变量）：约每 8 箱一次 shells×2。
+    // 变量奖励 > 固定奖励——偶尔的意外之财比每次都一样的 3~6 枚更能让孩子
+    // 对"下一箱"抱有期待。展示区高光 + 乐乐鸟报喜由组件按 bonus 字段联动。
+    const bonus = rng() < SHELL_BONUS_CHANCE;
+    if (bonus) shellsWon *= 2;
     let formId: string | null = null;
     let isNew = false;
     if (rng() < CHEST_FORM_CHANCE) {
@@ -184,7 +194,7 @@ export const useRewardsStore = defineStore("rewards", () => {
         }
       }
     }
-    return { shells: shellsWon, formId, isNew };
+    return { shells: shellsWon, formId, isNew, bonus };
   }
 
   /** 发放奖励（贴纸时代的 grant 语义保留：只加不减） */

@@ -16,6 +16,8 @@ export interface ChestRoll {
   shells: number;
   formId?: string | null;
   isNew?: boolean;
+  /** 双倍惊喜（rewards store rollChest 透传，展示区高光用） */
+  bonus?: boolean;
 }
 
 /** rewards store 的最小接口（避免整个 store 类型进来） */

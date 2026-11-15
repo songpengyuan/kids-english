@@ -40,7 +40,7 @@ describe("rewards store · 兑换与升级", () => {
 
   it("兑换 → 1★ 并扣款；重复兑换 → 升级；到 3★ → maxed 且不再扣款", () => {
     const r = useRewardsStore();
-    r.grant({ shells: 200, formId: null, isNew: false });
+    r.grant({ shells: 200, formId: null, isNew: false, bonus: false });
     const price = ALL_FORMS.find((f) => f.id === "tiga-multi")!.price;
     expect(r.buyForm("tiga-multi")).toBe("bought");
     expect(r.starsOf("tiga-multi")).toBe(1);
@@ -56,14 +56,14 @@ describe("rewards store · 兑换与升级", () => {
 
   it("非法形态 id → invalid", () => {
     const r = useRewardsStore();
-    r.grant({ shells: 100, formId: null, isNew: false });
+    r.grant({ shells: 100, formId: null, isNew: false, bonus: false });
     expect(r.buyForm("not-a-form")).toBe("invalid");
     expect(r.shells).toBe(100);
   });
 
   it("稀有度决定价格：常见 20 / 稀有 60 / 传说 120", () => {
     const r = useRewardsStore();
-    r.grant({ shells: 500, formId: null, isNew: false });
+    r.grant({ shells: 500, formId: null, isNew: false, bonus: false });
     const before = r.shells;
     expect(r.buyForm("tiga-multi")).toBe("bought"); // common
     expect(before - r.shells).toBe(20);
@@ -82,19 +82,28 @@ describe("rewards store · 开箱", () => {
     setActivePinia(createPinia());
   });
 
-  it("开箱固定给贝壳（没命中掉落时）", () => {
+  it("开箱固定给贝壳（没命中双倍与掉落时）", () => {
     const r = useRewardsStore();
-    // rng 依次：贝壳(0 → 3)、掉落判定(0.9 > CHEST_FORM_CHANCE → 不掉)
-    const roll = r.rollChest(seq([0, 0.9, 0]));
+    // rng 依次：贝壳(0 → 3)、双倍(0.9 → 无)、掉落判定(0.9 → 不掉)、挑选(0 不消耗)
+    const roll = r.rollChest(seq([0, 0.9, 0.9, 0]));
     expect(roll.shells).toBe(3);
+    expect(roll.bonus).toBe(false);
     expect(roll.formId).toBeNull();
     expect(roll.isNew).toBe(false);
   });
 
-  it("命中掉落且未收集过：优先掉新形态（ isNew=true）——惊喜通道 2026-11-15 激活", () => {
+  it("双倍惊喜：低概率 shells×2（杠杆④ 惊喜变量，变量奖励 > 固定奖励）", () => {
     const r = useRewardsStore();
-    // rng 依次：贝壳(0.99 → 6)、掉落判定(0.05 < 0.2 → 命中)、未收集池选 0 → 第一个形态
-    const roll = r.rollChest(seq([0.99, 0.05, 0]));
+    // rng 依次：贝壳(0.5 → 5)、双倍(0.05 < SHELL_BONUS_CHANCE → ×2 = 10)、掉落(0.9 → 无)
+    const roll = r.rollChest(seq([0.5, 0.05, 0.9, 0]));
+    expect(roll.shells).toBe(10);
+    expect(roll.bonus).toBe(true);
+  });
+
+  it("命中掉落且未收集过：优先掉新形态（isNew=true）——惊喜通道 2026-11-15 激活", () => {
+    const r = useRewardsStore();
+    // rng 依次：贝壳(0.99 → 6)、双倍(0.9 → 无)、掉落判定(0.05 < 0.2 → 命中)、挑选 0
+    const roll = r.rollChest(seq([0.99, 0.9, 0.05, 0]));
     expect(roll.shells).toBe(6);
     expect(roll.formId).toBeTruthy();
     expect(roll.isNew).toBe(true);
@@ -103,19 +112,19 @@ describe("rewards store · 开箱", () => {
 
   it("没命中掉落时只给贝壳", () => {
     const r = useRewardsStore();
-    // rng 依次：贝壳(0.99 → 6)、掉落判定(超过概率 → 不掉)
-    const roll = r.rollChest(seq([0.99, CHEST_FORM_CHANCE + 0.01]));
+    // rng 依次：贝壳(0.99 → 6)、双倍(0.5 → 无)、掉落判定(超过概率 → 不掉)
+    const roll = r.rollChest(seq([0.99, 0.5, CHEST_FORM_CHANCE + 0.01]));
     expect(roll.shells).toBe(6);
     expect(roll.formId).toBeNull();
   });
 
   it("集齐但未满星：命中掉落改为升星（不 isNew）——惊喜通道的兜底语义", () => {
     const r = useRewardsStore();
-    for (const f of ALL_FORMS) r.grant({ shells: 0, formId: f.id, isNew: true });
+    for (const f of ALL_FORMS) r.grant({ shells: 0, formId: f.id, isNew: true, bonus: false });
     expect(r.ownedCount).toBe(FORM_TOTAL);
     expect(r.allOwned()).toBe(true);
     expect(r.albumPct).toBe(100);
-    const roll = r.rollChest(seq([0, 0.1, 0]));
+    const roll = r.rollChest(seq([0, 0.9, 0.1, 0]));
     expect(roll.shells).toBe(3);
     expect(roll.formId).toBeTruthy(); // 升星一个未满星形态
     expect(roll.isNew).toBe(false);
@@ -124,10 +133,10 @@ describe("rewards store · 开箱", () => {
   it("形态全部满星后开箱不再掉形态（只给贝壳）", () => {
     const r = useRewardsStore();
     for (let i = 0; i < MAX_FORM_STARS; i++) {
-      for (const f of ALL_FORMS) r.grant({ shells: 0, formId: f.id, isNew: i === 0 });
+      for (const f of ALL_FORMS) r.grant({ shells: 0, formId: f.id, isNew: i === 0, bonus: false });
     }
     expect(r.totalStars).toBe(FORM_TOTAL * MAX_FORM_STARS);
-    const roll = r.rollChest(seq([0, 0.1, 0]));
+    const roll = r.rollChest(seq([0, 0.9, 0.1, 0]));
     expect(roll.formId).toBeNull();
   });
 });
@@ -154,7 +163,7 @@ describe("rewards store · 老数据迁移与持久化", () => {
 
   it("形态与星级读回（模拟应用重启）", () => {
     const r = useRewardsStore();
-    r.grant({ shells: 50, formId: "zero-base", isNew: true });
+    r.grant({ shells: 50, formId: "zero-base", isNew: true, bonus: false });
     setActivePinia(createPinia());
     const r2 = useRewardsStore();
     expect(r2.shells).toBe(50);
@@ -205,7 +214,7 @@ describe("rewards store · 云同步（奖励上云）", () => {
     loginAsParent();
     const { calls, fn } = mockFetch({});
     const r = useRewardsStore();
-    r.grant({ shells: 5, formId: null, isNew: false });
+    r.grant({ shells: 5, formId: null, isNew: false, bonus: false });
     await vi.waitFor(() => expect(fn).toHaveBeenCalled());
     const put = calls.find((c) => c.url === "/api/v1/children/1/rewards");
     expect(put).toBeTruthy();
@@ -222,7 +231,7 @@ describe("rewards store · 云同步（奖励上云）", () => {
   it("未登录：发奖不上报（纯本地模式）", async () => {
     const { fn } = mockFetch({});
     const r = useRewardsStore();
-    r.grant({ shells: 5, formId: null, isNew: false });
+    r.grant({ shells: 5, formId: null, isNew: false, bonus: false });
     await new Promise((res) => setTimeout(res, 20));
     expect(fn).not.toHaveBeenCalled();
   });
@@ -237,8 +246,8 @@ describe("rewards store · 云同步（奖励上云）", () => {
       },
     });
     const r = useRewardsStore();
-    r.grant({ shells: 100, formId: null, isNew: false }); // 本地 100 贝壳 > 云端
-    r.grant({ shells: 0, formId: "leo", isNew: false }); // 本地 leo 1★ < 云端 2★
+    r.grant({ shells: 100, formId: null, isNew: false, bonus: false }); // 本地 100 贝壳 > 云端
+    r.grant({ shells: 0, formId: "leo", isNew: false, bonus: false }); // 本地 leo 1★ < 云端 2★
     await r.syncFromServer();
     expect(r.shells).toBe(100); // 本地更高 → 保留本地
     expect(r.starsOf("leo")).toBe(2); // 云端更高 → 补到云端

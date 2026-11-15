@@ -68,7 +68,7 @@ describe("useCollection · 英雄收集度透传", () => {
     expect(c.heroesOwned.value).toBe(0);
     expect(c.heroesTotal).toBe(FORM_TOTAL);
     expect(c.heroesPct.value).toBe(0);
-    rewards.grant({ shells: 0, formId: ALL_FORMS[0].id, isNew: true });
+    rewards.grant({ shells: 0, formId: ALL_FORMS[0].id, isNew: true, bonus: false });
     expect(c.heroesOwned.value).toBe(1);
     expect(c.heroesPct.value).toBe(Math.round((1 / FORM_TOTAL) * 100));
   });

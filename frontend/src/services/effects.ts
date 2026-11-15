@@ -20,18 +20,32 @@ function tokenColor(name: string, fallback: string): string {
   return v || fallback;
 }
 
-/** 答对：撒花 + 上行音 */
+/**
+ * 答对/完成的小庆祝：三种形态轮换（杠杆④ 惊喜变量——每次都一样的庆祝
+ * 第二遍就腻，轮换让孩子对"这次是什么样子"抱一点期待）。计数器轮转：
+ * 同一会话内连续多次完成，看到的是三种不同的样子。
+ */
+let celebrateTick = 0;
 export function celebrate() {
   hapticCelebrate();
-  confetti({
-    particleCount: 80,
-    spread: 75,
-    startVelocity: 38,
-    origin: { y: 0.6 },
-    colors: ["--c-green", "--c-blue", "--c-orange", "--c-purple", "--c-pink"].map((n) =>
-      tokenColor(n, "#ffc800")
-    )
-  });
+  const colors = ["--c-green", "--c-blue", "--c-orange", "--c-purple", "--c-pink"].map((n) =>
+    tokenColor(n, "#ffc800")
+  );
+  const variant = celebrateTick++ % 3;
+  if (variant === 0) {
+    // 中央爆发（经典款）
+    confetti({ particleCount: 80, spread: 75, startVelocity: 38, origin: { y: 0.6 }, colors });
+  } else if (variant === 1) {
+    // 彩带雨：顶部三处飘落（gravity 小、velocity 低 = 缓缓下落的"雨"感）
+    for (const x of [0.25, 0.5, 0.75]) {
+      confetti({ particleCount: 32, spread: 55, startVelocity: 22, gravity: 0.7, scalar: 0.9, origin: { x, y: 0 }, colors });
+    }
+  } else {
+    // 双色对喷：左右各一股向中央汇聚
+    const gold = tokenColor("--yellow", "#ffc800");
+    confetti({ particleCount: 45, angle: 55, spread: 60, startVelocity: 42, origin: { x: 0, y: 0.7 }, colors: [gold] });
+    confetti({ particleCount: 45, angle: 125, spread: 60, startVelocity: 42, origin: { x: 1, y: 0.7 }, colors: [colors[1]] });
+  }
 }
 
 /** 过关：更盛大的双侧礼花 */

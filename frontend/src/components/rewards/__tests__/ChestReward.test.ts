@@ -40,7 +40,7 @@ function seedReward(shells: number) {
   setActivePinia(pinia);
   const store = useRewardsStore();
   store.shells = 0;
-  vi.spyOn(store, "rollChest").mockReturnValue({ shells, formId: null, isNew: false });
+  vi.spyOn(store, "rollChest").mockReturnValue({ shells, formId: null, isNew: false, bonus: false });
   vi.spyOn(store, "grant").mockImplementation(() => {
     store.shells += shells;
     return undefined as any;

@@ -52,6 +52,11 @@ const {
   onRewardShown: (r) => {
     sfxCoin();
     if (r.formId) sfxSticker();
+    // 双倍惊喜：多一声金币音 + 乐乐鸟报喜（随机奖励要"看得见听得见"才成立）
+    if (r.bonus) {
+      sfxCoin();
+      mascot.say("哇，双倍贝壳！运气爆棚！", { mood: "cheer", ttl: 3000 });
+    }
   },
 });
 
@@ -260,10 +265,14 @@ const cap = computed(() => {
 
     <!-- 奖励展示 + 收取：flying 阶段面板保留，贝壳逐个飞走、数量逐个减少 -->
     <div v-if="(phase === 'reward' || phase === 'flying') && reward" class="reward">
-      <p class="got">获得</p>
+      <p class="got">
+        获得
+        <!-- 双倍惊喜（约每 8 箱一次）：金色高光标签，随机奖励 > 固定奖励 -->
+        <span v-if="reward.bonus" class="bonus-tag anim-pop">双倍！</span>
+      </p>
       <div class="rewards">
         <!-- 宝箱替换出现对应的贝壳/海螺：山形（金字塔）排列，收取时逐枚飞走 -->
-        <div class="shell-rows" aria-label="本次获得的贝壳">
+        <div class="shell-rows" aria-label="本次获得的贝壳" :class="{ 'shell-rows--bonus': reward.bonus }">
           <div v-for="(row, ri) in shellRows" :key="'r' + ri" class="shell-row">
             <span
               v-for="(j, ci) in row"
@@ -719,6 +728,20 @@ const cap = computed(() => {
   font-weight: var(--fw-strong);
   color: var(--ink);
   font-size: var(--fs-title);
+}
+/* 双倍惊喜标签：金色高光（var(--gold)/--grad-gold 语义），弹性入场 */
+.bonus-tag {
+  display: inline-block;
+  margin-left: var(--gap-xs);
+  padding: 2px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--grad-gold);
+  color: var(--on-gold);
+  font-size: var(--fs-small);
+  vertical-align: middle;
+}
+.shell-rows--bonus .shell-item {
+  filter: drop-shadow(0 0 6px var(--gold));
 }
 .rewards {
   display: flex;
