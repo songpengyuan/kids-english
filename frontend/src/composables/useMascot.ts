@@ -92,8 +92,25 @@ function resultCheer(text: string) {
   say(text, { voice: false });
 }
 
+/** 进收藏册问候：dock 已在页上，只出气泡不触发飞入 */
+function collectionGreet() {
+  say(pickMascotLine(MASCOT_LINES.collection, bubble.value), { mood: "cheer", popup: false });
+}
+
 export function useMascot() {
-  return { bubble, mood, popupActive, say, cheer, oops, chest, greet, idleChatter, resultCheer };
+  return {
+    bubble,
+    mood,
+    popupActive,
+    say,
+    cheer,
+    oops,
+    chest,
+    greet,
+    idleChatter,
+    resultCheer,
+    collectionGreet,
+  };
 }
 
 /** 仅测试用：重置模块单例状态（vitest 里模块状态跨用例存活） */

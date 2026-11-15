@@ -82,24 +82,34 @@ describe("rewards store · 开箱", () => {
     setActivePinia(createPinia());
   });
 
-  it("开箱固定给贝壳（无概率掉落，形态走任务/兑换解锁）", () => {
+  it("开箱固定给贝壳（没命中掉落时）", () => {
     const r = useRewardsStore();
-    // rng 依次：贝壳(0 → 3)、掉落判定(0.9 即使 < 旧概率也永不命中，CHEST_FORM_CHANCE=0)
+    // rng 依次：贝壳(0 → 3)、掉落判定(0.9 > CHEST_FORM_CHANCE → 不掉)
     const roll = r.rollChest(seq([0, 0.9, 0]));
     expect(roll.shells).toBe(3);
     expect(roll.formId).toBeNull();
     expect(roll.isNew).toBe(false);
   });
 
+  it("命中掉落且未收集过：优先掉新形态（ isNew=true）——惊喜通道 2026-11-15 激活", () => {
+    const r = useRewardsStore();
+    // rng 依次：贝壳(0.99 → 6)、掉落判定(0.05 < 0.2 → 命中)、未收集池选 0 → 第一个形态
+    const roll = r.rollChest(seq([0.99, 0.05, 0]));
+    expect(roll.shells).toBe(6);
+    expect(roll.formId).toBeTruthy();
+    expect(roll.isNew).toBe(true);
+    expect(r.isOwned(roll.formId!)).toBe(false); // grant 前：还没收集
+  });
+
   it("没命中掉落时只给贝壳", () => {
     const r = useRewardsStore();
-    // rng 依次：贝壳(0.99 → 6)、掉落判定(超过 25% → 不掉)
+    // rng 依次：贝壳(0.99 → 6)、掉落判定(超过概率 → 不掉)
     const roll = r.rollChest(seq([0.99, CHEST_FORM_CHANCE + 0.01]));
     expect(roll.shells).toBe(6);
     expect(roll.formId).toBeNull();
   });
 
-  it("集齐全部形态后开箱仍只给贝壳（不重复掉落，星级靠任务/兑换提升）", () => {
+  it("集齐但未满星：命中掉落改为升星（不 isNew）——惊喜通道的兜底语义", () => {
     const r = useRewardsStore();
     for (const f of ALL_FORMS) r.grant({ shells: 0, formId: f.id, isNew: true });
     expect(r.ownedCount).toBe(FORM_TOTAL);
@@ -107,7 +117,7 @@ describe("rewards store · 开箱", () => {
     expect(r.albumPct).toBe(100);
     const roll = r.rollChest(seq([0, 0.1, 0]));
     expect(roll.shells).toBe(3);
-    expect(roll.formId).toBeNull();
+    expect(roll.formId).toBeTruthy(); // 升星一个未满星形态
     expect(roll.isNew).toBe(false);
   });
 

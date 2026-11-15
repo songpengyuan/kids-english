@@ -16,6 +16,7 @@
 import { computed, ref, watch, type ComputedRef, type Ref } from "vue";
 import type { Router, RouteLocationNormalizedLoadedGeneric } from "vue-router";
 import { splitActKey, type Lesson } from "../data/lessons";
+import { lessonLevels } from "../data/pathLevels";
 import { useContentStore } from "../stores/content";
 import type { QuestAct, UseQuest } from "./useQuest";
 import { bigCelebrate, celebrate } from "../services/effects";
@@ -165,14 +166,23 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     });
   }
 
+  /** 结算气泡统一出口（只出气泡，语音=结算页报星）：贴纸解锁的瞬间报贴纸，
+   *  其余报常规话术——两者互斥，常规话术不许盖掉贴纸（2026-11-15 收集生长 v1） */
+  function settleCheer(sticker: boolean, stars: number, questMode: boolean) {
+    if (sticker) {
+      mascot.say("集齐啦！新贴纸到手，去收藏册看看吧", { voice: false, ttl: 3200 });
+    } else if (questMode) {
+      mascot.resultCheer("关卡完成，太棒了");
+    } else {
+      mascot.resultCheer(stars >= 3 ? "太厉害了，满分三颗星" : "做得好，继续加油");
+    }
+  }
+
   /** 单关完成：直接进关卡完成大画面（多邻国：一课一节，完成即点亮 + 开宝箱） */
   function finishQuestStep() {
     quest.finish();
     markLevelPass();
     bigCelebrate();
-    // 吉祥物只出气泡与动效：结算页报星（LessonResult onMounted）是语音的owner，
-    // 两句中文 TTS 背靠背会互相打断
-    mascot.resultCheer("关卡完成，太棒了");
     stage.value = "result";
   }
 
@@ -218,7 +228,22 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     lastActKey.value = actKeyFull;
     // 首次通关判定要在写星之前取（写进去就都成"已完成"了）
     const firstTime = !((progress.progress[lessonId]?.[actKeyFull] as number | undefined) ?? 0);
-    progress.setGameStars(lessonId, actKeyFull, s);
+    // 收藏册贴纸（2026-11-15）：写星**前后**对比玩法关完成数，"差一枚变全齐"
+    // 的那一瞬才算解锁（重玩已齐的课不重复报）。口径与 LessonLevelList 宝箱门/
+    // 收藏册一致：只数玩法关，不含 chest
+    let stickerJustUnlocked = false;
+    if (lessonId && lesson.value) {
+      const levels = lessonLevels(lesson.value).filter((l) => l.actKey !== "chest");
+      const countDone = () => {
+        const completed = (progress.progress[lessonId]?.completed as string[] | undefined) ?? [];
+        return levels.filter((l) => completed.includes(l.actKey)).length;
+      };
+      const before = countDone();
+      progress.setGameStars(lessonId, actKeyFull, s);
+      stickerJustUnlocked = levels.length > 0 && before === levels.length - 1 && countDone() === levels.length;
+    } else {
+      progress.setGameStars(lessonId, actKeyFull, s);
+    }
     settleActivity();
     // 今日目标：新学 1 关（首次通关）+ 复习到期词（复习页记）
     const first = streak.markNewLevel(firstTime);
@@ -229,10 +254,9 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
       // 庆祝收敛：满分才双彩带大庆祝，其余用小彩带
       if (s >= 3) bigCelebrate();
       else celebrate();
-      // 语音由结算页报星接管，吉祥物只出气泡（同 finishQuestStep）
-      mascot.resultCheer(s >= 3 ? "太厉害了，满分三颗星" : "做得好，继续加油");
       stage.value = "result";
     }
+    settleCheer(stickerJustUnlocked, s, quest.questMode.value);
   }
 
   function afterSong() {
@@ -244,6 +268,7 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     const first = streak.markNewLevel(true);
     streakJustHit.value = first && streak.todayDone;
     if (quest.questMode.value) finishQuestStep();
+    settleCheer(false, 1, quest.questMode.value);
   }
 
   const lessonProgress = computed(() => {

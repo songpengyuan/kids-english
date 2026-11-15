@@ -147,6 +147,8 @@ export const appRoutes: RouteRecordRaw[] = [
             { path: "hero/:id", name: "hero-detail", component: () => import("../views/me/HeroDetailView.vue"), meta: { title: "英雄图鉴" } },
           ],
         },
+        // 收藏册（2026-11-15 收集生长 v1）：课贴纸墙 + 英雄收集度，孩子自己的"宝贝墙"
+        { path: "collection", name: "collection", component: () => import("../views/me/CollectionView.vue"), meta: { title: "我的收藏册" } },
         // 学习报告只读不设门（2026-11-07：家长"瞄一眼"零摩擦；算术门保护的是
         // 有操作按钮的家长中心）。入口：我的页速览条 / 家长中心。
         { path: "report", name: "report", component: () => import("../views/me/ReportView.vue"), meta: { title: "家长报告" } },

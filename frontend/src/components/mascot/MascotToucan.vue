@@ -26,10 +26,10 @@ import { sfxChirp } from "../../services/effects";
 const route = useRoute();
 const { bubble, mood, popupActive, greet, idleChatter } = useMascot();
 
-/** dock 常驻页：两个主 tab + 课程详情本体（无 stage/about 子路径） */
+/** dock 常驻页：两个主 tab + 课程详情本体（无 stage/about 子路径）+ 收藏册 */
 const dockVisible = computed(() => {
   const p = route.path;
-  if (p === "/course" || p === "/me") return true;
+  if (p === "/course" || p === "/me" || p === "/me/collection") return true;
   return /^\/course\/[^/]+$/.test(p);
 });
 

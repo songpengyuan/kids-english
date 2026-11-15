@@ -290,7 +290,7 @@ const cap = computed(() => {
       </BaseButton>
     </div>
     <p v-if="phase === 'collected'" class="cap collected">
-      <PathIcon name="gift" class="gift-ico" /> 已收进宝藏罐！
+      <PathIcon name="gift" class="gift-ico" /> 已收进宝藏罐！收藏册里能看到哦
     </p>
 
     <!-- 飞行中的宝石/贝壳（fixed，跟随抛物线轨迹） -->

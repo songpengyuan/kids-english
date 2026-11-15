@@ -14,7 +14,8 @@ import { computed, defineComponent, ref, type ComputedRef } from "vue";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia } from "pinia";
 import { createMemoryHistory, createRouter, useRoute, type Router } from "vue-router";
-import { getLesson } from "../../data/lessons";
+import { getLesson, splitActKey } from "../../data/lessons";
+import { lessonLevels } from "../../data/pathLevels";
 import { useProgressStore } from "../../stores/progress";
 import { useStreakStore } from "../../stores/streak";
 import { useQuest, type QuestAct } from "../useQuest";
@@ -256,6 +257,34 @@ describe("useLessonFlow 结算", () => {
     expect(flow.stage.value).toBe("result");
     // 闯关完成大画面：吉祥物气泡报"关卡完成"（语音同样由结算页报星接管）
     expect(useMascot().bubble.value).toBe("关卡完成，太棒了");
+  });
+
+  it("收藏册贴纸：本课最后一块拼图完成 → 吉祥物气泡报新贴纸（2026-11-15）", async () => {
+    const { flow } = await bootHost("/course/l4");
+    flow.boot();
+    const progress = useProgressStore();
+    // 预置：l4 全部玩法关里只差最后一关（口径与 LessonLevelList 宝箱门一致，不含 chest）
+    const l4Keys = lessonLevels(getLesson("l4")!)
+      .filter((l) => l.actKey !== "chest")
+      .map((l) => l.actKey);
+    const lastKey = l4Keys[l4Keys.length - 1];
+    progress.progress["l4"] = { completed: l4Keys.filter((k) => k !== lastKey) };
+    flow.open({ key: lastKey, name: "最后一关", icon: undefined as never, tone: "blue", game: splitActKey(lastKey).act, desc: "" });
+    flow.afterGame(3);
+    expect(useMascot().bubble.value).toBe("集齐啦！新贴纸到手，去收藏册看看吧");
+  });
+
+  it("重玩已集齐的课：不再报新贴纸（常规结算气泡）", async () => {
+    const { flow } = await bootHost("/course/l4");
+    flow.boot();
+    const progress = useProgressStore();
+    const l4Keys = lessonLevels(getLesson("l4")!)
+      .filter((l) => l.actKey !== "chest")
+      .map((l) => l.actKey);
+    progress.progress["l4"] = { completed: [...l4Keys] };
+    flow.open({ key: l4Keys[0], name: "重玩", icon: undefined as never, tone: "blue", game: splitActKey(l4Keys[0]).act, desc: "" });
+    flow.afterGame(1);
+    expect(useMascot().bubble.value).toBe("做得好，继续加油");
   });
 
   it("afterSong 结算：进结算并累计今日学情（童谣星数由 SongView 内部记）", async () => {

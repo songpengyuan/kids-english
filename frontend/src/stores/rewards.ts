@@ -26,7 +26,12 @@ export const MAX_FORM_STARS = 3;
 /** 旧贴纸的回收价（贝壳）：按当年售价折算，老数据不亏 */
 export const LEGACY_STICKER_REFUND = 20;
 /** 开箱直接掉落未收集形态的概率 */
-export const CHEST_FORM_CHANCE = 0;
+/**
+ * 开箱掉形态的概率（2026-11-15 激活）：惊喜掉落与兑换并存——掉落给"开箱可能
+ * 直接开出新英雄"的惊喜（平均 5 箱 1 个，优先未收集），兑换保留"想要特定形态
+ * 攒贝壳"的目标性。0 = 通道完全关闭（历史上的默认值，代码一直在，只是没开）。
+ */
+export const CHEST_FORM_CHANCE = 0.2;
 
 /** 一次开箱的结果 */
 export interface ChestRoll {

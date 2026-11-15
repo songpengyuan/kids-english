@@ -44,9 +44,11 @@ import {
   Moon,
   Play,
   Shield,
+  Sticker,
   Star,
 } from "@lucide/vue";
 import { speakZh } from "../../services/speech";
+import { useCollection } from "../../composables/useCollection";
 
 const progress = useProgressStore();
 const rewards = useRewardsStore();
@@ -136,6 +138,9 @@ const weekMin = computed(() =>
 /** 收藏磁贴：图鉴进度（rewards.ownedCount 已按星级>0 计数） */
 const ownedForms = computed(() => rewards.ownedCount);
 
+/** 收藏册（2026-11-15 收集生长 v1）：课贴纸 + 英雄，孩子自己的宝贝墙 */
+const { stickersUnlocked, stickersTotal, heroesOwned } = useCollection();
+
 /** 主行动：接着上次没学完的那课继续 */
 const continueLesson = computed(
   () => lessons.find((l) => l.id === progress.lastLesson) ?? lessons[0]
@@ -157,6 +162,10 @@ function goContinue() {
 function goTreasure() {
   speakZh("宝藏罐");
   router.push("/me/treasure");
+}
+function goCollection() {
+  speakZh("我的收藏册");
+  router.push("/me/collection");
 }
 </script>
 
@@ -213,6 +222,17 @@ function goTreasure() {
     >
       <template #icon>
         <SkIcon name="review" size="md" />
+      </template>
+    </EntryRow>
+
+    <!-- 收藏册（2026-11-15 收集生长 v1）：孩子的"宝贝墙"，新贴纸/新英雄都在这 -->
+    <EntryRow
+      title="我的收藏册"
+      :desc="`贴纸 ${stickersUnlocked}/${stickersTotal} · 英雄 ${heroesOwned}/${FORM_TOTAL}`"
+      @click="goCollection"
+    >
+      <template #icon>
+        <IconTile tone="gold"><Sticker class="k-ico" /></IconTile>
       </template>
     </EntryRow>
 
