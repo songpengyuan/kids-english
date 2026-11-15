@@ -22,7 +22,7 @@
 |---|---|---|---|
 | song 唱童谣 | `song.audio` 或 `video` | `song.group`/`track.group` → 只放当前词群的轨；`song-timings.json` → 逐行 KTV 高亮 | 全部轨播放；无时间轴按比例映射高亮 |
 | learn 学单词 | `words[]` | `stageStyle: "dialog"` → 亲子口语对话卡（逐轮问录音答，星级=首次通过率） | `cards`：多邻国式网格点读，星级=点读覆盖率 |
-| quiz 听音选图 | `words[]` | —（词群过滤由课时级字段驱动） | 听音 4 选 1 图 |
+| quiz 听音选图 | `words[]` | —（词群过滤由课时级字段驱动）。**喂乐乐鸟皮肤**（2026-11-15，杠杆③ 首例）：答对图卡抛物线飞进舞台鸟嘴（`QuizFeedBird` + `useFlyToEl`），答错鸟垂头；舞台鸟在场时全局吉祥物浮层退位（`useMascot.oopsVoice` 纯语音），纯展示层改动、答题逻辑与星级口径不变 | 听音 4 选 1 图 |
 | memory 翻牌记忆 | `words[]`（≥4） | — | 翻牌配对图↔词 |
 | match 连一连 | `words[]` | `colorPairs[]` 传入 → **颜色配对模式**：左列色圆 ↔ 右列图（色值取颜色词的 `word.color`） | 图 ↔ 词连线；另有练习方式「认字/听力」切换（localStorage 用户偏好，非课数据） |
 | speak 跟我读 | `words[]` | — | 按麦克风跟读打分 |

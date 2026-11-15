@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { onBeforeUnmount, computed, ref, watch } from "vue";
+import { nextTick, onBeforeUnmount, computed, ref, watch } from "vue";
 import { speak } from "../../services/speech";
 import { sfxCorrect, sfxTap, sfxWrong } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import { useQuizSession } from "../../composables/useQuizSession";
 import { useMascot } from "../../composables/useMascot";
+import { useFlyToEl } from "../../composables/useFlyToEl";
 import type { Word } from "../../data/lessons";
 import { Headphones, Volume2 } from "@lucide/vue";
 import SpeakWave from "../ui/SpeakWave.vue";
 import LessonFooter from "./LessonFooter.vue";
 import StageHead from "./StageHead.vue";
+import QuizFeedBird from "./QuizFeedBird.vue";
 
 const props = defineProps<{ words: Word[] }>();
 const emit = defineEmits(["done", "progress", "total"]);
@@ -18,22 +20,62 @@ const progress = useProgressStore();
 const mascot = useMascot();
 const imgFail = ref<Record<string, boolean>>({});
 
+/* ---------- 喂乐乐鸟（2026-11-15 杠杆③ 皮肤首例，逻辑不动换皮） ----------
+ * 舞台右上有实体鸟：答对 → 所点图卡抛物线飞入鸟嘴 → 鸟嚼两下；答错 → 鸟垂头。
+ * 全局吉祥物浮层在 quiz 内退位（oopsVoice 纯语音），避免两只鸟同框。 */
+const birdMood = ref<"idle" | "yum" | "oops">("idle");
+const bird = ref<InstanceType<typeof QuizFeedBird> | null>(null);
+const flyWord = ref<Word | null>(null);
+const flyEl = ref<HTMLElement | null>(null);
+const flyOne = useFlyToEl(flyEl);
+let moodTimer: number | null = null;
+let pressedEl: HTMLElement | null = null;
+
+function birdCenter(): { x: number; y: number } | null {
+  const el = bird.value?.root;
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height * 0.45 }; // 鸟嘴偏上
+}
+
+async function feedBird(w: Word) {
+  const from = pressedEl?.getBoundingClientRect();
+  const to = birdCenter();
+  if (from && to) {
+    flyWord.value = w;
+    await nextTick(); // fly-food 渲染出来才有元素可飞
+    await flyOne(
+      { x: from.left + from.width / 2, y: from.top + from.height / 2 },
+      to,
+      90
+    );
+    flyWord.value = null;
+  }
+  birdMood.value = "yum";
+  if (moodTimer !== null) clearTimeout(moodTimer);
+  moodTimer = window.setTimeout(() => (birdMood.value = "idle"), 1200);
+}
+
 const session = useQuizSession<Word>(() => props.words, {
   onProgress: (p) => emit("progress", p),
   onCorrect: async (w) => {
     sfxCorrect();
     progress.recordWord(w.lessonId, w.id, { correct: 1 });
-    // 答对先完整播放正确单词读音，再播"太棒了"（串行不互相打断）
+    // 图卡飞入鸟嘴 → 鸟嚼 → 播单词音 → "太棒了"（串行不互相打断）
+    await feedBird(w);
     await speak(w.en, { lessonId: w.lessonId, wordId: w.id });
     await speak("太棒了");
   },
   onWrong: async (picked) => {
     sfxWrong();
     progress.recordWord(picked.lessonId, picked.id, { wrong: 1 });
-    // 点错也播放所点单词的读音（孩子知道自己点的是什么）
+    // 鸟垂头；点错也播放所点单词的读音（孩子知道自己点的是什么）
+    birdMood.value = "oops";
+    if (moodTimer !== null) clearTimeout(moodTimer);
+    moodTimer = window.setTimeout(() => (birdMood.value = "idle"), 800);
     await speak(picked.en, { lessonId: picked.lessonId, wordId: picked.id });
-    // 教育语音先行，吉祥物打气殿后（乐乐鸟只打气，不否定孩子）
-    mascot.oops();
+    // 教育语音先行，打气殿后（纯语音：舞台鸟已做视觉反应，浮层鸟退位）
+    mascot.oopsVoice();
   },
   onExplore: (w) => {
     sfxTap();
@@ -71,9 +113,11 @@ function replay() {
   playTarget();
 }
 
-function onPick(opt: Word) {
+function onPick(e: Event, opt: Word) {
   if (locked.value) return;
   if (wrongPicks.value.has(opt.id)) return;
+  // 记住所点图卡：答对时它要飞进鸟嘴
+  pressedEl = (e.currentTarget as HTMLElement) ?? null;
   // 发音统一交给 pick 回调（答对：先单词音再"太棒了"；答错：单词音）——避免互相打断
   pick(opt);
 }
@@ -89,6 +133,7 @@ watch(
   () => session.idx.value,
   () => {
     selectedKey.value = null;
+    birdMood.value = "idle"; // 新题：鸟回到待喂
     const t = q.value?.target;
     if (!t) return;
     setTimeout(playTarget, 350);
@@ -96,17 +141,31 @@ watch(
   { immediate: true }
 );
 
-onBeforeUnmount(() => { speaking.value = false; cleanup(); });
+onBeforeUnmount(() => {
+  speaking.value = false;
+  cleanup();
+  if (moodTimer !== null) clearTimeout(moodTimer);
+});
 </script>
 
 <template>
   <div class="quiz view">
     <StageHead class="quiz-head" :text="progressText" tag="听音选图" :icon="Headphones" />
-    <button class="big-speaker anim-float" @click="replay" aria-label="再听一遍" title="再听一遍">
-      <Volume2 class="k-ico" />
-      <SpeakWave v-if="speaking" size="lg" />
-    </button>
+    <div class="feeder-row">
+      <button class="big-speaker anim-float" @click="replay" aria-label="再听一遍" title="再听一遍">
+        <Volume2 class="k-ico" />
+        <SpeakWave v-if="speaking" size="lg" />
+      </button>
+      <!-- 喂乐乐鸟：答对的图卡飞进鸟嘴（2026-11-15 杠杆③ 皮肤首例） -->
+      <QuizFeedBird ref="bird" :mood="birdMood" />
+    </div>
     <p class="tip">{{ inCatchUp ? "刚才卡住的词，再来挑战一次！" : "听一听，点正确的图片" }}</p>
+
+    <!-- 飞行食物：所点图卡的迷你克隆，抛物线飞进鸟嘴（useFlyToEl 驱动） -->
+    <div v-if="flyWord" ref="flyEl" class="fly-food" aria-hidden="true">
+      <img v-if="flyWord.image && !imgFail[flyWord.id]" :src="flyWord.image" :alt="flyWord.en" />
+      <span v-else>{{ flyWord.emoji }}</span>
+    </div>
 
     <div class="options view-body">
       <div
@@ -118,7 +177,7 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
           right: locked && opt.id === q.target.id,
           wrong: wrongPicks.has(opt.id)
         }"
-        @click="onPick(opt)"
+        @click="onPick($event, opt)"
       >
         <div class="pic">
           <!-- 颜色词（l11 听音选图等）：统一显示颜色圆圈，不用 emoji/图片
@@ -154,6 +213,39 @@ onBeforeUnmount(() => { speaking.value = false; cleanup(); });
 }
 .quiz-head {
   margin-bottom: var(--gap-s);
+}
+/* 喂鸟行：喇叭 + 乐乐鸟并排（鸟答对吃图、答错垂头） */
+.feeder-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-m);
+  flex: none;
+}
+.fly-food {
+  position: fixed;
+  z-index: 45;
+  width: 56px;
+  height: 56px;
+  left: -9999px; /* 首帧藏在屏外，flyOne 接管后再上屏 */
+  top: -9999px;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.fly-food img,
+.fly-food span {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  font-size: 34px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(var(--shadow-chip));
 }
 .big-speaker {
   width: clamp(64px, min(15vh, 12vw), 120px);

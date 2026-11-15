@@ -97,6 +97,16 @@ function collectionGreet() {
   say(pickMascotLine(MASCOT_LINES.collection, bubble.value), { mood: "cheer", popup: false });
 }
 
+/**
+ * 答错打气·纯语音（无气泡不飞入）：舞台内有实体角色反应时用（如 quiz 的喂鸟
+ * 皮肤），避免全局浮层鸟与舞台鸟同框两只。
+ */
+function oopsVoice() {
+  void speakZh(pickMascotLine(MASCOT_LINES.oops, bubble.value), MASCOT_VOICE.rate, {
+    pitch: MASCOT_VOICE.pitch,
+  });
+}
+
 export function useMascot() {
   return {
     bubble,
@@ -105,6 +115,7 @@ export function useMascot() {
     say,
     cheer,
     oops,
+    oopsVoice,
     chest,
     greet,
     idleChatter,

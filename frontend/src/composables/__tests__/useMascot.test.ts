@@ -98,3 +98,17 @@ describe("useMascot · 事件助手", () => {
     }
   });
 });
+
+describe("useMascot · oopsVoice（舞台鸟皮肤的纯语音打气）", () => {
+  it("只出语音：不设气泡、不触发浮层飞入（避免与舞台鸟同框）", () => {
+    const m = useMascot();
+    m.oopsVoice();
+    expect(m.bubble.value).toBe(""); // 没有气泡
+    expect(m.popupActive.value).toBe(false); // 没有浮层
+    // 带角色音色（rate/pitch 与 say 一致）
+    const call = vi.mocked(speakZh).mock.calls[0];
+    expect(call?.[0]).toBeTruthy();
+    expect(call?.[1]).toBe(1.05);
+    expect(call?.[2]).toMatchObject({ pitch: 1.4 });
+  });
+});
