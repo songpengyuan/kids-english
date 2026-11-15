@@ -14,13 +14,19 @@
  */
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
+import net from "node:net";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CHROME = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+// 端口策略（2026-11-15 双会话死锁教训）：CDP 口可 env 覆盖；preview 口默认
+// **系统分配空闲端口**（与 smoke.mjs 同模式）——曾写死 4173 且 freePort 会
+// lsof 杀掉占用者，两个会话同时跑 verify-pwa（如都在 push）就互相杀服务器、
+// 抢默认 Chrome 配置文件锁，双双永久挂起。AUDIT_PORT 可显式指定（CI 固定口）。
 const CDP_PORT = Number(process.env.AUDIT_PORT || 9340);
-const PREVIEW_PORT = 4173;
+const PREVIEW_PORT = Number(process.env.PWA_PREVIEW_PORT) || (await findFreePort());
 // 双根布局（与生产 zelab.cn 同构）：站点根 = 备案落地页，SPA 在 /app/ 子目录，
 // sw.js 与 manifest/图标在根（注册 /sw.js、scope /）。曾按旧的"子路径单根"布局
 // 导航到 /kids-english/——打开的是不注册 SW 的备案页，SW 永远"未接管"（2026-10-25 排查）。
@@ -88,20 +94,30 @@ async function waitPreview() {
   }
   return false;
 }
-function freePort(port) {
-  spawnSync("/bin/sh", ["-c", `lsof -ti:${port} | xargs kill -9 2>/dev/null; true`]);
+/** 系统分配一个空闲端口（listen(0)，与 smoke.mjs 同模式；env 覆盖时用固定口） */
+function findFreePort() {
+  return new Promise((resolve, reject) => {
+    const probe = net.createServer();
+    probe.on("error", reject);
+    probe.listen(0, "127.0.0.1", () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
 }
 
-freePort(PREVIEW_PORT);
 let preview = startPreview();
 if (!(await waitPreview())) {
   console.error("preview 没起来");
   process.exit(1);
 }
 
+// Chrome 用一次性 profile：默认配置文件有进程级锁，两个实例并发 = 后者静默挂起
+const profile = fs.mkdtempSync(path.join(os.tmpdir(), "kids-pwa-"));
 const chrome = spawn(CHROME, [
   "--headless=new",
   "--no-sandbox",
+  `--user-data-dir=${profile}`,
   `--remote-debugging-port=${CDP_PORT}`,
   "--no-first-run",
   "--no-default-browser-check",
