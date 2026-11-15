@@ -142,11 +142,14 @@ try {
         }
       }
     }
-    // 单词图软校验（缺失可降级 emoji，只告警）
+    // 单词图软校验（缺失可降级 emoji，只告警）。
+    // ⚠️ normalize 给词图拼了 ?v=<WORD_IMAGE_REV>（CDN 缓存击穿，见 lessons.ts），
+    // 这里必须剥掉 query 再查盘——否则 2088ec7 之后所有词图都在误报缺失
+    // （实测 66 条假警报，真缺图会被淹没），软校验形同虚设
     for (const w of l.words || []) {
       const img = w.image;
       if (img && img.startsWith("/lessons/")) {
-        const rel = "public" + img;
+        const rel = "public" + img.split("?")[0];
         if (!existsSync(join(root, rel))) warns.push(`课时 ${l.id} 单词图缺失（将降级 emoji）：${img}`);
       }
     }

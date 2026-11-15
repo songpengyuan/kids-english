@@ -40,6 +40,7 @@
 | l10 丛林里散步 | `stageStyle: dialog`（对话卡）+ `spinner: true` + phrases（解锁 order 拼句子 + talk 亲子对话） |
 | l11 棕熊 | `wordGroups`（颜色/动物）+ `song.tracks` 分轨 + `colorPairs` 颜色配对 + 颜色词 `word.color` + `spinner: true` + phrases（解锁 order 拼句子 + talk 亲子对话） |
 | l12 公交车轮子 | `spinner: true`（转盘复习）+ phrases（解锁 order 拼句子 + talk 亲子对话） |
+| l13 晚安，大猩猩 | `spinner: true`（转盘复习）+ phrases ×9（解锁 order 拼句子 + talk 亲子对话） |
 
 ## 四、加课决策流程
 

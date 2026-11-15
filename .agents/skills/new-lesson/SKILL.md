@@ -49,6 +49,8 @@ python3 scripts/gen-word-audio.py            # 单词+口语句发音 mp3（edge
 pnpm lesson:pipeline                         # 一键串联：词图 → 词音 → export 种子 → 数据校验（fail-fast）
 python3 scripts/gen-word-art.py <...>        # 词图生成（见脚本 docstring）
 python3 scripts/optimize-word-art.py         # 词图去白底 → 透明 WebP；入库后删源 PNG
+                                             # ⚠️ 改任何词图后，lessons.ts 的 WORD_IMAGE_REV 手动 +1
+                                             # （CDN 30 天强缓存击穿用，见 2088ec7；忘 +1 = 线上看旧图）
 node scripts/optimize-videos.mjs             # mp4 → 720p/CRF26/faststart + 首帧 poster
                                              # （94.5MB→31MB 的教训：视频是 PWA 缓存大头，别上原片）
 ```
