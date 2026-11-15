@@ -210,7 +210,9 @@ describe("speech: mp3 3s 超时降级（声音系统重构 2026-10-12）", () =>
     expect(cap().map((x) => x.u.text)).toContain("blue");
   });
 
-  it("默认（开关关闭）：直接原生 TTS，不创建 mp3 Audio、无加载等待（2026-10-12 发音效率策略）", async () => {
+  it("开关关闭（显式）：直接原生 TTS，不创建 mp3 Audio、无加载等待", async () => {
+    // 2026-11-15 起默认开（Ana 童声定版出货，见 speech.ts 注释）；本例锁定
+    // "显式关"仍走得通——家长设备极端弱网时的逃生门
     setPrerecordedEnabled(false);
     const p = speak("blue", { lessonId: "l4", wordId: "blue" });
     await vi.advanceTimersByTimeAsync(200);
@@ -229,5 +231,39 @@ describe("speech: mp3 3s 超时降级（声音系统重构 2026-10-12）", () =>
     await p;
     // 已开始播放：全程不降级到 TTS
     expect(cap()).toHaveLength(0);
+  });
+});
+
+describe("speech: 预生成 mp3 默认开关（2026-11-15 策略回切）", () => {
+  /** 极简 Audio 桩：无条件计数（playAudio 是 new Audio() 后再赋 src） */
+  class StubAudio {
+    static instances: StubAudio[] = [];
+    src = "";
+    constructor() {
+      StubAudio.instances.push(this);
+    }
+    play() {
+      return Promise.resolve();
+    }
+    pause() {}
+    addEventListener() {}
+  }
+  beforeEach(() => {
+    vi.stubGlobal("Audio", StubAudio);
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.resetModules(); // 下一个用例拿到干净模块（默认开关不被本组用例污染）
+  });
+
+  it("模块默认 = 开：点词直接创建 mp3 Audio（回归：Ana 定版童声曾因没人调 setPrerecordedEnabled(true) 从未出货）", async () => {
+    vi.resetModules();
+    const fresh = (await import("../speech")) as typeof import("../speech");
+    fresh.speak("blue", { lessonId: "l4", wordId: "blue" });
+    expect(StubAudio.instances.length).toBeGreaterThan(0);
+    fresh.stopSpeaking();
+    await vi.advanceTimersByTimeAsync(0);
   });
 });

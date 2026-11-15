@@ -41,7 +41,14 @@ for (const l of lessons) {
  * mp3 文件保留在 public/lessons/<课>/audio/，降级逻辑未删；后续需要更自然的
  * 童声时调 `setPrerecordedEnabled(true)` 即回切（仍带 3s 未播放→TTS 兜底）。
  */
-let prerecordedEnabled = false;
+/**
+ * 预生成 mp3 开关。策略演变：2026-10-12 为"发音效率"默认关（点词零加载等待、
+ * 直出系统 TTS）；2026-11-07 童声 Ana 全量重生成 96 音定版后，本应回切却一直
+ * 没人调 setPrerecordedEnabled(true)——发音审计（2026-11-15）抓出"定版童声从未
+ * 出货"，默认改回 **开**。词卡/短语点读优先 mp3（Ana 童声），mp3 缺失或 3 秒
+ * 未出声自动降级 TTS，不产生静音窗。
+ */
+let prerecordedEnabled = true;
 export function setPrerecordedEnabled(v: boolean): void {
   prerecordedEnabled = v;
 }
