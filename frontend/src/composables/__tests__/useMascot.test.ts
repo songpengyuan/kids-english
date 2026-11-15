@@ -29,7 +29,8 @@ describe("useMascot · say 基础行为", () => {
     expect(m.bubble.value).toBe("太棒啦");
     expect(m.mood.value).toBe("cheer");
     expect(m.popupActive.value).toBe(true);
-    expect(speakZh).toHaveBeenCalledWith("太棒啦");
+    // 角色音色：鸟的语音带 MASCOT_VOICE 参数（rate 1.05 / pitch 1.4），与全站 1.1 区分
+    expect(speakZh).toHaveBeenCalledWith("太棒啦", 1.05, { pitch: 1.4 });
     vi.advanceTimersByTime(2600);
     expect(m.bubble.value).toBe("");
     expect(m.popupActive.value).toBe(false);

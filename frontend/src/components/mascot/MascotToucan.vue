@@ -21,6 +21,7 @@ import { useRoute } from "vue-router";
 import { useMascot } from "../../composables/useMascot";
 import { shouldShowNav } from "../layout/nav-visibility";
 import { hapticTap } from "../../services/haptics";
+import { sfxChirp } from "../../services/effects";
 
 const route = useRoute();
 const { bubble, mood, popupActive, greet, idleChatter } = useMascot();
@@ -60,8 +61,15 @@ watch(
   { immediate: true }
 );
 
+// 事件出场（popup 飞入）先"啾"一声：鸟的听觉身份，两连高频短音，
+// 比语音更早确认"是乐乐鸟来了"（语音可能被音乐门/静音开关压住）
+watch(popupActive, (v) => {
+  if (v) sfxChirp();
+});
+
 function onTap() {
   hapticTap();
+  sfxChirp();
   idleChatter();
 }
 

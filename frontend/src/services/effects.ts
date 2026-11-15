@@ -158,3 +158,13 @@ export function sfxCollect() {
   tone(1046, 0, 0.1, "triangle", 0.12);
   tone(1318, 0.09, 0.18, "triangle", 0.12);
 }
+
+/**
+ * 乐乐鸟出场"啾啾"：高频短促两连音，给鸟一个听得见的身份（语音之外的第二音色）。
+ * 极轻（gain 0.05 档）：它是"同伴来了"的环境音，不是奖励音，响了会抢戏；
+ * 高频选择 sine 而非 square——square 的"电子感"会破坏黏土质感的柔和。
+ */
+export function sfxChirp() {
+  tone(1568, 0, 0.09, "sine", 0.05); // G6
+  tone(2093, 0.08, 0.12, "sine", 0.05); // C7，上行小问号感
+}

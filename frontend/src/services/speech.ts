@@ -159,8 +159,12 @@ if ("speechSynthesis" in window) {
   };
 }
 
-/** 朗读一段文本（TTS）；完成返回 true，失败/环境不支持返回 false。同一时刻只读一条，自动打断上一条。 */
-function speakWithTTS(text: string, { rate = 0.85, lang = "en-US" }: { rate?: number; lang?: string }): Promise<boolean> {
+/** 朗读一段文本（TTS）；完成返回 true，失败/环境不支持返回 false。同一时刻只读一条，自动打断上一条。
+ *  pitch：1.0=系统原声；吉祥物「乐乐鸟」用高音调做角色音色（默认 1.1 保持全站历史听感）。 */
+function speakWithTTS(
+  text: string,
+  { rate = 0.85, lang = "en-US", pitch = 1.1 }: { rate?: number; lang?: string; pitch?: number }
+): Promise<boolean> {
   return new Promise((resolve) => {
     if (!("speechSynthesis" in window) || typeof window.speechSynthesis.speak !== "function") {
       resolve(false);
@@ -190,7 +194,7 @@ function speakWithTTS(text: string, { rate = 0.85, lang = "en-US" }: { rate?: nu
     if (v) u.voice = v;
     u.lang = lang;
     u.rate = rate; // 放慢一点，适合幼儿
-    u.pitch = 1.1;
+    u.pitch = pitch;
     u.onend = () => {
       if (seq === ttsSeq) done(true); // 已被新请求覆盖时，旧回调不结算当前状态
     };
@@ -318,6 +322,11 @@ export interface SpeakZhOptions {
    * 它们是"内容"不是"提示语"，静音开关只管提示音与庆祝语）。
    */
   bypassMute?: boolean;
+  /**
+   * 音调（1.0=系统原声，上限 2.0）。吉祥物「乐乐鸟」用高音调（约 1.4）
+   * 做角色音色；不传保持全站默认 1.1。定版走局域网试听页（voice-lab）。
+   */
+  pitch?: number;
 }
 
 /**
@@ -329,5 +338,5 @@ export interface SpeakZhOptions {
 export async function speakZh(text: string, rate = 1, opts: SpeakZhOptions = {}): Promise<void> {
   if (!opts.bypassMute && !soundEnabled()) return;
   if (musicPlaying()) return; // 背景音乐门：TTS 会暂停 iOS 上的歌（见 musicPlaying 注释）
-  await speakWithTTS(text, { rate, lang: "zh-CN" });
+  await speakWithTTS(text, { rate, lang: "zh-CN", pitch: opts.pitch });
 }

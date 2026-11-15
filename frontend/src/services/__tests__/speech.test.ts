@@ -82,6 +82,14 @@ describe("speech: TTS 语言选择", () => {
     expect(cap()[0].u.lang).toBe("zh-CN");
     expect((cap()[0].u.voice as { lang: string }).lang.startsWith("zh")).toBe(true);
   });
+
+  it("pitch 透传：吉祥物角色音色（默认 1.1 不变，传参可抬高）", async () => {
+    await speakZh("你好");
+    expect(cap()[cap().length - 1].u.pitch).toBe(1.1); // 不传 = 全站历史听感
+    await speakZh("没关系，再试一次！", 1.05, { pitch: 1.4 });
+    expect(cap()[cap().length - 1].u.pitch).toBe(1.4); // 乐乐鸟
+    expect(cap()[cap().length - 1].u.rate).toBe(1.05);
+  });
 });
 
 describe("speech: speakZh 静音语义", () => {

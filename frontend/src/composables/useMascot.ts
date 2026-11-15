@@ -18,6 +18,14 @@ import { MASCOT_LINES, pickMascotLine } from "../data/mascotLines";
 
 export type MascotMood = "idle" | "cheer" | "oops";
 
+/**
+ * 乐乐鸟的角色音色（2026-11-15 用户口径：小鸟说话要有独有的音色）。
+ * 全站中文 TTS 默认 pitch 1.1，鸟抬高到 1.4 + 略快语速 = 亮一点、急一点，
+ * 一耳朵就能认出"是鸟在说话"。定版走局域网试听页（public/voice-lab.html，
+ * 未入库）：孩子听完拍板后改这一处即可全站生效。
+ */
+export const MASCOT_VOICE = { rate: 1.05, pitch: 1.4 } as const;
+
 /** 气泡文案（空 = 无气泡） */
 const bubble = ref("");
 const mood = ref<MascotMood>("idle");
@@ -43,7 +51,7 @@ function say(text: string, opts: MascotSayOptions = {}) {
   bubble.value = text;
   mood.value = m;
   if (popup) popupActive.value = true;
-  if (voice) void speakZh(text);
+  if (voice) void speakZh(text, MASCOT_VOICE.rate, { pitch: MASCOT_VOICE.pitch });
   if (bubbleTimer !== null) clearTimeout(bubbleTimer);
   bubbleTimer = window.setTimeout(() => {
     bubble.value = "";
