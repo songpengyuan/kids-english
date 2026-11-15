@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onScopeDispose, ref, watch } from "vue";
 import { speak } from "../../services/speech";
+import { useMascot } from "../../composables/useMascot";
 import { sfxCorrect, sfxTap, sfxWrong } from "../../services/effects";
 import type { Lesson, Word } from "../../data/lessons";
 import { orderSentences } from "../../utils/orderSentences";
 import StageHead from "./StageHead.vue";
 
 const props = defineProps<{ lesson: Lesson }>();
+const mascot = useMascot();
 const emit = defineEmits(["done", "progress", "total"]);
 
 /**
@@ -82,11 +84,13 @@ function pick(w: Word) {
     lock.value = true;
     solved.value = true;
     sfxCorrect();
-    void speak(cur.value.en, { lessonId: props.lesson.id });
+    // 整句朗读后乐鸟用英文夸一句（句子级英语输入 + 陪伴反馈；「看答案」路径不夸）
+    void speak(cur.value.en, { lessonId: props.lesson.id }).then(() => mascot.cheerEn());
   } else {
     wrongCount.value++;
     errKey.value = w.id;
     sfxWrong();
+    mascot.oopsVoice(); // 乐鸟打气（只鼓励不否定）
     // 点错也念一下孩子点到的词，让他知道自己指的是什么
     void speak(w.en, { lessonId: props.lesson.id, wordId: w.id });
     setTimeout(() => (errKey.value = null), 500);

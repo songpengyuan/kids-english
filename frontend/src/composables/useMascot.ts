@@ -13,7 +13,7 @@
  * 两句中文 TTS 背靠背会互相打断。
  */
 import { ref } from "vue";
-import { speakZh } from "../services/speech";
+import { speak, speakZh } from "../services/speech";
 import { MASCOT_LINES, pickMascotLine } from "../data/mascotLines";
 
 export type MascotMood = "idle" | "cheer" | "oops";
@@ -107,6 +107,24 @@ function oopsVoice() {
   });
 }
 
+/**
+ * 答对英文鼓励·纯语音（无气泡不飞入）：英语启蒙的答对反馈就该是英语——
+ * 此前全站答对只有音效，孩子听英语的机会全在词/歌本身。乐鸟用角色音色
+ * 说一句极简英文（Great job! 级别），陪伴感与英语输入一次到位。
+ * 同池连着两次不重样（pickMascotLine）；调用方负责与词音的先后
+ * （mp3 读完后接，speak 统一打断语义由 stopSpeaking 保证不叠音）。
+ */
+let lastCheerEn = "";
+function cheerEn() {
+  const line = pickMascotLine(MASCOT_LINES.cheerEn, lastCheerEn);
+  lastCheerEn = line;
+  void speak(line, {
+    ttsOnly: true,
+    rate: MASCOT_VOICE.rate,
+    pitch: MASCOT_VOICE.pitch,
+  });
+}
+
 export function useMascot() {
   return {
     bubble,
@@ -116,6 +134,7 @@ export function useMascot() {
     cheer,
     oops,
     oopsVoice,
+    cheerEn,
     chest,
     greet,
     idleChatter,

@@ -64,7 +64,7 @@ const session = useQuizSession<Word>(() => props.words, {
     // 图卡飞入鸟嘴 → 鸟嚼 → 播单词音 → "太棒了"（串行不互相打断）
     await feedBird(w);
     await speak(w.en, { lessonId: w.lessonId, wordId: w.id });
-    await speak("太棒了");
+    mascot.cheerEn();
   },
   onWrong: async (picked) => {
     sfxWrong();

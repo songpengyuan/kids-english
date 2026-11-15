@@ -4,6 +4,7 @@ import { speak } from "../../services/speech";
 import { sfxCorrect, sfxWrong } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import { useSpeechSession } from "../../composables/useSpeechSession";
+import { useMascot } from "../../composables/useMascot";
 import type { Word } from "../../data/lessons";
 import { ChevronRight, Mic, RotateCcw, Square, ThumbsUp, Volume2 } from "@lucide/vue";
 import BaseButton from "../ui/BaseButton.vue";
@@ -14,6 +15,7 @@ const props = defineProps<{ words: Word[] }>();
 const emit = defineEmits(["done", "progress", "total"]);
 
 const progress = useProgressStore();
+const mascot = useMascot();
 
 /**
  * 跟我读：双模式会话（ASR 自动打分 / 录音回放 + 家长判定）在 useSpeechSession 里，
@@ -25,11 +27,12 @@ const session = useSpeechSession(
     onCorrect: (w) => {
       sfxCorrect();
       // 撒花只在关卡完成时（useLessonFlow）触发，单个词读对只用音效+触感反馈
-      speak(w.en, { lessonId: w.lessonId, wordId: w.id });
+      speak(w.en, { lessonId: w.lessonId, wordId: w.id }).then(() => mascot.cheerEn());
       progress.recordWord(w.lessonId, w.id, { correct: 1 }); // SRS 进一级
     },
     onWrong: (w) => {
       sfxWrong();
+      mascot.oopsVoice(); // 乐鸟打气（只鼓励不否定）
       progress.recordWord(w.lessonId, w.id, { wrong: 1 }); // 打回 stage 0 → 复习队列
     },
     // 完成一次真实张口尝试即计"今日开口"（鼓励向，retry/录音也计；不影响星级）

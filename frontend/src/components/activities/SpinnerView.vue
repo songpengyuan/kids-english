@@ -18,6 +18,7 @@ import { speak } from "../../services/speech";
 import { sfxCorrect, sfxTap } from "../../services/effects";
 import { celebrate } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
+import { useMascot } from "../../composables/useMascot";
 import { shuffleWith } from "../../utils/quizSession";
 import { createRecorder, recorderSupported } from "../../utils/speechScore";
 import type { Word } from "../../data/lessons";
@@ -32,6 +33,7 @@ import {
 } from "@lucide/vue";
 
 const props = defineProps<{ words: Word[] }>();
+const mascot = useMascot();
 const emit = defineEmits(["done", "progress", "total"]);
 
 const progress = useProgressStore();
@@ -166,6 +168,7 @@ async function stopListening() {
     micPhase.value = "done";
     progress.addSpeakAttempt();
     sfxCorrect();
+    mascot.cheerEn(); // 乐鸟用英文夸一句（说完一词的正反馈）
   } else {
     micPhase.value = "idle";
   }

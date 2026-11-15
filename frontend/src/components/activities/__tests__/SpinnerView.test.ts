@@ -11,7 +11,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 
-vi.mock("../../../services/speech", () => ({ speak: vi.fn(), speakText: vi.fn(), stopSpeaking: vi.fn() }));
+vi.mock("../../../services/speech", () => ({ speak: vi.fn(), speakText: vi.fn(), stopSpeaking: vi.fn(), speakZh: vi.fn() }));
 vi.mock("../../../services/effects", () => ({
   sfxTap: vi.fn(),
   sfxCorrect: vi.fn(),

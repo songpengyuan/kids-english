@@ -7,6 +7,7 @@ import { useLearnSession } from "../../composables/useLearnSession";
 import { useSpeechSession } from "../../composables/useSpeechSession";
 import { useWhisperPrompt } from "../../composables/useWhisperPrompt";
 import { useProgressStore } from "../../stores/progress";
+import { useMascot } from "../../composables/useMascot";
 import { speak, speakText } from "../../services/speech";
 import type { Word, Phrase } from "../../data/lessons";
 import { Check, Mic, MousePointerClick, Square, Volume2 } from "@lucide/vue";
@@ -29,6 +30,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits(["done", "progress", "total"]);
 const progress = useProgressStore();
+const mascot = useMascot();
 
 const {
   stageEl,
@@ -63,6 +65,7 @@ const remaining = computed(() => Math.max(0, props.words.length - tappedCount.va
 function finish() {
   if (!canFinish.value) return;
   sfxCorrect();
+  mascot.cheerEn(); // 全部点完：乐鸟英文夸一句（结算报星紧随其后，语音不冲突——报星走 speakZh，speak 打断语义保证先后）
   bigCelebrate();
   celebrate();
   // 星级：dialog = 首次通过率；cards = 点读覆盖率，交给 useLessonFlow 记录
@@ -111,7 +114,10 @@ const session = useSpeechSession(computed(() => props.words), {
     }
   },
   onWrong: () => {
-    if (props.dialog) sfxWrong();
+    if (props.dialog) {
+      sfxWrong();
+      mascot.oopsVoice(); // 亲子对话答错：乐鸟打气（不否定）
+    }
   },
   // 仅 dialog 亲子对话计开口；cards 点读卡的轻跟读由独立 composable 计数，避免重复
   onSpeakAttempt: () => {

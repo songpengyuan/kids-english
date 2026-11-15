@@ -8,8 +8,8 @@
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("../../services/speech", () => ({ speakZh: vi.fn() }));
-import { speakZh } from "../../services/speech";
+vi.mock("../../services/speech", () => ({ speak: vi.fn(), speakZh: vi.fn() }));
+import { speak, speakZh } from "../../services/speech";
 import { useMascot, __resetMascotState } from "../useMascot";
 import { MASCOT_LINES } from "../../data/mascotLines";
 
@@ -95,6 +95,32 @@ describe("useMascot · 事件助手", () => {
   it("话术池每池至少 4 条（轮换需要）", () => {
     for (const lines of Object.values(MASCOT_LINES)) {
       expect(lines.length).toBeGreaterThanOrEqual(4);
+    }
+  });
+});
+
+describe("useMascot · cheerEn（答对英文鼓励，2026-11-15）", () => {
+  it("纯语音说英语：角色音色 + en-US TTS，不设气泡不飞入", () => {
+    const m = useMascot();
+    m.cheerEn();
+    expect(m.bubble.value).toBe("");
+    expect(m.popupActive.value).toBe(false);
+    expect(speak).toHaveBeenCalledTimes(1);
+    const [text, opts] = vi.mocked(speak).mock.calls[0];
+    expect(MASCOT_LINES.cheerEn).toContain(text); // 话术出自英文鼓励池
+    expect(opts).toMatchObject({ ttsOnly: true, rate: 1.05, pitch: 1.4 });
+  });
+
+  it("同池连着两次不重样（随机轮换）", () => {
+    const m = useMascot();
+    const seen: string[] = [];
+    for (let i = 0; i < 8; i++) {
+      vi.mocked(speak).mockClear();
+      m.cheerEn();
+      seen.push(vi.mocked(speak).mock.calls[0][0] as string);
+    }
+    for (let i = 1; i < seen.length; i++) {
+      expect(seen[i]).not.toBe(seen[i - 1]); // 相邻两次必不同
     }
   });
 });

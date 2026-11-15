@@ -281,11 +281,13 @@ export interface SpeakOptions {
   ttsOnly?: boolean;
   /** mp3 加载超时（ms）；默认 3000 */
   timeoutMs?: number;
+  /** 音调（乐乐鸟角色音色 1.4；默认 1.1 保持全站历史听感） */
+  pitch?: number;
 }
 
 export async function speak(
   text: string,
-  { rate = 0.85, lang = "en-US", lessonId = null, wordId = null, ttsOnly = false, timeoutMs = 3000 }: SpeakOptions = {}
+  { rate = 0.85, lang = "en-US", lessonId = null, wordId = null, ttsOnly = false, timeoutMs = 3000, pitch }: SpeakOptions = {}
 ): Promise<void> {
   stopSpeaking(); // 统一打断上一条（mp3/TTS/挂起的延迟发声），保证"点哪读哪"
   speaking.value = true;
@@ -293,7 +295,7 @@ export async function speak(
     if (ttsOnly) {
       // 装饰性 TTS（课程名/标签）：音乐播放期间闭嘴（iOS TTS 会暂停歌，见 musicPlaying）
       if (musicPlaying()) return;
-      await speakWithTTS(text, { rate, lang });
+      await speakWithTTS(text, { rate, lang, pitch });
       return;
     }
     let src = null;
