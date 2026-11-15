@@ -1,8 +1,12 @@
 /**
- * 游戏模式矢量图标（lucide 风格 24×24 stroke path）。
+ * 地图/界面矢量图标（lucide 风格 24×24 stroke path）。
  * 统一用矢量 icon 取代 emoji 表情：
- *  - 玩法图标：learn/quiz/memory/match/speak/order/talk/song/spinner
- *  - 课程图标：l4（波浪·水手）/ l5（号角·音乐人）等，按课时 id 取用。
+ *  - 玩法图标：learn/quiz/memory/match/speak/order/talk/song/spinner（地图节点
+ *    按 actKey 取用，覆盖检查见 pathIcons.test.ts——新增玩法最易漏的三处之一）；
+ *  - 应用级通用图标（back/close/flame…）在 APP_ICON_PATHS。
+ * 曾有一段"每课图标"（l4 波浪/l5 号角）+ 空 ICON_TEXT 表——2026-11-15 核查：
+ * 全站没有任何消费方按课时 id 取图标（课时卡用 emoji 封面），死代码已删。
+ * 若未来真需要课时级图标，按 ADR-007 惯例放课时数据里，而不是回到这里。
  */
 
 export const ICON_PATHS: Record<string, string[]> = {
@@ -54,25 +58,10 @@ export const ICON_PATHS: Record<string, string[]> = {
     "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8",
     "M21 3v5h-5",
   ],
-  // 课程：水手出海去（波浪）
-  "l4": [
-    "M2 9c2.2-2.6 5-2.6 7.2 0s5 2.6 7.2 0 5-2.6 7.2 0",
-    "M2 16c2.2-2.6 5-2.6 7.2 0s5 2.6 7.2 0 5-2.6 7.2 0",
-  ],
-  // 课程：I Am the Music Man（号角）
-  "l5": [
-    "M5 8h5l8-4v16l-8-4H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z",
-    "M18.5 9v6",
-  ],
   // 连击火焰（lucide Flame）
   flame: [
     "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z",
   ],
-  // 课程：A Rainbow of Colors（彩虹）
-};
-
-/** 课程 → 文本图标（数字/字母课，非 emoji 文字） */
-export const ICON_TEXT: Record<string, string> = {
 };
 
 /* ---------- 应用级通用图标（底部导航 / 我的页等，替代 emoji） ---------- */

@@ -12,16 +12,15 @@
   >
     <path v-for="(p, i) in paths" :key="i" :d="p" />
   </svg>
-  <span v-else class="path-icon-text">{{ text || label }}</span>
+  <span v-else class="path-icon-text">{{ text }}</span>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { ICON_PATHS, ICON_TEXT, APP_ICON_PATHS } from "../data/pathIcons";
+import { ICON_PATHS, APP_ICON_PATHS } from "../data/pathIcons";
 
 const props = defineProps<{ name?: string; text?: string }>();
 const paths = computed(() => (props.name ? ICON_PATHS[props.name] || APP_ICON_PATHS[props.name] || [] : []));
-const label = computed(() => (props.name ? ICON_TEXT[props.name] : ""));
 </script>
 
 <style scoped>
