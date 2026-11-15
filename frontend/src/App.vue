@@ -3,6 +3,7 @@ import { computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import CuteBackdrop from "./components/CuteBackdrop.vue";
 import BottomNav from "./components/layout/BottomNav.vue";
+import MascotToucan from "./components/mascot/MascotToucan.vue";
 import { shouldShowNav } from "./components/layout/nav-visibility";
 import { useStreakStore } from "./stores/streak";
 import { useAuthStore } from "./stores/auth";
@@ -117,6 +118,8 @@ onMounted(() => {
     </KeepAlive>
   </router-view>
   <BottomNav v-if="showNav" />
+  <!-- 吉祥物「乐乐鸟」：dock 常驻（主 tab/课程详情）+ 玩法页事件出场，全 App 单实例 -->
+  <MascotToucan />
 </template>
 
 <style>

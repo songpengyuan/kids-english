@@ -19,6 +19,7 @@ import { useProgressStore } from "../../stores/progress";
 import { useStreakStore } from "../../stores/streak";
 import { useQuest, type QuestAct } from "../useQuest";
 import { useLessonFlow, type UseLessonFlow } from "../useLessonFlow";
+import { useMascot } from "../useMascot";
 
 vi.mock("../../services/effects", () => ({ bigCelebrate: vi.fn(), celebrate: vi.fn() }));
 vi.mock("../../services/speech", () => ({ speak: vi.fn(), speakZh: vi.fn() }));
@@ -220,7 +221,9 @@ describe("useLessonFlow 结算", () => {
     expect(p.progress.l4?.learn).toBe(3);
     expect(bigCelebrate).toHaveBeenCalled();
     expect(celebrate).not.toHaveBeenCalled();
-    expect(speakZh).toHaveBeenCalledWith("太厉害了，满分三颗星");
+    // 吉祥物只出气泡，语音让位给结算页报星（两句话背靠背会互相打断）
+    expect(useMascot().bubble.value).toBe("太厉害了，满分三颗星");
+    expect(speakZh).not.toHaveBeenCalled();
     // 今日学情：玩法会话时长被累计（actStart 在 open 时记录）
     // 会话不足 1 秒会被 round 成 0，改验证玩法计数被累计
     expect(p.todayStats.activities).toBe(1);
@@ -239,7 +242,8 @@ describe("useLessonFlow 结算", () => {
     expect(flow.lastStars.value).toBe(1);
     expect(bigCelebrate).not.toHaveBeenCalled();
     expect(celebrate).toHaveBeenCalled();
-    expect(speakZh).toHaveBeenCalledWith("做得好，继续加油");
+    expect(useMascot().bubble.value).toBe("做得好，继续加油");
+    expect(speakZh).not.toHaveBeenCalled();
   });
 
   it("闯关模式结算：触发 quest.finish 并进大画面", async () => {
@@ -250,6 +254,8 @@ describe("useLessonFlow 结算", () => {
     const quest = (wrapper.vm as unknown as { quest: { questDone: { value: boolean } } }).quest;
     expect(quest.questDone.value).toBe(true);
     expect(flow.stage.value).toBe("result");
+    // 闯关完成大画面：吉祥物气泡报"关卡完成"（语音同样由结算页报星接管）
+    expect(useMascot().bubble.value).toBe("关卡完成，太棒了");
   });
 
   it("afterSong 结算：进结算并累计今日学情（童谣星数由 SongView 内部记）", async () => {

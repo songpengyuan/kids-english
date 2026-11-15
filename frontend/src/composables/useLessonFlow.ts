@@ -19,9 +19,10 @@ import { splitActKey, type Lesson } from "../data/lessons";
 import { useContentStore } from "../stores/content";
 import type { QuestAct, UseQuest } from "./useQuest";
 import { bigCelebrate, celebrate } from "../services/effects";
-import { speak, speakZh } from "../services/speech";
+import { speak } from "../services/speech";
 import { hapticTap } from "../services/haptics";
 import { track } from "../services/telemetry";
+import { useMascot } from "./useMascot";
 
 /**
  * 课时流程阶段。
@@ -79,6 +80,8 @@ export interface UseLessonFlow {
 
 export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
   const { lesson, activities, route, router, progress, streak, isNarrow, quest } = options;
+  /** 吉祥物「乐乐鸟」：结算庆祝由它出场（气泡+动效），语音让给结算页报星 */
+  const mascot = useMascot();
 
   const stage = ref<LessonStage>("menu");
   const lastStars = ref(0);
@@ -167,7 +170,9 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
     quest.finish();
     markLevelPass();
     bigCelebrate();
-    speakZh("关卡完成，太棒了");
+    // 吉祥物只出气泡与动效：结算页报星（LessonResult onMounted）是语音的owner，
+    // 两句中文 TTS 背靠背会互相打断
+    mascot.resultCheer("关卡完成，太棒了");
     stage.value = "result";
   }
 
@@ -224,7 +229,8 @@ export function useLessonFlow(options: UseLessonFlowOptions): UseLessonFlow {
       // 庆祝收敛：满分才双彩带大庆祝，其余用小彩带
       if (s >= 3) bigCelebrate();
       else celebrate();
-      speakZh(s >= 3 ? "太厉害了，满分三颗星" : "做得好，继续加油");
+      // 语音由结算页报星接管，吉祥物只出气泡（同 finishQuestStep）
+      mascot.resultCheer(s >= 3 ? "太厉害了，满分三颗星" : "做得好，继续加油");
       stage.value = "result";
     }
   }

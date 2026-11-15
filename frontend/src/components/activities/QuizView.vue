@@ -4,6 +4,7 @@ import { speak } from "../../services/speech";
 import { sfxCorrect, sfxTap, sfxWrong } from "../../services/effects";
 import { useProgressStore } from "../../stores/progress";
 import { useQuizSession } from "../../composables/useQuizSession";
+import { useMascot } from "../../composables/useMascot";
 import type { Word } from "../../data/lessons";
 import { Headphones, Volume2 } from "@lucide/vue";
 import SpeakWave from "../ui/SpeakWave.vue";
@@ -14,6 +15,7 @@ const props = defineProps<{ words: Word[] }>();
 const emit = defineEmits(["done", "progress", "total"]);
 
 const progress = useProgressStore();
+const mascot = useMascot();
 const imgFail = ref<Record<string, boolean>>({});
 
 const session = useQuizSession<Word>(() => props.words, {
@@ -30,6 +32,8 @@ const session = useQuizSession<Word>(() => props.words, {
     progress.recordWord(picked.lessonId, picked.id, { wrong: 1 });
     // 点错也播放所点单词的读音（孩子知道自己点的是什么）
     await speak(picked.en, { lessonId: picked.lessonId, wordId: picked.id });
+    // 教育语音先行，吉祥物打气殿后（乐乐鸟只打气，不否定孩子）
+    mascot.oops();
   },
   onExplore: (w) => {
     sfxTap();

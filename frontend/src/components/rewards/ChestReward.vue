@@ -28,11 +28,13 @@ import { useRewardsStore } from "../../stores/rewards";
 import { formById } from "../../data/heroes";
 import { useChestMachine } from "../../composables/useChestMachine";
 import { useFlyToEl } from "../../composables/useFlyToEl";
+import { useMascot } from "../../composables/useMascot";
 import { shellRowsOf, rowOffsetOf } from "../../utils/shellLayout";
 import ShellIcon from "../ShellIcon.vue";
 import BaseButton from "../ui/BaseButton.vue";
 
 const rewards = useRewardsStore();
+const mascot = useMascot();
 
 const emit = defineEmits<{ done: [] }>();
 
@@ -45,6 +47,7 @@ const {
   onOpened: () => {
     sfxChestOpen();
     bigCelebrate();
+    mascot.chest(); // 乐乐鸟也来报喜（气泡+语音；本浮层无其他 TTS，不打架）
   },
   onRewardShown: (r) => {
     sfxCoin();
