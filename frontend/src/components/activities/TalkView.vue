@@ -136,7 +136,7 @@ const session = useSpeechSession(
   { afterReplay: () => playAnswer(cur.value) }
 );
 /** 解构会话状态/方法（模板中 ref 自动解包） */
-const { idx: dlgIdx, cur, status, grade, heard, mode, micBlocked, stars, progressText, total, recAudio, recUrl, startMic, stopMic, replayRec, parentJudge, retry, next } = session;
+const { idx: dlgIdx, cur, status, grading, grade, heard, mode, micBlocked, stars, progressText, total, recAudio, recUrl, startMic, stopMic, replayRec, parentJudge, retry, next } = session;
 
 /**
  * 推进到下一轮：切索引 → status/grade 归位（下一轮回到"等你说"）。
@@ -357,25 +357,29 @@ function finish() {
         <!-- 录音回放 + 家长判定（识别不可用时的降级） -->
         <template v-else>
           <audio ref="recAudio" :src="recUrl ?? undefined" class="ci-audio" />
-          <p class="ci-hint">听一下孩子说的，判定这轮是否通过</p>
-          <div v-if="recUrl" class="ci-replay-row">
-            <button class="ci-replay" @click="replayRec" aria-label="再听一遍孩子的发音">
-              <Volume2 class="k-ico" />再听一遍
-            </button>
-          </div>
-          <div class="ci-judge">
-            <template v-if="grade === 'retry'">
-              <BaseButton variant="green" @click="retry()">再试一次</BaseButton>
-            </template>
-            <template v-else>
-              <BaseButton variant="green" :disabled="advancing" @click="parentJudge(true)">
-                读对了 ✓
-              </BaseButton>
-              <BaseButton variant="orange" :disabled="advancing" @click="judgeMiss">
-                没读准
-              </BaseButton>
-            </template>
-          </div>
+          <!-- 云端评分中：先给等待反馈，别在孩子刚说完就把判定面板推上来 -->
+          <p v-if="grading" class="ci-hint" aria-live="polite">老师在听孩子说…</p>
+          <template v-else>
+            <p class="ci-hint">听一下孩子说的，判定这轮是否通过</p>
+            <div v-if="recUrl" class="ci-replay-row">
+              <button class="ci-replay" @click="replayRec" aria-label="再听一遍孩子的发音">
+                <Volume2 class="k-ico" />再听一遍
+              </button>
+            </div>
+            <div class="ci-judge">
+              <template v-if="grade === 'retry'">
+                <BaseButton variant="green" @click="retry()">再试一次</BaseButton>
+              </template>
+              <template v-else>
+                <BaseButton variant="green" :disabled="advancing" @click="parentJudge(true)">
+                  读对了 ✓
+                </BaseButton>
+                <BaseButton variant="orange" :disabled="advancing" @click="judgeMiss">
+                  没读准
+                </BaseButton>
+              </template>
+            </div>
+          </template>
         </template>
       </template>
     </div>

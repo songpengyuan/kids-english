@@ -23,6 +23,9 @@ import {
 import { speakStars } from "../utils/speakSession";
 import type { Word } from "../data/lessons";
 
+/** 云端评分等待上限：超过就降级给家长判定，不让孩子对着空白干等 */
+const GRADING_TIMEOUT_MS = 3000;
+
 export type SpeechMode = "asr" | "record";
 export type SpeechStatus = "idle" | "listening" | "feedback";
 export type SpeechGrade = "" | "perfect" | "good" | "retry";
@@ -80,6 +83,12 @@ export function useSpeechSession(
   const recAudio = ref<HTMLAudioElement | null>(null);
   const recUrl = ref("");
   const imgFailed = ref(false);
+
+  /**
+   * 云端评分进行中：录音已结束、分数还没回来。
+   * UI 用它显示「老师在听…」的等待态，而不是把孩子和家长直接推到判定面板上。
+   */
+  const grading = ref(false);
 
   let recognizer: ReturnType<typeof createWordRecognizer> | null = null;
   let recorder: ReturnType<typeof createRecorder> | null = null;
@@ -252,6 +261,7 @@ export function useSpeechSession(
     // 新一轮录制：清空上一轮的结算状态，并作废还在路上的评测结果
     attemptCounted = false;
     parentJudged = false;
+    grading.value = false;
     gradingToken++;
     try {
       if (!recorder) recorder = createRecorder();
@@ -290,16 +300,28 @@ export function useSpeechSession(
    */
   async function gradeByCloud(url: string, word: Word) {
     const token = ++gradingToken;
-    const wav = await recUrlToWav16k(url);
-    if (!wav || token !== gradingToken) return; // 已换词/重录，结果作废
-    const res = await evaluatePronunciation(wav, word.en);
-    if (!res || token !== gradingToken) return;
-    if (parentJudged) return; // 家长已经下过结论，尊重家长
-    const total = res.total_score;
-    if (typeof total !== "number" || res.is_rejected) return;
-    const g = gradeScore(total / 100) as SpeechGrade;
-    grade.value = g;
-    settleAttempt(g !== "retry", word);
+    grading.value = true;
+    // 兜底：评测迟迟不回（弱网 / 上游抖动）就不让孩子对着空白等，直接交给家长判定
+    const guard = setTimeout(() => {
+      if (token !== gradingToken) return;
+      grading.value = false;
+      gradingToken++; // 作废本次评测：迟到的分数不再落地，避免 UI 二次跳变
+    }, GRADING_TIMEOUT_MS);
+    try {
+      const wav = await recUrlToWav16k(url);
+      if (!wav || token !== gradingToken) return; // 已换词 / 重录 / 超时，结果作废
+      const res = await evaluatePronunciation(wav, word.en);
+      if (!res || token !== gradingToken) return;
+      if (parentJudged) return; // 家长已经下过结论，尊重家长
+      const total = res.total_score;
+      if (typeof total !== "number" || res.is_rejected) return;
+      const g = gradeScore(total / 100) as SpeechGrade;
+      grade.value = g;
+      settleAttempt(g !== "retry", word);
+    } finally {
+      clearTimeout(guard);
+      if (token === gradingToken) grading.value = false;
+    }
   }
 
   /** 孩子的录音播完后接标准音：只保留一个监听，避免连点重放时叠着播两遍 */
@@ -361,6 +383,7 @@ export function useSpeechSession(
   /** 家长判定（录音模式）：云端没拿到分时的兜底，也可以覆盖云端结论 */
   function parentJudge(ok: boolean) {
     parentJudged = true;
+    grading.value = false; // 家长接管，等待态立刻撤掉
     grade.value = ok ? "perfect" : "retry";
     status.value = "feedback";
     settleAttempt(ok);
@@ -372,6 +395,7 @@ export function useSpeechSession(
     // 重来等于放弃这次录音：清结算状态并作废在途评测
     attemptCounted = false;
     parentJudged = false;
+    grading.value = false;
     gradingToken++;
     // 不满意重来：丢弃上一条并行录音与回放，避免旧声音被重播
     void stopCaptureRecorderSilent();
@@ -390,6 +414,7 @@ export function useSpeechSession(
     // 换词：重置结算状态，并让上一词还在路上的评测结果失效
     attemptCounted = false;
     parentJudged = false;
+    grading.value = false;
     gradingToken++;
     clearRecordingUrl(); // 释放上一条录音 ObjectURL 并停掉回放，不让旧词声音串到下一词
     return false;
@@ -410,6 +435,7 @@ export function useSpeechSession(
     mode,
     idx,
     status,
+    grading,
     grade,
     heard,
     attempts,

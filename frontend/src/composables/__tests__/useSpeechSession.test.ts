@@ -461,4 +461,82 @@ describe("useSpeechSession · 云端发音评测（讯飞 ISE）", () => {
     expect(s.grade.value).toBe(""); // 旧结果不落到新词
     expect(s.attempts.value).toBe(0);
   });
+
+  it("录完立刻进入「评分中」，拿到分数才退出等待态", async () => {
+    mockRecorder();
+    vi.mocked(recUrlToWav16k).mockResolvedValue(new Blob(["wav"], { type: "audio/wav" }));
+    let resolveEval: (v: unknown) => void = () => {};
+    const pending = new Promise((r) => {
+      resolveEval = r as unknown as (v: unknown) => void;
+    });
+    vi.mocked(evaluatePronunciation).mockReturnValue(pending as never);
+    vi.mocked(gradeScore).mockReturnValue("perfect");
+
+    const s = useSpeechSession(ref([word]));
+    s.recAudio.value = fakeAudio();
+
+    await recordOnce(s);
+    // 分数还在路上：UI 该显示「老师在听…」，而不是把孩子推到判定面板
+    expect(s.grading.value).toBe(true);
+    expect(s.grade.value).toBe("");
+
+    resolveEval({ ok: true, total_score: 88 });
+    await flush();
+    expect(s.grading.value).toBe(false);
+    expect(s.grade.value).toBe("perfect");
+  });
+
+  it("评测失败：同样退出等待态，交回家长判定", async () => {
+    mockRecorder();
+    vi.mocked(recUrlToWav16k).mockResolvedValue(new Blob(["wav"], { type: "audio/wav" }));
+    vi.mocked(evaluatePronunciation).mockResolvedValue(null);
+
+    const s = useSpeechSession(ref([word]));
+    s.recAudio.value = fakeAudio();
+
+    await recordOnce(s);
+    expect(s.grading.value).toBe(false);
+    expect(s.grade.value).toBe("");
+  });
+
+  it("家长在评分中直接判定：立刻撤掉等待态", async () => {
+    mockRecorder();
+    vi.mocked(recUrlToWav16k).mockResolvedValue(new Blob(["wav"], { type: "audio/wav" }));
+    vi.mocked(evaluatePronunciation).mockReturnValue(new Promise(() => {}) as never);
+    vi.mocked(gradeScore).mockReturnValue("perfect");
+
+    const s = useSpeechSession(ref([word]));
+    s.recAudio.value = fakeAudio();
+
+    await recordOnce(s);
+    expect(s.grading.value).toBe(true);
+
+    s.parentJudge(true);
+    expect(s.grading.value).toBe(false);
+    expect(s.grade.value).toBe("perfect");
+  });
+
+  it("3s 拿不到分数：自动撤掉等待态，把结论交回家长", async () => {
+    vi.useFakeTimers();
+    try {
+      mockRecorder();
+      vi.mocked(recUrlToWav16k).mockResolvedValue(new Blob(["wav"], { type: "audio/wav" }));
+      vi.mocked(evaluatePronunciation).mockReturnValue(new Promise(() => {}) as never);
+
+      const s = useSpeechSession(ref([word]));
+      s.recAudio.value = fakeAudio();
+
+      s.startMic();
+      await vi.advanceTimersByTimeAsync(0);
+      s.stopMic();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(s.grading.value).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(3100);
+      expect(s.grading.value).toBe(false);
+      expect(s.grade.value).toBe(""); // 不自动给结论，交给家长
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

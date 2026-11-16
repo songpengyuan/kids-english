@@ -60,6 +60,7 @@ onMounted(async () => {
 const {
   mode,
   status,
+  grading,
   grade,
   heard,
   canRecord,
@@ -193,25 +194,34 @@ function next() {
         <Volume2 class="k-ico" />再听一遍
       </button>
       <template v-if="mode === 'record' && grade === ''">
-        <!-- 停止录音已自动回放一次；这里只保留一个醒目的二次回放入口 -->
-        <!-- 大圆喇叭：想再听一次自己的发音就点它 -->
-        <button class="replay-btn anim-pop" @click="replayRec" aria-label="再听一遍">
-          <Volume2 class="k-ico" />
-          <span class="replay-label">再听一遍</span>
-        </button>
-        <p class="judge-q">读得准不准？</p>
-        <div class="btn-row">
-          <BaseButton variant="green" @click="parentJudge(true)">
-            <ThumbsUp class="k-ico" />读得棒
-          </BaseButton>
-          <BaseButton variant="green" @click="parentJudge(false)">
-            <RotateCcw class="k-ico" />再试一次
-          </BaseButton>
+        <!-- 云端评分中：先给等待反馈。否则孩子录完立刻看到「读得准不准？」，
+             而分数其实还在路上 —— 那是个 5 岁孩子答不上来的问题 -->
+        <div v-if="grading" class="grading" aria-live="polite">
+          <div class="grading-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p class="grading-tip">老师在听你的发音…</p>
         </div>
+        <template v-else>
+          <!-- 停止录音已自动回放一次；这里只保留一个醒目的二次回放入口 -->
+          <!-- 大圆喇叭：想再听一次自己的发音就点它 -->
+          <button class="replay-btn anim-pop" @click="replayRec" aria-label="再听一遍">
+            <Volume2 class="k-ico" />
+            <span class="replay-label">再听一遍</span>
+          </button>
+          <p class="judge-q">读得准不准？</p>
+          <div class="btn-row">
+            <BaseButton variant="green" @click="parentJudge(true)">
+              <ThumbsUp class="k-ico" />读得棒
+            </BaseButton>
+            <BaseButton variant="green" @click="parentJudge(false)">
+              <RotateCcw class="k-ico" />再试一次
+            </BaseButton>
+          </div>
+        </template>
       </template>
       <template v-else-if="mode === 'record'">
         <p class="verdict" :class="grade">
-          <span v-if="grade === 'perfect'">太棒了！</span>
+          <span v-if="grade === 'perfect'">太棒了！发音很标准</span>
+          <span v-else-if="grade === 'good'">很不错，再清楚一点就更棒啦</span>
           <span v-else class="retry-hint"><RotateCcw class="k-ico" />再试一次吧，先点图听一遍</span>
         </p>
         <div class="btn-row">
@@ -564,6 +574,48 @@ function next() {
   font-weight: var(--fw-strong);
   font-size: clamp(15px, min(2.6vh, 2.1vw), 19px);
   text-align: center;
+}
+/* 评分等待：三个跳动的点 + 一行提示，替代"录完就甩给家长"的空白 */
+.grading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-s);
+  padding: var(--gap-s) 0;
+}
+.grading-dots {
+  display: flex;
+  gap: 6px;
+}
+.grading-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--orange);
+  animation: grading-bounce 0.9s infinite ease-in-out;
+}
+.grading-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.grading-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes grading-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 1;
+  }
+}
+.grading-tip {
+  margin: 0;
+  font-weight: var(--fw-strong);
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
 }
 
 /**
