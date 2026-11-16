@@ -120,7 +120,7 @@ describe("VideoPlayer", () => {
     vi.useRealTimers();
   });
 
-  it("三档循环单按钮常显（不再只在全屏出现）：列表循环 → 单曲循环 → 随机 → 列表循环，且持久化", async () => {
+  it("两档循环单按钮常显：列表循环 ↔ 单曲循环，且持久化（随机档已移除）", async () => {
     const w = mountPlayer();
     fakePlaying(videoOf(w));
     await w.vm.$nextTick();
@@ -131,12 +131,18 @@ describe("VideoPlayer", () => {
     btn = modeBtnOf(w)!;
     expect(btn.attributes("aria-label")).toContain("单曲循环");
     await btn.trigger("click");
-    expect(modeBtnOf(w)!.attributes("aria-label")).toContain("随机");
-    await btn.trigger("click");
+    // 没有随机档：单曲循环下一档直接回到列表循环
     expect(modeBtnOf(w)!.attributes("aria-label")).toContain("列表循环");
+    expect(modeBtnOf(w)!.attributes("aria-label")).not.toContain("随机");
     // 上次选择被记住（localStorage 持久化）
     await btn.trigger("click"); // 回到单曲循环
     expect(localStorage.getItem("kc-video-mode")).toBe("one");
+    // 存量 shuffle 值按列表循环处理，不会把落点变成随机
+    localStorage.setItem("kc-video-mode", "shuffle");
+    const w2 = mountPlayer();
+    fakePlaying(videoOf(w2));
+    await w2.vm.$nextTick();
+    expect(modeBtnOf(w2)!.attributes("aria-label")).toContain("列表循环");
   });
 
   it("单条视频不渲染循环键（没得切的模式键就是噪音）", async () => {

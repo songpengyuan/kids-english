@@ -14,6 +14,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { createRouter, createMemoryHistory } from "vue-router";
 import { mount, flushPromises } from "@vue/test-utils";
 import ListenView from "../ListenView.vue";
+import VideoPlayer from "../../../components/listen/VideoPlayer.vue";
 import { usePlayerStore } from "../../../stores/player";
 import { lessons } from "../../../data/lessons";
 
@@ -135,6 +136,18 @@ describe("ListenView · 课程播放页", () => {
     expect(w.find(".vp--embedded").exists()).toBe(true);
     expect(w.find(".vp-close").exists()).toBe(false);
     expect(w.find(".pl-transport").exists()).toBe(false);
+  });
+
+  it("视频池只装本课自己的视频（播完不会跨到别的课、页头不动）", async () => {
+    const w = await mountListen();
+    await openPlayer(w);
+    await switchMode(w, "视频");
+    const vp = w.findComponent(VideoPlayer);
+    const videos = (vp.props("videos") ?? []) as Array<{ id: string }>;
+    expect(videos.length).toBeGreaterThan(0);
+    // 口径：池里每一条都属于当前课（l11 是主曲 + Colors Song 两条，其余课 1 条）
+    const lid = videos[0].id.replace(/-t\d+$/, "");
+    expect(videos.every((v) => v.id.replace(/-t\d+$/, "") === lid)).toBe(true);
   });
 
   it("循环胶囊仍是列表循环 → 单曲循环 → 随机 → 列表循环", async () => {

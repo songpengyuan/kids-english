@@ -33,7 +33,6 @@ import {
   Play,
   Repeat,
   Repeat1,
-  Shuffle,
   SkipBack,
   SkipForward,
   Volume2,
@@ -101,18 +100,19 @@ function safePlay(v: HTMLVideoElement | null | undefined) {
   void Promise.resolve(v.play()).catch(() => {});
 }
 
-/* ---------- 三档循环：与音频播放页 cycleMode 同一语言，localStorage 记住选择 ---------- */
-type VideoMode = "all" | "one" | "shuffle";
+/* ---------- 循环档位：列表循环 / 单曲循环，localStorage 记住选择 ----------
+ * 2026-11-16 去掉「随机」档：随机会把落点变成不可预测（且靠 localStorage 长期记住），
+ * 用户再进视频 tab 直接落到某条随机片子上，主观上就是“视频走丢了”。
+ * 这里只保留确定性的两档；旧的 shuffle 存量值在 loadMode 里按 all 处理。 */
+type VideoMode = "all" | "one";
 const MODE_KEY = "kc-video-mode";
 const MODE_META: Record<VideoMode, { label: string; icon: unknown }> = {
   all: { label: "列表循环", icon: Repeat },
   one: { label: "单曲循环", icon: Repeat1 },
-  shuffle: { label: "随机", icon: Shuffle },
 };
 function loadMode(): VideoMode {
   try {
-    const v = localStorage.getItem(MODE_KEY);
-    return v === "one" || v === "shuffle" ? v : "all";
+    return localStorage.getItem(MODE_KEY) === "one" ? "one" : "all";
   } catch {
     return "all";
   }
@@ -120,7 +120,7 @@ function loadMode(): VideoMode {
 const mode = ref<VideoMode>(loadMode());
 const modeMeta = computed(() => MODE_META[mode.value]);
 function cycleMode() {
-  mode.value = mode.value === "all" ? "one" : mode.value === "one" ? "shuffle" : "all";
+  mode.value = mode.value === "all" ? "one" : "all";
   try {
     localStorage.setItem(MODE_KEY, mode.value);
   } catch {
@@ -159,12 +159,6 @@ function prev() {
   go(idx.value - 1 < 0 ? props.videos.length - 1 : idx.value - 1);
 }
 function next() {
-  if (mode.value === "shuffle" && props.videos.length > 1) {
-    let n = idx.value;
-    while (n === idx.value) n = Math.floor(Math.random() * props.videos.length);
-    go(n);
-    return;
-  }
   go((idx.value + 1) % props.videos.length);
 }
 function onPlay() {

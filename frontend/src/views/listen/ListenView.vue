@@ -243,21 +243,16 @@ function videosOf(l: Lesson): VideoItem[] {
     });
   return [...first, ...extras];
 }
-const allVideos = lessons.flatMap(videosOf);
+/* ---------- 视频：只放本课自己的视频（2026-11-16 收窄口径） ----------
+ * 原先把 7 课 8 条视频汇成全局池，列表循环播完会 next() 到下一课的片子，
+ * change 事件再把页头落到那一课——用户看到的就是“我点的是这节课，
+ * 播着播着自己跑到别的课去了”，也就是所谓视频走丢。
+ * 现在池子只装当前课的视频（多数课 1 条，l11 有主曲 + Colors Song 两条），
+ * 播完在本课内循环，页头永远不动。确定性优先。
+ * videoEpoch 仍保留：用户再次切进「视频」时重挂，回到本课第一条。 */
+const videoList = computed(() => (activeLesson.value ? videosOf(activeLesson.value) : []));
 const videoEpoch = ref(0);
 const clipsEpoch = ref(0);
-const videoStartIdx = computed(() => {
-  const lid = activeLesson.value?.id;
-  if (!lid) return 0;
-  const i = allVideos.findIndex((v) => v.id === lid || v.id.startsWith(`${lid}-t`));
-  return i >= 0 ? i : 0;
-});
-
-/** 视频/词句跨课推进 → 页头落到新课程（不重挂播放器） */
-function onVideoChange(idx: number) {
-  const l = lessonForSongId(allVideos[idx]?.id);
-  if (l) activeLesson.value = l;
-}
 function onClipChange(lessonId: string) {
   const l = lessons.find((x) => x.id === lessonId);
   if (l) activeLesson.value = l;
@@ -403,15 +398,13 @@ onBeforeUnmount(() => {
           </div>
         </template>
 
-        <!-- 视频：跨课程连续流，播完自动续下一课（页头随 change 落到新课程） -->
+        <!-- 视频：只播本课自己的视频，播完在本课内循环（不跨课、不随机） -->
         <div v-else-if="mode === 'videos'" class="lp-media">
           <VideoPlayer
-            v-if="allVideos.length"
+            v-if="videoList.length"
             :key="videoEpoch"
-            :videos="allVideos"
-            :start-index="videoStartIdx"
+            :videos="videoList"
             embedded
-            @change="onVideoChange"
           />
           <div v-else class="lp-empty">
             <EmojiTile :emoji="activeLesson.emoji" :tone="activeLesson.tone" size="xl" />
