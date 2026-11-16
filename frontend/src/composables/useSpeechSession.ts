@@ -10,6 +10,8 @@
  */
 import { computed, nextTick, onBeforeUnmount, ref, type Ref } from "vue";
 import { speak, stopSpeaking } from "../services/speech";
+import { evaluatePronunciation } from "../services/evaluation";
+import { recUrlToWav16k } from "../utils/audio";
 import {
   asrSupported,
   createRecorder,
@@ -84,6 +86,16 @@ export function useSpeechSession(
   let asrTimer: ReturnType<typeof setTimeout> | null = null;
   let recTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /* ---------- 云端评测与家长判定的协调 ----------
+   * 同一条录音可能先被讯飞打分、后被家长手动判定（或反过来）。
+   * 三条约束保证不会重复计分、也不会被过期结果串到别的词：
+   *   1. attemptCounted：一次录音只结算一次星级/对错；
+   *   2. parentJudged：家长一旦下结论，迟到的云端结果不再覆盖；
+   *   3. gradingToken：换词/重录时递增，丢弃上一轮还在路上的评测结果。 */
+  let attemptCounted = false;
+  let parentJudged = false;
+  let gradingToken = 0;
+
   const cur = computed(() => words.value[idx.value]);
   const total = computed(() => words.value.length);
   const progressText = computed(() => `${idx.value + 1} / ${words.value.length}`);
@@ -93,6 +105,15 @@ export function useSpeechSession(
   function markAttempt(ok: boolean) {
     attempts.value++;
     if (ok && attempts.value === 1) firstAttemptOk.value++;
+  }
+
+  /** 结算一次录音的判定结果；云端评测与家长判定共用，一次录音只结算一次 */
+  function settleAttempt(ok: boolean, word: Word = cur.value) {
+    if (attemptCounted) return;
+    attemptCounted = true;
+    markAttempt(ok);
+    if (ok) hooks.onCorrect?.(word, attempts.value === 1);
+    else hooks.onWrong?.(word);
   }
 
   /* ---------- 本机录音回放资源管理（仅内存 ObjectURL，不入库、不上传） ---------- */
@@ -228,6 +249,10 @@ export function useSpeechSession(
   /* ---------- 降级路径：录音回放 + 家长判定 ---------- */
   async function startRecord() {
     status.value = "listening";
+    // 新一轮录制：清空上一轮的结算状态，并作废还在路上的评测结果
+    attemptCounted = false;
+    parentJudged = false;
+    gradingToken++;
     try {
       if (!recorder) recorder = createRecorder();
       await recorder.start();
@@ -251,10 +276,30 @@ export function useSpeechSession(
     // 录到了声音 = 一次张口尝试（家长后续"读对了/再试一次"只是二次确认，不重复计）
     hooks.onSpeakAttempt?.(cur.value);
     adoptRecordingUrl(url);
-    grade.value = ""; // 等家长判定
+    grade.value = ""; // 先留空：云端评测或家长判定来填
     status.value = "feedback";
-    // 停止录音后自动回放一次自己的发音（家长判定前先听一遍）
+    // 停止录音后自动回放一次自己的发音（判定前先听一遍）
     autoReplay();
+    // 上传讯飞做音素级评测；失败/超时则保持空 grade，家长仍可手动判定
+    void gradeByCloud(url, cur.value);
+  }
+
+  /**
+   * 云端发音评测：录音 → 16k WAV → 讯飞 ISE → 分数。
+   * 任何环节失败都静默放弃（不提示、不改状态），降级为家长判定。
+   */
+  async function gradeByCloud(url: string, word: Word) {
+    const token = ++gradingToken;
+    const wav = await recUrlToWav16k(url);
+    if (!wav || token !== gradingToken) return; // 已换词/重录，结果作废
+    const res = await evaluatePronunciation(wav, word.en);
+    if (!res || token !== gradingToken) return;
+    if (parentJudged) return; // 家长已经下过结论，尊重家长
+    const total = res.total_score;
+    if (typeof total !== "number" || res.is_rejected) return;
+    const g = gradeScore(total / 100) as SpeechGrade;
+    grade.value = g;
+    settleAttempt(g !== "retry", word);
   }
 
   /** 孩子的录音播完后接标准音：只保留一个监听，避免连点重放时叠着播两遍 */
@@ -313,22 +358,21 @@ export function useSpeechSession(
     queueAfterReplay();
   }
 
-  /** 家长判定（录音模式） */
+  /** 家长判定（录音模式）：云端没拿到分时的兜底，也可以覆盖云端结论 */
   function parentJudge(ok: boolean) {
+    parentJudged = true;
     grade.value = ok ? "perfect" : "retry";
     status.value = "feedback";
-    if (ok) {
-      markAttempt(true);
-      hooks.onCorrect?.(cur.value, attempts.value === 1);
-    } else {
-      markAttempt(false);
-      hooks.onWrong?.(cur.value);
-    }
+    settleAttempt(ok);
   }
 
   function retry() {
     status.value = "idle";
     grade.value = "";
+    // 重来等于放弃这次录音：清结算状态并作废在途评测
+    attemptCounted = false;
+    parentJudged = false;
+    gradingToken++;
     // 不满意重来：丢弃上一条并行录音与回放，避免旧声音被重播
     void stopCaptureRecorderSilent();
     clearRecordingUrl();
@@ -343,6 +387,10 @@ export function useSpeechSession(
     grade.value = "";
     heard.value = "";
     imgFailed.value = false;
+    // 换词：重置结算状态，并让上一词还在路上的评测结果失效
+    attemptCounted = false;
+    parentJudged = false;
+    gradingToken++;
     clearRecordingUrl(); // 释放上一条录音 ObjectURL 并停掉回放，不让旧词声音串到下一词
     return false;
   }

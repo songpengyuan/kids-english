@@ -17,8 +17,13 @@ vi.mock("../../utils/speechScore", () => ({
 }));
 vi.mock("../../services/speech", () => ({ speak: vi.fn(), stopSpeaking: vi.fn() }));
 vi.mock("../../utils/speakSession", () => ({ speakStars: () => 3 }));
+// 云端评测链路：转码与上传都 mock 掉，单测只验证「分数如何落地」
+vi.mock("../../utils/audio", () => ({ recUrlToWav16k: vi.fn() }));
+vi.mock("../../services/evaluation", () => ({ evaluatePronunciation: vi.fn() }));
 
 import { createRecorder, createWordRecognizer, asrSupported, scorePronunciation, gradeScore } from "../../utils/speechScore";
+import { recUrlToWav16k } from "../../utils/audio";
+import { evaluatePronunciation } from "../../services/evaluation";
 
 const word: Word = {
   id: "w1",
@@ -318,5 +323,142 @@ describe("useSpeechSession · ASR 并行录音本机回放（captureVoice）", (
     } finally {
       revoke.mockRestore();
     }
+  });
+});
+
+describe("useSpeechSession · 云端发音评测（讯飞 ISE）", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // 前序 ASR 用例把 asrSupported 设成 true 且未还原（clearAllMocks 不清实现），
+    // 这里显式压回 record 模式，否则 startMic 走 ASR、根本不会录音。
+    vi.mocked(asrSupported).mockReturnValue(false);
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+  });
+
+  function mockRecorder(url: string | null = "blob:rec-url") {
+    vi.mocked(createRecorder).mockReturnValue({
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockResolvedValue(url),
+      release: vi.fn(),
+    } as never);
+  }
+
+  function fakeAudio() {
+    return {
+      currentTime: 0,
+      play: vi.fn().mockResolvedValue(undefined),
+    } as unknown as HTMLAudioElement;
+  }
+
+  /** 起录 → 停录，并把「转码 + 上传」两条 await 链跑完 */
+  async function recordOnce(s: ReturnType<typeof useSpeechSession>) {
+    s.startMic();
+    await flush();
+    s.stopMic();
+    await flush();
+    await flush();
+  }
+
+  it("评测通过：0~100 换算成等级，并计入首次通过", async () => {
+    mockRecorder();
+    vi.mocked(recUrlToWav16k).mockResolvedValue(new Blob(["wav"], { type: "audio/wav" }));
+    vi.mocked(evaluatePronunciation).mockResolvedValue({ ok: true, total_score: 92 });
+    vi.mocked(gradeScore).mockReturnValue("perfect");
+
+    const onCorrect = vi.fn();
+    const s = useSpeechSession(ref([word]), { onCorrect });
+    s.recAudio.value = fakeAudio();
+
+    await recordOnce(s);
+
+    expect(recUrlToWav16k).toHaveBeenCalledWith("blob:rec-url");
+    // 传给判级函数的是 0~1 分值，与本地打分口径一致
+    expect(gradeScore).toHaveBeenCalledWith(0.92);
+    expect(s.grade.value).toBe("perfect");
+    expect(s.attempts.value).toBe(1);
+    expect(s.firstAttemptOk.value).toBe(1);
+    expect(onCorrect).toHaveBeenCalledWith(word, true);
+  });
+
+  it("评测拿不到分（null）：不设 grade、不计数，家长仍可手动判定", async () => {
+    mockRecorder();
+    vi.mocked(recUrlToWav16k).mockResolvedValue(new Blob(["wav"], { type: "audio/wav" }));
+    vi.mocked(evaluatePronunciation).mockResolvedValue(null);
+
+    const s = useSpeechSession(ref([word]));
+    s.recAudio.value = fakeAudio();
+
+    await recordOnce(s);
+
+    // 静默降级：孩子看到的就是原来的「等家长判定」
+    expect(s.grade.value).toBe("");
+    expect(s.attempts.value).toBe(0);
+
+    s.parentJudge(true);
+    expect(s.grade.value).toBe("perfect");
+    expect(s.attempts.value).toBe(1);
+    expect(s.firstAttemptOk.value).toBe(1);
+  });
+
+  it("录音转 wav 失败：完全不发起上传", async () => {
+    mockRecorder();
+    vi.mocked(recUrlToWav16k).mockResolvedValue(null);
+
+    const s = useSpeechSession(ref([word]));
+    s.recAudio.value = fakeAudio();
+
+    await recordOnce(s);
+
+    expect(evaluatePronunciation).not.toHaveBeenCalled();
+    expect(s.grade.value).toBe("");
+  });
+
+  it("家长先判定：迟到的云端结果不覆盖，也不重复计分", async () => {
+    mockRecorder();
+    vi.mocked(recUrlToWav16k).mockResolvedValue(new Blob(["wav"], { type: "audio/wav" }));
+    let resolveEval: (v: unknown) => void = () => {};
+    const pending = new Promise((r) => {
+      resolveEval = r as unknown as (v: unknown) => void;
+    });
+    vi.mocked(evaluatePronunciation).mockReturnValue(pending as never);
+    vi.mocked(gradeScore).mockReturnValue("perfect");
+
+    const s = useSpeechSession(ref([word]));
+    s.recAudio.value = fakeAudio();
+
+    await recordOnce(s);
+    expect(s.grade.value).toBe(""); // 云端结果还在路上
+
+    s.parentJudge(false); // 家长判「再试一次」
+    expect(s.grade.value).toBe("retry");
+    expect(s.attempts.value).toBe(1);
+
+    resolveEval({ ok: true, total_score: 95 }); // 云端高分迟到
+    await flush();
+
+    expect(s.grade.value).toBe("retry"); // 尊重家长，不被覆盖
+    expect(s.attempts.value).toBe(1); // 一次录音只结算一次
+  });
+
+  it("换词后旧评测结果作废，不落到下一个词", async () => {
+    mockRecorder();
+    vi.mocked(recUrlToWav16k).mockResolvedValue(new Blob(["wav"], { type: "audio/wav" }));
+    let resolveEval: (v: unknown) => void = () => {};
+    const pending = new Promise((r) => {
+      resolveEval = r as unknown as (v: unknown) => void;
+    });
+    vi.mocked(evaluatePronunciation).mockReturnValue(pending as never);
+    vi.mocked(gradeScore).mockReturnValue("retry");
+
+    const s = useSpeechSession(ref([{ ...word }, { ...word, id: "w2", en: "hand" }]));
+    s.recAudio.value = fakeAudio();
+
+    await recordOnce(s);
+    s.next(); // 切到第二个词
+    resolveEval({ ok: true, total_score: 90 });
+    await flush();
+
+    expect(s.grade.value).toBe(""); // 旧结果不落到新词
+    expect(s.attempts.value).toBe(0);
   });
 });

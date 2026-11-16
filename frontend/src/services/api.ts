@@ -52,6 +52,11 @@ export function isBackendOk(): boolean {
 export interface RequestOpts {
   method?: string;
   body?: unknown;
+  /**
+   * 文件上传用。传了它就不再序列化 body —— Content-Type 必须交给浏览器
+   * 自动带 boundary，手动设会让后端解析不出字段。
+   */
+  formData?: FormData;
   auth?: boolean; // 默认 true：带 Bearer token
   signal?: AbortSignal;
 }
@@ -64,9 +69,10 @@ export async function request<T = Record<string, unknown>>(
   path: string,
   opts: RequestOpts = {},
 ): Promise<T> {
-  const { method = "GET", body, auth = true, signal } = opts;
+  const { method = "GET", body, formData, auth = true, signal } = opts;
   const headers: Record<string, string> = {};
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  // FormData 的 Content-Type 必须由浏览器生成（含 boundary），这里不能手设
+  if (body !== undefined && !formData) headers["Content-Type"] = "application/json";
   if (auth) {
     const token = getToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -76,7 +82,7 @@ export async function request<T = Record<string, unknown>>(
     res = await fetch(API_BASE + path, {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: formData ?? (body !== undefined ? JSON.stringify(body) : undefined),
       signal,
     });
   } catch (e) {
