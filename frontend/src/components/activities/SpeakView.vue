@@ -61,6 +61,7 @@ const {
   mode,
   status,
   grading,
+  unheard,
   grade,
   heard,
   canRecord,
@@ -186,7 +187,7 @@ function next() {
       <audio v-if="recUrl" ref="recAudio" :src="recUrl" class="replay"></audio>
       <!-- 非 record 待判定态：轻量手动重放；record 待判定态用下方醒目大圆喇叭，避免重复入口 -->
       <button
-        v-if="recUrl && !(mode === 'record' && grade === '')"
+        v-if="recUrl && !unheard && !(mode === 'record' && grade === '')"
         class="replay-chip"
         @click="replayRec"
         aria-label="再听一遍自己的发音"
@@ -222,6 +223,10 @@ function next() {
         <p class="verdict" :class="grade">
           <span v-if="grade === 'perfect'">太棒了！发音很标准</span>
           <span v-else-if="grade === 'good'">很不错，再清楚一点就更棒啦</span>
+          <!-- 系统没听到声音：直接告诉孩子"靠近点、大声点"，别让孩子以为自己读错了 -->
+          <span v-else-if="unheard" class="retry-hint">
+            <Mic class="k-ico" />没听到你的声音，靠近一点大声读给我听
+          </span>
           <span v-else class="retry-hint"><RotateCcw class="k-ico" />再试一次吧，先点图听一遍</span>
         </p>
         <div class="btn-row">
@@ -230,6 +235,10 @@ function next() {
           </BaseButton>
           <BaseButton v-else @click="next">
             继续<ChevronRight class="k-ico" />
+          </BaseButton>
+          <!-- 读不准时最有用的一步是再听一次示范音，别让孩子自己滚回上面点图 -->
+          <BaseButton v-if="grade === 'retry' && !unheard" variant="gray" @click="hearExample">
+            <Volume2 class="k-ico" />听老师读
           </BaseButton>
         </div>
       </template>

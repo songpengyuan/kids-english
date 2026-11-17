@@ -539,4 +539,43 @@ describe("useSpeechSession · 云端发音评测（讯飞 ISE）", () => {
       vi.useRealTimers();
     }
   });
+
+  it("讯飞判定没听到声音（is_rejected）：提示再说一次，不算读错", async () => {
+    mockRecorder();
+    vi.mocked(recUrlToWav16k).mockResolvedValue(new Blob(["wav"], { type: "audio/wav" }));
+    vi.mocked(evaluatePronunciation).mockResolvedValue({
+      ok: true,
+      total_score: 0,
+      is_rejected: true,
+    } as never);
+
+    const s = useSpeechSession(ref([word]));
+    s.recAudio.value = fakeAudio();
+
+    await recordOnce(s);
+
+    expect(s.unheard.value).toBe(true); // UI 走"没听到声音"而不是家长判定
+    expect(s.grade.value).toBe("retry"); // 出现"我再试试"，孩子能直接重来
+    expect(s.attempts.value).toBe(0); // 没开口不算一次失败尝试（不结算即不进 SRS）
+  });
+
+  it("再说一次后 unheard 复位，不会一直卡在提示上", async () => {
+    mockRecorder();
+    vi.mocked(recUrlToWav16k).mockResolvedValue(new Blob(["wav"], { type: "audio/wav" }));
+    vi.mocked(evaluatePronunciation).mockResolvedValue({
+      ok: true,
+      total_score: 0,
+      is_rejected: true,
+    } as never);
+
+    const s = useSpeechSession(ref([word]));
+    s.recAudio.value = fakeAudio();
+
+    await recordOnce(s);
+    expect(s.unheard.value).toBe(true);
+
+    s.retry();
+    expect(s.unheard.value).toBe(false);
+    expect(s.grade.value).toBe("");
+  });
 });

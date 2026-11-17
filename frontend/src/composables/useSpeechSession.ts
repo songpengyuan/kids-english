@@ -90,6 +90,13 @@ export function useSpeechSession(
    */
   const grading = ref(false);
 
+  /**
+   * 本次录音没被听见（静音 / 太小声 / 乱读，ISE 返回 is_rejected）。
+   * 系统自己知道"没人说话"，就不该让家长再听一遍去判 —— 直接提示孩子再说一次。
+   * 与「拿不到分数」（网络 / 服务故障）区分开，后者仍然降级给家长判定。
+   */
+  const unheard = ref(false);
+
   let recognizer: ReturnType<typeof createWordRecognizer> | null = null;
   let recorder: ReturnType<typeof createRecorder> | null = null;
   let asrTimer: ReturnType<typeof setTimeout> | null = null;
@@ -262,6 +269,7 @@ export function useSpeechSession(
     attemptCounted = false;
     parentJudged = false;
     grading.value = false;
+    unheard.value = false;
     gradingToken++;
     try {
       if (!recorder) recorder = createRecorder();
@@ -314,7 +322,16 @@ export function useSpeechSession(
       if (!res || token !== gradingToken) return;
       if (parentJudged) return; // 家长已经下过结论，尊重家长
       const total = res.total_score;
-      if (typeof total !== "number" || res.is_rejected) return;
+      if (typeof total !== "number") return;
+      if (res.is_rejected) {
+        // 系统明确判定"没听到有效语音"：孩子自己再说一次就能解决，
+        // 不必让家长去听录音判对错（家长也分不清"静音"和"读错"）。
+        // 给 retry 让"我再试试"按钮出现，但不结算这次尝试 ——
+        // 没开口不算读错，SRS 不该因静音把词打回复习队列。
+        unheard.value = true;
+        grade.value = "retry";
+        return;
+      }
       const g = gradeScore(total / 100) as SpeechGrade;
       grade.value = g;
       settleAttempt(g !== "retry", word);
@@ -384,6 +401,7 @@ export function useSpeechSession(
   function parentJudge(ok: boolean) {
     parentJudged = true;
     grading.value = false; // 家长接管，等待态立刻撤掉
+    unheard.value = false; // 家长已判，不再提示"再说一次"
     grade.value = ok ? "perfect" : "retry";
     status.value = "feedback";
     settleAttempt(ok);
@@ -396,6 +414,7 @@ export function useSpeechSession(
     attemptCounted = false;
     parentJudged = false;
     grading.value = false;
+    unheard.value = false;
     gradingToken++;
     // 不满意重来：丢弃上一条并行录音与回放，避免旧声音被重播
     void stopCaptureRecorderSilent();
@@ -415,6 +434,7 @@ export function useSpeechSession(
     attemptCounted = false;
     parentJudged = false;
     grading.value = false;
+    unheard.value = false;
     gradingToken++;
     clearRecordingUrl(); // 释放上一条录音 ObjectURL 并停掉回放，不让旧词声音串到下一词
     return false;
@@ -436,6 +456,7 @@ export function useSpeechSession(
     idx,
     status,
     grading,
+    unheard,
     grade,
     heard,
     attempts,

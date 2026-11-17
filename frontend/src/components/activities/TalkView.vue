@@ -136,7 +136,7 @@ const session = useSpeechSession(
   { afterReplay: () => playAnswer(cur.value) }
 );
 /** 解构会话状态/方法（模板中 ref 自动解包） */
-const { idx: dlgIdx, cur, status, grading, grade, heard, mode, micBlocked, stars, progressText, total, recAudio, recUrl, startMic, stopMic, replayRec, parentJudge, retry, next } = session;
+const { idx: dlgIdx, cur, status, grading, unheard, grade, heard, mode, micBlocked, stars, progressText, total, recAudio, recUrl, startMic, stopMic, replayRec, parentJudge, retry, next } = session;
 
 /**
  * 推进到下一轮：切索引 → status/grade 归位（下一轮回到"等你说"）。
@@ -360,8 +360,11 @@ function finish() {
           <!-- 云端评分中：先给等待反馈，别在孩子刚说完就把判定面板推上来 -->
           <p v-if="grading" class="ci-hint" aria-live="polite">老师在听孩子说…</p>
           <template v-else>
-            <p class="ci-hint">听一下孩子说的，判定这轮是否通过</p>
-            <div v-if="recUrl" class="ci-replay-row">
+            <!-- 系统没听到声音：孩子自己再说一次就行，不必家长判 -->
+            <p class="ci-hint">
+              {{ unheard ? "没听到声音，靠近一点大声说" : "听一下孩子说的，判定这轮是否通过" }}
+            </p>
+            <div v-if="recUrl && !unheard" class="ci-replay-row">
               <button class="ci-replay" @click="replayRec" aria-label="再听一遍孩子的发音">
                 <Volume2 class="k-ico" />再听一遍
               </button>

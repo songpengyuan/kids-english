@@ -125,7 +125,7 @@ const session = useSpeechSession(computed(() => props.words), {
   },
 });
 /** 解构会话状态/方法（模板中 ref 自动解包；total/stars 与 cards 冲突用别名） */
-const { idx: dlgIdx, cur, status, grading, grade, heard, mode, micBlocked, stars: dlgStars, recAudio, recUrl, startMic, stopMic, replayRec, parentJudge, retry, next } = session;
+const { idx: dlgIdx, cur, status, grading, unheard, grade, heard, mode, micBlocked, stars: dlgStars, recAudio, recUrl, startMic, stopMic, replayRec, parentJudge, retry, next } = session;
 
 /* cards 点读卡轻跟读：可选鼓励练习（仅 ASR 支持设备渲染；不影响点读覆盖率星级与完成门槛） */
 const {
@@ -296,8 +296,11 @@ function playAnswerBubble() {
               <!-- 云端评分中：先给等待反馈，别在孩子刚读完时就把判定面板推上来 -->
               <p v-if="grading" class="dlg-heard" aria-live="polite">老师在听孩子读…</p>
               <template v-else>
-                <p class="dlg-heard">听一下孩子说的，判定这轮是否通过</p>
-                <div v-if="recUrl" class="dlg-replay-row">
+                <!-- 系统没听到声音：孩子自己再说一次就行，不必家长判 -->
+                <p class="dlg-heard">
+                  {{ unheard ? "没听到声音，靠近一点大声读" : "听一下孩子说的，判定这轮是否通过" }}
+                </p>
+                <div v-if="recUrl && !unheard" class="dlg-replay-row">
                   <button class="dlg-replay" @click="replayRec" aria-label="再听一遍孩子的发音">
                     <Volume2 class="k-ico" />再听一遍
                   </button>
