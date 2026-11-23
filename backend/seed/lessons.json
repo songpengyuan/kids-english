@@ -1630,5 +1630,172 @@
         "audio": "/lessons/l13/audio/ph-9.mp3"
       }
     ]
+  },
+  {
+    "id": "l14",
+    "order": "14",
+    "title": "Dear Zoo",
+    "titleZh": "亲爱的动物园",
+    "emoji": "🦁",
+    "tone": "green",
+    "type": "official",
+    "date": "2026-11-18",
+    "intro": "《Dear Zoo》是一本经典的幼儿翻翻书：小主人公给动物园写信，想要一只宠物。动物园陆续寄来大象、长颈鹿、狮子、骆驼、蛇、猴子、青蛙——可它们不是太大、太高、太凶，就是脾气太差、太吓人、太调皮、跳个不停，只好一个个送回去。最后动物园想了好久，寄来一只小狗，刚刚好，被留了下来。\n\n重点词汇：elephant 大象 🐘｜giraffe 长颈鹿 🦒｜lion 狮子 🦁｜camel 骆驼 🐫｜snake 蛇 🐍｜monkey 猴子 🐒｜frog 青蛙 🐸｜puppy 小狗（幼犬）🐕\n\n形容词：big 大的｜tall 高的｜fierce 凶猛的｜grumpy 脾气坏的｜scary 吓人的｜naughty 淘气的｜jumpy 紧张不安的\n\n绘本句子：I wrote to the zoo to send me a pet. / They sent me an elephant. / He was too big! I sent him back. / He was perfect! I kept him.",
+    "stageStyle": "cards",
+    "spinner": true,
+    "song": {
+      "audio": "/lessons/l14/song.mp3",
+      "video": "/lessons/l14/song.mp4",
+      "scene": "stage",
+      "group": null,
+      "lyrics": [
+        "I wrote to the zoo to send me a pet.",
+        "They sent me an elephant.",
+        "He was too big! I sent him back.",
+        "So they sent me a giraffe.",
+        "He was too tall! I sent him back.",
+        "So they sent me a lion.",
+        "He was too fierce! I sent him back.",
+        "So they sent me a camel.",
+        "He was too grumpy! I sent him back.",
+        "So they sent me a snake.",
+        "He was too scary! I sent him back.",
+        "So they sent me a monkey.",
+        "He was too naughty! I sent him back.",
+        "So they sent me a frog.",
+        "He was too jumpy! I sent him back.",
+        "So they thought very hard, and sent me a dog.",
+        "He was perfect! I kept him."
+      ],
+      "lyricsZh": [
+        "我给动物园写信，让他们寄一只宠物给我。",
+        "他们寄给我一头大象。",
+        "它太大了！我把它送回去了。",
+        "于是他们寄给我一只长颈鹿。",
+        "它太高了！我把它送回去了。",
+        "于是他们寄给我一头狮子。",
+        "它太凶猛了！我把它送回去了。",
+        "于是他们寄给我一头骆驼。",
+        "它脾气太差了！我把它送回去了。",
+        "于是他们寄给我一条蛇。",
+        "它太吓人了！我把它送回去了。",
+        "于是他们寄给我一只猴子。",
+        "它太调皮了！我把它送回去了。",
+        "于是他们寄给我一只青蛙。",
+        "它跳个不停！我把它送回去了。",
+        "于是他们想了很久，寄给我一只小狗。",
+        "它太完美了！我把它留下了。"
+      ],
+      "timings": null,
+      "tracks": []
+    },
+    "words": [
+      {
+        "id": "elephant",
+        "en": "elephant",
+        "zh": "大象",
+        "emoji": "🐘",
+        "image": "/lessons/l14/words/elephant.webp?v=20261114a",
+        "audio": "/lessons/l14/audio/elephant.mp3"
+      },
+      {
+        "id": "giraffe",
+        "en": "giraffe",
+        "zh": "长颈鹿",
+        "emoji": "🦒",
+        "image": "/lessons/l14/words/giraffe.webp?v=20261114a",
+        "audio": "/lessons/l14/audio/giraffe.mp3"
+      },
+      {
+        "id": "lion",
+        "en": "lion",
+        "zh": "狮子",
+        "emoji": "🦁",
+        "image": "/lessons/l14/words/lion.webp?v=20261114a",
+        "audio": "/lessons/l14/audio/lion.mp3"
+      },
+      {
+        "id": "camel",
+        "en": "camel",
+        "zh": "骆驼",
+        "emoji": "🐫",
+        "image": "/lessons/l14/words/camel.webp?v=20261114a",
+        "audio": "/lessons/l14/audio/camel.mp3"
+      },
+      {
+        "id": "snake",
+        "en": "snake",
+        "zh": "蛇",
+        "emoji": "🐍",
+        "image": "/lessons/l14/words/snake.webp?v=20261114a",
+        "audio": "/lessons/l14/audio/snake.mp3"
+      },
+      {
+        "id": "monkey",
+        "en": "monkey",
+        "zh": "猴子",
+        "emoji": "🐒",
+        "image": "/lessons/l14/words/monkey.webp?v=20261114a",
+        "audio": "/lessons/l14/audio/monkey.mp3"
+      },
+      {
+        "id": "frog",
+        "en": "frog",
+        "zh": "青蛙",
+        "emoji": "🐸",
+        "image": "/lessons/l14/words/frog.webp?v=20261114a",
+        "audio": "/lessons/l14/audio/frog.mp3"
+      },
+      {
+        "id": "puppy",
+        "en": "puppy",
+        "zh": "小狗（幼犬）",
+        "emoji": "🐕",
+        "image": "/lessons/l14/words/puppy.webp?v=20261114a",
+        "audio": "/lessons/l14/audio/puppy.mp3"
+      }
+    ],
+    "phrases": [
+      {
+        "en": "What animal do you like?",
+        "zh": "你喜欢什么动物？",
+        "audio": "/lessons/l14/audio/ph-1.mp3"
+      },
+      {
+        "en": "Look! It's an elephant.",
+        "zh": "看！是一头大象。",
+        "audio": "/lessons/l14/audio/ph-2.mp3"
+      },
+      {
+        "en": "Wow, he is too big!",
+        "zh": "哇，它太大了！",
+        "audio": "/lessons/l14/audio/ph-3.mp3"
+      },
+      {
+        "en": "This giraffe is too tall.",
+        "zh": "这只长颈鹿太高了。",
+        "audio": "/lessons/l14/audio/ph-4.mp3"
+      },
+      {
+        "en": "The lion is too fierce.",
+        "zh": "狮子太凶猛了。",
+        "audio": "/lessons/l14/audio/ph-5.mp3"
+      },
+      {
+        "en": "The monkey is too naughty.",
+        "zh": "猴子太调皮了。",
+        "audio": "/lessons/l14/audio/ph-6.mp3"
+      },
+      {
+        "en": "Do you want a puppy?",
+        "zh": "你想要一只小狗吗？",
+        "audio": "/lessons/l14/audio/ph-7.mp3"
+      },
+      {
+        "en": "Yes! He is perfect.",
+        "zh": "想要！它太完美了。",
+        "audio": "/lessons/l14/audio/ph-8.mp3"
+      }
+    ]
   }
 ]

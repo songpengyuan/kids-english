@@ -192,7 +192,7 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
     expect(errors).toEqual([]);
   });
 
-  it("离线包下载收在家长中心设置：7 节课各自一行，不占课程详情页", async () => {
+  it("离线包下载收在家长中心设置：每节课各自一行，不占课程详情页", async () => {
     // jsdom 没有 Cache API，家长中心默认整卡隐藏；补一个空实现验证渲染结构
     vi.stubGlobal("caches", {
       open: async () => ({
@@ -204,7 +204,8 @@ describe("页面冒烟：每个页面都能渲染（无 Vue 报错）", () => {
       const w = await mountPage(ParentView, "/me/parent");
       await flushPromises();
       expect(w.text()).toContain("下载课程离线包");
-      expect(w.findAll(".dl-row")).toHaveLength(7);
+      // 行数跟课时数走（加课不用改测试）
+      expect(w.findAll(".dl-row")).toHaveLength(lessons.length);
       // 第一行是 l5，按钮初始为“下载”
       expect(w.findAll(".dl-row")[0].text()).toContain("我是一个音乐人");
       expect(w.findAll(".dl-btn")[0].text()).toContain("下载");
