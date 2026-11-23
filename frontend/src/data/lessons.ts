@@ -49,7 +49,7 @@ export function asset(path: string | null | undefined): string | null {
  * 所以这里统一追加 `?v=<版本>`：URL 一变 CDN 就当新资源回源。
  * 改任何一张词图后把这个值 +1 即可，不必等缓存过期。
  */
-const WORD_IMAGE_REV = "20261114a";
+const WORD_IMAGE_REV = "20261123a";
 
 function revAsset(path: string | null): string | null {
   if (!path) return null;
