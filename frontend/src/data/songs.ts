@@ -12,7 +12,7 @@
  *    上一首/下一首只在歌单内转，不会串进课程歌曲。
  */
 import songsData from "./songs.json";
-import { asset, revAsset } from "./lessons";
+import { asset, revSongAsset } from "./lessons";
 
 export interface ExtraSong {
   id: string;
@@ -43,7 +43,7 @@ export const extraSongs: ExtraSong[] = (songsData as RawSong[]).map((s) => ({
   titleZh: s.titleZh,
   emoji: s.emoji,
   tone: s.tone,
-  src: revAsset(asset(s.audio))!,
+  src: revSongAsset(asset(s.audio))!,
   lyrics: s.lyrics ?? [],
   lyricsZh: s.lyricsZh ?? [],
 }));

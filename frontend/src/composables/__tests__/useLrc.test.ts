@@ -63,6 +63,8 @@ describe("lrcUrlOf", () => {
   it("音频地址推导同名 .lrc（不同扩展名/带 BASE 前缀都成立）", () => {
     expect(lrcUrlOf("/lessons/l5/song.mp3")).toBe("/lessons/l5/song.lrc");
     expect(lrcUrlOf("/app/lessons/l11/brown-bear.mp3")).toBe("/app/lessons/l11/brown-bear.lrc");
+    // 音频带 CDN 版本前缀时，query 要原样带到 .lrc，否则歌词轴继续吃旧缓存
+    expect(lrcUrlOf("/lessons/l14/song.mp3?v=20261128a")).toBe("/lessons/l14/song.lrc?v=20261128a");
   });
 });
 

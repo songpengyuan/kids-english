@@ -51,9 +51,24 @@ export function asset(path: string | null | undefined): string | null {
  */
 const WORD_IMAGE_REV = "20261123a";
 
+/**
+ * 课时音频/歌词版本号（同一个 CDN 缓存问题）。
+ *
+ * 音频和 .lrc 也是固定命名覆盖上传，mp3/lrc 的 CDN 缓存同样长达 30 天：
+ * 换了一版 song.mp3，服务器已经更新，线上播放的还是上一版（实测 l14 换音频后
+ * 边缘节点仍吐 142.47s 的旧文件）。所以课时音频也带 `?v=`，改音频或歌词轴后 +1。
+ */
+const SONG_REV = "20261128a";
+
 export function revAsset(path: string | null): string | null {
   if (!path) return null;
   return `${path}${path.includes("?") ? "&" : "?"}v=${WORD_IMAGE_REV}`;
+}
+
+/** 磨耳朵纯听歌单 + 课时歌曲共用这一套版本号前缀。 */
+export function revSongAsset(path: string | null): string | null {
+  if (!path) return null;
+  return `${path}${path.includes("?") ? "&" : "?"}v=${SONG_REV}`;
 }
 
 /* 逐行歌词的时间轴（真人演唱课由 gen-lrc.py 对齐产出；合成曲课已下线），用于 KTV 式精确高亮 */
@@ -231,7 +246,7 @@ export const lessons: Lesson[] = rawLessons.map((lesson) => ({
   tone: lesson.tone || "blue",
   song: {
     title: lesson.song.title,
-    audio: asset(lesson.song.audio),
+    audio: revSongAsset(asset(lesson.song.audio)),
     video: lesson.song.video ? asset(lesson.song.video) : null,
     scene: lesson.song.scene || "stage",
     group: lesson.song.group,

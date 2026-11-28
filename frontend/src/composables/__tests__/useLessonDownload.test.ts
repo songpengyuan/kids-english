@@ -18,9 +18,10 @@ describe("collectLessonMedia", () => {
     const urls = collectLessonMedia(l11);
     // l11：song 音+视频、tracks 1 组音+视频、19 词（有 image）、4 句
     expect(urls.length).toBeGreaterThan(20);
-    expect(urls).toContain("/lessons/l11/brown-bear.mp3");
+    // 课时音频带 CDN 版本前缀（?v=…），断言只认路径前缀
+    expect(urls.some((u) => u.startsWith("/lessons/l11/brown-bear.mp3"))).toBe(true);
     expect(urls).toContain("/lessons/l11/brown-bear.mp4");
-    expect(urls).toContain("/lessons/l11/song.mp3");
+    expect(urls.some((u) => u.startsWith("/lessons/l11/song.mp3"))).toBe(true);
     expect(urls).toContain("/lessons/l11/audio/bear.mp3");
     // 词图路径用课程数据自身的值（格式会随资产优化演进：png→webp）
     const bearImg = l11.words.find((w) => w.id === "bear")?.image;

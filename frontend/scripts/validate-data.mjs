@@ -138,7 +138,9 @@ try {
     for (const t of [l.song, ...(l.song?.tracks || [])]) {
       for (const src of [t?.audio, t?.video]) {
         if (typeof src === "string" && src.startsWith("/lessons/")) {
-          check(existsSync(join(root, "public", src)), `课时 ${l.id} 音视频文件缺失：${src}`);
+          // 音频带 CDN 版本前缀（?v=xxx）只为击穿缓存，查本地文件时把 query 摘掉
+          const filePath = src.split("?")[0];
+          check(existsSync(join(root, "public", filePath)), `课时 ${l.id} 音视频文件缺失：${src}`);
         }
       }
     }

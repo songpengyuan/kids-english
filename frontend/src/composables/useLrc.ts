@@ -49,9 +49,11 @@ export function activeLrcIndex(lines: LrcLine[], t: number): number {
   return idx;
 }
 
-/** 音频地址 → 同名 LRC 地址（.../song.mp3 → .../song.lrc；跨 BASE 子路径部署也成立）。 */
+/** 音频地址 → 同名 LRC 地址（.../song.mp3 → .../song.lrc；跨 BASE 子路径部署也成立）。
+ *  音频带了 CDN 版本前缀（song.mp3?v=xxx）时，query 要跟着走：.lrc 同样是固定命名覆盖，
+ *  不带同一批版本号就会继续吃 30 天缓存里的旧歌词轴。 */
 export function lrcUrlOf(audioSrc: string): string {
-  return audioSrc.replace(/\.[a-z0-9]+\??$/i, ".lrc");
+  return audioSrc.replace(/\.[a-z0-9]+(\?.*)?$/i, ".lrc$1");
 }
 
 /** LRC 行 ↔ 数据歌词行的映射：第 k 条 LRC 行对应 lyrics 里第 k 个非空行。
