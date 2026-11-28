@@ -10,6 +10,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 // appRoot = frontend/（vite SSR 项目根，源码在 frontend/src）；repoRoot = 仓库根（后端种子输出）
+/** 去掉媒体 URL 上的 `?v=` 版本前缀（只给后端种子用）。 */
+const bareMedia = (src) => (typeof src === "string" ? src.split("?")[0] : src ?? null);
+
 const appRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
 const repoRoot = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const out = path.join(repoRoot, "backend/seed/lessons.json");
@@ -36,8 +39,10 @@ try {
     // 转盘复习玩法开关（spinner）；非转盘课为 undefined，JSON.stringify 自动省略
     spinner: l.spinner,
     song: {
-      audio: l.song.audio,
-      video: l.song.video,
+      // 前端会给音频拼 CDN 版本号（?v=…）击穿缓存，那是播放细节；
+      // 后端种子存干净的媒体路径，版本号每次换音频都会变，进种子只会制造无意义漂移。
+      audio: bareMedia(l.song.audio),
+      video: bareMedia(l.song.video),
       scene: l.song.scene,
       group: l.song.group ?? null,
       lyrics: l.song.lyrics,
@@ -46,8 +51,8 @@ try {
       tracks: (l.song.tracks || []).map((t) => ({
         title: t.title,
         titleZh: t.titleZh ?? null,
-        audio: t.audio ?? null,
-        video: t.video ?? null,
+        audio: bareMedia(t.audio),
+        video: bareMedia(t.video),
         lyrics: t.lyrics ?? [],
         lyricsZh: t.lyricsZh ?? [],
         group: t.group ?? null,
