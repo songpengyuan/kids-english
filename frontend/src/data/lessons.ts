@@ -51,7 +51,7 @@ export function asset(path: string | null | undefined): string | null {
  */
 const WORD_IMAGE_REV = "20261123a";
 
-function revAsset(path: string | null): string | null {
+export function revAsset(path: string | null): string | null {
   if (!path) return null;
   return `${path}${path.includes("?") ? "&" : "?"}v=${WORD_IMAGE_REV}`;
 }

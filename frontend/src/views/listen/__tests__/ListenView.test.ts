@@ -90,6 +90,32 @@ describe("ListenView · 课程首页", () => {
     expect(first.text()).toContain("句");
     expect(first.find(".course-play").exists()).toBe(true);
   });
+
+  it("儿歌歌单：4 首纯听歌单列在课程之后，不属于任何课时", async () => {
+    const w = await mountListen();
+    expect(w.text()).toContain("儿歌歌单");
+    const extraRows = w.findAll(".extra-row");
+    expect(extraRows.length).toBe(4);
+    expect(extraRows[0].text()).toContain("Five Little Monkeys");
+    expect(extraRows.map((r) => r.text()).join("|")).toContain("纯听");
+  });
+
+  it("点纯听儿歌进播放页：页头是歌名，没有「去这一课」和视频/词句分段", async () => {
+    const w = await mountListen();
+    await w.findAll(".extra-row")[0].trigger("click");
+    await flushPromises();
+    expect(w.find(".player").exists()).toBe(true);
+    expect(w.find(".lp-title").text()).toBe("Five Little Monkeys");
+    expect(w.find(".lp-sub").text()).toContain("儿歌歌单");
+    // 纯听没有课时：不显示「去这一课」，也没有视频/词句切换
+    expect(w.find('[aria-label="去这一课"]').exists()).toBe(false);
+    expect(w.find(".lp-tabs").exists()).toBe(false);
+    // 歌单 4 首 → 播放列表入口在（点开是整张歌单）
+    expect(w.find('[aria-label="打开播放列表"]').exists()).toBe(true);
+    // 首页列表必须整块收起：只判断 activeLesson 会让它在播放页底下透出来
+    expect(w.findAll(".course-row").length).toBe(0);
+    expect(w.text()).not.toContain("儿歌歌单 · 纯听");
+  });
 });
 
 describe("ListenView · 课程播放页", () => {

@@ -11,6 +11,7 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { lessons, asset } from "../data/lessons";
+import { extraSongs } from "../data/songs";
 import { useProgressStore } from "./progress";
 import type { RepeatMode, Tone } from "../types";
 import { trackCover } from "../utils/trackCover";
@@ -63,6 +64,28 @@ export const SONG_LIST: PlayableSong[] = lessons
       });
     return [first, ...extras];
   });
+
+/** 纯听儿歌（无课时词表的歌单条目）追加在 SONG_LIST 尾部。
+ *  只放在磨耳朵「儿歌歌单」里，不参与课时/关卡；索引段由
+ *  extraSongIndices() 取得，队列用它收窄，避免上一首/下一首串进课程歌。 */
+SONG_LIST.push(
+  ...extraSongs.map((s) => ({
+    id: s.id,
+    title: s.title,
+    titleZh: s.titleZh,
+    emoji: s.emoji,
+    tone: s.tone as Tone,
+    src: s.src,
+    lyrics: s.lyrics,
+    lyricsZh: s.lyricsZh,
+  })),
+);
+
+/** 纯听儿歌在 SONG_LIST 里的索引（顺序与 extraSongs 一致） */
+export function extraSongIndices(): number[] {
+  const base = SONG_LIST.length - extraSongs.length;
+  return extraSongs.map((_, i) => base + i);
+}
 
 /** 全局唯一 audio 实例（模块级创建，永随应用存活，不随路由销毁） */
 const audio = new Audio();

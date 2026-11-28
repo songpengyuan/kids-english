@@ -18,10 +18,11 @@
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { lessons, type Lesson } from "../../data/lessons";
+import { extraSongs, isExtraSongId, type ExtraSong } from "../../data/songs";
 import { useProgressStore } from "../../stores/progress";
 import { emojiCoverUrl } from "../../utils/emojiCover";
 import { trackCover } from "../../utils/trackCover";
-import { usePlayerStore } from "../../stores/player";
+import { usePlayerStore, extraSongIndices } from "../../stores/player";
 import { useLrc, activeLrcIndex, mapLrcToLyrics } from "../../composables/useLrc";
 import { hapticTap } from "../../services/haptics";
 import { speak, speakZh } from "../../services/speech";
@@ -122,6 +123,25 @@ const MODE_TABS = [
 const MODE_LABEL: Record<PlayerMode, string> = { songs: "歌曲", videos: "视频", clips: "词句" };
 
 const activeLesson = ref<Lesson | null>(null);
+/** 纯听儿歌：activeLesson 为空时，播放页靠它提供页头（没有课时、只有歌曲） */
+const activeSong = ref<ExtraSong | null>(null);
+
+/* ---------- 纯听儿歌歌单（无课时词表，只有音频） ---------- */
+const extraEntries = computed(() => {
+  const idx = extraSongIndices();
+  return extraSongs.map((song, i) => ({ song, index: idx[i] }));
+});
+function openExtraSong(song: ExtraSong, index: number) {
+  hapticTap();
+  void speak(song.title, { ttsOnly: true });
+  activeLesson.value = null;
+  activeSong.value = song;
+  mode.value = "songs";
+  songWasPlaying.value = false;
+  // 队列收窄到整张儿歌歌单：上一首/下一首只在歌单内转，不串进课程歌曲
+  player.setQueue(extraSongIndices());
+  player.openLyrics(index);
+}
 const mode = ref<PlayerMode>("songs");
 const showPlaylist = ref(false);
 /** 离开歌曲模式前是否在播：切回歌曲时恢复，切走时先暂停，避免两路声音叠在一起 */
@@ -149,10 +169,22 @@ function lessonForSongId(id: string | undefined): Lesson | null {
  *  2026-11-13 课程级口径：不再把播放队列锁进单课——循环/下一首都走全站
  *  SONG_LIST（跨课连续磨），页头靠 currentSong watcher 跟着歌走。 */
 function adoptCurrentSong() {
-  const l = lessonForSongId(player.currentSong?.id);
-  if (!l) return;
-  activeLesson.value = l;
-  mode.value = "songs";
+  const s = player.currentSong;
+  if (!s) return;
+  const l = lessonForSongId(s.id);
+  if (l) {
+    activeLesson.value = l;
+    activeSong.value = null;
+    mode.value = "songs";
+    return;
+  }
+  const extra = extraSongs.find((x) => x.id === s.id);
+  if (extra) {
+    activeLesson.value = null;
+    activeSong.value = extra;
+    mode.value = "songs";
+    player.setQueue(extraSongIndices());
+  }
 }
 
 function openCourse(l: Lesson) {
@@ -160,11 +192,14 @@ function openCourse(l: Lesson) {
   // 点读口径（关卡卡同款）：先念课名再进——孩子听到自己点的是哪门课
   void speak(l.title, { ttsOnly: true });
   activeLesson.value = l;
+  activeSong.value = null;
   mode.value = "songs";
   songWasPlaying.value = false;
   const indices = songIndicesFor(l);
   if (!indices.length) return;
   const start = indices.includes(player.currentIdx) ? player.currentIdx : indices[0];
+  // 队列收窄到本课：上一首/下一首不出这节课（课程级口径）
+  player.setQueue(indices);
   player.openLyrics(start);
 }
 
@@ -173,6 +208,7 @@ function closePlayer() {
   player.closeLyrics();
   player.clearQueue();
   activeLesson.value = null;
+  activeSong.value = null;
   mode.value = "songs";
   showPlaylist.value = false;
 }
@@ -207,8 +243,8 @@ function playTrack(index: number) {
   showPlaylist.value = false;
 }
 
-/** 当前歌所属课时 id（「去这一课」） */
-const currentLessonId = computed(() => player.currentSong?.id.replace(/-t\d+$/, "") ?? null);
+/** 当前歌所属课时 id（「去这一课」）；纯听儿歌没有课时 → null，按钮隐藏 */
+const currentLessonId = computed(() => lessonForSongId(player.currentSong?.id)?.id ?? null);
 function goCurrentLesson() {
   hapticTap();
   speakZh("去看看这一课");
@@ -266,6 +302,23 @@ const lessonMeta = computed(() => {
 const currentTrackTitle = computed(() => player.currentSong?.title ?? activeLesson.value?.song.title ?? "");
 const currentTrackSub = computed(() => player.currentSong?.titleZh ?? activeLesson.value?.titleZh ?? "");
 
+/* ---------- 播放页页头：课时尾部（有课时）/ 纯听儿歌（无课时）共用一套 ---------- */
+const inExtraMode = computed(() => !activeLesson.value && !!activeSong.value);
+const headEmoji = computed(() => activeLesson.value?.emoji ?? activeSong.value?.emoji ?? "🎵");
+const headTone = computed(() => activeLesson.value?.tone ?? (activeSong.value?.tone as Lesson["tone"] | undefined) ?? "blue");
+const headTitle = computed(() => activeLesson.value?.title ?? activeSong.value?.title ?? "");
+const headSub = computed(() => {
+  if (activeLesson.value) return `${activeLesson.value.titleZh} · ${lessonMeta.value}`;
+  if (activeSong.value) return `${activeSong.value.titleZh} · 儿歌歌单`;
+  return "";
+});
+/** 纯听儿歌只有「歌曲」一种形态，不显示视频/词句分段（没有词句可播） */
+const modeTabs = computed(() => (inExtraMode.value ? MODE_TABS.filter((t) => t.value === "songs") : MODE_TABS));
+/** 播放列表抽屉：课时用本课曲目，纯听用整张儿歌歌单 */
+const playlistEntries = computed(() =>
+  inExtraMode.value ? extraEntries.value : courseSongs.value,
+);
+
 onMounted(() => {
   void progStore.syncFromServer();
   // 从其他 tab 切回来时，有加载过的歌就直接落到正在播的课程播放页（2026-11-08 惯例）。
@@ -285,13 +338,21 @@ watch(
   }
 );
 
-/** 歌跨课推进（课程级循环/下一首）→ 页头落到新歌所属课程 */
+/** 歌推进（课时内切轨 / 纯听儿歌歌单）→ 页头跟着歌走 */
 watch(
   () => player.currentSong?.id,
   (id) => {
-    if (!activeLesson.value || mode.value !== "songs") return;
-    const l = lessonForSongId(id);
-    if (l && l.id !== activeLesson.value.id) activeLesson.value = l;
+    if (mode.value !== "songs") return;
+    if (!id) return;
+    if (isExtraSongId(id)) {
+      if (!inExtraMode.value) adoptCurrentSong();
+      return;
+    }
+    if (!activeLesson.value) adoptCurrentSong();
+    else {
+      const l = lessonForSongId(id);
+      if (l && l.id !== activeLesson.value.id) activeLesson.value = l;
+    }
   }
 );
 
@@ -306,16 +367,16 @@ onBeforeUnmount(() => {
     <!-- ===== 课程播放页：共用页头 + 页内模式切换 =====
          一屏三问：这一课是什么 → 现在用哪种方式磨 → 播到哪 / 我要干嘛。 -->
     <Transition name="lyrics">
-      <div v-if="activeLesson" class="player">
+      <div v-if="activeLesson || activeSong" class="player">
         <div class="lp-head">
           <button class="pl-chip round" aria-label="收起播放页" @click="closePlayer">
             <ChevronDown class="k-ico" />
           </button>
           <span class="lp-course">
-            <span class="lp-cover"><EmojiTile :emoji="activeLesson.emoji" :tone="activeLesson.tone" /></span>
+            <span class="lp-cover"><EmojiTile :emoji="headEmoji" :tone="headTone" /></span>
             <span class="lp-course-text">
-              <span class="lp-title">{{ activeLesson.title }}</span>
-              <span class="lp-sub">{{ activeLesson.titleZh }} · {{ lessonMeta }}</span>
+              <span class="lp-title">{{ headTitle }}</span>
+              <span class="lp-sub">{{ headSub }}</span>
             </span>
           </span>
           <span class="lp-head-actions">
@@ -329,7 +390,7 @@ onBeforeUnmount(() => {
               <BookOpen class="k-ico" />
             </button>
             <button
-              v-if="mode === 'songs' && courseSongs.length > 1"
+              v-if="mode === 'songs' && playlistEntries.length > 1"
               class="pl-chip round"
               aria-label="打开播放列表"
               @click="showPlaylist = true"
@@ -339,10 +400,10 @@ onBeforeUnmount(() => {
           </span>
         </div>
 
-        <div class="lp-tabs">
+        <div v-if="modeTabs.length > 1" class="lp-tabs">
           <SegmentedTabs
             :model-value="mode"
-            :items="MODE_TABS"
+            :items="modeTabs"
             @update:model-value="(v: string) => switchMode(v as PlayerMode)"
           />
         </div>
@@ -351,7 +412,7 @@ onBeforeUnmount(() => {
         <template v-if="mode === 'songs'">
           <div class="lp-song">
             <div class="lp-art">
-              <EmojiTile :emoji="player.currentSong?.emoji ?? activeLesson.emoji" :tone="player.currentSong?.tone ?? activeLesson.tone" size="xl" />
+              <EmojiTile :emoji="player.currentSong?.emoji ?? headEmoji" :tone="player.currentSong?.tone ?? headTone" size="xl" />
               <p class="lp-art-title">{{ currentTrackTitle }}</p>
               <p class="lp-art-sub">{{ currentTrackSub }}</p>
             </div>
@@ -367,7 +428,13 @@ onBeforeUnmount(() => {
                     :data-line="i"
                   >{{ line }}<span v-if="player.currentLyricsZh[i]" class="pl-zh">{{ player.currentLyricsZh[i] }}</span></p>
                 </template>
-                <p v-else class="pl-line on">🎵</p>
+                <!-- 纯听儿歌是多首小曲串成的合集，没有可信的逐句歌词：
+                     与其硬塞标准版歌词（对不上音频），不如老实说"跟着哼"。 -->
+                <div v-else class="pl-empty">
+                  <p class="pl-empty-emoji">🎵</p>
+                  <p class="pl-empty-tip">这首歌没有逐句歌词</p>
+                  <p class="pl-empty-sub">跟着节奏一起哼，听整首就好</p>
+                </div>
               </div>
             </div>
           </div>
@@ -407,7 +474,7 @@ onBeforeUnmount(() => {
             embedded
           />
           <div v-else class="lp-empty">
-            <EmojiTile :emoji="activeLesson.emoji" :tone="activeLesson.tone" size="xl" />
+            <EmojiTile :emoji="headEmoji" :tone="headTone" size="xl" />
             <p class="lp-empty-title">还没有课程视频</p>
             <p class="lp-empty-sub">先听歌曲，或者切到词句跟读吧</p>
           </div>
@@ -418,7 +485,7 @@ onBeforeUnmount(() => {
           <LessonClipPlayer
             :key="clipsEpoch"
             :lessons="lessons"
-            :start-lesson-id="activeLesson.id"
+            :start-lesson-id="activeLesson?.id ?? ''"
             embedded
             @change="onClipChange"
           />
@@ -426,8 +493,10 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
 
-    <!-- ===== 磨耳朵首页：只按课程列，格式入口不在这里 ===== -->
-    <template v-if="!activeLesson">
+    <!-- ===== 磨耳朵首页：只按课程列，格式入口不在这里 =====
+         纯听儿歌也有自己的播放页（activeSong），所以两者都不在时才显示首页 —
+         只判断 activeLesson 会让首页留在播放页底下透出来。 -->
+    <template v-if="!activeLesson && !activeSong">
       <div class="today-chip">🎵 今天听了 <b>{{ Math.floor((progStore.todayStats.listenSec ?? 0) / 60) }}</b> 分钟啦</div>
       <div class="view-body body">
         <button
@@ -452,13 +521,38 @@ onBeforeUnmount(() => {
           </span>
           <span class="course-play"><Play class="k-ico" /></span>
         </button>
+
+        <!-- 纯听儿歌歌单：没有课时词表，只在磨耳朵里听（不进关卡/单词玩法） -->
+        <template v-if="extraEntries.length">
+          <p class="playlist-head">🎧 儿歌歌单 · 纯听 {{ extraEntries.length }} 首</p>
+          <button
+            v-for="entry in extraEntries"
+            :key="entry.song.id"
+            class="entry-row course-row extra-row"
+            @click="openExtraSong(entry.song, entry.index)"
+          >
+            <EmojiTile :emoji="entry.song.emoji" :tone="entry.song.tone as Lesson['tone']" size="md" />
+            <span class="entry-row__body">
+              <span class="sr-title-row">
+                <span class="entry-row__title sr-title">{{ entry.song.title }}</span>
+                <SpeakWave
+                  v-if="player.currentIdx === entry.index && player.playing"
+                  size="sm"
+                  tone="var(--brand)"
+                />
+              </span>
+              <span class="entry-row__desc">{{ entry.song.titleZh }} · 儿歌 · 纯听</span>
+            </span>
+            <span class="course-play"><Play class="k-ico" /></span>
+          </button>
+        </template>
       </div>
     </template>
 
-    <!-- 播放列表抽屉（仅一课多轨时出现，不承担跨课导航） -->
-    <BaseDrawer :open="showPlaylist" :title="`本课歌曲（${courseSongs.length}）`" @close="showPlaylist = false">
+    <!-- 播放列表抽屉：课时多轨时列本课歌曲，纯听儿歌时列整张歌单 -->
+    <BaseDrawer :open="showPlaylist" :title="`${inExtraMode ? '儿歌歌单' : '本课歌曲'}（${playlistEntries.length}）`" @close="showPlaylist = false">
       <div class="drawer-list">
-        <button v-for="entry in courseSongs" :key="entry.song.id" class="drawer-item"
+        <button v-for="entry in playlistEntries" :key="entry.song.id" class="drawer-item"
           :class="{ on: player.currentIdx === entry.index }" @click="playTrack(entry.index)">
           <span class="di-idx">{{ entry.index + 1 }}</span>
           <span class="di-emoji" aria-hidden="true">
@@ -540,6 +634,14 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* 儿歌歌单小标题：把"课程"和"纯听歌单"分成两个语义区块 */
+.playlist-head {
+  margin-top: var(--gap-l);
+  font-weight: var(--fw-strong);
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+  text-align: left;
 }
 
 /* ===== 课程播放页 =====
@@ -683,8 +785,7 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 .pl-zh {
-  display: block;
-  margin-top: 2px;
+  display: block;  margin-top: 2px;
   font-size: var(--fs-small);
   font-weight: var(--fw-mid);
   line-height: 1.4;
@@ -694,6 +795,34 @@ onBeforeUnmount(() => {
 .pl-line.on .pl-zh {
   color: var(--brand);
   opacity: 0.9;
+}
+/* 无歌词（纯听儿歌）时的空态：别只剩一个 emoji 漂在空白里 */
+.pl-empty {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
+  padding: var(--gap-l) var(--gap-m);
+  text-align: center;
+}
+.pl-empty-emoji {
+  margin: 0;
+  font-size: 44px;
+  line-height: 1.2;
+  opacity: 0.55;
+}
+.pl-empty-tip {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-mid);
+  color: var(--ink-soft);
+}
+.pl-empty-sub {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+  opacity: 0.7;
 }
 .lp-art-title {
   margin: var(--gap-xs) 0 0;

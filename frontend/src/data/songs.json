@@ -1,0 +1,34 @@
+[
+  {
+    "id": "s-monkeys",
+    "title": "Five Little Monkeys",
+    "titleZh": "五只小猴子",
+    "emoji": "🐒",
+    "tone": "orange",
+    "audio": "/songs/five-little-monkeys.mp3"
+  },
+  {
+    "id": "s-open-shut",
+    "title": "Open Shut Them",
+    "titleZh": "张开合上",
+    "emoji": "✋",
+    "tone": "pink",
+    "audio": "/songs/open-shut-them.mp3"
+  },
+  {
+    "id": "s-walking",
+    "title": "Walking Walking",
+    "titleZh": "走一走",
+    "emoji": "🚶",
+    "tone": "green",
+    "audio": "/songs/walking-walking.mp3"
+  },
+  {
+    "id": "s-clap-stomp",
+    "title": "Clap Stomp Jump",
+    "titleZh": "拍拍跺跺跳跳",
+    "emoji": "👏",
+    "tone": "blue",
+    "audio": "/songs/clap-stomp-jump.mp3"
+  }
+]
